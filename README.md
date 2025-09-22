@@ -1,10 +1,8 @@
-# SNU-SWPP-Template
+# Re:View
 
-You can use the README file to showcase and promote your mobile app. The template provided below is just a starting point. Feel free to craft your README as you see fit. 
+Re:View takes in raw lecture recordings and lecture slides to refine them into structured, accessible study materials.
 
-Please note that the README doesn't affect your grade and is not included in documentation(Wiki).
-
-# Re:view
+## Overview
 
 [Short application description here]
 
@@ -18,11 +16,11 @@ Please note that the README doesn't affect your grade and is not included in doc
 
 ## Getting Started
 
-### Prerequisites
+### Prerequisites (Tested Versions)
 
 - Android Studio [version, e.g., 4.2.1]
 - Minimum Android SDK Version [e.g., 21]
-- fastAPI (uvicorn main:app --reload)
+- FastAPI (uvicorn main:app --reload)
 
 ### Installation
 
