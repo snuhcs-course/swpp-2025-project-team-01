@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    # Add build requirements accordingly.
+    #- name: Install Rust
+    #  uses: actions-rs/toolchain@v1
+    #  with:
+    #   toolchain: stable
+    #    override: true
+    #    components: rustfmt, clippy
+    
+    # Add necessary script executions accordingly.
+    #- name: Run backend unit tests
+    #  run: python run_backend_unit_tests.py
