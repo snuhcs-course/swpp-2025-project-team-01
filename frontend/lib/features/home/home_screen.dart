@@ -122,6 +122,27 @@ final List<CourseSummary> mockCourses = [
         title: 'Software Processes',
         subtitle: 'Software Processes',
       ),
+      NoteSummary(
+        week: '',
+        title: '',
+        subtitle: '',
+        isPlaceholder: true,
+      ),
+    ],
+  ),
+  CourseSummary(
+    id: 'deep-learning',
+    title: '딥러닝의 기초',
+    tags: ['#25-1', '#전선'],
+    isFavorite: true,
+    isInitiallyExpanded: true,
+    notes: const [
+      NoteSummary(
+        week: '',
+        title: '',
+        subtitle: '',
+        isPlaceholder: true,
+      ),
     ],
   ),
 ];
@@ -147,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).lightScheme;
     final highlights = Theme.of(context).extension<AppHighlights>();
 
     return Scaffold(
@@ -155,6 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         child: const Icon(Icons.add),
       ),
       body: SafeArea(
@@ -191,6 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       course: course,
                       isExpanded: isExpanded,
                       highlightColor: highlights?.important ?? const Color(0xFFF6D16F),
+                      tagHighlights: highlights?.tagHighlights,
                       onToggle: () {
                         setState(() {
                           _expanded[course.id] = !(isExpanded);
@@ -250,12 +273,14 @@ class _CourseCard extends StatelessWidget {
     required this.course,
     required this.isExpanded,
     required this.highlightColor,
+    required this.tagHighlights,
     required this.onToggle,
   });
 
   final CourseSummary course;
   final bool isExpanded;
   final Color highlightColor;
+  final List<TagHighlight>? tagHighlights;
   final VoidCallback onToggle;
 
   @override
@@ -305,9 +330,14 @@ class _CourseCard extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: onToggle,
-                        icon: Icon(
-                          isExpanded ? Icons.expand_less : Icons.expand_more,
-                          color: Colors.white,
+                        icon: AnimatedRotation(
+                          turns: isExpanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: const Icon(
+                            Icons.expand_more,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
@@ -316,13 +346,14 @@ class _CourseCard extends StatelessWidget {
                   Wrap(
                     spacing: 10,
                     runSpacing: 10,
-                    children: course.tags
-                        .map((tag) => _TagChip(
-                              label: tag,
-                              background: highlightColor.withValues(alpha: 0.2),
-                              foreground: Colors.black87,
-                            ))
-                        .toList(),
+                    children: [
+                      for (var i = 0; i < course.tags.length; i++)
+                        _TagChip(
+                          label: course.tags[i],
+                          background: _tagBackground(i),
+                          foreground: const Color(0xFF1D1D1D),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -334,15 +365,28 @@ class _CourseCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                 child: _NotesGrid(notes: course.notes),
               ),
+              firstCurve: Curves.easeInOut,
+              secondCurve: Curves.easeInOut,
+              sizeCurve: Curves.easeInOut,
               crossFadeState:
                   isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 450),
             ),
           ],
         ),
       ),
     );
+}
+
+  Color _tagBackground(int index) {
+    final palette = tagHighlights;
+    if (palette != null && palette.isNotEmpty) {
+      final selected = palette[index % palette.length];
+      return selected.background;
+    }
+    return highlightColor.withValues(alpha: 0.2);
   }
+
 }
 
 class _NotesGrid extends StatelessWidget {
@@ -391,7 +435,7 @@ class _NoteCard extends StatelessWidget {
       return Container(
         height: 180,
         decoration: BoxDecoration(
-          color: colorScheme.secondaryContainer,
+          color: colorScheme.background,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: colorScheme.outlineVariant),
         ),
@@ -483,7 +527,11 @@ class _TagChip extends StatelessWidget {
         style: Theme.of(context)
             .textTheme
             .labelMedium
-            ?.copyWith(color: foreground, fontWeight: FontWeight.w600),
+            ?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
       ),
     );
   }

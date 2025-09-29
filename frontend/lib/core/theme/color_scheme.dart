@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+const Color seedColor = Color(0xFF1D1D1D);
+
 final ColorScheme lightScheme = ColorScheme.fromSeed(
-  seedColor: const Color(0xFF1D1D1D),
+  seedColor: seedColor,
   brightness: Brightness.light,
-);
+).copyWith(primary: seedColor);
 
 /// AppHighlights holds the highlight color roles for the app.
 class AppHighlights extends ThemeExtension<AppHighlights> {
@@ -93,4 +95,24 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
       onMisc: Color.lerp(onMisc, other.onMisc, t) ?? onMisc,
     );
   }
+
+  List<TagHighlight> get tagHighlights => [
+        TagHighlight(background: list1, foreground: onList1),
+        TagHighlight(background: list2, foreground: onList2),
+        TagHighlight(background: list3, foreground: onList3),
+      ];
+}
+
+class TagHighlight {
+  const TagHighlight({
+    required this.background,
+    required this.foreground,
+  });
+
+  final Color background;
+  final Color foreground;
+}
+
+extension ReViewThemeData on ThemeData {
+  ColorScheme get lightScheme => colorScheme;
 }
