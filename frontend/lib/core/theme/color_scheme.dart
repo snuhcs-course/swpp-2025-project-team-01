@@ -34,18 +34,19 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
   factory AppHighlights.fromScheme(ColorScheme scheme) {
     return AppHighlights(
       important: const Color(0xFFF6D16F),
-      onImportant: lightScheme.primary,
+      onImportant: scheme.primary,
       list1: const Color(0xFFEFF0A4),
-      onList1: lightScheme.primary,
+      onList1: scheme.primary,
       list2: const Color(0xFFFDECB0),
-      onList2: lightScheme.primary,
+      onList2: scheme.primary,
       list3: const Color(0xFFD8DFE9),
-      onList3: lightScheme.primary,
+      onList3: scheme.primary,
       misc: const Color(0x33B5A9FF),
-      onMisc: lightScheme.primary,
+      onMisc: scheme.primary,
     );
   }
 
+  @override
   AppHighlights copyWith({
     Color? important,
     Color? onImportant,

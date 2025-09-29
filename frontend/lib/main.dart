@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'core/theme/colorScheme.dart';
+import 'core/theme/color_scheme.dart';
+import 'features/home/home_screen.dart';
 
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -39,18 +40,7 @@ class _ReViewState extends State<ReView> {
         colorScheme: lightScheme,
         extensions: [AppHighlights.fromScheme(lightScheme)],
       ),
-      home: const MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home Page')),
-      body: const Center(child: Text('Hello, world!')),
+      home: const HomeScreen(),
     );
   }
 }
