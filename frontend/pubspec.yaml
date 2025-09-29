@@ -34,6 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  flutter_native_splash: ^2.4.6
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +57,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/images/logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -87,3 +90,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#EFEFEF"        # 라이트 배경
+  color_dark: "#1D1D1D"   # 다크 배경(원하면 다른 값)
+  image: assets/images/logo.png  # 중앙 로고 (512px 이상 권장, 투명 PNG)
+  android_12:
+    image: assets/images/logo.png  # 사각 마스킹에 맞춘 로고(여백 충분)
+    icon_background_color: "#EFEFEF"

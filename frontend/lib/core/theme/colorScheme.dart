@@ -1,10 +1,12 @@
+import 'package:flutter/material.dart';
+
 final ColorScheme lightScheme = ColorScheme.fromSeed(
   seedColor: const Color(0xFF1D1D1D),
   brightness: Brightness.light,
 );
 
 /// AppHighlights holds the highlight color roles for the app.
-class AppHighlights {
+class AppHighlights extends ThemeExtension<AppHighlights> {
   final Color important;
   final Color onImportant;
   final Color list1;
@@ -70,18 +72,24 @@ class AppHighlights {
     );
   }
 
-  static AppHighlights lerp(AppHighlights a, AppHighlights b, double t) {
+  @override
+  AppHighlights lerp(
+    covariant ThemeExtension<AppHighlights>? other,
+    double t,
+  ) {
+    if (other is! AppHighlights) return this;
+
     return AppHighlights(
-      important: Color.lerp(a.important, b.important, t)!,
-      onImportant: Color.lerp(a.onImportant, b.onImportant, t)!,
-      list1: Color.lerp(a.list1, b.list1, t)!,
-      onList1: Color.lerp(a.onList1, b.onList1, t)!,
-      list2: Color.lerp(a.list2, b.list2, t)!,
-      onList2: Color.lerp(a.onList2, b.onList2, t)!,
-      list3: Color.lerp(a.list3, b.list3, t)!,
-      onList3: Color.lerp(a.onList3, b.onList3, t)!,
-      misc: Color.lerp(a.misc, b.misc, t)!,
-      onMisc: Color.lerp(a.onMisc, b.onMisc, t)!,
+      important: Color.lerp(important, other.important, t) ?? important,
+      onImportant: Color.lerp(onImportant, other.onImportant, t) ?? onImportant,
+      list1: Color.lerp(list1, other.list1, t) ?? list1,
+      onList1: Color.lerp(onList1, other.onList1, t) ?? onList1,
+      list2: Color.lerp(list2, other.list2, t) ?? list2,
+      onList2: Color.lerp(onList2, other.onList2, t) ?? onList2,
+      list3: Color.lerp(list3, other.list3, t) ?? list3,
+      onList3: Color.lerp(onList3, other.onList3, t) ?? onList3,
+      misc: Color.lerp(misc, other.misc, t) ?? misc,
+      onMisc: Color.lerp(onMisc, other.onMisc, t) ?? onMisc,
     );
   }
 }
