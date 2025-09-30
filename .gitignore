@@ -1,28 +1,16 @@
-# Gradle
-.gradle/
-**/build/
-!gradle/wrapper/gradle-wrapper.jar
-
-# Android Studio
+# IDE settings
 .idea/
 *.iml
 
-# Local configuration (절대 공유 금지)
-local.properties
+# OS artifacts
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
 
-# Android specific
-captures/
-.externalNativeBuild/
-.cxx/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Generated / Compiled files
+# Build artifacts
+**/build/
 *.apk
 *.ap_
 *.aab
@@ -31,9 +19,21 @@ Thumbs.db
 out/
 gen/
 
-# Keystore files (보안)
+# Android / Gradle
+**/.gradle/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Flutter
+frontend/.metadata
+
+# Python backend
+backend/venv/
+**/__pycache__/
+*.py[cod]
+
+# Keystore files
 *.jks
 *.keystore
-
-backend/venv/
-frontend/app/build/
