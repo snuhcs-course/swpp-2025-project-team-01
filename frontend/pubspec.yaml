@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_native_splash: ^2.4.6
   pdfx: ^2.7.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -60,10 +61,13 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
-    - assets/mockup/lec_demo_002/
-    - assets/mockup/lec_demo_003/
-    - assets/mockup/lec_demo_004/
-    - assets/mockup/lec_demo_005/
+    - assets/lectures/lec_demo_001/
+    - assets/lectures/lec_demo_002/
+    - assets/lectures/lec_demo_003/
+    - assets/lectures/lec_demo_004/
+    - assets/lectures/lec_demo_005/
+    - assets/data/subjects.json
+    - assets/data/tags.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:

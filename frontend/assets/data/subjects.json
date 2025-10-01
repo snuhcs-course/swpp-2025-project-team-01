@@ -1,0 +1,21 @@
+{
+    "schemaVersion": 1,
+    "subjects": [
+      {
+        "id": "s1",
+        "title": "소프트웨어 개발의 원리와 실습",
+        "favorite": true,
+        "tagIds": ["t1", "t2"],
+        "lectureIds": ["lec_demo_001", "lec_demo_002"],
+        "order": 0
+      },
+      {
+        "id": "s2",
+        "title": "외계행성과 생명",
+        "favorite": false,
+        "tagIds": ["t1", "t3"],
+        "lectureIds": ["lec_demo_003"],
+        "order": 1
+      }
+    ]
+  }

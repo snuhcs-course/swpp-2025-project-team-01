@@ -212,10 +212,11 @@ class _SubjectPanelState extends State<SubjectPanel> {
         child: Chip(
           label: Text('#${t.name}'),
           backgroundColor: p.background,
-          labelStyle: TextStyle(color: p.foreground, fontWeight: FontWeight.normal),
+          labelStyle: TextStyle(color: p.foreground, fontWeight: FontWeight.normal, fontSize: 14),
           side: BorderSide.none,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
           labelPadding: EdgeInsets.zero,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       );
     });
