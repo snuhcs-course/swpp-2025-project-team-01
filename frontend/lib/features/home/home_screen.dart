@@ -69,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 FilterPill(
                   icon: Icons.tune,
                   label: '필터',
+                  active: showTagFilter,
                   onTap: () => setState(() => showTagFilter = !showTagFilter),
                 ),
                 const SizedBox(width: 12),

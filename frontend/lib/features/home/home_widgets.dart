@@ -12,57 +12,14 @@ class FilterPill extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const FilterPill({super.key, required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: Colors.black87),
-                const SizedBox(width: 6),
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class FavoritePill extends StatelessWidget {
   final bool active;
-  final VoidCallback onTap;
-  const FavoritePill({super.key, required this.active, required this.onTap});
+  const FilterPill({super.key, required this.icon, required this.label, required this.onTap, this.active = false});
 
   @override
   Widget build(BuildContext context) {
-    final h = context.highlights;
-    final bg = active ? h.important : Colors.white;
-    final fg = active ? h.onImportant : Colors.black87;
+    final bg = active ? Colors.black87 : Colors.white;
+    final fg = active ? Colors.white : Colors.black87;
+
     return Container(
       decoration: BoxDecoration(
         color: bg,
@@ -88,7 +45,57 @@ class FavoritePill extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(Icons.star, size: 18, color: fg),
+                Icon(icon, size: 18, color: fg),
+                const SizedBox(width: 6),
+                Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: fg)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FavoritePill extends StatelessWidget {
+  final bool active;
+  final VoidCallback onTap;
+  const FavoritePill({super.key, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final h = context.highlights;
+    final bg = active ? Colors.black87 : Colors.white;
+    final fg = active ? Colors.white : Colors.black87;
+    final starColor = active ? h.important : Colors.black87;
+    final starIcon = active ? Icons.star : Icons.star_border;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(starIcon, size: 18, color: starColor),
                 const SizedBox(width: 6),
                 Text('즐겨찾기', style: TextStyle(fontWeight: FontWeight.w600, color: fg)),
               ],
