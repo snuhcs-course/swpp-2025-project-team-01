@@ -13,6 +13,7 @@ class Lecture {
   final String title;
   final int durationSec;
   final List<String> thumbs; // 이미지 경로/URL
+  final String? slidesPath; // PDF 슬라이드 경로
   const Lecture({
     required this.id,
     required this.subjectId,
@@ -20,6 +21,7 @@ class Lecture {
     required this.title,
     required this.durationSec,
     this.thumbs = const [],
+    this.slidesPath,
   });
 }
 

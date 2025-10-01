@@ -11,9 +11,9 @@ class Repo {
   };
 
   final Map<String, Lecture> _lectures = {
-    'l1': const Lecture(id: 'l1', subjectId: 's1', weekLabel: 'Week 1-1', title: 'Course Overview', durationSec: 4056),
-    'l2': const Lecture(id: 'l2', subjectId: 's1', weekLabel: 'Week 1-2', title: 'AI App Examples', durationSec: 3920),
-    'l3': const Lecture(id: 'l3', subjectId: 's2', weekLabel: 'Week 2-1', title: 'Software Processes', durationSec: 4070),
+    'l1': const Lecture(id: 'l1', subjectId: 's1', weekLabel: 'Week 1-1', title: 'Course Overview', durationSec: 4056, slidesPath: 'assets/mockup/lec_demo_002/lec_demo_002_slides.pdf'),
+    'l2': const Lecture(id: 'l2', subjectId: 's1', weekLabel: 'Week 1-2', title: 'AI App Examples', durationSec: 3920, slidesPath: 'assets/mockup/lec_demo_003/lec_demo_003_slides.pdf'),
+    'l3': const Lecture(id: 'l3', subjectId: 's2', weekLabel: 'Week 2-1', title: 'Software Processes', durationSec: 4070, slidesPath: 'assets/mockup/lec_demo_004/lec_demo_004_slides.pdf'),
   };
 
   final Map<String, Subject> _subjects = {

@@ -1,54 +1,111 @@
-// 홈 전용 작은 위젯들: 필터 바 / 과목 패널 / 강의 타일
-
+// 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
 import 'package:flutter/material.dart';
+import 'package:pdfx/pdfx.dart';
 import '../../data/models.dart';
-import '../../core/constants.dart';
-import '../../core/utils.dart';
+import '../../core/theme/color_scheme.dart';
 
-class FilterBar extends StatelessWidget {
-  final List<Tag> tags;
-  final Set<String> selected;
-  final bool favoritesOnly;
-  final ValueChanged<bool> onToggleFavOnly;
-  final ValueChanged<String> onToggleTag;
+const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
+const _panelRadius = 22.0;
+const _panelShadow = BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 3));
 
-  const FilterBar({
-    super.key,
-    required this.tags,
-    required this.selected,
-    required this.favoritesOnly,
-    required this.onToggleFavOnly,
-    required this.onToggleTag,
-  });
+class FilterPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const FilterPill({super.key, required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(Gap.g16),
-      child: Wrap(
-        spacing: Gap.g8,
-        runSpacing: Gap.g8,
-        children: [
-          FilterChip(
-            label: const Text('즐겨찾기'),
-            selected: favoritesOnly,
-            onSelected: onToggleFavOnly,
-            avatar: const Icon(Icons.star, size: 18),
-          ),
-          ...tags.map((t) => FilterChip(
-                label: Text('#${t.name}'),
-                selected: selected.contains(t.id),
-                onSelected: (_) => onToggleTag(t.id),
-                backgroundColor: Color(t.color).withOpacity(.2),
-              )),
-        ],
+    return Material(
+      color: Colors.white,
+      elevation: 1,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(children: [
+            Icon(icon, size: 18, color: Colors.black87),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ]),
+        ),
       ),
+    );
+  }
+}
+
+class FavoritePill extends StatelessWidget {
+  final bool active;
+  final VoidCallback onTap;
+  const FavoritePill({super.key, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final h = context.highlights;
+    final bg = active ? h.important : Colors.white;
+    final fg = active ? h.onImportant : Colors.black87;
+    return Material(
+      color: bg,
+      elevation: 1,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(children: [
+            Icon(Icons.star, size: 18, color: fg),
+            const SizedBox(width: 6),
+            Text('즐겨찾기', style: TextStyle(fontWeight: FontWeight.w600, color: fg)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class TagChips extends StatelessWidget {
+  final List<Tag> tags;
+  final Set<String> selected;
+  final ValueChanged<String> onToggle;
+  const TagChips({super.key, required this.tags, required this.selected, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final presets = context.highlights.tagHighlights;
+    return Wrap(
+      spacing: 8, runSpacing: 8,
+      children: List.generate(tags.length, (i) {
+        final t = tags[i];
+        final p = presets[i % presets.length];
+        final isSel = selected.contains(t.id);
+        return Material(
+          shape: const StadiumBorder(),
+          elevation: 1,
+          child: FilterChip(
+            showCheckmark: false,
+            label: Text('#${t.name}'),
+            selected: isSel,
+            onSelected: (_) => onToggle(t.id),
+            backgroundColor: p.background.withOpacity(.35),
+            selectedColor: p.background,
+            labelStyle: TextStyle(
+              color: isSel ? p.foreground : Colors.black87,
+              fontWeight: FontWeight.w700,
+            ),
+            side: const BorderSide(color: Color(0x33000000), width: 1),
+          ),
+        );
+      }),
     );
   }
 }
 
 class SubjectPanel extends StatefulWidget {
   final Subject subject;
+  final List<Tag> tags;
   final List<Lecture> lectures;
   final VoidCallback onToggleFavorite;
   final ValueChanged<Lecture> onOpenLecture;
@@ -56,6 +113,7 @@ class SubjectPanel extends StatefulWidget {
   const SubjectPanel({
     super.key,
     required this.subject,
+    required this.tags,
     required this.lectures,
     required this.onToggleFavorite,
     required this.onOpenLecture,
@@ -70,88 +128,215 @@ class _SubjectPanelState extends State<SubjectPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Gap.g16, vertical: Gap.g8),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RadiusToken.card)),
-        child: Padding(
-          padding: const EdgeInsets.all(Gap.g12),
+    final h = context.highlights;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_panelRadius),
+        boxShadow: const [_panelShadow],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // 검정 헤더 (태그 + ★ + 제목 + 화살표)
+        Container(
+          decoration: const BoxDecoration(
+            color: _black,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(_panelRadius),
+              topRight: Radius.circular(_panelRadius),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(widget.subject.favorite ? Icons.star : Icons.star_border),
-                    onPressed: widget.onToggleFavorite,
+              // 제목 라인
+              Row(children: [
+                IconButton(
+                  icon: Icon(widget.subject.favorite ? Icons.star : Icons.star_border, color: h.important, size: 22),
+                  onPressed: widget.onToggleFavorite,
+                  tooltip: '즐겨찾기',
+                ),
+                const SizedBox(width: 2),
+                Expanded(
+                  child: Text(
+                    widget.subject.title,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Expanded(
-                    child: Text(widget.subject.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                ),
+                IconButton(
+                  icon: Icon(expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up, color: Colors.white),
+                  onPressed: () => setState(() => expanded = !expanded),
+                ),
+              ]),
+              // 태그 라인
+              if (widget.tags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 40),
+                  child: Wrap(
+                    spacing: 8,
+                    children: _subjectTagChips(context, widget.tags),
                   ),
-                  IconButton(
-                    icon: Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
-                    onPressed: () => setState(() => expanded = !expanded),
-                  ),
-                ],
-              ),
-              if (expanded) const SizedBox(height: Gap.g8),
-              if (expanded)
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, mainAxisSpacing: Gap.g12, crossAxisSpacing: Gap.g12, childAspectRatio: 1.4,
-                  ),
-                  itemCount: widget.lectures.length,
-                  itemBuilder: (_, i) => LectureTile(lecture: widget.lectures[i], onTap: widget.onOpenLecture),
                 ),
             ],
           ),
         ),
-      ),
+
+        // 강의 그리드 (2열)
+        if (expanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: widget.lectures.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.35,
+              ),
+              itemBuilder: (_, i) => _LectureCard(lec: widget.lectures[i], onTap: widget.onOpenLecture),
+            ),
+          ),
+      ]),
     );
+  }
+
+  List<Widget> _subjectTagChips(BuildContext context, List<Tag> tags) {
+    final presets = context.highlights.tagHighlights;
+    return List.generate(tags.length, (i) {
+      final t = tags[i];
+      final p = presets[i % presets.length];
+      return Material(
+        shape: const StadiumBorder(),
+        elevation: 1,
+        child: Chip(
+          label: Text('#${t.name}'),
+          backgroundColor: p.background,
+          labelStyle: TextStyle(color: p.foreground, fontWeight: FontWeight.normal),
+          side: BorderSide.none,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+          labelPadding: EdgeInsets.zero,
+        ),
+      );
+    });
   }
 }
 
-class LectureTile extends StatelessWidget {
-  final Lecture lecture;
+class _LectureCard extends StatefulWidget {
+  final Lecture lec;
   final ValueChanged<Lecture> onTap;
-  const LectureTile({super.key, required this.lecture, required this.onTap});
+  const _LectureCard({required this.lec, required this.onTap});
+
+  @override
+  State<_LectureCard> createState() => _LectureCardState();
+}
+
+class _LectureCardState extends State<_LectureCard> {
+  PdfDocument? _pdfDocument;
+  PdfPage? _pdfPage;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPdf();
+  }
+
+  Future<void> _loadPdf() async {
+    if (widget.lec.slidesPath == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final document = await PdfDocument.openAsset(widget.lec.slidesPath!);
+      final page = await document.getPage(1);
+      if (mounted) {
+        setState(() {
+          _pdfDocument = document;
+          _pdfPage = page;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pdfPage?.close();
+    _pdfDocument?.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => onTap(lecture),
-      onLongPress: () {
-        showModalBottomSheet(
-          context: context,
-          builder: (_) => Padding(
-            padding: const EdgeInsets.all(Gap.g16),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(lecture.weekLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: Gap.g8),
-              Text(lecture.title),
-              const SizedBox(height: Gap.g12),
-              Text('길이: ${formatDuration(lecture.durationSec)}'),
-              const SizedBox(height: Gap.g16),
-              FilledButton.tonal(onPressed: () => Navigator.pop(context), child: const Text('닫기')),
-            ]),
-          ),
-        );
-      },
-      child: Container(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => widget.onTap(widget.lec),
+      child: Ink(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black12),
+          color: const Color(0xFFF6F7FA),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 2))],
         ),
-        padding: const EdgeInsets.all(Gap.g12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: Container(color: Colors.black12)), // 썸네일 자리
-          const SizedBox(height: Gap.g8),
-          Text(lecture.weekLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
-          Text(lecture.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        ]),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                clipBehavior: Clip.antiAlias,
+                child: _buildThumbnail(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(widget.lec.weekLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(widget.lec.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ]),
+        ),
       ),
     );
+  }
+
+  Widget _buildThumbnail() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(child: Text('오류: $_error', style: const TextStyle(color: Colors.red, fontSize: 10)));
+    }
+
+    if (_pdfPage != null) {
+      return FutureBuilder<PdfPageImage?>(
+        future: _pdfPage!.render(
+          width: _pdfPage!.width * 2,
+          height: _pdfPage!.height * 2,
+          format: PdfPageImageFormat.png,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!.bytes,
+              fit: BoxFit.contain,
+            );
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('렌더링 실패', style: const TextStyle(color: Colors.red, fontSize: 10)));
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
+    }
+
+    return const Center(child: Text('thumbnail', style: TextStyle(color: Colors.black38)));
   }
 }

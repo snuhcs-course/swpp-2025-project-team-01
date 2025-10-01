@@ -116,3 +116,7 @@ class TagHighlight {
 extension ReViewThemeData on ThemeData {
   ColorScheme get lightScheme => colorScheme;
 }
+
+extension ReViewColors on BuildContext {
+  AppHighlights get highlights => Theme.of(this).extension<AppHighlights>()!;
+}
