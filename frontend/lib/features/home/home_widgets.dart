@@ -16,20 +16,37 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      elevation: 1,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Row(children: [
-            Icon(icon, size: 18, color: Colors.black87),
-            const SizedBox(width: 6),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ]),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: Colors.black87),
+                const SizedBox(width: 6),
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -46,20 +63,37 @@ class FavoritePill extends StatelessWidget {
     final h = context.highlights;
     final bg = active ? h.important : Colors.white;
     final fg = active ? h.onImportant : Colors.black87;
-    return Material(
-      color: bg,
-      elevation: 1,
-      shape: const StadiumBorder(),
-      child: InkWell(
-        customBorder: const StadiumBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Row(children: [
-            Icon(Icons.star, size: 18, color: fg),
-            const SizedBox(width: 6),
-            Text('즐겨찾기', style: TextStyle(fontWeight: FontWeight.w600, color: fg)),
-          ]),
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.star, size: 18, color: fg),
+                const SizedBox(width: 6),
+                Text('즐겨찾기', style: TextStyle(fontWeight: FontWeight.w600, color: fg)),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -89,13 +123,17 @@ class TagChips extends StatelessWidget {
             label: Text('#${t.name}'),
             selected: isSel,
             onSelected: (_) => onToggle(t.id),
-            backgroundColor: p.background.withOpacity(.35),
+            backgroundColor: const Color(0xFFE0E0E0),
             selectedColor: p.background,
             labelStyle: TextStyle(
-              color: isSel ? p.foreground : Colors.black87,
-              fontWeight: FontWeight.w700,
+              color: isSel ? p.foreground : Colors.black54,
+              fontWeight: FontWeight.normal,
+              fontSize: 14,
             ),
-            side: const BorderSide(color: Color(0x33000000), width: 1),
+            side: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            labelPadding: EdgeInsets.zero,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         );
       }),
@@ -173,7 +211,7 @@ class _SubjectPanelState extends State<SubjectPanel> {
               // 태그 라인
               if (widget.tags.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8, left: 40),
+                  padding: const EdgeInsets.only(top: 4, left: 40),
                   child: Wrap(
                     spacing: 8,
                     children: _subjectTagChips(context, widget.tags),

@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool favoritesOnly = false;
+  bool showTagFilter = false;
   final Set<String> selectedTagIds = {};
 
   @override
@@ -65,7 +66,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
               child: Row(children: [
-                FilterPill(icon: Icons.tune, label: '필터', onTap: () {}),
+                FilterPill(
+                  icon: Icons.tune,
+                  label: '필터',
+                  onTap: () => setState(() => showTagFilter = !showTagFilter),
+                ),
                 const SizedBox(width: 12),
                 FavoritePill(
                   active: favoritesOnly,
@@ -74,19 +79,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ]),
             ),
           ),
-          // 태그 칩 그리드
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: TagChips(
-                tags: tags,
-                selected: selectedTagIds,
-                onToggle: (id) => setState(() {
-                  if (!selectedTagIds.add(id)) selectedTagIds.remove(id);
-                }),
+          // 태그 칩 그리드 (필터 버튼 클릭 시만 표시)
+          if (showTagFilter)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: TagChips(
+                  tags: tags,
+                  selected: selectedTagIds,
+                  onToggle: (id) => setState(() {
+                    if (!selectedTagIds.add(id)) {
+                      selectedTagIds.remove(id);
+                      // 모든 태그가 비활성화되면 필터 닫기
+                      if (selectedTagIds.isEmpty) {
+                        showTagFilter = false;
+                      }
+                    }
+                  }),
+                ),
               ),
             ),
-          ),
           // 과목 패널 리스트
           SliverList.builder(
             itemCount: subjects.length,
