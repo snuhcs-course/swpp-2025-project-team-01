@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'models.dart';
 
+/// 데이터 저장소 클래스 (싱글톤)
 class Repo {
   Repo._();
   static final instance = Repo._();

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../app_router.dart';
 import '../../data/models.dart';
 import '../../data/repository.dart';
-import '../../core/theme/color_scheme.dart'; // context.highlights 확장 사용
 import 'home_widgets.dart';
 
+/// 메인 홈 화면
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override

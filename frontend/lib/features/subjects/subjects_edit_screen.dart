@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/repository.dart';
 import '../../data/models.dart';
 
-/// Figma 2-2. Modifying Subjects
-/// - 과목별 패널(검은 헤더) 안에 강의 리스트
-/// - 강의: 좌측 드래그 핸들, 썸네일 자리, 제목/주차, 우측 삭제(빨간 원)
-/// - 하단 고정 버튼: [수정 완료] [취소]
+/// 과목 편집 화면 - 과목별 강의 목록을 편집하고 정렬/삭제 가능
 class SubjectsEditScreen extends StatefulWidget {
   const SubjectsEditScreen({super.key});
   @override
@@ -90,6 +87,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   }
 }
 
+/// 개별 과목 편집 패널 위젯 - 강의 정렬 및 삭제 기능
 class _SubjectEditPanel extends StatefulWidget {
   final Subject subject;
   final List<Lecture> lectures;
@@ -183,6 +181,7 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
   }
 }
 
+/// 하단 고정 버튼 바 위젯 (주 버튼과 부 버튼)
 class _BottomBar extends StatelessWidget {
   final String primaryLabel, secondaryLabel;
   final VoidCallback onPrimary, onSecondary;

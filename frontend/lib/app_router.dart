@@ -16,7 +16,7 @@ import 'features/settings/tts_screen.dart';
 import 'features/subjects/subjects_edit_screen.dart';
 import 'features/tags/tags_edit_screen.dart';
 
-
+/// 앱의 모든 라우트 경로를 정의하는 클래스
 class Routes {
   static const onboarding = '/';
   static const home = '/home';
@@ -35,6 +35,7 @@ class Routes {
   static const tagsEdit = '/tags/edit';
 }
 
+/// 앱의 라우팅을 처리하는 클래스
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings s) {
     switch (s.name) {

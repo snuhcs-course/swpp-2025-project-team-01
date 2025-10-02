@@ -4,12 +4,14 @@ import 'app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/repository.dart';
 
+/// 앱 진입점 - Repository 초기화 후 앱 실행
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Repo.instance.init();
   runApp(const ReViewApp());
 }
 
+/// Re:View 앱의 루트 위젯
 class ReViewApp extends StatelessWidget {
   const ReViewApp({super.key});
 

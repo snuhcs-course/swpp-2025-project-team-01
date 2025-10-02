@@ -8,6 +8,7 @@ const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
 const _panelRadius = 22.0;
 const _panelShadow = BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, 3));
 
+/// 필터 pill 버튼 위젯
 class FilterPill extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -57,6 +58,7 @@ class FilterPill extends StatelessWidget {
   }
 }
 
+/// 즐겨찾기 pill 버튼 위젯
 class FavoritePill extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
@@ -107,6 +109,7 @@ class FavoritePill extends StatelessWidget {
   }
 }
 
+/// 태그 칩 그리드 위젯
 class TagChips extends StatelessWidget {
   final List<Tag> tags;
   final Set<String> selected;
@@ -148,6 +151,7 @@ class TagChips extends StatelessWidget {
   }
 }
 
+/// 과목 패널 위젯 (접고 펼칠 수 있는 강의 목록 포함)
 class SubjectPanel extends StatefulWidget {
   final Subject subject;
   final List<Tag> tags;
@@ -270,6 +274,7 @@ class _SubjectPanelState extends State<SubjectPanel> {
   }
 }
 
+/// 강의 카드 위젯 (PDF 썸네일 포함)
 class LectureCard extends StatefulWidget {
   final Lecture lec;
   final ValueChanged<Lecture> onTap;

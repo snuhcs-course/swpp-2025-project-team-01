@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../core/utils.dart';
 
+/// 강의 재생 화면
 class PlayerScreen extends StatelessWidget {
   final Object? args;
   const PlayerScreen({super.key, this.args});

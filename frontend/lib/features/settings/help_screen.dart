@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Figma: 2-4-5. Help (간단 안내 텍스트)
+/// 도움말 화면 - 기본 안내 텍스트 제공
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
 
