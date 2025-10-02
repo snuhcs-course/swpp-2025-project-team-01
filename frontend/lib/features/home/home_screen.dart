@@ -105,7 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: subjects.length,
             itemBuilder: (context, i) {
               final s = subjects[i];
-              final subjectTags = s.tagIds.map((tid) => tags.firstWhere((t) => t.id == tid)).toList();
+              final subjectTags = s.tagIds
+                  .map((tid) => tags.cast<Tag?>().firstWhere((t) => t?.id == tid, orElse: () => null))
+                  .whereType<Tag>()
+                  .toList();
               final lectures = repo.lecturesBySubject(s.id);
               return Padding(
                 padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
@@ -113,8 +116,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   subject: s,
                   tags: subjectTags,
                   lectures: lectures,
-                  onToggleFavorite: () {
-                    setState(() => Repo.instance.toggleSubjectFavorite(s.id));
+                  onToggleFavorite: () async {
+                    await Repo.instance.toggleSubjectFavorite(s.id);
+                    setState(() {});
                   },
                   onOpenLecture: (Lecture lec) {
                     Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lec.id});

@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/repository.dart';
 import '../../data/models.dart';
 import '../../app_router.dart';
-import '../home/home_widgets.dart' show LectureCard;
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -12,11 +11,14 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
+enum SearchScope { lecture, week, subject }
+
 class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   List<String> _recentSearches = [];
   List<Lecture> _searchResults = [];
   bool _isSearching = false;
+  SearchScope _searchScope = SearchScope.lecture;
 
   @override
   void initState() {
@@ -57,7 +59,18 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() {});
   }
 
-  void _performSearch(String query, {bool saveToRecent = false}) {
+  String _getHintText() {
+    switch (_searchScope) {
+      case SearchScope.lecture:
+        return '강의명 검색';
+      case SearchScope.week:
+        return '주차 검색 (예: Week 1)';
+      case SearchScope.subject:
+        return '과목명 검색';
+    }
+  }
+
+  Future<void> _performSearch(String query, {bool saveToRecent = false}) async {
     if (query.trim().isEmpty) {
       setState(() {
         _searchResults = [];
@@ -71,6 +84,15 @@ class _SearchScreenState extends State<SearchScreen> {
       _saveRecentSearch(query);
     }
 
+    // 모든 과목의 모든 강의 ID 수집 및 로드
+    final allLectureIds = <String>[];
+    for (final subject in Repo.instance.getSubjects()) {
+      allLectureIds.addAll(subject.lectureIds);
+    }
+
+    // 강의 메타데이터 미리 로드
+    await Repo.instance.preloadLectures(allLectureIds);
+
     // 모든 과목의 모든 강의에서 검색
     final allLectures = <Lecture>[];
     for (final subject in Repo.instance.getSubjects()) {
@@ -78,15 +100,32 @@ class _SearchScreenState extends State<SearchScreen> {
       allLectures.addAll(lectures);
     }
 
-    // 강의명으로 필터링
-    final results = allLectures
-        .where((lec) => lec.title.toLowerCase().contains(query.toLowerCase()))
-        .toList();
+    // 검색 범위에 따라 필터링
+    final results = allLectures.where((lec) {
+      // 빈 Lecture 객체 필터링 (제대로 로드되지 않은 것)
+      if (lec.title == 'Untitled') return false;
 
-    setState(() {
-      _searchResults = results;
-      _isSearching = true;
-    });
+      final searchQuery = query.toLowerCase();
+      switch (_searchScope) {
+        case SearchScope.lecture:
+          return lec.title.toLowerCase().contains(searchQuery);
+        case SearchScope.week:
+          return lec.weekLabel.toLowerCase().contains(searchQuery);
+        case SearchScope.subject:
+          final subject = Repo.instance.getSubjects().firstWhere(
+            (s) => s.id == lec.subjectId,
+            orElse: () => const Subject(id: '', title: ''),
+          );
+          return subject.title.toLowerCase().contains(searchQuery);
+      }
+    }).toList();
+
+    if (mounted) {
+      setState(() {
+        _searchResults = results;
+        _isSearching = true;
+      });
+    }
   }
 
   @override
@@ -101,41 +140,74 @@ class _SearchScreenState extends State<SearchScreen> {
           // 검색 바
           Padding(
             padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: '강의명 검색',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchResults = [];
-                            _isSearching = false;
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+            child: Row(
+              children: [
+                // 검색 범위 드롭다운
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFE0E0E0)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButton<SearchScope>(
+                    value: _searchScope,
+                    underline: const SizedBox(),
+                    items: const [
+                      DropdownMenuItem(value: SearchScope.lecture, child: Text('강의')),
+                      DropdownMenuItem(value: SearchScope.week, child: Text('주차')),
+                      DropdownMenuItem(value: SearchScope.subject, child: Text('과목')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _searchScope = value!;
+                        if (_searchController.text.isNotEmpty) {
+                          _performSearch(_searchController.text);
+                        }
+                      });
+                    },
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                const SizedBox(width: 12),
+                // 검색 입력 필드
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: _getHintText(),
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchResults = [];
+                                  _isSearching = false;
+                                });
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.black87, width: 2),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {});
+                      _performSearch(value); // 실시간 검색 (저장 안함)
+                    },
+                    onSubmitted: (value) => _performSearch(value, saveToRecent: true), // 엔터 시 저장
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.black87, width: 2),
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {});
-                _performSearch(value); // 실시간 검색 (저장 안함)
-              },
-              onSubmitted: (value) => _performSearch(value, saveToRecent: true), // 엔터 시 저장
+              ],
             ),
           ),
 
@@ -192,21 +264,45 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.35,
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: _searchResults.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final lecture = _searchResults[index];
-        return LectureCard(
-          lec: lecture,
-          onTap: (lec) {
-            Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lec.id});
+        final subject = Repo.instance.getSubjects().firstWhere(
+          (s) => s.id == lecture.subjectId,
+          orElse: () => const Subject(id: '', title: ''),
+        );
+
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          title: Row(
+            children: [
+              Text(
+                lecture.weekLabel,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  lecture.title,
+                  style: const TextStyle(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              subject.title,
+              style: const TextStyle(color: Colors.black54, fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          onTap: () {
+            Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lecture.id});
           },
         );
       },

@@ -30,13 +30,12 @@ class Repo {
     await preloadLectures(allLectureIds);
   }
 
-  // 없으면 assets/data/<name>을 복사
+  // 없으면 assets/data/<name>을 복사 (항상 최신 버전으로 덮어쓰기)
   Future<void> _ensureSeed(String name) async {
     final f = File('${_dataDir.path}/$name');
-    if (!await f.exists()) {
-      final bytes = await rootBundle.load('assets/data/$name');
-      await f.writeAsBytes(bytes.buffer.asUint8List());
-    }
+    // 항상 최신 assets 데이터로 덮어쓰기 (개발 중)
+    final bytes = await rootBundle.load('assets/data/$name');
+    await f.writeAsBytes(bytes.buffer.asUint8List());
   }
 
   Future<void> _loadSubjects() async {
@@ -81,9 +80,12 @@ class Repo {
   List<Subject> getSubjects({bool favoritesOnly = false, List<String> filterTagIds = const []}) {
     var list = _subjects.values.toList()
       ..sort((a,b)=> a.title.compareTo(b.title)); // 또는 order 사용
+    print('getSubjects - favoritesOnly: $favoritesOnly, filterTagIds: $filterTagIds'); // 디버깅
     if (favoritesOnly) list = list.where((s) => s.favorite).toList();
     if (filterTagIds.isNotEmpty) {
-      list = list.where((s) => s.tagIds.any(filterTagIds.contains)).toList();
+      // intersection: 선택한 모든 태그를 가진 과목만 표시
+      list = list.where((s) => filterTagIds.every((tagId) => s.tagIds.contains(tagId))).toList();
+      print('Filtered subjects: ${list.map((s) => s.title).toList()}'); // 디버깅
     }
     return list;
   }
@@ -107,8 +109,10 @@ class Repo {
       );
 
       _lectures[lectureId] = lecture;
+      print('Loaded lecture: ${lecture.id}, ${lecture.title}, ${lecture.subjectId}'); // 디버깅
       return lecture;
     } catch (e) {
+      print('Failed to load lecture $lectureId: $e'); // 디버깅
       return null;
     }
   }

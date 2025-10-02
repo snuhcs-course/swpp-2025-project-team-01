@@ -184,12 +184,14 @@ class _SubjectPanelState extends State<SubjectPanel> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         // 검정 헤더 (태그 + ★ + 제목 + 화살표)
         Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: _black,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(_panelRadius),
-              topRight: Radius.circular(_panelRadius),
-            ),
+            borderRadius: expanded
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(_panelRadius),
+                    topRight: Radius.circular(_panelRadius),
+                  )
+                : BorderRadius.circular(_panelRadius),
           ),
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Column(
