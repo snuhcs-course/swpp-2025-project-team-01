@@ -239,7 +239,7 @@ class _SubjectPanelState extends State<SubjectPanel> {
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.35,
               ),
-              itemBuilder: (_, i) => _LectureCard(lec: widget.lectures[i], onTap: widget.onOpenLecture),
+              itemBuilder: (_, i) => LectureCard(lec: widget.lectures[i], onTap: widget.onOpenLecture),
             ),
           ),
       ]),
@@ -268,16 +268,16 @@ class _SubjectPanelState extends State<SubjectPanel> {
   }
 }
 
-class _LectureCard extends StatefulWidget {
+class LectureCard extends StatefulWidget {
   final Lecture lec;
   final ValueChanged<Lecture> onTap;
-  const _LectureCard({required this.lec, required this.onTap});
+  const LectureCard({super.key, required this.lec, required this.onTap});
 
   @override
-  State<_LectureCard> createState() => _LectureCardState();
+  State<LectureCard> createState() => _LectureCardState();
 }
 
-class _LectureCardState extends State<_LectureCard> {
+class _LectureCardState extends State<LectureCard> {
   PdfDocument? _pdfDocument;
   PdfPage? _pdfPage;
   bool _isLoading = true;
