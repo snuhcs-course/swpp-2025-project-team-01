@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'data/repository.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Repo.instance.init();
   runApp(const ReViewApp());
 }
 
