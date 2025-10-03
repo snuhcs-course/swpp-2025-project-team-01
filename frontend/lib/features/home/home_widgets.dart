@@ -238,14 +238,15 @@ class _SubjectPanelState extends State<SubjectPanel> {
         if (expanded)
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: widget.lectures.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.35,
-              ),
-              itemBuilder: (_, i) => LectureCard(lec: widget.lectures[i], onTap: widget.onOpenLecture),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: widget.lectures.map((lec) =>
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32 - 28 - 12) / 2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
+                  child: LectureCard(lec: lec, onTap: widget.onOpenLecture),
+                )
+              ).toList(),
             ),
           ),
       ]),
@@ -342,18 +343,20 @@ class _LectureCardState extends State<LectureCard> {
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
-              child: Container(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
                 clipBehavior: Clip.antiAlias,
                 child: _buildThumbnail(),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(widget.lec.weekLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
-            Text(widget.lec.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ]),
+              const SizedBox(height: 10),
+              Text(widget.lec.weekLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
+              Text(widget.lec.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ],
+          ),
         ),
       ),
     );
@@ -379,7 +382,8 @@ class _LectureCardState extends State<LectureCard> {
           if (snapshot.hasData && snapshot.data != null) {
             return Image.memory(
               snapshot.data!.bytes,
-              fit: BoxFit.contain,
+              fit: BoxFit.fitWidth,
+              width: double.infinity,
             );
           }
           if (snapshot.hasError) {
