@@ -1,6 +1,6 @@
-// 세로/가로 전환 가능한 최소 플레이어 스켈레톤
 import 'package:flutter/material.dart';
 import '../../core/utils.dart';
+import 'player_widgets.dart';
 
 class PlayerScreen extends StatefulWidget {
   final Object? args;
@@ -15,6 +15,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _isPagesExpanded = false;
   bool _isPlaying = false;
   bool _isSynced = true;
+  bool _isCaptionEnabled = false;
   double _currentTime = 132.0;
   final double _totalTime = 4056.0;
 
@@ -88,112 +89,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
       child: Column(
         children: [
           // 상단 컨트롤 바
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                // 메인화면으로 나가기
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.chevron_left, color: Colors.white, size: 32),
-                ),
-                const Spacer(),
-                // 싱크 맞추기
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _isSynced = !_isSynced;
-                    });
-                  },
-                  icon: Icon(
-                    _isSynced ? Icons.sync : Icons.sync_disabled,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-              ],
-            ),
+          TopControlBarPortrait(
+            onBack: () => Navigator.pop(context),
+            isSynced: _isSynced,
+            onSyncToggle: () => setState(() => _isSynced = !_isSynced),
           ),
 
           const Spacer(),
 
           // 중앙 재생 컨트롤
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 15초 뒤로
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _currentTime = (_currentTime - 15).clamp(0, _totalTime);
-                  });
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '15',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 40),
-              // 재생/정지
-              IconButton(
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  setState(() {
-                    _isPlaying = !_isPlaying;
-                  });
-                },
-                icon: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 56,
-                ),
-              ),
-              const SizedBox(width: 40),
-              // 15초 앞으로
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _currentTime = (_currentTime + 15).clamp(0, _totalTime);
-                  });
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '15',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          CenterPlayControls(
+            isPlaying: _isPlaying,
+            onPlayPause: () => setState(() => _isPlaying = !_isPlaying),
+            onSkipBackward: () => setState(() => _currentTime = (_currentTime - 15).clamp(0, _totalTime)),
+            onSkipForward: () => setState(() => _currentTime = (_currentTime + 15).clamp(0, _totalTime)),
           ),
 
           const Spacer(),
@@ -201,57 +110,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
           // 하단 타임라인 슬라이더
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
-              children: [
-                // 슬라이더
-                SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 3,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.5),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                    activeTrackColor: Colors.white,
-                    inactiveTrackColor: const Color(0xFFE3E3E3),
-                    thumbColor: const Color(0xFFFFFDFD),
-                    overlayColor: Colors.white.withValues(alpha: 0.3),
-                  ),
-                  child: Slider(
-                    value: _currentTime,
-                    min: 0,
-                    max: _totalTime,
-                    onChanged: (value) {
-                      setState(() {
-                        _currentTime = value;
-                      });
-                    },
-                  ),
-                ),
-                // 시간 표시
-                Padding(
-                  padding: const EdgeInsets.only(left: 1, right: 30),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        formatDuration(_currentTime.toInt()),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '-${formatDuration((_totalTime - _currentTime).toInt())}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            child: VideoTimelineSlider(
+              currentTime: _currentTime,
+              totalTime: _totalTime,
+              onChanged: (value) => setState(() => _currentTime = value),
             ),
           ),
         ],
@@ -405,17 +267,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
             Positioned(
               top: 12,
               right: 16,
-              child: IconButton(
-                onPressed: () {
-                  setState(() {
-                    _isSynced = !_isSynced;
-                  });
-                },
-                icon: Icon(
-                  _isSynced ? Icons.sync : Icons.sync_disabled,
-                  color: Colors.white,
-                  size: 28,
-                ),
+              child: SyncButton(
+                isSynced: _isSynced,
+                onPressed: () => setState(() => _isSynced = !_isSynced),
               ),
             ),
         ],
@@ -429,120 +283,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
       child: Column(
         children: [
           // 상단 컨트롤 바
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                // 메인화면으로 나가기
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.chevron_left, color: Colors.white, size: 32),
-                ),
-                const Spacer(),
-                // 자막 토글 버튼
-                IconButton(
-                  onPressed: () {
-                    // TODO: 자막 토글 기능
-                  },
-                  icon: const Icon(Icons.closed_caption, color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: 8),
-                // 싱크 맞추기
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _isSynced = !_isSynced;
-                    });
-                  },
-                  icon: Icon(
-                    _isSynced ? Icons.sync : Icons.sync_disabled,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-              ],
-            ),
+          TopControlBarLandscape(
+            onBack: () => Navigator.pop(context),
+            isCaptionEnabled: _isCaptionEnabled,
+            onCaptionToggle: () => setState(() => _isCaptionEnabled = !_isCaptionEnabled),
+            isSynced: _isSynced,
+            onSyncToggle: () => setState(() => _isSynced = !_isSynced),
           ),
 
           const Spacer(),
 
           // 중앙 재생 컨트롤
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 15초 뒤로
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _currentTime = (_currentTime - 15).clamp(0, _totalTime);
-                  });
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '15',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 40),
-              // 재생/정지
-              IconButton(
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  setState(() {
-                    _isPlaying = !_isPlaying;
-                  });
-                },
-                icon: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 56,
-                ),
-              ),
-              const SizedBox(width: 40),
-              // 15초 앞으로
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _currentTime = (_currentTime + 15).clamp(0, _totalTime);
-                  });
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '15',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          CenterPlayControls(
+            isPlaying: _isPlaying,
+            onPlayPause: () => setState(() => _isPlaying = !_isPlaying),
+            onSkipBackward: () => setState(() => _currentTime = (_currentTime - 15).clamp(0, _totalTime)),
+            onSkipForward: () => setState(() => _currentTime = (_currentTime + 15).clamp(0, _totalTime)),
           ),
 
           const Spacer(),
@@ -550,57 +306,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
           // 하단 타임라인 슬라이더
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
-              children: [
-                // 슬라이더
-                SliderTheme(
-                  data: SliderThemeData(
-                    trackHeight: 3,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.5),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                    activeTrackColor: Colors.white,
-                    inactiveTrackColor: const Color(0xFFE3E3E3),
-                    thumbColor: const Color(0xFFFFFDFD),
-                    overlayColor: Colors.white.withValues(alpha: 0.3),
-                  ),
-                  child: Slider(
-                    value: _currentTime,
-                    min: 0,
-                    max: _totalTime,
-                    onChanged: (value) {
-                      setState(() {
-                        _currentTime = value;
-                      });
-                    },
-                  ),
-                ),
-                // 시간 표시
-                Padding(
-                  padding: const EdgeInsets.only(left: 1, right: 30),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        formatDuration(_currentTime.toInt()),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '-${formatDuration((_totalTime - _currentTime).toInt())}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            child: VideoTimelineSlider(
+              currentTime: _currentTime,
+              totalTime: _totalTime,
+              onChanged: (value) => setState(() => _currentTime = value),
             ),
           ),
         ],
