@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'models.dart';
 
-class Repo {
+class Repo extends ChangeNotifier {
   Repo._();
   static final instance = Repo._();
 
@@ -14,6 +16,10 @@ class Repo {
   Map<String, Subject> _subjects = {};
   Map<String, Tag> _tags = {};
   Map<String, Lecture> _lectures = {}; // 강의 메타는 필요 시 디렉토리별로 로드
+  String _currentTagTheme = '파스텔'; // 현재 선택된 태그 색상 테마
+
+  // 홈 화면 새로고침 콜백 (홈 화면에서 등록)
+  VoidCallback? _onDataChanged;
 
   Future<void> init() async {
     _docs = Directory('${(await getApplicationDocumentsDirectory()).path}/review');
@@ -24,18 +30,21 @@ class Repo {
 
     await _loadSubjects();
     await _loadTags();
+    await _loadTagTheme();
 
     // 모든 강의 메타 로드
     final allLectureIds = _subjects.values.expand((s) => s.lectureIds).toSet().toList();
     await preloadLectures(allLectureIds);
   }
 
-  // 없으면 assets/data/<name>을 복사 (항상 최신 버전으로 덮어쓰기)
+  // 없으면 assets/data/<name>을 복사
   Future<void> _ensureSeed(String name) async {
     final f = File('${_dataDir.path}/$name');
-    // 항상 최신 assets 데이터로 덮어쓰기 (개발 중)
-    final bytes = await rootBundle.load('assets/data/$name');
-    await f.writeAsBytes(bytes.buffer.asUint8List());
+    // 파일이 없을 때만 assets에서 복사
+    if (!f.existsSync()) {
+      final bytes = await rootBundle.load('assets/data/$name');
+      await f.writeAsBytes(bytes.buffer.asUint8List());
+    }
   }
 
   Future<void> _loadSubjects() async {
@@ -90,7 +99,34 @@ class Repo {
     return list;
   }
 
-  List<Tag> getTags() => _tags.values.toList();
+  List<Tag> getTags() {
+    final tags = _tags.values.toList();
+    tags.sort((a, b) => _compareTagNames(a.name, b.name));
+    return tags;
+  }
+
+  // 태그 이름 정렬: 숫자 > 한글 > 영어, 각각 사전식
+  int _compareTagNames(String a, String b) {
+    final aType = _getNameType(a);
+    final bType = _getNameType(b);
+
+    if (aType != bType) {
+      return aType.compareTo(bType);
+    }
+
+    return a.compareTo(b);
+  }
+
+  int _getNameType(String name) {
+    if (name.isEmpty) return 3;
+    final first = name[0];
+
+    if (RegExp(r'[0-9]').hasMatch(first)) return 0; // 숫자
+    if (RegExp(r'[ㄱ-ㅎ가-힣]').hasMatch(first)) return 1; // 한글
+    if (RegExp(r'[a-zA-Z]').hasMatch(first)) return 2; // 영어
+
+    return 3; // 기타
+  }
 
   Future<Lecture?> _loadLectureMeta(String lectureId) async {
     if (_lectures.containsKey(lectureId)) return _lectures[lectureId];
@@ -137,6 +173,7 @@ class Repo {
     final s = _subjects[id]!;
     _subjects[id] = s.copyWith(favorite: !s.favorite);
     await _saveSubjects();
+    notifyListeners();
   }
 
   Future<void> _saveSubjects() async {
@@ -156,7 +193,82 @@ class Repo {
     final list = tags.map((t) => {'id': t.id, 'name': t.name, 'color': _toHex(t.color)}).toList();
     final f = File('${_dataDir.path}/tags.json');
     await f.writeAsString(const JsonEncoder.withIndent('  ').convert({'schemaVersion':1,'tags':list}));
+    notifyListeners();
   }
 
   String _toHex(int argb) => '#${(argb & 0xFFFFFFFF).toRadixString(16).padLeft(8,'0').toUpperCase()}';
+
+  // 태그 색상 테마 로드
+  Future<void> _loadTagTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    _currentTagTheme = prefs.getString('tag_color_theme') ?? '파스텔';
+  }
+
+  // 태그 색상 테마 저장
+  Future<void> saveTagTheme(String themeName) async {
+    _currentTagTheme = themeName;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('tag_color_theme', themeName);
+  }
+
+  // 현재 태그 색상 테마 가져오기
+  String getTagTheme() => _currentTagTheme;
+
+  // 과목 삭제
+  Future<void> deleteSubject(String subjectId) async {
+    _subjects.remove(subjectId);
+    await _saveSubjects();
+    notifyListeners();
+  }
+
+  // 과목의 수업 순서 업데이트
+  Future<void> updateSubjectLectures(String subjectId, List<String> lectureIds) async {
+    final s = _subjects[subjectId];
+    if (s != null) {
+      _subjects[subjectId] = s.copyWith(lectureIds: lectureIds);
+      await _saveSubjects();
+      notifyListeners();
+    }
+  }
+
+  // 과목의 태그 업데이트
+  Future<void> updateSubjectTags(String subjectId, List<String> tagIds) async {
+    final s = _subjects[subjectId];
+    if (s != null) {
+      _subjects[subjectId] = s.copyWith(tagIds: tagIds);
+      await _saveSubjects();
+      notifyListeners();
+    }
+  }
+
+  // 수업 삭제 (과목에서 제거)
+  Future<void> deleteLecture(String subjectId, String lectureId) async {
+    final s = _subjects[subjectId];
+    if (s != null) {
+      final newLectureIds = List<String>.from(s.lectureIds)..remove(lectureId);
+      _subjects[subjectId] = s.copyWith(lectureIds: newLectureIds);
+      _lectures.remove(lectureId);
+      await _saveSubjects();
+      notifyListeners();
+    }
+  }
+
+  // 외부에서 수동으로 리스너 알림 (화면 강제 새로고침용)
+  void refresh() {
+    notifyListeners();
+  }
+
+  // 과목 생성
+  Future<void> createSubject(String title, List<String> tagIds) async {
+    final newId = 'subject_${DateTime.now().millisecondsSinceEpoch}';
+    _subjects[newId] = Subject(
+      id: newId,
+      title: title,
+      favorite: false,
+      tagIds: tagIds,
+      lectureIds: [],
+    );
+    await _saveSubjects();
+    notifyListeners();
+  }
 }
