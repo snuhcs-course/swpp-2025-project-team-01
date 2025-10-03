@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../shared/widgets.dart';
 
+/// 수업 추가 화면
 class LectureFormScreen extends StatelessWidget {
   const LectureFormScreen({super.key});
   @override

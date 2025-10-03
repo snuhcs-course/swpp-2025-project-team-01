@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Figma: 2-4-2. TTS
-/// - TTS ON/OFF 토글
-/// - 목소리(라디오 또는 드롭다운), 속도(슬라이더) 0.8x~1.6x
+/// TTS 설정 화면 - 음성 합성 기능 활성화/비활성화, 목소리/속도 설정
 class TtsScreen extends StatefulWidget {
   const TtsScreen({super.key});
   @override

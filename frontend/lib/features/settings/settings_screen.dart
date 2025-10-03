@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app_router.dart';
 
-/// Figma: 2-4. Settings (섹션 없이 심플한 목록)
+/// 설정 메인 화면 - 각종 설정 메뉴로 이동
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 

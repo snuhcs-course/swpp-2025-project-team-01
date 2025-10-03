@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../app_router.dart';
 import '../../data/models.dart';
 import '../../data/repository.dart';
-import '../../core/theme/color_scheme.dart'; // context.highlights 확장 사용
 import 'home_widgets.dart';
 
+/// 메인 홈 화면
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -70,7 +70,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.tune,
                   label: '필터',
                   active: showTagFilter,
-                  onTap: () => setState(() => showTagFilter = !showTagFilter),
+                  onTap: () => setState(() {
+                    showTagFilter = !showTagFilter;
+                    // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
+                    if (!showTagFilter) {
+                      selectedTagIds.clear();
+                    }
+                  }),
                 ),
                 const SizedBox(width: 12),
                 FavoritePill(
@@ -91,10 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   onToggle: (id) => setState(() {
                     if (!selectedTagIds.add(id)) {
                       selectedTagIds.remove(id);
-                      // 모든 태그가 비활성화되면 필터 닫기
-                      if (selectedTagIds.isEmpty) {
-                        showTagFilter = false;
-                      }
                     }
                   }),
                 ),
@@ -122,6 +124,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   onOpenLecture: (Lecture lec) {
                     Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lec.id});
+                  },
+                  onLectureUpdated: () {
+                    setState(() {});
                   },
                 ),
               );

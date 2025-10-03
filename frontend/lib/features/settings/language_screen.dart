@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Figma: 2-4-4. Language (라디오 2개)
+/// 언어 설정 화면 - 한국어/영어 선택
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
   @override

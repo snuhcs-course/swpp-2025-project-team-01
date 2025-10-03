@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'color_scheme.dart';
 
+/// 앱의 테마를 정의하는 클래스
 class AppTheme {
   static ThemeData get light {
     return ThemeData(
