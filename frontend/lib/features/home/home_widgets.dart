@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import '../../data/models.dart';
+import '../../data/repository.dart';
 import '../../core/theme/color_scheme.dart';
 
 const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
@@ -158,6 +159,7 @@ class SubjectPanel extends StatefulWidget {
   final List<Lecture> lectures;
   final VoidCallback onToggleFavorite;
   final ValueChanged<Lecture> onOpenLecture;
+  final VoidCallback? onLectureUpdated;
 
   const SubjectPanel({
     super.key,
@@ -166,6 +168,7 @@ class SubjectPanel extends StatefulWidget {
     required this.lectures,
     required this.onToggleFavorite,
     required this.onOpenLecture,
+    this.onLectureUpdated,
   });
 
   @override
@@ -244,7 +247,11 @@ class _SubjectPanelState extends State<SubjectPanel> {
               children: widget.lectures.map((lec) =>
                 SizedBox(
                   width: (MediaQuery.of(context).size.width - 32 - 28 - 12) / 2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
-                  child: LectureCard(lec: lec, onTap: widget.onOpenLecture),
+                  child: LectureCard(
+                    lec: lec,
+                    onTap: widget.onOpenLecture,
+                    onUpdated: widget.onLectureUpdated,
+                  ),
                 )
               ).toList(),
             ),
@@ -279,7 +286,8 @@ class _SubjectPanelState extends State<SubjectPanel> {
 class LectureCard extends StatefulWidget {
   final Lecture lec;
   final ValueChanged<Lecture> onTap;
-  const LectureCard({super.key, required this.lec, required this.onTap});
+  final VoidCallback? onUpdated;
+  const LectureCard({super.key, required this.lec, required this.onTap, this.onUpdated});
 
   @override
   State<LectureCard> createState() => _LectureCardState();
@@ -335,6 +343,7 @@ class _LectureCardState extends State<LectureCard> {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () => widget.onTap(widget.lec),
+      onLongPress: () => _showLectureDetailDialog(context),
       child: Ink(
         decoration: BoxDecoration(
           color: const Color(0xFFF6F7FA),
@@ -395,5 +404,154 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     return const Center(child: Text('thumbnail', style: TextStyle(color: Colors.black38)));
+  }
+
+  void _showLectureDetailDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => _LectureDetailDialog(lecture: widget.lec),
+    );
+
+    // 다이얼로그에서 변경사항이 있으면 부모에게 알림
+    if (result == true) {
+      widget.onUpdated?.call();
+    }
+  }
+}
+
+/// 강의 상세정보 편집 다이얼로그
+class _LectureDetailDialog extends StatefulWidget {
+  final Lecture lecture;
+  const _LectureDetailDialog({required this.lecture});
+
+  @override
+  State<_LectureDetailDialog> createState() => _LectureDetailDialogState();
+}
+
+class _LectureDetailDialogState extends State<_LectureDetailDialog> {
+  late TextEditingController _weekController;
+  late TextEditingController _titleController;
+
+  @override
+  void initState() {
+    super.initState();
+    _weekController = TextEditingController(text: widget.lecture.weekLabel);
+    _titleController = TextEditingController(text: widget.lecture.title);
+  }
+
+  @override
+  void dispose() {
+    _weekController.dispose();
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '$minutes:${secs.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      titlePadding: EdgeInsets.zero,
+      title: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1D1D1D),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+        ),
+        child: const Text(
+          '강의 상세정보',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _weekController,
+              decoration: const InputDecoration(
+                labelText: '주차',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: '강의 제목',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '강의 길이',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  _formatDuration(widget.lecture.durationSec),
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  // TODO: 강의 삭제 로직
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.delete),
+                label: const Text('강의 삭제'),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            await Repo.instance.updateLecture(
+              widget.lecture.id,
+              weekLabel: _weekController.text,
+              title: _titleController.text,
+            );
+            if (context.mounted) {
+              Navigator.pop(context, true); // true를 반환하여 새로고침 필요함을 알림
+            }
+          },
+          child: const Text('완료'),
+        ),
+      ],
+    );
   }
 }

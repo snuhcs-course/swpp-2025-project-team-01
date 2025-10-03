@@ -25,6 +25,20 @@ class Lecture {
     this.thumbs = const [],
     this.slidesPath,
   });
+
+  Lecture copyWith({
+    String? weekLabel,
+    String? title,
+  }) =>
+      Lecture(
+        id: id,
+        subjectId: subjectId,
+        weekLabel: weekLabel ?? this.weekLabel,
+        title: title ?? this.title,
+        durationSec: durationSec,
+        thumbs: thumbs,
+        slidesPath: slidesPath,
+      );
 }
 
 /// 과목 모델 클래스

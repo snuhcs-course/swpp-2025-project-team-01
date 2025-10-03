@@ -125,6 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onOpenLecture: (Lecture lec) {
                     Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lec.id});
                   },
+                  onLectureUpdated: () {
+                    setState(() {});
+                  },
                 ),
               );
             },

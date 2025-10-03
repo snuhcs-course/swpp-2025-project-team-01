@@ -140,6 +140,18 @@ class Repo {
     await _saveSubjects();
   }
 
+  Future<void> updateLecture(String lectureId, {String? weekLabel, String? title}) async {
+    final lecture = _lectures[lectureId];
+    if (lecture == null) return;
+
+    _lectures[lectureId] = lecture.copyWith(
+      weekLabel: weekLabel,
+      title: title,
+    );
+  }
+
+  Lecture? getLecture(String lectureId) => _lectures[lectureId];
+
   Future<void> _saveSubjects() async {
     final list = _subjects.values.map((s) => {
       'id': s.id,
