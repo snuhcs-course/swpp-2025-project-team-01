@@ -1,9 +1,10 @@
 // 검색 화면: 강의명 검색, 최근 검색어
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../data/repository.dart';
-import '../../data/models.dart';
 import '../../app_router.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../data/models.dart';
+import '../../data/repository.dart';
 
 /// 검색 화면
 class SearchScreen extends StatefulWidget {
@@ -62,13 +63,14 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   String _getHintText() {
+    final l10n = AppLocalizations.of(context);
     switch (_searchScope) {
       case SearchScope.lecture:
-        return '강의명 검색';
+        return l10n.searchPlaceholder;
       case SearchScope.week:
-        return '주차 검색 (예: Week 1)';
+        return l10n.searchPlaceholder;
       case SearchScope.subject:
-        return '과목명 검색';
+        return l10n.searchPlaceholder;
     }
   }
 
@@ -86,19 +88,23 @@ class _SearchScreenState extends State<SearchScreen> {
       _saveRecentSearch(query);
     }
 
+    // Repository 인스턴스 한 번만 가져오기
+    final repo = Repo.instance;
+    final subjects = repo.getSubjects();
+
     // 모든 과목의 모든 강의 ID 수집 및 로드
     final allLectureIds = <String>[];
-    for (final subject in Repo.instance.getSubjects()) {
+    for (final subject in subjects) {
       allLectureIds.addAll(subject.lectureIds);
     }
 
     // 강의 메타데이터 미리 로드
-    await Repo.instance.preloadLectures(allLectureIds);
+    await repo.preloadLectures(allLectureIds);
 
     // 모든 과목의 모든 강의에서 검색
     final allLectures = <Lecture>[];
-    for (final subject in Repo.instance.getSubjects()) {
-      final lectures = Repo.instance.lecturesBySubject(subject.id);
+    for (final subject in subjects) {
+      final lectures = repo.lecturesBySubject(subject.id);
       allLectures.addAll(lectures);
     }
 
@@ -114,7 +120,7 @@ class _SearchScreenState extends State<SearchScreen> {
         case SearchScope.week:
           return lec.weekLabel.toLowerCase().contains(searchQuery);
         case SearchScope.subject:
-          final subject = Repo.instance.getSubjects().firstWhere(
+          final subject = subjects.firstWhere(
             (s) => s.id == lec.subjectId,
             orElse: () => const Subject(id: '', title: ''),
           );
@@ -132,9 +138,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('검색'),
+        title: Text(l10n.search),
         backgroundColor: Colors.white,
       ),
       body: Column(
@@ -154,10 +161,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: DropdownButton<SearchScope>(
                     value: _searchScope,
                     underline: const SizedBox(),
-                    items: const [
-                      DropdownMenuItem(value: SearchScope.lecture, child: Text('강의')),
-                      DropdownMenuItem(value: SearchScope.week, child: Text('주차')),
-                      DropdownMenuItem(value: SearchScope.subject, child: Text('과목')),
+                    items: [
+                      DropdownMenuItem(value: SearchScope.lecture, child: Text(l10n.searchByLecture)),
+                      DropdownMenuItem(value: SearchScope.week, child: Text(l10n.searchByWeek)),
+                      DropdownMenuItem(value: SearchScope.subject, child: Text(l10n.searchBySubject)),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -203,8 +210,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                     onChanged: (value) {
-                      setState(() {});
-                      _performSearch(value); // 실시간 검색 (저장 안함)
+                      _performSearch(value); // 실시간 검색 (저장 안함) - _performSearch가 setState 호출함
                     },
                     onSubmitted: (value) => _performSearch(value, saveToRecent: true), // 엔터 시 저장
                   ),
@@ -223,18 +229,19 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildRecentSearches() {
+    final l10n = AppLocalizations.of(context);
     if (_recentSearches.isEmpty) {
-      return const Center(
-        child: Text('최근 검색어가 없습니다', style: TextStyle(color: Colors.black38)),
+      return Center(
+        child: Text(l10n.noRecentSearches, style: const TextStyle(color: Colors.black38)),
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text('최근 검색어', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(l10n.recentSearches, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
         ),
         ListView.builder(
           shrinkWrap: true,
@@ -260,11 +267,15 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults() {
+    final l10n = AppLocalizations.of(context);
     if (_searchResults.isEmpty) {
-      return const Center(
-        child: Text('검색 결과가 없습니다', style: TextStyle(color: Colors.black38)),
+      return Center(
+        child: Text(l10n.noSearchResults, style: const TextStyle(color: Colors.black38)),
       );
     }
+
+    // 과목 목록을 한 번만 가져오기
+    final subjects = Repo.instance.getSubjects();
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -272,7 +283,7 @@ class _SearchScreenState extends State<SearchScreen> {
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final lecture = _searchResults[index];
-        final subject = Repo.instance.getSubjects().firstWhere(
+        final subject = subjects.firstWhere(
           (s) => s.id == lecture.subjectId,
           orElse: () => const Subject(id: '', title: ''),
         );

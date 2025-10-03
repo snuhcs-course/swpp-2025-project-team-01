@@ -1,9 +1,11 @@
 // 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
+import '../../core/accessibility_service.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../core/theme/color_scheme.dart';
 import '../../data/models.dart';
 import '../../data/repository.dart';
-import '../../core/theme/color_scheme.dart';
 
 const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
 const _panelRadius = 22.0;
@@ -63,7 +65,8 @@ class FilterPill extends StatelessWidget {
 class FavoritePill extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
-  const FavoritePill({super.key, required this.active, required this.onTap});
+  final String label;
+  const FavoritePill({super.key, required this.active, required this.onTap, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +103,7 @@ class FavoritePill extends StatelessWidget {
               children: [
                 Icon(starIcon, size: 18, color: starColor),
                 const SizedBox(width: 6),
-                Text('즐겨찾기', style: TextStyle(fontWeight: FontWeight.w600, color: fg)),
+                Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: fg)),
               ],
             ),
           ),
@@ -119,33 +122,24 @@ class TagChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final presets = context.highlights.tagHighlights;
     return Wrap(
       spacing: 8, runSpacing: 8,
       children: List.generate(tags.length, (i) {
         final t = tags[i];
-        final p = presets[i % presets.length];
         final isSel = selected.contains(t.id);
-        return Material(
-          shape: const StadiumBorder(),
-          elevation: 1,
-          child: FilterChip(
-            showCheckmark: false,
-            label: Text('#${t.name}'),
-            selected: isSel,
-            onSelected: (_) => onToggle(t.id),
-            backgroundColor: const Color(0xFFE0E0E0),
-            selectedColor: p.background,
-            labelStyle: TextStyle(
-              color: isSel ? p.foreground : Colors.black54,
-              fontWeight: FontWeight.normal,
-              fontSize: 14,
-            ),
-            side: BorderSide.none,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-            labelPadding: EdgeInsets.zero,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        final tagColor = Color(t.color);
+        return ChoiceChip(
+          label: Text(
+            '#${t.name}',
+            style: const TextStyle(color: Colors.black),
           ),
+          selected: isSel,
+          onSelected: (_) => onToggle(t.id),
+          backgroundColor: tagColor,
+          selectedColor: tagColor,
+          elevation: isSel ? 4 : 2,
+          side: BorderSide.none,
+          showCheckmark: true,
         );
       }),
     );
@@ -175,8 +169,54 @@ class SubjectPanel extends StatefulWidget {
   State<SubjectPanel> createState() => _SubjectPanelState();
 }
 
-class _SubjectPanelState extends State<SubjectPanel> {
+class _SubjectPanelState extends State<SubjectPanel> with SingleTickerProviderStateMixin {
   bool expanded = true;
+  late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    final accessibilityService = AccessibilityService();
+    final duration = accessibilityService.getAnimationDuration(const Duration(milliseconds: 300));
+
+    _animationController = AnimationController(
+      duration: duration,
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: accessibilityService.getAnimationCurve(Curves.easeInOut),
+    );
+    _animationController.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpanded() {
+    final accessibilityService = AccessibilityService();
+    final reduceMotion = accessibilityService.reduceMotion;
+
+    setState(() {
+      expanded = !expanded;
+    });
+
+    if (reduceMotion) {
+      // 모션 줄이기가 활성화되면 즉시 전환
+      _animationController.value = expanded ? 1.0 : 0.0;
+    } else {
+      // 일반 애니메이션
+      if (expanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,7 +261,7 @@ class _SubjectPanelState extends State<SubjectPanel> {
                 ),
                 IconButton(
                   icon: Icon(expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up, color: Colors.white),
-                  onPressed: () => setState(() => expanded = !expanded),
+                  onPressed: _toggleExpanded,
                 ),
               ]),
               // 태그 라인
@@ -237,9 +277,10 @@ class _SubjectPanelState extends State<SubjectPanel> {
           ),
         ),
 
-        // 강의 그리드 (2열)
-        if (expanded)
-          Padding(
+        // 강의 그리드 (2열) - 애니메이션 적용
+        SizeTransition(
+          sizeFactor: _expandAnimation,
+          child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
             child: Wrap(
               spacing: 12,
@@ -256,27 +297,28 @@ class _SubjectPanelState extends State<SubjectPanel> {
               ).toList(),
             ),
           ),
+        ),
       ]),
     );
   }
 
   List<Widget> _subjectTagChips(BuildContext context, List<Tag> tags) {
-    final presets = context.highlights.tagHighlights;
     return List.generate(tags.length, (i) {
       final t = tags[i];
-      final p = presets[i % presets.length];
-      return Material(
-        shape: const StadiumBorder(),
-        elevation: 1,
-        child: Chip(
-          label: Text('#${t.name}'),
-          backgroundColor: p.background,
-          labelStyle: TextStyle(color: p.foreground, fontWeight: FontWeight.normal, fontSize: 14),
-          side: BorderSide.none,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          labelPadding: EdgeInsets.zero,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      final tagColor = Color(t.color);
+      return ChoiceChip(
+        label: Text(
+          '#${t.name}',
+          style: const TextStyle(color: Colors.black),
         ),
+        selected: false,
+        onSelected: (_) {}, // onSelected를 null이 아닌 빈 함수로
+        backgroundColor: tagColor,
+        selectedColor: tagColor,
+        disabledColor: tagColor, // 비활성화 시에도 색상 유지
+        elevation: 2,
+        side: BorderSide.none,
+        showCheckmark: false,
       );
     });
   }
@@ -296,6 +338,7 @@ class LectureCard extends StatefulWidget {
 class _LectureCardState extends State<LectureCard> {
   PdfDocument? _pdfDocument;
   PdfPage? _pdfPage;
+  PdfPageImage? _cachedImage; // 렌더링된 이미지 캐싱
   bool _isLoading = true;
   String? _error;
 
@@ -303,6 +346,22 @@ class _LectureCardState extends State<LectureCard> {
   void initState() {
     super.initState();
     _loadPdf();
+  }
+
+  @override
+  void didUpdateWidget(LectureCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 강의 내용이 변경되면 PDF 다시 로드
+    if (oldWidget.lec.slidesPath != widget.lec.slidesPath) {
+      _pdfPage?.close();
+      _pdfDocument?.close();
+      _pdfDocument = null;
+      _pdfPage = null;
+      _cachedImage = null;
+      _isLoading = true;
+      _error = null;
+      _loadPdf();
+    }
   }
 
   Future<void> _loadPdf() async {
@@ -314,10 +373,17 @@ class _LectureCardState extends State<LectureCard> {
     try {
       final document = await PdfDocument.openAsset(widget.lec.slidesPath!);
       final page = await document.getPage(1);
+      // 즉시 렌더링하여 캐싱
+      final image = await page.render(
+        width: page.width * 2,
+        height: page.height * 2,
+        format: PdfPageImageFormat.png,
+      );
       if (mounted) {
         setState(() {
           _pdfDocument = document;
           _pdfPage = page;
+          _cachedImage = image;
           _isLoading = false;
         });
       }
@@ -380,26 +446,11 @@ class _LectureCardState extends State<LectureCard> {
       return Center(child: Text('오류: $_error', style: const TextStyle(color: Colors.red, fontSize: 10)));
     }
 
-    if (_pdfPage != null) {
-      return FutureBuilder<PdfPageImage?>(
-        future: _pdfPage!.render(
-          width: _pdfPage!.width * 2,
-          height: _pdfPage!.height * 2,
-          format: PdfPageImageFormat.png,
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.hasData && snapshot.data != null) {
-            return Image.memory(
-              snapshot.data!.bytes,
-              fit: BoxFit.fitWidth,
-              width: double.infinity,
-            );
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('렌더링 실패', style: const TextStyle(color: Colors.red, fontSize: 10)));
-          }
-          return const Center(child: CircularProgressIndicator());
-        },
+    if (_cachedImage != null) {
+      return Image.memory(
+        _cachedImage!.bytes,
+        fit: BoxFit.fitWidth,
+        width: double.infinity,
       );
     }
 
@@ -454,6 +505,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
       titlePadding: EdgeInsets.zero,
       title: Container(
@@ -466,9 +518,9 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
             topRight: Radius.circular(28),
           ),
         ),
-        child: const Text(
-          '강의 상세정보',
-          style: TextStyle(
+        child: Text(
+          l10n.lectureDetails,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -482,26 +534,26 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
           children: [
             TextField(
               controller: _weekController,
-              decoration: const InputDecoration(
-                labelText: '주차',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.week,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '강의 제목',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.lectureTitle,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  '강의 길이',
-                  style: TextStyle(
+                Text(
+                  l10n.lectureLength,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -527,7 +579,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                   Navigator.pop(context);
                 },
                 icon: const Icon(Icons.delete),
-                label: const Text('강의 삭제'),
+                label: Text(l10n.deleteLecture),
               ),
             ),
           ],
@@ -536,7 +588,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('취소'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () async {
@@ -549,7 +601,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
               Navigator.pop(context, true); // true를 반환하여 새로고침 필요함을 알림
             }
           },
-          child: const Text('완료'),
+          child: Text(l10n.complete),
         ),
       ],
     );

@@ -89,12 +89,10 @@ class Repo extends ChangeNotifier {
   List<Subject> getSubjects({bool favoritesOnly = false, List<String> filterTagIds = const []}) {
     var list = _subjects.values.toList()
       ..sort((a,b)=> a.title.compareTo(b.title)); // 또는 order 사용
-    print('getSubjects - favoritesOnly: $favoritesOnly, filterTagIds: $filterTagIds'); // 디버깅
     if (favoritesOnly) list = list.where((s) => s.favorite).toList();
     if (filterTagIds.isNotEmpty) {
       // intersection: 선택한 모든 태그를 가진 과목만 표시
       list = list.where((s) => filterTagIds.every((tagId) => s.tagIds.contains(tagId))).toList();
-      print('Filtered subjects: ${list.map((s) => s.title).toList()}'); // 디버깅
     }
     return list;
   }
@@ -106,7 +104,7 @@ class Repo extends ChangeNotifier {
   }
 
   // 태그 이름 정렬: 숫자 > 한글 > 영어, 각각 사전식
-  int _compareTagNames(String a, String b) {
+  int compareTagNames(String a, String b) {
     final aType = _getNameType(a);
     final bType = _getNameType(b);
 
@@ -116,6 +114,8 @@ class Repo extends ChangeNotifier {
 
     return a.compareTo(b);
   }
+
+  int _compareTagNames(String a, String b) => compareTagNames(a, b);
 
   int _getNameType(String name) {
     if (name.isEmpty) return 3;
@@ -145,10 +145,8 @@ class Repo extends ChangeNotifier {
       );
 
       _lectures[lectureId] = lecture;
-      print('Loaded lecture: ${lecture.id}, ${lecture.title}, ${lecture.subjectId}'); // 디버깅
       return lecture;
     } catch (e) {
-      print('Failed to load lecture $lectureId: $e'); // 디버깅
       return null;
     }
   }

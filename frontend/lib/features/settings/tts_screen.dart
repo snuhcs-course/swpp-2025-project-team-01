@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/localization/app_localizations.dart';
 
 /// Figma: 2-4-2. TTS
 /// - TTS 음성 성별 (남성/여성)
@@ -109,19 +110,19 @@ class _TtsScreenState extends State<TtsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // TTS 음성 성별
-            const Text(
-              'TTS 음성 성별',
-              style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+            Text(
+              AppLocalizations.of(context).isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: _genderButton('남성', _gender == '남성'),
+                  child: _genderButton(AppLocalizations.of(context).isKorean ? '남성' : 'Male', _gender == '남성', context),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _genderButton('여성', _gender == '여성'),
+                  child: _genderButton(AppLocalizations.of(context).isKorean ? '여성' : 'Female', _gender == '여성', context),
                 ),
               ],
             ),
@@ -129,19 +130,19 @@ class _TtsScreenState extends State<TtsScreen> {
             const SizedBox(height: 32),
 
             // TTS 악센트
-            const Text(
-              'TTS 악센트',
-              style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+            Text(
+              AppLocalizations.of(context).isKorean ? 'TTS 악센트' : 'TTS Accent',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: _accentButton('Am', _accent == 'Am'),
+                  child: _accentButton('Am', _accent == 'Am', context),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _accentButton('Br', _accent == 'Br'),
+                  child: _accentButton('Br', _accent == 'Br', context),
                 ),
               ],
             ),
@@ -149,9 +150,9 @@ class _TtsScreenState extends State<TtsScreen> {
             const SizedBox(height: 32),
 
             // 재생 속도
-            const Text(
-              '재생 속도',
-              style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+            Text(
+              AppLocalizations.of(context).isKorean ? '재생 속도' : 'Playback Speed',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
             ),
             const SizedBox(height: 24),
 
@@ -243,9 +244,10 @@ class _TtsScreenState extends State<TtsScreen> {
     );
   }
 
-  Widget _genderButton(String label, bool isSelected) {
+  Widget _genderButton(String label, bool isSelected, BuildContext context) {
+    final actualValue = AppLocalizations.of(context).isKorean ? label : (label == 'Male' ? '남성' : '여성');
     return GestureDetector(
-      onTap: () => _saveGender(label),
+      onTap: () => _saveGender(actualValue),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
@@ -269,7 +271,7 @@ class _TtsScreenState extends State<TtsScreen> {
     );
   }
 
-  Widget _accentButton(String label, bool isSelected) {
+  Widget _accentButton(String label, bool isSelected, BuildContext context) {
     return GestureDetector(
       onTap: () => _saveAccent(label),
       child: Container(

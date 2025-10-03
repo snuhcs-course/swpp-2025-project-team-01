@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../data/repository.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models.dart';
+import '../../data/repository.dart';
 
 // 태그 색상 테마 세트
 class TagColorTheme {
@@ -105,7 +106,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(title: const Text('태그 수정')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).editingTags)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
@@ -117,7 +118,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('색상 테마', style: TextStyle(fontWeight: FontWeight.w700)),
+                  Text(AppLocalizations.of(context).colorTheme, style: const TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -125,7 +126,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                     children: TagColorTheme.themes.map((theme) {
                       return ChoiceChip(
                         label: Text(
-                          theme.name,
+                          AppLocalizations.of(context).getThemeName(theme.name),
                           style: const TextStyle(color: Colors.black),
                         ),
                         selected: _currentTheme == theme.name,
@@ -168,14 +169,14 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 TextField(
                   controller: _nameC,
-                  decoration: const InputDecoration(labelText: '이름'),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context).tagName),
                   enableIMEPersonalizedLearning: false,
                 ),
                 const SizedBox(height: 12),
                 Row(children: [
-                  Expanded(child: FilledButton(onPressed: _apply, child: const Text('적용'))),
+                  Expanded(child: FilledButton(onPressed: _apply, child: Text(AppLocalizations.of(context).apply))),
                   const SizedBox(width: 8),
-                  Expanded(child: OutlinedButton(onPressed: _cancel, child: const Text('취소'))),
+                  Expanded(child: OutlinedButton(onPressed: _cancel, child: Text(AppLocalizations.of(context).cancel))),
                 ]),
               ]),
             ),
@@ -191,8 +192,8 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
         ],
       ),
       bottomNavigationBar: _BottomBar(
-        primaryLabel: '수정 완료',
-        secondaryLabel: '취소',
+        primaryLabel: AppLocalizations.of(context).editComplete,
+        secondaryLabel: AppLocalizations.of(context).cancel,
         onPrimary: () async {
           await repo.saveTagTheme(_currentTheme); // 테마 저장
           await repo.saveTags(_tags); // 태그 저장
@@ -319,8 +320,20 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     });
   }
 
-  void _deleteSelected() {
+  void _deleteSelected() async {
     if (_tags.isEmpty) return;
+
+    // 삭제하려는 태그를 사용 중인 과목이 있는지 확인
+    final tagToDelete = _tags[_selected];
+    final subjects = repo.getSubjects();
+    final usingSubjects = subjects.where((s) => s.tagIds.contains(tagToDelete.id)).toList();
+
+    if (usingSubjects.isNotEmpty) {
+      // 경고 다이얼로그 표시
+      final shouldDelete = await _showDeleteWarning(context, tagToDelete.name, usingSubjects);
+      if (shouldDelete != true) return;
+    }
+
     setState(() {
       _tags.removeAt(_selected);
       _assignColors(); // 삭제 후 색상 재할당
@@ -328,6 +341,112 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       if (_tags.isEmpty) return;
       _syncForm((_selected - 1).clamp(0, _tags.length - 1));
     });
+  }
+
+  Future<bool?> _showDeleteWarning(BuildContext context, String tagName, List<Subject> usingSubjects) {
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 검은 헤더
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: const Center(
+                  child: Text(
+                    '경고',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              // 회색 바디
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8E8E8),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '태그 "#$tagName"는\n다음 과목에서 사용 중입니다:\n\n${usingSubjects.map((s) => s.title).join('\n')}\n\n삭제하시겠습니까?',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF5A5A5A),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                '예',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC0C0C0),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text(
+                                '아니오',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

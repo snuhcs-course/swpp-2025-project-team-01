@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/localization/app_localizations.dart';
 
 /// 도움말 화면 - 기본 안내 텍스트 제공
 class HelpScreen extends StatelessWidget {
@@ -8,7 +9,7 @@ class HelpScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(title: const Text('Help')),
+      appBar: AppBar(title: const Text('Help')), // Keep as Help in both languages
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
       body: const Padding(
         padding: EdgeInsets.all(16),

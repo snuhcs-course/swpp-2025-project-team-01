@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../data/repository.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models.dart';
+import '../../data/repository.dart';
 
 /// Figma 2-2. Modifying Subjects
 /// - 과목별 패널(검은 헤더) 안에 강의 리스트
-/// - 강의: 좌측 드래그 핸들, 제목/주차, 우측 삭제(빨간 원)
+/// - 강의: 좌측 드래그 핸들, 썸네일 자리, 제목/주차, 우측 삭제(빨간 원)
 /// - 하단 고정 버튼: [수정 완료] [취소]
 class SubjectsEditScreen extends StatefulWidget {
   const SubjectsEditScreen({super.key});
@@ -35,7 +36,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('과목 수정'),
+        title: Text(AppLocalizations.of(context).editingSubjects),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -86,8 +87,8 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
         },
       ),
       bottomNavigationBar: _BottomBar(
-        primaryLabel: '수정 완료',
-        secondaryLabel: '취소',
+        primaryLabel: AppLocalizations.of(context).editComplete,
+        secondaryLabel: AppLocalizations.of(context).cancel,
         onPrimary: () async {
           // 삭제된 과목 처리
           for (final subjectId in _deletedSubjectIds) {
@@ -225,7 +226,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('태그 선택'),
+          title: Text(AppLocalizations.of(context).selectTags),
           content: SizedBox(
             width: double.maxFinite,
             child: Wrap(
@@ -255,11 +256,11 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, null),
-              child: const Text('취소'),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, selectedTagIds.toList()),
-              child: const Text('확인'),
+              child: Text(AppLocalizations.of(context).ok),
             ),
           ],
         ),
@@ -276,7 +277,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('과목 추가'),
+          title: Text(AppLocalizations.of(context).addSubject),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +291,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                 autofocus: true,
               ),
               const SizedBox(height: 16),
-              const Text('태그 선택 (선택사항)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(AppLocalizations.of(context).selectTagsOptional, style: const TextStyle(fontSize: 12, color: Colors.grey)),
               const SizedBox(height: 8),
               SizedBox(
                 width: double.maxFinite,
@@ -323,19 +324,19 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('취소'),
+              child: Text(AppLocalizations.of(context).cancel),
             ),
             FilledButton(
               onPressed: () {
                 if (titleController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('과목명을 입력해주세요')),
+                    SnackBar(content: Text(AppLocalizations.of(context).pleaseEnterSubjectName)),
                   );
                   return;
                 }
                 Navigator.pop(context, true);
               },
-              child: const Text('추가'),
+              child: Text(AppLocalizations.of(context).add),
             ),
           ],
         ),
@@ -355,6 +356,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   }
 }
 
+/// 개별 과목 편집 패널 위젯 - 강의 정렬 및 삭제 기능
 class _SubjectEditPanel extends StatefulWidget {
   final Subject subject;
   final List<Lecture> lectures;
@@ -397,13 +399,13 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: widget.onEditTags,
-                child: const Text('태그 수정', style: TextStyle(color: Colors.white70)),
+                child: Text(AppLocalizations.of(context).editTags2, style: const TextStyle(color: Colors.white70)),
               ),
               const SizedBox(width: 8),
               FilledButton(
                 style: FilledButton.styleFrom(backgroundColor: Colors.redAccent.shade200, foregroundColor: Colors.white),
                 onPressed: widget.onDeleteSubject,
-                child: const Text('과목 삭제'),
+                child: Text(AppLocalizations.of(context).deleteSubject),
               ),
               IconButton(
                 color: Colors.white,
@@ -444,6 +446,7 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
   }
 }
 
+/// 하단 고정 버튼 바 위젯 (주 버튼과 부 버튼)
 class _BottomBar extends StatelessWidget {
   final String primaryLabel, secondaryLabel;
   final VoidCallback onPrimary, onSecondary;

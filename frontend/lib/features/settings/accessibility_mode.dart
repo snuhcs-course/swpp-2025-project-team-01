@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/accessibility_service.dart';
+import '../../core/localization/app_localizations.dart';
 
 /// Figma: 2-4-3. Accessibility
 /// - 예시: 고대비/모션 줄이기/자막 강조 등 토글 + 가이드 텍스트
-/// SharedPreference를 통해 각 요소 정보 저장
+/// AccessibilityService를 통해 각 요소 정보 저장
 class AccessibilityScreen extends StatefulWidget {
   const AccessibilityScreen({super.key});
   @override
@@ -11,56 +12,33 @@ class AccessibilityScreen extends StatefulWidget {
 }
 
 class _AccessibilityScreenState extends State<AccessibilityScreen> {
-  bool _highContrast = false;
-  bool _reduceMotion = false;
-  bool _emphasizeCaptions = true;
-  bool _isLoading = true;
+  final _service = AccessibilityService();
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    // 리스너 등록
+    _service.addListener(_onAccessibilityChanged);
   }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _highContrast = prefs.getBool('accessibility_high_contrast') ?? false;
-      _reduceMotion = prefs.getBool('accessibility_reduce_motion') ?? false;
-      _emphasizeCaptions = prefs.getBool('accessibility_emphasize_captions') ?? true;
-      _isLoading = false;
-    });
+  @override
+  void dispose() {
+    _service.removeListener(_onAccessibilityChanged);
+    super.dispose();
   }
 
-  Future<void> _saveHighContrast(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('accessibility_high_contrast', value);
-    setState(() => _highContrast = value);
-  }
-
-  Future<void> _saveReduceMotion(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('accessibility_reduce_motion', value);
-    setState(() => _reduceMotion = value);
-  }
-
-  Future<void> _saveEmphasizeCaptions(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('accessibility_emphasize_captions', value);
-    setState(() => _emphasizeCaptions = value);
+  void _onAccessibilityChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(title: const Text('접근성')),
+      appBar: AppBar(title: Text(l10n.accessibility)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
       body: Padding(
         padding: const EdgeInsets.only(top: 16),
@@ -68,28 +46,28 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
           children: [
             SwitchListTile(
               contentPadding: const EdgeInsets.only(left: 24, right: 16),
-              title: const Text('고대비'),
-              subtitle: const Text('텍스트와 UI 요소의 대비를 높입니다.'),
-              value: _highContrast,
-              onChanged: _saveHighContrast,
+              title: Text(l10n.highContrast),
+              subtitle: Text(l10n.highContrastDesc),
+              value: _service.highContrast,
+              onChanged: (value) => _service.setHighContrast(value),
             ),
             SwitchListTile(
               contentPadding: const EdgeInsets.only(left: 24, right: 16),
-              title: const Text('모션 줄이기'),
-              subtitle: const Text('애니메이션 효과를 최소화합니다.'),
-              value: _reduceMotion,
-              onChanged: _saveReduceMotion,
+              title: Text(l10n.reduceMotion),
+              subtitle: Text(l10n.reduceMotionDesc),
+              value: _service.reduceMotion,
+              onChanged: (value) => _service.setReduceMotion(value),
             ),
             SwitchListTile(
               contentPadding: const EdgeInsets.only(left: 24, right: 16),
-              title: const Text('자막 강조'),
-              subtitle: const Text('플레이어 자막을 굵게/큰 크기로 표시합니다.'),
-              value: _emphasizeCaptions,
-              onChanged: _saveEmphasizeCaptions,
+              title: Text(l10n.emphasizeCaptions),
+              subtitle: Text(l10n.emphasizeCaptionsDesc),
+              value: _service.emphasizeCaptions,
+              onChanged: (value) => _service.setEmphasizeCaptions(value),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('설정은 재생 화면에 즉시 적용됩니다.', style: TextStyle(color: Colors.black54)),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(l10n.accessibilityAppliedImmediately, style: const TextStyle(color: Colors.black54)),
             ),
           ],
         ),
