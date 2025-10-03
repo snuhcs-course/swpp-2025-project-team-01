@@ -4,7 +4,7 @@ import '../../data/models.dart';
 
 /// Figma 2-2. Modifying Subjects
 /// - 과목별 패널(검은 헤더) 안에 강의 리스트
-/// - 강의: 좌측 드래그 핸들, 썸네일 자리, 제목/주차, 우측 삭제(빨간 원)
+/// - 강의: 좌측 드래그 핸들, 제목/주차, 우측 삭제(빨간 원)
 /// - 하단 고정 버튼: [수정 완료] [취소]
 class SubjectsEditScreen extends StatefulWidget {
   const SubjectsEditScreen({super.key});
@@ -14,48 +14,71 @@ class SubjectsEditScreen extends StatefulWidget {
 
 class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   final repo = Repo.instance;
-  final Map<String, List<Lecture>> _working = {};
+  Map<String, List<String>> _workingLectureIds = {};
+  Map<String, List<String>> _workingTagIds = {};
+  Set<String> _deletedSubjectIds = {};
 
   @override
   void initState() {
     super.initState();
     // 편집용 작업 복사본
     for (final s in repo.getSubjects()) {
-      _working[s.id] = List.of(repo.lecturesBySubject(s.id));
+      _workingLectureIds[s.id] = List.from(s.lectureIds);
+      _workingTagIds[s.id] = List.from(s.tagIds);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final subjects = repo.getSubjects();
+    final subjects = repo.getSubjects().where((s) => !_deletedSubjectIds.contains(s.id)).toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('과목 수정')),
+      appBar: AppBar(
+        title: const Text('과목 수정'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showCreateSubjectDialog(context),
+            tooltip: '과목 추가',
+          ),
+        ],
+      ),
+      backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         itemCount: subjects.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (_, i) {
           final s = subjects[i];
-          final lectures = _working[s.id]!;
+          final lectureIds = _workingLectureIds[s.id]!;
+          final lectures = lectureIds.map((id) => repo.lecturesBySubject(s.id).firstWhere((l) => l.id == id, orElse: () => Lecture(id: id, subjectId: s.id, weekLabel: 'Week ?', title: 'Untitled', durationSec: 0))).toList();
           return _SubjectEditPanel(
             subject: s,
             lectures: lectures,
             onReorder: (oldIndex, newIndex) {
               setState(() {
                 if (newIndex > oldIndex) newIndex -= 1;
-                final item = lectures.removeAt(oldIndex);
-                lectures.insert(newIndex, item);
+                final item = lectureIds.removeAt(oldIndex);
+                lectureIds.insert(newIndex, item);
               });
             },
             onDeleteLecture: (lec) {
-              setState(() => lectures.removeWhere((e) => e.id == lec.id));
+              setState(() => lectureIds.remove(lec.id));
             },
             onDeleteSubject: () async {
               final ok = await _confirmDeleteSubject(context);
-              if (ok == true) {
+              if (ok == true && mounted) {
                 setState(() {
-                  _working.remove(s.id);
+                  _deletedSubjectIds.add(s.id);
+                });
+              }
+            },
+            onEditTags: () async {
+              final selectedTags = await _showTagSelector(context, _workingTagIds[s.id] ?? []);
+              if (selectedTags != null && mounted) {
+                setState(() {
+                  _workingTagIds[s.id] = selectedTags;
                 });
               }
             },
@@ -65,9 +88,23 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       bottomNavigationBar: _BottomBar(
         primaryLabel: '수정 완료',
         secondaryLabel: '취소',
-        onPrimary: () {
-          // TODO: repo에 반영(정렬/삭제 결과 저장)
-          Navigator.pop(context);
+        onPrimary: () async {
+          // 삭제된 과목 처리
+          for (final subjectId in _deletedSubjectIds) {
+            await repo.deleteSubject(subjectId);
+          }
+          // 수업 순서 및 태그 업데이트
+          for (final s in repo.getSubjects()) {
+            if (!_deletedSubjectIds.contains(s.id)) {
+              await repo.updateSubjectLectures(s.id, _workingLectureIds[s.id]!);
+              await repo.updateSubjectTags(s.id, _workingTagIds[s.id]!);
+            }
+          }
+          // 홈 화면 강제 새로고침
+          repo.refresh();
+          if (mounted) {
+            Navigator.pop(context);
+          }
         },
         onSecondary: () => Navigator.pop(context),
       ),
@@ -77,16 +114,244 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   Future<bool?> _confirmDeleteSubject(BuildContext context) {
     return showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('경고'),
-        content: const Text('과목 삭제 시\n해당 과목의 강의들까지 전부\n'
-            '영구히 삭제됩니다.\n\n삭제하시겠습니까?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('아니요')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('예')),
-        ],
+      barrierColor: Colors.black87,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 검은 헤더
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: const Center(
+                  child: Text(
+                    '경고',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              // 회색 바디
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8E8E8),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      '과목 삭제 시\n해당 과목의 강의들까지 전부\n삭제됩니다.\n\n삭제하시겠습니까?',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF5A5A5A),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                '예',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC0C0C0),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text(
+                                '아니오',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Future<List<String>?> _showTagSelector(BuildContext context, List<String> currentTagIds) {
+    final allTags = repo.getTags();
+    final selectedTagIds = Set<String>.from(currentTagIds);
+
+    return showDialog<List<String>>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('태그 선택'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: allTags.map((tag) {
+                final isSelected = selectedTagIds.contains(tag.id);
+                return FilterChip(
+                  label: Text('#${tag.name}'),
+                  selected: isSelected,
+                  backgroundColor: Color(tag.color),
+                  selectedColor: Color(tag.color),
+                  checkmarkColor: Colors.black,
+                  onSelected: (selected) {
+                    setDialogState(() {
+                      if (selected) {
+                        selectedTagIds.add(tag.id);
+                      } else {
+                        selectedTagIds.remove(tag.id);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, selectedTagIds.toList()),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCreateSubjectDialog(BuildContext context) async {
+    final titleController = TextEditingController();
+    final allTags = repo.getTags();
+    final selectedTagIds = <String>{};
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('과목 추가'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: '과목명',
+                  hintText: '예) 소프트웨어 개발의 원리와 실제',
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              const Text('태그 선택 (선택사항)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.maxFinite,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: allTags.map((tag) {
+                    final isSelected = selectedTagIds.contains(tag.id);
+                    return FilterChip(
+                      label: Text('#${tag.name}'),
+                      selected: isSelected,
+                      backgroundColor: Color(tag.color),
+                      selectedColor: Color(tag.color),
+                      checkmarkColor: Colors.black,
+                      onSelected: (selected) {
+                        setDialogState(() {
+                          if (selected) {
+                            selectedTagIds.add(tag.id);
+                          } else {
+                            selectedTagIds.remove(tag.id);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('과목명을 입력해주세요')),
+                  );
+                  return;
+                }
+                Navigator.pop(context, true);
+              },
+              child: const Text('추가'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      await repo.createSubject(titleController.text.trim(), selectedTagIds.toList());
+      // 새로 생성된 과목의 작업 복사본 초기화
+      final newSubject = repo.getSubjects().firstWhere((s) => s.title == titleController.text.trim());
+      setState(() {
+        _workingLectureIds[newSubject.id] = [];
+        _workingTagIds[newSubject.id] = List.from(selectedTagIds);
+      });
+    }
+    titleController.dispose();
   }
 }
 
@@ -96,6 +361,7 @@ class _SubjectEditPanel extends StatefulWidget {
   final void Function(int oldIndex, int newIndex) onReorder;
   final void Function(Lecture lec) onDeleteLecture;
   final VoidCallback onDeleteSubject;
+  final VoidCallback onEditTags;
 
   const _SubjectEditPanel({
     required this.subject,
@@ -103,6 +369,7 @@ class _SubjectEditPanel extends StatefulWidget {
     required this.onReorder,
     required this.onDeleteLecture,
     required this.onDeleteSubject,
+    required this.onEditTags,
   });
 
   @override
@@ -129,7 +396,7 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
               Expanded(child: Text(widget.subject.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
               const SizedBox(width: 8),
               TextButton(
-                onPressed: () {}, // TODO: 태그 수정 화면으로 이동할지 여부
+                onPressed: widget.onEditTags,
                 child: const Text('태그 수정', style: TextStyle(color: Colors.white70)),
               ),
               const SizedBox(width: 8),
@@ -154,20 +421,14 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
               onReorder: widget.onReorder,
               itemBuilder: (_, idx) {
                 final lec = widget.lectures[idx];
-                return Dismissible(
+                return Container(
                   key: ValueKey(lec.id),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 16),
-                    color: Colors.red.shade100,
-                    child: const Icon(Icons.delete, color: Colors.red),
-                  ),
-                  onDismissed: (_) => widget.onDeleteLecture(lec),
                   child: ListTile(
-                    leading: const Icon(Icons.drag_handle),
+                    leading: ReorderableDragStartListener(
+                      index: idx,
+                      child: const Icon(Icons.drag_handle),
+                    ),
                     title: Text('${lec.weekLabel}  •  ${lec.title}'),
-                    subtitle: const Text('썸네일 자리'),
                     trailing: IconButton(
                       icon: const Icon(Icons.remove_circle, color: Colors.red),
                       onPressed: () => widget.onDeleteLecture(lec),
