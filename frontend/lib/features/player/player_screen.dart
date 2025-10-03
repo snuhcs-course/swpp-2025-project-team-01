@@ -355,20 +355,330 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _landscape() {
-    return Row(children: [
-      Expanded(child: Container(color: Colors.black12, child: const Center(child: Text('슬라이드 영역')))),
-      SizedBox(
-        width: 140,
-        child: ListView.separated(
-          padding: const EdgeInsets.all(12),
-          itemCount: 5,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (_, i) => AspectRatio(
-            aspectRatio: 4 / 3,
-            child: Container(color: Colors.black26, alignment: Alignment.center, child: Text('${i + 1}')),
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        // 위로 스와이프 감지 (delta.dy < 0)
+        if (details.delta.dy < -5 && !_isPagesExpanded) {
+          setState(() {
+            _isPagesExpanded = true;
+          });
+        }
+      },
+      onTap: () {
+        setState(() {
+          if (_isPagesExpanded) {
+            // 페이지가 펼쳐진 상태에서 클릭하면 모두 닫기
+            _isPagesExpanded = false;
+          } else {
+            // 컨트롤 토글
+            _showControls = !_showControls;
+          }
+        });
+      },
+      child: Stack(
+        children: [
+          // PDF/비디오 전체 화면 영역
+          Container(
+            color: Colors.black87,
+            child: const Center(
+              child: Text(
+                'PDF 페이지',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ),
           ),
+
+          // 비디오 컨트롤 오버레이
+          if (_showControls && !_isPagesExpanded) _buildLandscapeVideoControls(),
+
+          // 하단 슬라이드 토글 바
+          if (_isPagesExpanded)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildLandscapeToggleBar(),
+            ),
+
+          // 슬라이드가 펼쳐졌을 때 우상단 싱크 버튼
+          if (_isPagesExpanded)
+            Positioned(
+              top: 12,
+              right: 16,
+              child: IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isSynced = !_isSynced;
+                  });
+                },
+                icon: Icon(
+                  _isSynced ? Icons.sync : Icons.sync_disabled,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeVideoControls() {
+    return Container(
+      color: const Color(0x4D1D1D1D), // rgba(29, 29, 29, 0.3)
+      child: Column(
+        children: [
+          // 상단 컨트롤 바
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                // 메인화면으로 나가기
+                IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.chevron_left, color: Colors.white, size: 32),
+                ),
+                const Spacer(),
+                // 자막 토글 버튼
+                IconButton(
+                  onPressed: () {
+                    // TODO: 자막 토글 기능
+                  },
+                  icon: const Icon(Icons.closed_caption, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 8),
+                // 싱크 맞추기
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isSynced = !_isSynced;
+                    });
+                  },
+                  icon: Icon(
+                    _isSynced ? Icons.sync : Icons.sync_disabled,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // 중앙 재생 컨트롤
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 15초 뒤로
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _currentTime = (_currentTime - 15).clamp(0, _totalTime);
+                  });
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '15',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 40),
+              // 재생/정지
+              IconButton(
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  setState(() {
+                    _isPlaying = !_isPlaying;
+                  });
+                },
+                icon: Icon(
+                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.white,
+                  size: 56,
+                ),
+              ),
+              const SizedBox(width: 40),
+              // 15초 앞으로
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _currentTime = (_currentTime + 15).clamp(0, _totalTime);
+                  });
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.arrow_forward,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '15',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const Spacer(),
+
+          // 하단 타임라인 슬라이더
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              children: [
+                // 슬라이더
+                SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 3,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.5),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                    activeTrackColor: Colors.white,
+                    inactiveTrackColor: const Color(0xFFE3E3E3),
+                    thumbColor: const Color(0xFFFFFDFD),
+                    overlayColor: Colors.white.withValues(alpha: 0.3),
+                  ),
+                  child: Slider(
+                    value: _currentTime,
+                    min: 0,
+                    max: _totalTime,
+                    onChanged: (value) {
+                      setState(() {
+                        _currentTime = value;
+                      });
+                    },
+                  ),
+                ),
+                // 시간 표시
+                Padding(
+                  padding: const EdgeInsets.only(left: 1, right: 30),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        formatDuration(_currentTime.toInt()),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '-${formatDuration((_totalTime - _currentTime).toInt())}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLandscapeToggleBar() {
+    return Container(
+      height: 150,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.5),
+            Colors.black.withValues(alpha: 0.7),
+          ],
         ),
       ),
-    ]);
+      child: Column(
+        children: [
+          // 토글 버튼
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isPagesExpanded = false;
+              });
+            },
+            child: Container(
+              height: 40,
+              color: Colors.transparent,
+              child: Center(
+                child: Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+          // 슬라이드 목록
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+              scrollDirection: Axis.horizontal,
+              itemCount: 12, // TODO: 실제 페이지 수로 대체
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () {
+                    // TODO: 페이지 선택 기능
+                  },
+                  child: Container(
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
