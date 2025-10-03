@@ -1,10 +1,10 @@
-# SNU-SWPP-Template
+# Re:View
+<p align="center">
+  <img width="677" height="227" alt="Screenshot 2025-09-30 at 1 27 15 AM" src="https://github.com/user-attachments/assets/b34a752c-187a-4d65-986d-7333fd275d5a" />
+</p>
+Re:View takes in raw lecture recordings and lecture slides to refine them into structured, accessible study materials.
 
-You can use the README file to showcase and promote your mobile app. The template provided below is just a starting point. Feel free to craft your README as you see fit. 
-
-Please note that the README doesn't affect your grade and is not included in documentation(Wiki).
-
-# Re:view
+## Overview
 
 [Short application description here]
 
@@ -18,11 +18,11 @@ Please note that the README doesn't affect your grade and is not included in doc
 
 ## Getting Started
 
-### Prerequisites
+### Prerequisites (Tested Versions)
 
 - Android Studio [version, e.g., 4.2.1]
 - Minimum Android SDK Version [e.g., 21]
-- fastAPI (uvicorn main:app --reload)
+- FastAPI (uvicorn main:app --reload)
 
 ### Installation
 
