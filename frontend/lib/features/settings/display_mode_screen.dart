@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Figma: 2-4-1. Display Mode
-/// - 라디오(라이트/다크/시스템) + 옆에 미니 프리뷰 목업(회색 박스) 느낌
+/// 디스플레이 모드 설정 화면 - 라이트/다크/시스템 모드 선택
 class DisplayModeScreen extends StatefulWidget {
   const DisplayModeScreen({super.key});
   @override

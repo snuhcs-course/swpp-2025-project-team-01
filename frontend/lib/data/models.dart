@@ -1,4 +1,5 @@
 // MVP용 모델 3종 (한 파일)
+/// 태그 모델 클래스
 class Tag {
   final String id;
   final String name;
@@ -6,6 +7,7 @@ class Tag {
   const Tag({required this.id, required this.name, required this.color});
 }
 
+/// 강의 모델 클래스
 class Lecture {
   final String id;
   final String subjectId;
@@ -23,8 +25,23 @@ class Lecture {
     this.thumbs = const [],
     this.slidesPath,
   });
+
+  Lecture copyWith({
+    String? weekLabel,
+    String? title,
+  }) =>
+      Lecture(
+        id: id,
+        subjectId: subjectId,
+        weekLabel: weekLabel ?? this.weekLabel,
+        title: title ?? this.title,
+        durationSec: durationSec,
+        thumbs: thumbs,
+        slidesPath: slidesPath,
+      );
 }
 
+/// 과목 모델 클래스
 class Subject {
   final String id;
   final String title;

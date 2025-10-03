@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/repository.dart';
 import '../../data/models.dart';
 
-/// Figma 2-3. Modifying Tags
-/// - 상단: 태그 칩 그리드(+ 추가)
-/// - 하단: 폼(이름, 색상 HEX, 불투명도) + 적용/취소
-/// - 맨 아래: 휴지통 버튼
-/// - 하단 고정 버튼: [수정 완료] [취소]
+/// 태그 편집 화면 - 태그 추가/수정/삭제 및 색상 설정
 class TagsEditScreen extends StatefulWidget {
   const TagsEditScreen({super.key});
   @override

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Figma: 2-4-3. Accessibility
-/// - 예시: 고대비/모션 줄이기/자막 강조 등 토글 + 가이드 텍스트
+/// 접근성 설정 화면 - 고대비, 모션 줄이기, 자막 강조 등
 class AccessibilityScreen extends StatefulWidget {
   const AccessibilityScreen({super.key});
   @override

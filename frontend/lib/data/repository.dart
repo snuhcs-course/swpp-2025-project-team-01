@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'models.dart';
 
+/// 데이터 저장소 클래스 (싱글톤)
 class Repo {
   Repo._();
   static final instance = Repo._();
@@ -138,6 +139,18 @@ class Repo {
     _subjects[id] = s.copyWith(favorite: !s.favorite);
     await _saveSubjects();
   }
+
+  Future<void> updateLecture(String lectureId, {String? weekLabel, String? title}) async {
+    final lecture = _lectures[lectureId];
+    if (lecture == null) return;
+
+    _lectures[lectureId] = lecture.copyWith(
+      weekLabel: weekLabel,
+      title: title,
+    );
+  }
+
+  Lecture? getLecture(String lectureId) => _lectures[lectureId];
 
   Future<void> _saveSubjects() async {
     final list = _subjects.values.map((s) => {

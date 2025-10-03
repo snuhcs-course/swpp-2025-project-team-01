@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../data/repository.dart';
 
+/// 과목/태그 관리 화면
 class SubjectTagScreen extends StatelessWidget {
   const SubjectTagScreen({super.key});
   @override

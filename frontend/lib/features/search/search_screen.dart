@@ -5,12 +5,14 @@ import '../../data/repository.dart';
 import '../../data/models.dart';
 import '../../app_router.dart';
 
+/// 검색 화면
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
+/// 검색 범위를 정의하는 열거형
 enum SearchScope { lecture, week, subject }
 
 class _SearchScreenState extends State<SearchScreen> {
