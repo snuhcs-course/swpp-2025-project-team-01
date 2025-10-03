@@ -39,6 +39,12 @@ class Subject {
     this.lectureIds = const [],
   });
 
-  Subject copyWith({bool? favorite}) =>
-      Subject(id: id, title: title, favorite: favorite ?? this.favorite, tagIds: tagIds, lectureIds: lectureIds);
+  Subject copyWith({bool? favorite, List<String>? tagIds, List<String>? lectureIds}) =>
+      Subject(
+        id: id,
+        title: title,
+        favorite: favorite ?? this.favorite,
+        tagIds: tagIds ?? this.tagIds,
+        lectureIds: lectureIds ?? this.lectureIds
+      );
 }
