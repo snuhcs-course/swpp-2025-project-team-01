@@ -1,608 +1,256 @@
+// 홈 메인: 상단 필터/즐겨찾기 pill + 태그칩 + 과목 패널 리스트
 import 'package:flutter/material.dart';
+import '../../app_router.dart';
+import '../../core/accessibility_service.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../data/models.dart';
+import '../../data/repository.dart';
+import 'home_widgets.dart';
 
-import '../../core/theme/color_scheme.dart';
-
-// 홈 화면 카드 구성을 위한 강의 요약 모델
-class CourseSummary {
-  CourseSummary({
-    required this.id,
-    required this.title,
-    required this.tags,
-    required this.notes,
-    this.isFavorite = false,
-    this.isInitiallyExpanded = true,
-  });
-
-  final String id;
-  final String title;
-  final List<String> tags;
-  final List<NoteSummary> notes;
-  final bool isFavorite;
-  final bool isInitiallyExpanded;
-}
-
-// 각 카드에 들어갈 노트 요약 정보 모델
-class NoteSummary {
-  const NoteSummary({
-    required this.week,
-    required this.title,
-    required this.subtitle,
-    this.previewAsset,
-    this.isPlaceholder = false,
-  });
-
-  final String week;
-  final String title;
-  final String subtitle;
-  final String? previewAsset;
-  final bool isPlaceholder;
-}
-
-// 화면 시안을 재현하기 위한 목업 데이터 세트
-final List<CourseSummary> mockCourses = [
-  CourseSummary(
-    id: 'software-principles',
-    title: '소프트웨어 개발의 원리와 실습',
-    tags: ['#25-2', '#전필', '#살려야한다'],
-    isFavorite: true,
-    isInitiallyExpanded: true,
-    notes: const [
-      NoteSummary(
-        week: 'Week 1-1',
-        title: 'Course Overview',
-        subtitle: 'Course Overview',
-      ),
-      NoteSummary(
-        week: 'Week 1-2',
-        title: 'AI App Examples',
-        subtitle: 'AI App Examples',
-      ),
-      NoteSummary(
-        week: 'Week 1-2',
-        title: 'Software Processes',
-        subtitle: 'Software Processes',
-      ),
-      NoteSummary(
-        week: '',
-        title: '',
-        subtitle: '',
-        isPlaceholder: true,
-      ),
-    ],
-  ),
-  CourseSummary(
-    id: 'outerspace-life',
-    title: '외계행성과 생명',
-    tags: ['#25-2', '#교양'],
-    isFavorite: true,
-    isInitiallyExpanded: false,
-    notes: const [
-      NoteSummary(
-        week: 'Week 1-1',
-        title: 'Course Overview',
-        subtitle: 'Course Overview',
-      ),
-      NoteSummary(
-        week: 'Week 1-2',
-        title: 'AI App Examples',
-        subtitle: 'AI App Examples',
-      ),
-      NoteSummary(
-        week: 'Week 1-2',
-        title: 'Software Processes',
-        subtitle: 'Software Processes',
-      ),
-      NoteSummary(
-        week: '',
-        title: '',
-        subtitle: '',
-        isPlaceholder: true,
-      ),
-    ],
-  ),
-  CourseSummary(
-    id: 'automata',
-    title: '오토마타이론',
-    tags: ['#25-2', '#전필'],
-    isFavorite: true,
-    isInitiallyExpanded: true,
-    notes: const [
-      NoteSummary(
-        week: 'Week 1-1',
-        title: 'Course Overview',
-        subtitle: 'Course Overview',
-      ),
-      NoteSummary(
-        week: 'Week 1-2',
-        title: 'AI App Examples',
-        subtitle: 'AI App Examples',
-      ),
-      NoteSummary(
-        week: 'Week 1-2',
-        title: 'Software Processes',
-        subtitle: 'Software Processes',
-      ),
-      NoteSummary(
-        week: '',
-        title: '',
-        subtitle: '',
-        isPlaceholder: true,
-      ),
-    ],
-  ),
-  CourseSummary(
-    id: 'deep-learning',
-    title: '딥러닝의 기초',
-    tags: ['#25-1', '#전선'],
-    isFavorite: true,
-    isInitiallyExpanded: true,
-    notes: const [
-      NoteSummary(
-        week: '',
-        title: '',
-        subtitle: '',
-        isPlaceholder: true,
-      ),
-    ],
-  ),
-];
-
+/// 메인 홈 화면
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final Map<String, bool> _expanded;
+  bool favoritesOnly = false;
+  bool showTagFilter = false;
+  final Set<String> selectedTagIds = {};
+
+  // 싱글톤 인스턴스를 한 번만 가져옴
+  late final _repo = Repo.instance;
+  late final _accessibilityService = AccessibilityService();
 
   @override
   void initState() {
     super.initState();
-    // 강의별 펼침 상태를 초기값에 맞춰 저장
-    _expanded = {
-      for (final course in mockCourses) course.id: course.isInitiallyExpanded,
-    };
+    // Repository 변경 리스너 등록
+    _repo.addListener(_onRepoChanged);
+  }
+
+  @override
+  void dispose() {
+    // 리스너 제거
+    _repo.removeListener(_onRepoChanged);
+    super.dispose();
+  }
+
+  void _onRepoChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).lightScheme;
-    final highlights = Theme.of(context).extension<AppHighlights>();
+    final l10n = AppLocalizations.of(context);
+    final tags = _repo.getTags();
+    final subjects = _repo.getSubjects(
+      favoritesOnly: favoritesOnly,
+      filterTagIds: selectedTagIds.toList(),
+    );
+    final reduceMotion = _accessibilityService.reduceMotion;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        child: const Icon(Icons.add),
+      appBar: AppBar(
+        // Figma: 좌 햄버거, 중앙 타이틀, 우 검색
+        leading: Builder(
+          builder: (scaffoldContext) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              if (reduceMotion) {
+                // 모션 줄이기: 즉시 나타나는 다이얼로그
+                showDialog(
+                  context: context,
+                  barrierColor: Colors.black54,
+                  builder: (ctx) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Material(
+                      color: Theme.of(context).canvasColor,
+                      elevation: 16,
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.75,
+                        height: double.infinity,
+                        child: SafeArea(
+                          child: ListView(padding: EdgeInsets.zero, children: [
+                            DrawerHeader(
+                              child: Align(
+                                alignment: Alignment.bottomLeft,
+                                child: Text(l10n.menu, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                            ListTile(
+                              title: Text(l10n.addLecture),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                Navigator.pushNamed(context, Routes.lectureForm);
+                              },
+                            ),
+                            ListTile(
+                              title: Text(l10n.editSubjects),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                Navigator.pushNamed(context, Routes.subjectsEdit);
+                              },
+                            ),
+                            ListTile(
+                              title: Text(l10n.editTags),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                Navigator.pushNamed(context, Routes.tagsEdit);
+                              },
+                            ),
+                            const Divider(),
+                            ListTile(
+                              title: Text(l10n.settings),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                Navigator.pushNamed(context, Routes.settings);
+                              },
+                            ),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                // 일반: Drawer 사용
+                Scaffold.of(scaffoldContext).openDrawer();
+              }
+            },
+          ),
+        ),
+        title: Text(l10n.appName),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.pushNamed(context, Routes.search),
+          ),
+        ],
       ),
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // 헤더 + 필터 영역
+      drawer: reduceMotion
+          ? null
+          : Drawer(
+              child: ListView(padding: EdgeInsets.zero, children: [
+                DrawerHeader(
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Text(l10n.menu, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                ListTile(
+                  title: Text(l10n.addLecture),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, Routes.lectureForm);
+                  },
+                ),
+                ListTile(
+                  title: Text(l10n.editSubjects),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, Routes.subjectsEdit);
+                  },
+                ),
+                ListTile(
+                  title: Text(l10n.editTags),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, Routes.tagsEdit);
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  title: Text(l10n.settings),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, Routes.settings);
+                  },
+                ),
+              ]),
+            ),
+      body: CustomScrollView(
+        slivers: [
+          // 상단 pill 두 개
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+              child: Row(children: [
+                FilterPill(
+                  icon: Icons.tune,
+                  label: l10n.filter,
+                  active: showTagFilter,
+                  onTap: () => setState(() {
+                    showTagFilter = !showTagFilter;
+                    // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
+                    if (!showTagFilter) {
+                      selectedTagIds.clear();
+                    }
+                  }),
+                ),
+                const SizedBox(width: 12),
+                FavoritePill(
+                  active: favoritesOnly,
+                  onTap: () => setState(() => favoritesOnly = !favoritesOnly),
+                  label: l10n.favorites,
+                ),
+              ]),
+            ),
+          ),
+          // 태그 칩 그리드 (필터 버튼 클릭 시만 표시)
+          if (showTagFilter)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTopBar(context),
-                    const SizedBox(height: 5),
-                    _buildFilterRow(context),
-                    const SizedBox(height: 15),
-                  ],
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: TagChips(
+                  tags: tags,
+                  selected: selectedTagIds,
+                  onToggle: (id) => setState(() {
+                    if (!selectedTagIds.add(id)) {
+                      selectedTagIds.remove(id);
+                    }
+                  }),
                 ),
               ),
             ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final course = mockCourses[index];
-                  final isExpanded = _expanded[course.id] ?? false;
-                  // 강의 카드와 펼침 상태 토글
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      left: 20,
-                      right: 20,
-                      bottom: index == mockCourses.length - 1 ? 28 : 20,
-                    ),
-                    child: _CourseCard(
-                      course: course,
-                      isExpanded: isExpanded,
-                      highlightColor: highlights?.important ?? const Color(0xFFF6D16F),
-                      tagHighlights: highlights?.tagHighlights,
-                      onToggle: () {
-                        setState(() {
-                          _expanded[course.id] = !(isExpanded);
-                        });
-                      },
-                    ),
-                  );
-                },
-                childCount: mockCourses.length,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      children: [
-        _RoundIconButton(
-          icon: Icons.menu,
-          onTap: () {},
-          background: colorScheme.background,
-        ),
-        const Spacer(),
-        Text(
-          'Re:View',
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const Spacer(),
-        _RoundIconButton(
-          icon: Icons.search,
-          onTap: () {},
-          background: colorScheme.background,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterRow(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      children: const [
-        _FilterPill(icon: Icons.tune, label: '필터'),
-        _FilterPill(icon: Icons.star, label: '즐겨찾기'),
-      ],
-    );
-  }
-}
-
-class _CourseCard extends StatelessWidget {
-  const _CourseCard({
-    required this.course,
-    required this.isExpanded,
-    required this.highlightColor,
-    required this.tagHighlights,
-    required this.onToggle,
-  });
-
-  final CourseSummary course;
-  final bool isExpanded;
-  final Color highlightColor;
-  final List<TagHighlight>? tagHighlights;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+          // 과목 패널 리스트
+          SliverList.builder(
+            itemCount: subjects.length,
+            itemBuilder: (context, i) {
+              final s = subjects[i];
+              final subjectTags = s.tagIds
+                  .map((tid) => tags.cast<Tag?>().firstWhere((t) => t?.id == tid, orElse: () => null))
+                  .whereType<Tag>()
+                  .toList();
+              // 태그 정렬: 숫자 > 한글 > 영어
+              subjectTags.sort((a, b) => _repo.compareTagNames(a.name, b.name));
+              final lectures = _repo.lecturesBySubject(s.id);
+              return Padding(
+                padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
+                child: SubjectPanel(
+                  subject: s,
+                  tags: subjectTags,
+                  lectures: lectures,
+                  onToggleFavorite: () async {
+                    await _repo.toggleSubjectFavorite(s.id);
+                    // Repository가 notifyListeners()를 호출하므로 setState 불필요
+                  },
+                  onOpenLecture: (Lecture lec) {
+                    Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lec.id});
+                  },
+                  onLectureUpdated: () {
+                    // Repository가 notifyListeners()를 호출하므로 setState 불필요
+                  },
+                ),
+              );
+            },
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              color: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        course.isFavorite ? Icons.star : Icons.star_border,
-                        color: highlightColor,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          course.title,
-                          style: textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: onToggle,
-                        icon: AnimatedRotation(
-                          turns: isExpanded ? 0.5 : 0,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
-                          child: const Icon(
-                            Icons.expand_more,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      for (var i = 0; i < course.tags.length; i++)
-                        _TagChip(
-                          label: course.tags[i],
-                          background: _tagBackground(i),
-                          foreground: const Color(0xFF1D1D1D),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // 접기/펼치기 애니메이션 영역
-            AnimatedCrossFade(
-              firstChild: const SizedBox.shrink(),
-              secondChild: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                child: _NotesGrid(notes: course.notes),
-              ),
-              firstCurve: Curves.easeInOut,
-              secondCurve: Curves.easeInOut,
-              sizeCurve: Curves.easeInOut,
-              crossFadeState:
-                  isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 450),
-            ),
-          ],
-        ),
-      ),
-    );
-}
-
-  Color _tagBackground(int index) {
-    final palette = tagHighlights;
-    if (palette != null && palette.isNotEmpty) {
-      final selected = palette[index % palette.length];
-      return selected.background;
-    }
-    return highlightColor.withValues(alpha: 0.2);
-  }
-
-}
-
-class _NotesGrid extends StatelessWidget {
-  const _NotesGrid({required this.notes});
-
-  final List<NoteSummary> notes;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final spacing = 16.0;
-        final columns = 2;
-        final itemWidth = (constraints.maxWidth - spacing) / columns;
-
-        // 2열 그리드처럼 보이도록 Wrap으로 배치
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: notes
-              .map(
-                (note) => SizedBox(
-                  width: itemWidth,
-                  child: _NoteCard(note: note),
-                ),
-              )
-              .toList(),
-        );
-      },
-    );
-  }
-}
-
-class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.note});
-
-  final NoteSummary note;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (note.isPlaceholder) {
-      // 새 노트를 추가하기 위한 + 카드
-      return Container(
-        height: 180,
-        decoration: BoxDecoration(
-          color: colorScheme.background,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: const Center(
-          child: Icon(Icons.add, size: 38),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                note.title,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  note.week,
-                  style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  note.subtitle,
-                  style: textTheme.bodyMedium?.copyWith(color: Colors.black54),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TagChip extends StatelessWidget {
-  const _TagChip({
-    required this.label,
-    required this.background,
-    required this.foreground,
-  });
-
-  final String label;
-  final Color background;
-  final Color foreground;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context)
-            .textTheme
-            .labelMedium
-            ?.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-      ),
-    );
-  }
-}
-
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    // 필터/즐겨찾기 선택 버튼
-    return Material(
-      color: colorScheme.surface,
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: colorScheme.outline.withValues(alpha: 0.3),
-        ),
-      ),
-      child: InkWell(
-        borderRadius: const BorderRadius.all(Radius.circular(999)),
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.onTap,
-    this.background,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color? background;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      shape: const CircleBorder(),
-      color: background ?? Theme.of(context).colorScheme.surfaceContainerHigh,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Icon(icon),
-        ),
       ),
     );
   }

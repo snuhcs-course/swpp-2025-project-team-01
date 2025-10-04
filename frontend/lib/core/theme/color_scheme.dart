@@ -103,6 +103,7 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
       ];
 }
 
+/// 태그 하이라이트 색상을 담는 클래스
 class TagHighlight {
   const TagHighlight({
     required this.background,
@@ -113,6 +114,12 @@ class TagHighlight {
   final Color foreground;
 }
 
+/// ThemeData 확장 - 라이트 색상 스킴 접근을 위한 확장
 extension ReViewThemeData on ThemeData {
   ColorScheme get lightScheme => colorScheme;
+}
+
+/// BuildContext 확장 - 하이라이트 색상 접근을 위한 확장
+extension ReViewColors on BuildContext {
+  AppHighlights get highlights => Theme.of(this).extension<AppHighlights>()!;
 }

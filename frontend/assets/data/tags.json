@@ -1,0 +1,23 @@
+{
+    "schemaVersion": 1,
+    "tags": [
+      {
+        "id": "t1",
+        "name": "25-2",
+        "color": "#EFF0A4",
+        "order": 0
+      },
+      {
+        "id": "t2",
+        "name": "전필",
+        "color": "#FDECB0",
+        "order": 1
+      },
+      {
+        "id": "t3",
+        "name": "AI",
+        "color": "#D8DFE9",
+        "order": 2
+      }
+    ]
+  }

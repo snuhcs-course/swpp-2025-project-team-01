@@ -1,0 +1,3380 @@
+{
+    "metadata": {
+      "total_sentences": 421,
+      "total_duration": 3293.6,
+      "voice": "af_heart",
+      "speed": 1.0,
+      "language_code": "a",
+      "sample_rate": 24000
+    },
+    "timestamps": [
+      {
+        "sentence_id": 1,
+        "text": " Hello, everybody.",
+        "slide_number": 1,
+        "start_time": 0.0,
+        "end_time": 1.95,
+        "duration": 1.95
+      },
+      {
+        "sentence_id": 2,
+        "text": " Thanks for watching this presentation.",
+        "slide_number": 1,
+        "start_time": 2.15,
+        "end_time": 4.7,
+        "duration": 2.55
+      },
+      {
+        "sentence_id": 3,
+        "text": " This presentation covers the topics for chapter four, but with a lot of extra detail about how to write numerically precise code in the context that come up in deep learning.",
+        "slide_number": 1,
+        "start_time": 4.9,
+        "end_time": 16.075,
+        "duration": 11.175
+      },
+      {
+        "sentence_id": 4,
+        "text": " For people who are watching this on the book website, you should understand that I'm going to be taking live questions from AI with the best audience members periodically, and I'll read the questions as I answer them.",
+        "slide_number": 1,
+        "start_time": 16.275,
+        "end_time": 28.775,
+        "duration": 12.5
+      },
+      {
+        "sentence_id": 5,
+        "text": " So I'm going to start out by looking at the slides, but I'm going to tab back and forth periodically to check for questions from the audience.",
+        "slide_number": 1,
+        "start_time": 28.975,
+        "end_time": 37.275,
+        "duration": 8.3
+      },
+      {
+        "sentence_id": 6,
+        "text": " So go ahead and ask questions as they come up, and I'll try to answer them quickly.",
+        "slide_number": 1,
+        "start_time": 37.475,
+        "end_time": 42.35,
+        "duration": 4.875
+      },
+      {
+        "sentence_id": 7,
+        "text": " Today's topic is numerical computation for deep learning.",
+        "slide_number": 1,
+        "start_time": 42.55,
+        "end_time": 46.95,
+        "duration": 4.4
+      },
+      {
+        "sentence_id": 8,
+        "text": " Basic idea of numerical computation is that we need to be very careful about the way that we handle real numbers in a few different contexts.",
+        "slide_number": 2,
+        "start_time": 47.15,
+        "end_time": 56.525,
+        "duration": 9.375
+      },
+      {
+        "sentence_id": 9,
+        "text": " One is if we use an algorithm that has to do some kind of, you know, careful representation of real numbers with a finite number of bits.",
+        "slide_number": 2,
+        "start_time": 56.725,
+        "end_time": 65.8,
+        "duration": 9.075
+      },
+      {
+        "sentence_id": 10,
+        "text": " Real numbers like pi have infinitely many digits, and then when we represent them in a computer, we usually use 32 floating point numbers as an approximation for real numbers when we implement a deep learning algorithm on GPU.",
+        "slide_number": 2,
+        "start_time": 66.0,
+        "end_time": 81.05,
+        "duration": 15.05
+      },
+      {
+        "sentence_id": 11,
+        "text": " The use of 32 bits to represent something that really has infinitely many digits can often cause errors, and we'd like to try to minimize the amount of damage to our program that happens when we use that representation.",
+        "slide_number": 2,
+        "start_time": 81.25,
+        "end_time": 94.925,
+        "duration": 13.675
+      },
+      {
+        "sentence_id": 12,
+        "text": " Another consideration for numerical computation is how sensitive a function is to very small changes in its input.",
+        "slide_number": 2,
+        "start_time": 95.125,
+        "end_time": 103.325,
+        "duration": 8.2
+      },
+      {
+        "sentence_id": 13,
+        "text": " This comes up even if we were able to theoretically use real numbers without having to represent them in 32 bits.",
+        "slide_number": 2,
+        "start_time": 103.525,
+        "end_time": 111.325,
+        "duration": 7.8
+      },
+      {
+        "sentence_id": 14,
+        "text": " When we do things like optimize a function, if that function is very sensitive to little tiny changes in the input, it becomes a lot harder to search for the inputs that minimize that function because little tiny changes in our search can strongly influence the outcome of the search.",
+        "slide_number": 2,
+        "start_time": 111.525,
+        "end_time": 128.35,
+        "duration": 16.825
+      },
+      {
+        "sentence_id": 15,
+        "text": " As a brief roadmap for today, I'm going to cover two different topics.",
+        "slide_number": 3,
+        "start_time": 128.55,
+        "end_time": 133.075,
+        "duration": 4.525
+      },
+      {
+        "sentence_id": 16,
+        "text": " The first is iterative optimization, how we actually make algorithms that search for the minimal point of some function, and how this gets affected by numerical considerations.",
+        "slide_number": 3,
+        "start_time": 133.275,
+        "end_time": 144.475,
+        "duration": 11.2
+      },
+      {
+        "sentence_id": 17,
+        "text": " Next, I'm going to talk about rounding error, underflow, and overflow, how the use of 32 bits to represent real numbers can affect deep learning programs.",
+        "slide_number": 3,
+        "start_time": 144.675,
+        "end_time": 155.325,
+        "duration": 10.65
+      },
+      {
+        "sentence_id": 18,
+        "text": " So starting out with iterative optimization, we're going to cover three different topics here.",
+        "slide_number": 4,
+        "start_time": 155.525,
+        "end_time": 161.3,
+        "duration": 5.775
+      },
+      {
+        "sentence_id": 19,
+        "text": " The first is how the gradient descent algorithm works.",
+        "slide_number": 4,
+        "start_time": 161.5,
+        "end_time": 165.175,
+        "duration": 3.675
+      },
+      {
+        "sentence_id": 20,
+        "text": " The second is curvature, the idea that the functions we're optimizing are non and how the second order curvature of these functions affects the optimization process.",
+        "slide_number": 4,
+        "start_time": 165.375,
+        "end_time": 175.925,
+        "duration": 10.55
+      },
+      {
+        "sentence_id": 21,
+        "text": " And then finally, we'll have a few comments on constrained optimization.",
+        "slide_number": 4,
+        "start_time": 176.125,
+        "end_time": 180.6,
+        "duration": 4.475
+      },
+      {
+        "sentence_id": 22,
+        "text": " The basic algorithm that we use for most iterative optimization is gradient descent, and I've illustrated this here with a really simple function, f of x equals one half x squared.",
+        "slide_number": 5,
+        "start_time": 180.8,
+        "end_time": 192.4,
+        "duration": 11.6
+      },
+      {
+        "sentence_id": 23,
+        "text": " You can see it plotted with the dashed blue line that I'm highlighting with my mouse cursor.",
+        "slide_number": 5,
+        "start_time": 192.6,
+        "end_time": 197.875,
+        "duration": 5.275
+      },
+      {
+        "sentence_id": 24,
+        "text": " If we would like to minimize this function, we can do it by following the gradient.",
+        "slide_number": 5,
+        "start_time": 198.075,
+        "end_time": 203.1,
+        "duration": 5.025
+      },
+      {
+        "sentence_id": 25,
+        "text": " Let's say that x is greater than zero.",
+        "slide_number": 5,
+        "start_time": 203.3,
+        "end_time": 205.975,
+        "duration": 2.675
+      },
+      {
+        "sentence_id": 26,
+        "text": " The gradient, in this case, because the function is one is just the derivative.",
+        "slide_number": 5,
+        "start_time": 206.175,
+        "end_time": 211.1,
+        "duration": 4.925
+      },
+      {
+        "sentence_id": 27,
+        "text": " So the derivative can be represented by the value f prime of x.",
+        "slide_number": 5,
+        "start_time": 211.3,
+        "end_time": 215.75,
+        "duration": 4.45
+      },
+      {
+        "sentence_id": 28,
+        "text": " Over here, f prime of x, represented by the green line, is positive.",
+        "slide_number": 5,
+        "start_time": 215.95,
+        "end_time": 220.775,
+        "duration": 4.825
+      },
+      {
+        "sentence_id": 29,
+        "text": " So if we descend the gradient by moving in the opposite direction of the derivative, everywhere that we're over here where the green line is positive, gradient descent will move left and downhill.",
+        "slide_number": 5,
+        "start_time": 220.975,
+        "end_time": 232.775,
+        "duration": 11.8
+      },
+      {
+        "sentence_id": 30,
+        "text": " So starting here, we would trace the blue curve leftward until we reach its minimum point here.",
+        "slide_number": 5,
+        "start_time": 232.975,
+        "end_time": 238.8,
+        "duration": 5.825
+      },
+      {
+        "sentence_id": 31,
+        "text": " Where the derivative is zero, we are no longer told by the derivative to move in any particular direction, so we stop.",
+        "slide_number": 5,
+        "start_time": 239.0,
+        "end_time": 246.45,
+        "duration": 7.45
+      },
+      {
+        "sentence_id": 32,
+        "text": " If we started over here on the left side, over here the derivative is negative, and we move in opposite the direction of the derivative, so we would actually apply positive updates to our input x, and we move rightward along the function x squared until we reach the minimum and stop where the derivative is equal to zero.",
+        "slide_number": 5,
+        "start_time": 246.65,
+        "end_time": 265.55,
+        "duration": 18.9
+      },
+      {
+        "sentence_id": 33,
+        "text": " I've described gradient descent basically in terms of this idea that we move downhill until we find a point where the derivative is zero.",
+        "slide_number": 6,
+        "start_time": 265.75,
+        "end_time": 274.475,
+        "duration": 8.725
+      },
+      {
+        "sentence_id": 34,
+        "text": " In the example of f of x equals one x squared, there was only one point like that.",
+        "slide_number": 6,
+        "start_time": 274.675,
+        "end_time": 280.325,
+        "duration": 5.65
+      },
+      {
+        "sentence_id": 35,
+        "text": " In reality, there might be a lot of different points that have zero derivatives.",
+        "slide_number": 6,
+        "start_time": 280.525,
+        "end_time": 285.45,
+        "duration": 4.925
+      },
+      {
+        "sentence_id": 36,
+        "text": " Here I've drawn a function that's very squiggly and has several different local minima.",
+        "slide_number": 6,
+        "start_time": 285.65,
+        "end_time": 290.95,
+        "duration": 5.3
+      },
+      {
+        "sentence_id": 37,
+        "text": " Local minima are points that are smaller in f of x value than all the other points surrounding them, but they're not necessarily the lowest point overall.",
+        "slide_number": 6,
+        "start_time": 291.15,
+        "end_time": 300.925,
+        "duration": 9.775
+      },
+      {
+        "sentence_id": 38,
+        "text": " So here, if we look to the left or the right of this point, we go uphill a little bit.",
+        "slide_number": 6,
+        "start_time": 301.125,
+        "end_time": 306.325,
+        "duration": 5.2
+      },
+      {
+        "sentence_id": 39,
+        "text": " If you go further to the left, we can find much lower points.",
+        "slide_number": 6,
+        "start_time": 306.525,
+        "end_time": 310.45,
+        "duration": 3.925
+      },
+      {
+        "sentence_id": 40,
+        "text": " Usually in the context of deep learning, we can't really expect to find this global minimum over here.",
+        "slide_number": 6,
+        "start_time": 310.65,
+        "end_time": 316.95,
+        "duration": 6.3
+      },
+      {
+        "sentence_id": 41,
+        "text": " We might want to do that, but it's probably not feasible.",
+        "slide_number": 6,
+        "start_time": 317.15,
+        "end_time": 320.675,
+        "duration": 3.525
+      },
+      {
+        "sentence_id": 42,
+        "text": " In practice, we often give up and find a point more like this one here.",
+        "slide_number": 6,
+        "start_time": 320.875,
+        "end_time": 325.35,
+        "duration": 4.475
+      },
+      {
+        "sentence_id": 43,
+        "text": " It's a local minimum, but the value of f of x is actually very low.",
+        "slide_number": 6,
+        "start_time": 325.55,
+        "end_time": 330.425,
+        "duration": 4.875
+      },
+      {
+        "sentence_id": 44,
+        "text": " So we've done a good job of reducing the value of the function, even if we don't find our way all the way to the bottom of the function.",
+        "slide_number": 6,
+        "start_time": 330.625,
+        "end_time": 338.4,
+        "duration": 7.775
+      },
+      {
+        "sentence_id": 45,
+        "text": " In practice, we don't even necessarily find a local minimum.",
+        "slide_number": 7,
+        "start_time": 338.6,
+        "end_time": 342.775,
+        "duration": 4.175
+      },
+      {
+        "sentence_id": 46,
+        "text": " In practice, we often just sort of get stuck for numerical reasons, and that's the topic of this chapter.",
+        "slide_number": 7,
+        "start_time": 342.975,
+        "end_time": 349.5,
+        "duration": 6.525
+      },
+      {
+        "sentence_id": 47,
+        "text": " I'm fast a little bit, and I'm showing you a figure from chapter 8.",
+        "slide_number": 7,
+        "start_time": 349.7,
+        "end_time": 354.025,
+        "duration": 4.325
+      },
+      {
+        "sentence_id": 48,
+        "text": " On the x I show you how long gradient descent has been running on a particular problem.",
+        "slide_number": 7,
+        "start_time": 354.225,
+        "end_time": 360.3,
+        "duration": 6.075
+      },
+      {
+        "sentence_id": 49,
+        "text": " In the two different plots, I show you two different things.",
+        "slide_number": 7,
+        "start_time": 360.5,
+        "end_time": 364.175,
+        "duration": 3.675
+      },
+      {
+        "sentence_id": 50,
+        "text": " On the left side, I show you how big the gradients are over time.",
+        "slide_number": 7,
+        "start_time": 364.375,
+        "end_time": 368.6,
+        "duration": 4.225
+      },
+      {
+        "sentence_id": 51,
+        "text": " Specifically, I'm plotting the norm of the gradient.",
+        "slide_number": 7,
+        "start_time": 368.8,
+        "end_time": 372.175,
+        "duration": 3.375
+      },
+      {
+        "sentence_id": 52,
+        "text": " Every little black dot is a different step of the gradient descent algorithm.",
+        "slide_number": 7,
+        "start_time": 372.375,
+        "end_time": 377.275,
+        "duration": 4.9
+      },
+      {
+        "sentence_id": 53,
+        "text": " So you can see it's kind of noisy on different steps.",
+        "slide_number": 7,
+        "start_time": 377.475,
+        "end_time": 380.7,
+        "duration": 3.225
+      },
+      {
+        "sentence_id": 54,
+        "text": " It's not like we always see the same gradient norm twice in a row.",
+        "slide_number": 7,
+        "start_time": 380.9,
+        "end_time": 385.225,
+        "duration": 4.325
+      },
+      {
+        "sentence_id": 55,
+        "text": " It bounces around a lot.",
+        "slide_number": 7,
+        "start_time": 385.425,
+        "end_time": 387.5,
+        "duration": 2.075
+      },
+      {
+        "sentence_id": 56,
+        "text": " But I've fit a smooth blue curve to these lines, and we can see how the gradient norm actually gradually gets bigger over time.",
+        "slide_number": 7,
+        "start_time": 387.7,
+        "end_time": 395.325,
+        "duration": 7.625
+      },
+      {
+        "sentence_id": 57,
+        "text": " Based on the plots that I showed you on the previous slides, you might expect that the gradient norm would shrink as you approach a local minimum, and that convergence would go down to zero.",
+        "slide_number": 6,
+        "start_time": 395.525,
+        "end_time": 406.275,
+        "duration": 10.75
+      },
+      {
+        "sentence_id": 58,
+        "text": " Well, it turns out that a lot of the time, we actually just get stuck and can't really keep making progress toward regions of smaller gradient norm.",
+        "slide_number": 7,
+        "start_time": 406.475,
+        "end_time": 415.3,
+        "duration": 8.825
+      },
+      {
+        "sentence_id": 59,
+        "text": " And so we stop when f of x has become very small, rather than when the gradient has gone away.",
+        "slide_number": 7,
+        "start_time": 415.5,
+        "end_time": 421.6,
+        "duration": 6.1
+      },
+      {
+        "sentence_id": 60,
+        "text": " You could say maybe this plot that I made here, where I show the gradient getting bigger over time, maybe that's an example of failure.",
+        "slide_number": 7,
+        "start_time": 421.8,
+        "end_time": 429.675,
+        "duration": 7.875
+      },
+      {
+        "sentence_id": 61,
+        "text": " Maybe the algorithm is just broken.",
+        "slide_number": 7,
+        "start_time": 429.875,
+        "end_time": 432.5,
+        "duration": 2.625
+      },
+      {
+        "sentence_id": 62,
+        "text": " But actually, if we look at the plot on the right, I'm showing you the error rate of a classifier that we're training with gradient descent.",
+        "slide_number": 7,
+        "start_time": 432.7,
+        "end_time": 440.65,
+        "duration": 7.95
+      },
+      {
+        "sentence_id": 63,
+        "text": " And this error rate decreases over time successfully and levels off to about state accuracy for the problem that this is training on.",
+        "slide_number": 7,
+        "start_time": 440.85,
+        "end_time": 449.175,
+        "duration": 8.325
+      },
+      {
+        "sentence_id": 64,
+        "text": " So you can see that this is actually an example of the optimization algorithm succeeding from our point of view.",
+        "slide_number": 7,
+        "start_time": 449.375,
+        "end_time": 456.125,
+        "duration": 6.75
+      },
+      {
+        "sentence_id": 65,
+        "text": " It's not actually finding a local minimum, it's just finding a very low value of the function f of x that we're minimizing.",
+        "slide_number": 7,
+        "start_time": 456.325,
+        "end_time": 464.075,
+        "duration": 7.75
+      },
+      {
+        "sentence_id": 66,
+        "text": " And that low value turns out to be good enough for us to use the model.",
+        "slide_number": 7,
+        "start_time": 464.275,
+        "end_time": 468.45,
+        "duration": 4.175
+      },
+      {
+        "sentence_id": 67,
+        "text": " Someone has asked, why don't we test a larger diversity when we've reached a local minimum? Wouldn't that tell us if we could go lower elsewhere? And the answer is yes.",
+        "slide_number": 7,
+        "start_time": 468.65,
+        "end_time": 478.575,
+        "duration": 9.925
+      },
+      {
+        "sentence_id": 68,
+        "text": " A lot of the time, we do things like run multiple random restarts of the optimization algorithm.",
+        "slide_number": 7,
+        "start_time": 478.775,
+        "end_time": 485.45,
+        "duration": 6.675
+      },
+      {
+        "sentence_id": 69,
+        "text": " And sometimes you can find lower values that way.",
+        "slide_number": 7,
+        "start_time": 485.65,
+        "end_time": 489.4,
+        "duration": 3.75
+      },
+      {
+        "sentence_id": 70,
+        "text": " For a lot of problems, you also find that several different random restarts end up with about the same final value.",
+        "slide_number": 7,
+        "start_time": 489.6,
+        "end_time": 496.825,
+        "duration": 7.225
+      },
+      {
+        "sentence_id": 71,
+        "text": " Someone else asked, can you please explain gradient norm a bit? The basic idea is if you have an input to your function x with multiple coordinates, then the gradient gives you the derivative of your function with respect to each of those coordinates.",
+        "slide_number": 7,
+        "start_time": 497.025,
+        "end_time": 512.25,
+        "duration": 15.225
+      },
+      {
+        "sentence_id": 72,
+        "text": " And that tells us the direction we should go in to move downhill.",
+        "slide_number": 7,
+        "start_time": 512.45,
+        "end_time": 516.55,
+        "duration": 4.1
+      },
+      {
+        "sentence_id": 73,
+        "text": " If you measure the norm of that gradient, that gives you an idea of how steep the function is.",
+        "slide_number": 7,
+        "start_time": 516.75,
+        "end_time": 522.45,
+        "duration": 5.7
+      },
+      {
+        "sentence_id": 74,
+        "text": " It tells you how quickly you can expect the function to drop if you move in a specific direction.",
+        "slide_number": 7,
+        "start_time": 522.65,
+        "end_time": 528.525,
+        "duration": 5.875
+      },
+      {
+        "sentence_id": 75,
+        "text": " I'm going to skip the next question because it's answered later in the talk.",
+        "slide_number": 7,
+        "start_time": 528.725,
+        "end_time": 533.2,
+        "duration": 4.475
+      },
+      {
+        "sentence_id": 76,
+        "text": " And then there's one more question about how can the gradient increase when you are using a descent direction? Is it not convex? And it turns out that the gradient can increase if you optimize a neural net because the function is not convex.",
+        "slide_number": 7,
+        "start_time": 533.4,
+        "end_time": 547.8,
+        "duration": 14.4
+      },
+      {
+        "sentence_id": 77,
+        "text": " It's also possible that if you use too large of a step size, the gradient can increase because you move to a region that's steeper.",
+        "slide_number": 7,
+        "start_time": 548.0,
+        "end_time": 555.7,
+        "duration": 7.7
+      },
+      {
+        "sentence_id": 78,
+        "text": " I think of the way that we optimize deep learning functions as more of a way of life than a strictly mathematical discipline right now.",
+        "slide_number": 8,
+        "start_time": 555.9,
+        "end_time": 564.15,
+        "duration": 8.25
+      },
+      {
+        "sentence_id": 79,
+        "text": " If you approach optimization from a really pure math point of view, you're usually looking to do something like find literally the smallest value of some function f of x.",
+        "slide_number": 8,
+        "start_time": 564.35,
+        "end_time": 574.65,
+        "duration": 10.3
+      },
+      {
+        "sentence_id": 80,
+        "text": " Or you might have some other formally defined criterion, like you're looking for a critical point of f of x where the value is locally the smallest in some neighborhood.",
+        "slide_number": 8,
+        "start_time": 574.85,
+        "end_time": 584.925,
+        "duration": 10.075
+      },
+      {
+        "sentence_id": 81,
+        "text": " For deep learning, we usually have a more qualitative pragmatic approach where our goal is to just decrease the value of f of x a lot.",
+        "slide_number": 8,
+        "start_time": 585.125,
+        "end_time": 593.725,
+        "duration": 8.6
+      },
+      {
+        "sentence_id": 82,
+        "text": " And we aren't necessarily hoping to actually find even a local minimum.",
+        "slide_number": 8,
+        "start_time": 593.925,
+        "end_time": 598.85,
+        "duration": 4.925
+      },
+      {
+        "sentence_id": 83,
+        "text": " We just want to make the error rate go down until the error rate is low enough that our model can be used for some engineering application.",
+        "slide_number": 8,
+        "start_time": 599.05,
+        "end_time": 607.35,
+        "duration": 8.3
+      },
+      {
+        "sentence_id": 84,
+        "text": " Actually finding a critical point might be very difficult, and a lot of the critical points that we find may not be what we want.",
+        "slide_number": 8,
+        "start_time": 607.55,
+        "end_time": 615.575,
+        "duration": 8.025
+      },
+      {
+        "sentence_id": 85,
+        "text": " The next topic in our overview of iterative optimization is the effect of curvature on these optimization algorithms.",
+        "slide_number": 10,
+        "start_time": 615.775,
+        "end_time": 623.35,
+        "duration": 7.575
+      },
+      {
+        "sentence_id": 86,
+        "text": " We've mentioned that gradient descent in theory will approach a critical point where the gradient is equal to zero.",
+        "slide_number": 10,
+        "start_time": 623.55,
+        "end_time": 630.65,
+        "duration": 7.1
+      },
+      {
+        "sentence_id": 87,
+        "text": " Here I show you three different kinds of critical points in one dimension.",
+        "slide_number": 10,
+        "start_time": 630.85,
+        "end_time": 635.475,
+        "duration": 4.625
+      },
+      {
+        "sentence_id": 88,
+        "text": " There can be a minimum where the function curves upward around the critical point, and the critical point is thus lower in value than all of the surrounding points.",
+        "slide_number": 10,
+        "start_time": 635.675,
+        "end_time": 645.35,
+        "duration": 9.675
+      },
+      {
+        "sentence_id": 89,
+        "text": " There can also be a local maximum where the function curves downward, so the critical point is higher in value than all the surrounding points.",
+        "slide_number": 10,
+        "start_time": 645.55,
+        "end_time": 654.4,
+        "duration": 8.85
+      },
+      {
+        "sentence_id": 90,
+        "text": " Or you can have saddle points where you actually are at neither a minimum nor a maximum.",
+        "slide_number": 10,
+        "start_time": 654.6,
+        "end_time": 660.15,
+        "duration": 5.55
+      },
+      {
+        "sentence_id": 91,
+        "text": " Saddle points make a little bit more sense in two dimensions.",
+        "slide_number": 10,
+        "start_time": 660.35,
+        "end_time": 664.225,
+        "duration": 3.875
+      },
+      {
+        "sentence_id": 92,
+        "text": " You can think of it as there's one axis where the critical point is a local minimum, and another axis where the critical point is a local maximum.",
+        "slide_number": 11,
+        "start_time": 664.425,
+        "end_time": 673.6,
+        "duration": 9.175
+      },
+      {
+        "sentence_id": 93,
+        "text": " Local maxima are usually not much of a problem for optimization algorithms.",
+        "slide_number": 11,
+        "start_time": 673.8,
+        "end_time": 679.1,
+        "duration": 5.3
+      },
+      {
+        "sentence_id": 94,
+        "text": " Saddle points can be a problem for iterative optimization algorithms.",
+        "slide_number": 11,
+        "start_time": 679.3,
+        "end_time": 684.1,
+        "duration": 4.8
+      },
+      {
+        "sentence_id": 95,
+        "text": " There's one algorithm called Newton's method where the basic strategy is to solve for a point where the gradient is equal to zero.",
+        "slide_number": 11,
+        "start_time": 684.3,
+        "end_time": 692.65,
+        "duration": 8.35
+      },
+      {
+        "sentence_id": 96,
+        "text": " If you're able to solve that problem algebraically, you can jump to a solution right away.",
+        "slide_number": 11,
+        "start_time": 692.85,
+        "end_time": 698.5,
+        "duration": 5.65
+      },
+      {
+        "sentence_id": 97,
+        "text": " Unfortunately, a solution in terms of Newton's method is not always actually a minimum.",
+        "slide_number": 11,
+        "start_time": 698.7,
+        "end_time": 704.825,
+        "duration": 6.125
+      },
+      {
+        "sentence_id": 98,
+        "text": " If you have a function that has saddle points in it, these are also places where the gradient is zero, but they are not really minima because they're maxima across some axes.",
+        "slide_number": 11,
+        "start_time": 705.025,
+        "end_time": 715.65,
+        "duration": 10.625
+      },
+      {
+        "sentence_id": 99,
+        "text": " So algorithms like Newton's method will accidentally teleport onto saddle points and get stuck.",
+        "slide_number": 11,
+        "start_time": 715.85,
+        "end_time": 722.375,
+        "duration": 6.525
+      },
+      {
+        "sentence_id": 100,
+        "text": " It turns out that for neural networks, there are a lot more saddle points than local minima.",
+        "slide_number": 11,
+        "start_time": 722.575,
+        "end_time": 727.975,
+        "duration": 5.4
+      },
+      {
+        "sentence_id": 101,
+        "text": " Fortunately, saddle points are not a big problem for gradient descent unless you initialize directly on the saddle point.",
+        "slide_number": 11,
+        "start_time": 728.175,
+        "end_time": 735.825,
+        "duration": 7.65
+      },
+      {
+        "sentence_id": 102,
+        "text": " Gradient descent can escape the saddle point.",
+        "slide_number": 11,
+        "start_time": 736.025,
+        "end_time": 739.15,
+        "duration": 3.125
+      },
+      {
+        "sentence_id": 103,
+        "text": " If you look at appendix c of a paper called Qualitatively Characterizing Neural Network Optimization Problems, I have some math there where I show why gradient descent is able to escape.",
+        "slide_number": 11,
+        "start_time": 739.35,
+        "end_time": 751.325,
+        "duration": 11.975
+      },
+      {
+        "sentence_id": 104,
+        "text": " We can characterize all of these different critical points by using curvature.",
+        "slide_number": 12,
+        "start_time": 751.525,
+        "end_time": 756.5,
+        "duration": 4.975
+      },
+      {
+        "sentence_id": 105,
+        "text": " As I said, a local minimum is where the function curves up around the point, and a local maximum is where it curves down.",
+        "slide_number": 12,
+        "start_time": 756.7,
+        "end_time": 764.3,
+        "duration": 7.6
+      },
+      {
+        "sentence_id": 106,
+        "text": " We can also think of this as a way of predicting how well gradient descent will perform.",
+        "slide_number": 12,
+        "start_time": 764.5,
+        "end_time": 770.025,
+        "duration": 5.525
+      },
+      {
+        "sentence_id": 107,
+        "text": " Gradient descent basically says we're going to look at the slope of the function, and we're going to pretend that the function is linear nearby our current x value, and then we're going to move in a direction that will make our linear approximation go downhill.",
+        "slide_number": 12,
+        "start_time": 770.225,
+        "end_time": 785.425,
+        "duration": 15.2
+      },
+      {
+        "sentence_id": 108,
+        "text": " The amount of actual payoff that you get from that depends on how curved the function is.",
+        "slide_number": 12,
+        "start_time": 785.625,
+        "end_time": 791.325,
+        "duration": 5.7
+      },
+      {
+        "sentence_id": 109,
+        "text": " If your function is perfectly linear, if you make a linear approximation to the function, then it will just overlay the function exactly.",
+        "slide_number": 12,
+        "start_time": 791.525,
+        "end_time": 799.925,
+        "duration": 8.4
+      },
+      {
+        "sentence_id": 110,
+        "text": " So here you can see I've got this dashed green line overlaying the blue line.",
+        "slide_number": 12,
+        "start_time": 800.125,
+        "end_time": 804.85,
+        "duration": 4.725
+      },
+      {
+        "sentence_id": 111,
+        "text": " If we take a little step according to the direction of the derivative, we're going to decrease the function f of x by exactly the same amount that our linear function predicted, and that means that these iterative search algorithms where we always just take little steps moving downhill are going to work really well regardless of the size of step that we use.",
+        "slide_number": 12,
+        "start_time": 805.05,
+        "end_time": 825.975,
+        "duration": 20.925
+      },
+      {
+        "sentence_id": 112,
+        "text": " If we have negative curvature where the function curves downward as we move away from the current point, then we're actually in a very nice situation where if we take a step that was predicted to reduce the dashed green linear function approximating f of x, we'll find that f of x actually decreases even more than our approximation predicted it to do.",
+        "slide_number": 12,
+        "start_time": 826.175,
+        "end_time": 847.475,
+        "duration": 21.3
+      },
+      {
+        "sentence_id": 113,
+        "text": " So if we can find directions of negative curvature, they're a good way to reduce the value of the function very quickly.",
+        "slide_number": 12,
+        "start_time": 847.675,
+        "end_time": 855.175,
+        "duration": 7.5
+      },
+      {
+        "sentence_id": 114,
+        "text": " Unfortunately what happens a lot more often is we have directions of positive curvature.",
+        "slide_number": 12,
+        "start_time": 855.375,
+        "end_time": 861.425,
+        "duration": 6.05
+      },
+      {
+        "sentence_id": 115,
+        "text": " With directions of positive curvature, the function curves up relative to the linear function.",
+        "slide_number": 12,
+        "start_time": 861.625,
+        "end_time": 867.525,
+        "duration": 5.9
+      },
+      {
+        "sentence_id": 116,
+        "text": " So when you take small steps, we end up not nearly decreasing the function as much as we wanted to, and in fact if we take too big of a step, we can accidentally increase the function value.",
+        "slide_number": 12,
+        "start_time": 867.725,
+        "end_time": 879.325,
+        "duration": 11.6
+      },
+      {
+        "sentence_id": 117,
+        "text": " We can overshoot the minimum in this direction and go back uphill.",
+        "slide_number": 12,
+        "start_time": 879.525,
+        "end_time": 883.725,
+        "duration": 4.2
+      },
+      {
+        "sentence_id": 118,
+        "text": " That's why we start looking at what's called the numerics of the function.",
+        "slide_number": 12,
+        "start_time": 883.925,
+        "end_time": 887.95,
+        "duration": 4.025
+      },
+      {
+        "sentence_id": 119,
+        "text": " We look at how much curvature there is to this function and see how it affects our ability to take large steps to search for the minimum value of the function.",
+        "slide_number": 12,
+        "start_time": 888.15,
+        "end_time": 897.2,
+        "duration": 9.05
+      },
+      {
+        "sentence_id": 120,
+        "text": " Someone asked what was the name of the paper that I just told.",
+        "slide_number": 12,
+        "start_time": 897.4,
+        "end_time": 901.3,
+        "duration": 3.9
+      },
+      {
+        "sentence_id": 121,
+        "text": " You can actually see that in the slides.",
+        "slide_number": 12,
+        "start_time": 901.5,
+        "end_time": 904.025,
+        "duration": 2.525
+      },
+      {
+        "sentence_id": 122,
+        "text": " They're available at deeplearningbook So far I've shown you these one examples of curvature, but in practice x is an n vector, and we need to understand how the curvature affects the function in many different directions.",
+        "slide_number": 12,
+        "start_time": 904.225,
+        "end_time": 917.475,
+        "duration": 13.25
+      },
+      {
+        "sentence_id": 123,
+        "text": " We can do that using the Hessian matrix.",
+        "slide_number": 13,
+        "start_time": 917.675,
+        "end_time": 920.525,
+        "duration": 2.85
+      },
+      {
+        "sentence_id": 124,
+        "text": " The Hessian matrix is a matrix containing all of the second derivatives.",
+        "slide_number": 13,
+        "start_time": 920.725,
+        "end_time": 925.45,
+        "duration": 4.725
+      },
+      {
+        "sentence_id": 125,
+        "text": " So if you look at row i and column j of the Hessian matrix, you'll find the derivative where first we take the derivative with respect to x i, and next we take the derivative with respect to x j.",
+        "slide_number": 13,
+        "start_time": 925.65,
+        "end_time": 938.125,
+        "duration": 12.475
+      },
+      {
+        "sentence_id": 126,
+        "text": " It turns out that you can use the Hessian matrix to compute the second derivative in a particular direction d.",
+        "slide_number": 13,
+        "start_time": 938.325,
+        "end_time": 945.0,
+        "duration": 6.675
+      },
+      {
+        "sentence_id": 127,
+        "text": " You can do that by computing d transpose hd, where d is a unit vector describing the direction where you would like to get the second derivative.",
+        "slide_number": 13,
+        "start_time": 945.2,
+        "end_time": 954.65,
+        "duration": 9.45
+      },
+      {
+        "sentence_id": 128,
+        "text": " It turns out that there's actually some nice intuition for what second derivative you'll get.",
+        "slide_number": 13,
+        "start_time": 954.85,
+        "end_time": 960.275,
+        "duration": 5.425
+      },
+      {
+        "sentence_id": 129,
+        "text": " Hessian matrices are usually symmetric, assuming that different properties of the function are are held, and a symmetric real matrix has an eigen decomposition in terms of orthogonal eigenvectors and eigenvalues associated with each eigenvector.",
+        "slide_number": 13,
+        "start_time": 960.475,
+        "end_time": 976.875,
+        "duration": 16.4
+      },
+      {
+        "sentence_id": 130,
+        "text": " So you can write all of the eigenvectors in a matrix Q, and they become this orthogonal basis for the space that you're in, and then you have a diagonal matrix of eigenvalues.",
+        "slide_number": 13,
+        "start_time": 977.075,
+        "end_time": 987.9,
+        "duration": 10.825
+      },
+      {
+        "sentence_id": 131,
+        "text": " If we look back at some of the slides from chapter 2, we can see what happens when we multiply by a matrix that has particular eigenvectors and eigenvalues.",
+        "slide_number": 13,
+        "start_time": 988.1,
+        "end_time": 998.025,
+        "duration": 9.925
+      },
+      {
+        "sentence_id": 132,
+        "text": " If we start out with a bunch of points that are represented by this blue circle here, and we multiply each of these points by a matrix that has eigenvectors v1 and v2, we'll see that each of the points gets stretched away from the origin according to the eigenvalues of the matrix.",
+        "slide_number": 13,
+        "start_time": 998.225,
+        "end_time": 1014.975,
+        "duration": 16.75
+      },
+      {
+        "sentence_id": 133,
+        "text": " So if you have a large lambda 1 eigenvalue associated with v1, you'll actually stretch out the the circle in this direction.",
+        "slide_number": 13,
+        "start_time": 1015.175,
+        "end_time": 1023.275,
+        "duration": 8.1
+      },
+      {
+        "sentence_id": 134,
+        "text": " Points will get pulled further out by a factor of lambda 1.",
+        "slide_number": 13,
+        "start_time": 1023.475,
+        "end_time": 1027.425,
+        "duration": 3.95
+      },
+      {
+        "sentence_id": 135,
+        "text": " And then if you have a small eigenvalue associated with direction v2, points will get pulled inward.",
+        "slide_number": 13,
+        "start_time": 1027.625,
+        "end_time": 1034.325,
+        "duration": 6.7
+      },
+      {
+        "sentence_id": 136,
+        "text": " So you can see that these directions will be, when you multiply h by d, d will either get stretched or shrunk according to how big or small the eigenvalues of the Hessian are in that direction.",
+        "slide_number": 13,
+        "start_time": 1034.525,
+        "end_time": 1046.375,
+        "duration": 11.85
+      },
+      {
+        "sentence_id": 137,
+        "text": " And then when you take the dot product with the direction again, you'll end up just measuring the size of that vector.",
+        "slide_number": 13,
+        "start_time": 1046.575,
+        "end_time": 1053.375,
+        "duration": 6.8
+      },
+      {
+        "sentence_id": 138,
+        "text": " So you'll end up saying that the second derivative is based on how much the Hessian shrinks or stretches your your vector in that particular direction.",
+        "slide_number": 13,
+        "start_time": 1053.575,
+        "end_time": 1062.25,
+        "duration": 8.675
+      },
+      {
+        "sentence_id": 139,
+        "text": " But what happens if your direction is not an eigenvector? Well then, it turns out that you basically interpolate based on the eigenvectors that are nearby.",
+        "slide_number": 13,
+        "start_time": 1062.45,
+        "end_time": 1072.075,
+        "duration": 9.625
+      },
+      {
+        "sentence_id": 140,
+        "text": " You can compute the second derivative as a sum over all the different eigenvalues, and you multiply based by, you multiply by this term that measures how similar the direction you're looking in is to that corresponding eigenvalue.",
+        "slide_number": 13,
+        "start_time": 1072.275,
+        "end_time": 1086.5,
+        "duration": 14.225
+      },
+      {
+        "sentence_id": 141,
+        "text": " You can kind of see that in this plot, that if you have a direction that's very closely aligned with eigenvector 2, you're going to get your direction stretched by approximately eigenvalue 2.",
+        "slide_number": 13,
+        "start_time": 1086.7,
+        "end_time": 1097.725,
+        "duration": 11.025
+      },
+      {
+        "sentence_id": 142,
+        "text": " And then as you move towards eigenvalue 1, the amount that your direction gets stretched is going to scale gradually up to the amount of stretching that comes from eigenvalue 1.",
+        "slide_number": 13,
+        "start_time": 1097.925,
+        "end_time": 1108.925,
+        "duration": 11.0
+      },
+      {
+        "sentence_id": 143,
+        "text": " You're never going to stretch more than the maximum eigenvalue, you're never going to stretch less than the minimum eigenvalue.",
+        "slide_number": 13,
+        "start_time": 1109.125,
+        "end_time": 1116.125,
+        "duration": 7.0
+      },
+      {
+        "sentence_id": 144,
+        "text": " We can use these eigenvalues to figure out what the optimal step size is likely to be.",
+        "slide_number": 14,
+        "start_time": 1116.325,
+        "end_time": 1122.225,
+        "duration": 5.9
+      },
+      {
+        "sentence_id": 145,
+        "text": " So first off, if we have a direction of negative curvature, even a second order approximation would tell us that we can keep stepping forever.",
+        "slide_number": 12,
+        "start_time": 1122.425,
+        "end_time": 1131.45,
+        "duration": 9.025
+      },
+      {
+        "sentence_id": 146,
+        "text": " That's probably not going to be true for a neural net, because it's very non it's not even really quadratic.",
+        "slide_number": 12,
+        "start_time": 1131.65,
+        "end_time": 1138.475,
+        "duration": 6.825
+      },
+      {
+        "sentence_id": 147,
+        "text": " It's likely to start going back uphill at some point for a large step size.",
+        "slide_number": 12,
+        "start_time": 1138.675,
+        "end_time": 1143.2,
+        "duration": 4.525
+      },
+      {
+        "sentence_id": 148,
+        "text": " The main place where the Hessian tells us a lot of information is if we look at the case of positive curvature.",
+        "slide_number": 12,
+        "start_time": 1143.4,
+        "end_time": 1150.125,
+        "duration": 6.725
+      },
+      {
+        "sentence_id": 149,
+        "text": " We know that if we start following the linear function downhill, we can decrease the value of the function.",
+        "slide_number": 12,
+        "start_time": 1150.325,
+        "end_time": 1156.425,
+        "duration": 6.1
+      },
+      {
+        "sentence_id": 150,
+        "text": " But if we step too far, we'll start to go back uphill.",
+        "slide_number": 12,
+        "start_time": 1156.625,
+        "end_time": 1160.175,
+        "duration": 3.55
+      },
+      {
+        "sentence_id": 151,
+        "text": " We don't want to step any further than this minimum point here.",
+        "slide_number": 12,
+        "start_time": 1160.375,
+        "end_time": 1163.75,
+        "duration": 3.375
+      },
+      {
+        "sentence_id": 152,
+        "text": " We can make a second order Taylor series approximation to the value that we'll get when we take a specific gradient step.",
+        "slide_number": 14,
+        "start_time": 1163.95,
+        "end_time": 1171.175,
+        "duration": 7.225
+      },
+      {
+        "sentence_id": 153,
+        "text": " We can say we're starting off at some point x naught and we're taking a gradient descent step where we move by step size epsilon multiplied by a gradient g.",
+        "slide_number": 14,
+        "start_time": 1171.375,
+        "end_time": 1181.125,
+        "duration": 9.75
+      },
+      {
+        "sentence_id": 154,
+        "text": " The first order Taylor series approximation, or sorry, second order Taylor series approximation tells us that the value at this new point will be approximately equal to the value at our current point minus epsilon times the squared norm of the gradient.",
+        "slide_number": 14,
+        "start_time": 1181.325,
+        "end_time": 1197.8,
+        "duration": 16.475
+      },
+      {
+        "sentence_id": 155,
+        "text": " This is the first order Taylor series term, plus one half epsilon squared times the gradient multiplied by the Hessian multiplied by the gradient.",
+        "slide_number": 14,
+        "start_time": 1198.0,
+        "end_time": 1207.9,
+        "duration": 9.9
+      },
+      {
+        "sentence_id": 156,
+        "text": " This here is the directional second derivative in the direction of the gradient but also scaled by the size of the gradient.",
+        "slide_number": 14,
+        "start_time": 1208.1,
+        "end_time": 1215.9,
+        "duration": 7.8
+      },
+      {
+        "sentence_id": 157,
+        "text": " So if we then solve this equation for the minimum predicted value that we'll get after the step and we solve it in terms of the step size, assuming that we're looking in a direction of positive curvature, we find that the optimal step size is equal to the squared norm of the gradient divided by g transpose hg.",
+        "slide_number": 14,
+        "start_time": 1216.1,
+        "end_time": 1235.025,
+        "duration": 18.925
+      },
+      {
+        "sentence_id": 158,
+        "text": " So what does this tell us overall? The numerator says that if the gradient is bigger, we can take bigger steps.",
+        "slide_number": 14,
+        "start_time": 1235.225,
+        "end_time": 1241.975,
+        "duration": 6.75
+      },
+      {
+        "sentence_id": 159,
+        "text": " So big gradients will speed up the optimization algorithm.",
+        "slide_number": 14,
+        "start_time": 1242.175,
+        "end_time": 1246.075,
+        "duration": 3.9
+      },
+      {
+        "sentence_id": 160,
+        "text": " In the denominator, we actually see that this g transpose hg term can shrink the optimal step size a lot.",
+        "slide_number": 14,
+        "start_time": 1246.275,
+        "end_time": 1253.675,
+        "duration": 7.4
+      },
+      {
+        "sentence_id": 161,
+        "text": " So if the gradient happens to point in a direction that's aligned with an eigenvector of the Hessian that has a big eigenvalue, you have to slow down a lot.",
+        "slide_number": 14,
+        "start_time": 1253.875,
+        "end_time": 1263.4,
+        "duration": 9.525
+      },
+      {
+        "sentence_id": 162,
+        "text": " Otherwise we'll overshoot the minimum and go back uphill.",
+        "slide_number": 14,
+        "start_time": 1263.6,
+        "end_time": 1267.425,
+        "duration": 3.825
+      },
+      {
+        "sentence_id": 163,
+        "text": " Overall this shows us something about why when we actually run an iterative search in practice, we may not actually arrive at a critical point.",
+        "slide_number": 14,
+        "start_time": 1267.625,
+        "end_time": 1276.025,
+        "duration": 8.4
+      },
+      {
+        "sentence_id": 164,
+        "text": " Over time we'd expect the gradient to get smaller and smaller, but we'll often also find for the kinds of optimization problems that come up with neural nets, we'll find that this g transpose hg term gets very big and we're just not able to make very big steps anymore, even if the gradient remains large.",
+        "slide_number": 14,
+        "start_time": 1276.225,
+        "end_time": 1295.575,
+        "duration": 19.35
+      },
+      {
+        "sentence_id": 165,
+        "text": " We can measure this with something called the condition number.",
+        "slide_number": 15,
+        "start_time": 1295.775,
+        "end_time": 1299.475,
+        "duration": 3.7
+      },
+      {
+        "sentence_id": 166,
+        "text": " The condition number looks at the largest ratio we can find between two of our eigenvalues.",
+        "slide_number": 15,
+        "start_time": 1299.675,
+        "end_time": 1305.575,
+        "duration": 5.9
+      },
+      {
+        "sentence_id": 167,
+        "text": " If there's a very large eigenvalue and a very small eigenvalue, it means that when our gradient points in the direction of the large eigenvalue, we're forced to take very small steps.",
+        "slide_number": 15,
+        "start_time": 1305.775,
+        "end_time": 1317.45,
+        "duration": 11.675
+      },
+      {
+        "sentence_id": 168,
+        "text": " And we have to do that even if sometimes the gradient would point in the direction of a small eigenvalue and it would be safe to take larger steps.",
+        "slide_number": 15,
+        "start_time": 1317.65,
+        "end_time": 1326.45,
+        "duration": 8.8
+      },
+      {
+        "sentence_id": 169,
+        "text": " Basically if there's a wide range of eigenvalues, gradient descent has to miss out on a lot of the potential value that it could find on each step.",
+        "slide_number": 15,
+        "start_time": 1326.65,
+        "end_time": 1336.025,
+        "duration": 9.375
+      },
+      {
+        "sentence_id": 170,
+        "text": " It has to keep the step size small to avoid accidentally going uphill.",
+        "slide_number": 15,
+        "start_time": 1336.225,
+        "end_time": 1341.025,
+        "duration": 4.8
+      },
+      {
+        "sentence_id": 171,
+        "text": " You can see this with this contour plot.",
+        "slide_number": 16,
+        "start_time": 1341.225,
+        "end_time": 1343.925,
+        "duration": 2.7
+      },
+      {
+        "sentence_id": 172,
+        "text": " Here we're minimizing a quadratic function.",
+        "slide_number": 16,
+        "start_time": 1344.125,
+        "end_time": 1347.05,
+        "duration": 2.925
+      },
+      {
+        "sentence_id": 173,
+        "text": " Each of the black rings shows a set of points where the function is of equal value.",
+        "slide_number": 16,
+        "start_time": 1347.25,
+        "end_time": 1352.6,
+        "duration": 5.35
+      },
+      {
+        "sentence_id": 174,
+        "text": " So at the middle here we've got a minimum of the function.",
+        "slide_number": 16,
+        "start_time": 1352.8,
+        "end_time": 1356.25,
+        "duration": 3.45
+      },
+      {
+        "sentence_id": 175,
+        "text": " Every time we see a ring on our way out, we're taking a step up in value of the function.",
+        "slide_number": 16,
+        "start_time": 1356.45,
+        "end_time": 1361.875,
+        "duration": 5.425
+      },
+      {
+        "sentence_id": 176,
+        "text": " And the red path is showing how gradient descent moves.",
+        "slide_number": 16,
+        "start_time": 1362.075,
+        "end_time": 1365.425,
+        "duration": 3.35
+      },
+      {
+        "sentence_id": 177,
+        "text": " Ideally gradient descent would want to just point straight at the minimum and go straight there.",
+        "slide_number": 16,
+        "start_time": 1365.625,
+        "end_time": 1371.1,
+        "duration": 5.475
+      },
+      {
+        "sentence_id": 178,
+        "text": " Instead we keep finding that the gradients tend to point kind of across this canyon.",
+        "slide_number": 16,
+        "start_time": 1371.3,
+        "end_time": 1376.475,
+        "duration": 5.175
+      },
+      {
+        "sentence_id": 179,
+        "text": " And so we keep going down the canyon wall, overshooting the bottom of the canyon, and coming to the other side of the canyon.",
+        "slide_number": 16,
+        "start_time": 1376.675,
+        "end_time": 1384.05,
+        "duration": 7.375
+      },
+      {
+        "sentence_id": 180,
+        "text": " So you go in this zigzagging fashion where we're always walking up or down a canyon wall instead of kind of flowing down along the bottom of the canyon.",
+        "slide_number": 16,
+        "start_time": 1384.25,
+        "end_time": 1393.5,
+        "duration": 9.25
+      },
+      {
+        "sentence_id": 181,
+        "text": " You can see this with neural networks.",
+        "slide_number": 17,
+        "start_time": 1393.7,
+        "end_time": 1396.325,
+        "duration": 2.625
+      },
+      {
+        "sentence_id": 182,
+        "text": " That same paper that I mentioned earlier includes this visualization of a little 3D representation of what happens in a neural net optimization problem with millions of parameters.",
+        "slide_number": 17,
+        "start_time": 1396.525,
+        "end_time": 1408.9,
+        "duration": 12.375
+      },
+      {
+        "sentence_id": 183,
+        "text": " We can see that toward the end of training gradient descent, as represented by this blue path, is moving down this really tight canyon with the green 3D mesh.",
+        "slide_number": 17,
+        "start_time": 1409.1,
+        "end_time": 1419.425,
+        "duration": 10.325
+      },
+      {
+        "sentence_id": 184,
+        "text": " And so the gradient is actually still pretty large here, but the curvature is even larger.",
+        "slide_number": 17,
+        "start_time": 1419.625,
+        "end_time": 1425.25,
+        "duration": 5.625
+      },
+      {
+        "sentence_id": 185,
+        "text": " And the curvature makes it really hard to take large steps.",
+        "slide_number": 17,
+        "start_time": 1425.45,
+        "end_time": 1429.075,
+        "duration": 3.625
+      },
+      {
+        "sentence_id": 186,
+        "text": " Some things about this visualization are a little bit hard to understand because when you work with multiple dimensions and project them down to just a few dimensions, some things can be lost.",
+        "slide_number": 17,
+        "start_time": 1429.275,
+        "end_time": 1441.15,
+        "duration": 11.875
+      },
+      {
+        "sentence_id": 187,
+        "text": " So one thing that we can't see here is that this blue curve is actually zigzagging a lot, just like in the previous visualization.",
+        "slide_number": 17,
+        "start_time": 1441.35,
+        "end_time": 1449.25,
+        "duration": 7.9
+      },
+      {
+        "sentence_id": 188,
+        "text": " It's just that the way that we made this plot means that we can't actually see the other dimensions where it's zigzagging.",
+        "slide_number": 17,
+        "start_time": 1449.45,
+        "end_time": 1456.35,
+        "duration": 6.9
+      },
+      {
+        "sentence_id": 189,
+        "text": " But those zigzags are stopping it from moving a lot faster along the bottom of this canyon.",
+        "slide_number": 17,
+        "start_time": 1456.55,
+        "end_time": 1462.25,
+        "duration": 5.7
+      },
+      {
+        "sentence_id": 190,
+        "text": " The last topic that we'll cover for iterative optimization is the idea of constrained optimization.",
+        "slide_number": 18,
+        "start_time": 1462.45,
+        "end_time": 1469.1,
+        "duration": 6.65
+      },
+      {
+        "sentence_id": 191,
+        "text": " And I don't actually have a lot to say about this.",
+        "slide_number": 18,
+        "start_time": 1469.3,
+        "end_time": 1472.425,
+        "duration": 3.125
+      },
+      {
+        "sentence_id": 192,
+        "text": " I'm just going to very quickly mention a little bit about how it works.",
+        "slide_number": 19,
+        "start_time": 1472.625,
+        "end_time": 1476.775,
+        "duration": 4.15
+      },
+      {
+        "sentence_id": 193,
+        "text": " If you have constraints for a function, like if you have some values g that measure how much you deviate from exactly satisfying a constraint or some values h that measure how far you are on the wrong side of some inequality, you can actually take your original function f of x and transform it into this new function called the Lagrangian function where you penalize the function for violating those constraints.",
+        "slide_number": 19,
+        "start_time": 1476.975,
+        "end_time": 1500.875,
+        "duration": 23.9
+      },
+      {
+        "sentence_id": 194,
+        "text": " And you can then solve, instead of just a minimization problem, you can solve a min problem where you want to keep increasing the coefficients on those penalty terms until you satisfy the penalty terms.",
+        "slide_number": 19,
+        "start_time": 1501.075,
+        "end_time": 1513.2,
+        "duration": 12.125
+      },
+      {
+        "sentence_id": 195,
+        "text": " This will give you a solution to the constrained optimization problem rather than just letting you search over all of space.",
+        "slide_number": 19,
+        "start_time": 1513.4,
+        "end_time": 1520.825,
+        "duration": 7.425
+      },
+      {
+        "sentence_id": 196,
+        "text": " In this book we usually use this Lagrangian or it's also called the KKT version when you include both the exact and the inequality constraints.",
+        "slide_number": 19,
+        "start_time": 1521.025,
+        "end_time": 1530.625,
+        "duration": 9.6
+      },
+      {
+        "sentence_id": 197,
+        "text": " In this book we mostly use this approach for solving problems in theory, like if we want to show that the Gaussian is the probability distribution of the highest entropy, we can use some of these penalty terms to constrain that the function we're searching over is a probability distribution that's non and sums to one.",
+        "slide_number": 19,
+        "start_time": 1530.825,
+        "end_time": 1549.225,
+        "duration": 18.4
+      },
+      {
+        "sentence_id": 198,
+        "text": " In practice, if we actually want to write a program that we run where we use several iterations to search for a solution, there's a much easier thing you can do.",
+        "slide_number": 19,
+        "start_time": 1549.425,
+        "end_time": 1559.2,
+        "duration": 9.775
+      },
+      {
+        "sentence_id": 199,
+        "text": " Instead of having this min problem and Lagrange penalties and so on, you can just project x back to the nearest point that satisfies the constraints after each step.",
+        "slide_number": 19,
+        "start_time": 1559.4,
+        "end_time": 1569.85,
+        "duration": 10.45
+      },
+      {
+        "sentence_id": 200,
+        "text": " And that's a very practical, easy to way of solving these kinds of problems.",
+        "slide_number": 19,
+        "start_time": 1570.05,
+        "end_time": 1574.975,
+        "duration": 4.925
+      },
+      {
+        "sentence_id": 201,
+        "text": " Someone has asked which data visualization did you use to plot the data points? And for that you should read the paper.",
+        "slide_number": 19,
+        "start_time": 1575.175,
+        "end_time": 1582.35,
+        "duration": 7.175
+      },
+      {
+        "sentence_id": 202,
+        "text": " It's a visualization that we came up specifically for that paper.",
+        "slide_number": 19,
+        "start_time": 1582.55,
+        "end_time": 1586.7,
+        "duration": 4.15
+      },
+      {
+        "sentence_id": 203,
+        "text": " It's not a standard technique.",
+        "slide_number": 19,
+        "start_time": 1586.9,
+        "end_time": 1589.0,
+        "duration": 2.1
+      },
+      {
+        "sentence_id": 204,
+        "text": " Someone else asked what happens if we do not choose the direction or the gradient points but select the direction where the step we can take is maximal? So yeah, you can actually look for directions where you intentionally seek out negative curvature and so on.",
+        "slide_number": 19,
+        "start_time": 1589.2,
+        "end_time": 1604.85,
+        "duration": 15.65
+      },
+      {
+        "sentence_id": 205,
+        "text": " It turns out to be difficult to do that in high dimensional space.",
+        "slide_number": 19,
+        "start_time": 1605.05,
+        "end_time": 1609.275,
+        "duration": 4.225
+      },
+      {
+        "sentence_id": 206,
+        "text": " Someone asks what gradient descent optimizers would you recommend? I would say usually atom or gradient descent with momentum are pretty good, and a lot of the time you should consider using gradient clipping.",
+        "slide_number": 19,
+        "start_time": 1609.475,
+        "end_time": 1622.3,
+        "duration": 12.825
+      },
+      {
+        "sentence_id": 207,
+        "text": " The next part of our overall roadmap is to discuss what happens when we have rounding error, when we have underflow, overflow, all of these issues that happen when we use a finite number of bits to represent real numbers.",
+        "slide_number": 20,
+        "start_time": 1622.5,
+        "end_time": 1636.1,
+        "duration": 13.6
+      },
+      {
+        "sentence_id": 208,
+        "text": " This is really important.",
+        "slide_number": 21,
+        "start_time": 1636.3,
+        "end_time": 1638.35,
+        "duration": 2.05
+      },
+      {
+        "sentence_id": 209,
+        "text": " I know it sounds kind of boring to talk about this low stuff with bits, but writing numerically precise code is actually a deep learning super skill.",
+        "slide_number": 21,
+        "start_time": 1638.55,
+        "end_time": 1647.8,
+        "duration": 9.25
+      },
+      {
+        "sentence_id": 210,
+        "text": " A lot of the time you'll find that deep learning algorithms sort of work when you code them up.",
+        "slide_number": 21,
+        "start_time": 1648.0,
+        "end_time": 1653.15,
+        "duration": 5.15
+      },
+      {
+        "sentence_id": 211,
+        "text": " The loss will go down, the accuracy will go up, the accuracy will get within a few percentage points of the state of the art.",
+        "slide_number": 21,
+        "start_time": 1653.35,
+        "end_time": 1660.875,
+        "duration": 7.525
+      },
+      {
+        "sentence_id": 212,
+        "text": " And you can check your code really carefully and you can find that there aren't really any bugs, but maybe there are some things that aren't quite optimal about it.",
+        "slide_number": 21,
+        "start_time": 1661.075,
+        "end_time": 1670.05,
+        "duration": 8.975
+      },
+      {
+        "sentence_id": 213,
+        "text": " And that's often caused by a loss of numerical precision, where you run your gradient descent algorithm and you don't get quite as good results as you think you should.",
+        "slide_number": 21,
+        "start_time": 1670.25,
+        "end_time": 1680.1,
+        "duration": 9.85
+      },
+      {
+        "sentence_id": 214,
+        "text": " And another time you'll find that your deep learning algorithm explodes.",
+        "slide_number": 21,
+        "start_time": 1680.3,
+        "end_time": 1684.7,
+        "duration": 4.4
+      },
+      {
+        "sentence_id": 215,
+        "text": " You get a lot of not a number values, you get a lot of very large values, and this might happen even if you make your learning rate relatively small and you think everything should be stable.",
+        "slide_number": 21,
+        "start_time": 1684.9,
+        "end_time": 1695.9,
+        "duration": 11.0
+      },
+      {
+        "sentence_id": 216,
+        "text": " Both of these problems actually usually come from writing code that doesn't have high enough numerical precision.",
+        "slide_number": 21,
+        "start_time": 1696.1,
+        "end_time": 1703.075,
+        "duration": 6.975
+      },
+      {
+        "sentence_id": 217,
+        "text": " So being able to write numerically precise code can really differentiate how well you perform as a deep learning practitioner.",
+        "slide_number": 21,
+        "start_time": 1703.275,
+        "end_time": 1711.525,
+        "duration": 8.25
+      },
+      {
+        "sentence_id": 218,
+        "text": " A lot of people have heard the story of how when I first thought of generative adversarial nets, I was at a bar and I went home and I coded them up immediately.",
+        "slide_number": 21,
+        "start_time": 1711.725,
+        "end_time": 1721.35,
+        "duration": 9.625
+      },
+      {
+        "sentence_id": 219,
+        "text": " And you know within an hour or so later I actually had them working.",
+        "slide_number": 21,
+        "start_time": 1721.55,
+        "end_time": 1726.0,
+        "duration": 4.45
+      },
+      {
+        "sentence_id": 220,
+        "text": " A lot of people have wondered how I was able to do that, and part of the answer is that I knew about all of this really boring numerical precision stuff, so I didn't waste any time shooting myself in the foot writing numerically imprecise code.",
+        "slide_number": 21,
+        "start_time": 1726.2,
+        "end_time": 1740.825,
+        "duration": 14.625
+      },
+      {
+        "sentence_id": 221,
+        "text": " And that reduces the amount of time it takes to get the algorithm working a lot.",
+        "slide_number": 21,
+        "start_time": 1741.025,
+        "end_time": 1746.25,
+        "duration": 5.225
+      },
+      {
+        "sentence_id": 222,
+        "text": " The basic idea is that when you use a finite number of bits to represent a real number, you get both rounding errors and what are called truncation errors.",
+        "slide_number": 22,
+        "start_time": 1746.45,
+        "end_time": 1756.275,
+        "duration": 9.825
+      },
+      {
+        "sentence_id": 223,
+        "text": " In a digital computer we're usually talking about using float 32 or some other similar schemes to represent real numbers.",
+        "slide_number": 22,
+        "start_time": 1756.475,
+        "end_time": 1765.05,
+        "duration": 8.575
+      },
+      {
+        "sentence_id": 224,
+        "text": " That's especially true when we're using CUDA on GPUs.",
+        "slide_number": 22,
+        "start_time": 1765.25,
+        "end_time": 1769.675,
+        "duration": 4.425
+      },
+      {
+        "sentence_id": 225,
+        "text": " Sometimes we use other floating formats.",
+        "slide_number": 22,
+        "start_time": 1769.875,
+        "end_time": 1772.95,
+        "duration": 3.075
+      },
+      {
+        "sentence_id": 226,
+        "text": " A lot of the problems I'm going to describe here will often mostly go away if you're able to switch to float 64, but that usually requires you know slower computation on GPU or may even force you to move to CPU.",
+        "slide_number": 22,
+        "start_time": 1773.15,
+        "end_time": 1787.4,
+        "duration": 14.25
+      },
+      {
+        "sentence_id": 227,
+        "text": " It will also force you to use more memory.",
+        "slide_number": 22,
+        "start_time": 1787.6,
+        "end_time": 1790.35,
+        "duration": 2.75
+      },
+      {
+        "sentence_id": 228,
+        "text": " So if you can write numerically precise code using float 32, then that can be a big advantage.",
+        "slide_number": 22,
+        "start_time": 1790.55,
+        "end_time": 1797.1,
+        "duration": 6.55
+      },
+      {
+        "sentence_id": 229,
+        "text": " There's basically three categories of problems that happen on these kinds of 32 representations.",
+        "slide_number": 22,
+        "start_time": 1797.3,
+        "end_time": 1803.95,
+        "duration": 6.65
+      },
+      {
+        "sentence_id": 230,
+        "text": " So first, most numbers that you work with, they're not going to cause catastrophic problems on their own, but they are going to get rounded.",
+        "slide_number": 22,
+        "start_time": 1804.15,
+        "end_time": 1812.2,
+        "duration": 8.05
+      },
+      {
+        "sentence_id": 231,
+        "text": " If you have some real number x and you turn it into a representation on computer, it's going to get rounded to some value x plus delta, where delta is just some small value describing the rounding error that happened that you'll be off by a little bit from what you meant to be.",
+        "slide_number": 22,
+        "start_time": 1812.4,
+        "end_time": 1828.6,
+        "duration": 16.2
+      },
+      {
+        "sentence_id": 232,
+        "text": " A larger problem is when you have some extremely large value of x, you just can't represent it with the range of numbers that your float 32 values can represent, and it will actually get replaced by some placeholder like inf, just saying that x is too large to represent.",
+        "slide_number": 22,
+        "start_time": 1828.8,
+        "end_time": 1845.725,
+        "duration": 16.925
+      },
+      {
+        "sentence_id": 233,
+        "text": " And so now it's not really a finite value anymore.",
+        "slide_number": 22,
+        "start_time": 1845.925,
+        "end_time": 1849.65,
+        "duration": 3.725
+      },
+      {
+        "sentence_id": 234,
+        "text": " You've got this infinite number, and your code will probably still go ahead and keep doing arithmetic on this number as if it were a real value, and then you'll get in trouble.",
+        "slide_number": 22,
+        "start_time": 1849.85,
+        "end_time": 1859.8,
+        "duration": 9.95
+      },
+      {
+        "sentence_id": 235,
+        "text": " There's another topic which is still basically a kind of rounding error, but it's a particularly harmful kind of rounding error, where if you have a very small value of x, it can get replaced by zero.",
+        "slide_number": 22,
+        "start_time": 1860.0,
+        "end_time": 1871.925,
+        "duration": 11.925
+      },
+      {
+        "sentence_id": 236,
+        "text": " This is especially harmful because a lot of the algorithms in deep learning often assume that we have some very small but non variable.",
+        "slide_number": 22,
+        "start_time": 1872.125,
+        "end_time": 1881.075,
+        "duration": 8.95
+      },
+      {
+        "sentence_id": 237,
+        "text": " Like for example, if you use the logistic sigmoid activation function, you can pass very negative values to the logistic sigmoid, and algebraically they'll never become quite zero, but in a computer they can definitely get rounded down to zero.",
+        "slide_number": 22,
+        "start_time": 1881.275,
+        "end_time": 1896.5,
+        "duration": 15.225
+      },
+      {
+        "sentence_id": 238,
+        "text": " And so people are asking, aren't these numerical issues already addressed in the current deep learning libraries? And the answer is basically yes, but you need to know when to look out for them.",
+        "slide_number": 22,
+        "start_time": 1896.7,
+        "end_time": 1908.075,
+        "duration": 11.375
+      },
+      {
+        "sentence_id": 239,
+        "text": " A lot of the time you write your own code, and you might end up rewriting a version of something that already has a numerically stable variant.",
+        "slide_number": 22,
+        "start_time": 1908.275,
+        "end_time": 1916.55,
+        "duration": 8.275
+      },
+      {
+        "sentence_id": 240,
+        "text": " Sometimes you might need to, for example, compute a softmax over several tensors instead of just one tensor, and you'll need to know how to do that in a numerically stable way if your library only provides a softmax for a single tensor.",
+        "slide_number": 22,
+        "start_time": 1916.75,
+        "end_time": 1931.65,
+        "duration": 14.9
+      },
+      {
+        "sentence_id": 241,
+        "text": " Some other people are asking if there's any pointers on the best way to deal with NANDs.",
+        "slide_number": 22,
+        "start_time": 1931.85,
+        "end_time": 1937.375,
+        "duration": 5.525
+      },
+      {
+        "sentence_id": 242,
+        "text": " That's basically what the next several slides will do.",
+        "slide_number": 22,
+        "start_time": 1937.575,
+        "end_time": 1941.025,
+        "duration": 3.45
+      },
+      {
+        "sentence_id": 243,
+        "text": " Someone asks, how does the 64 representation solve the NAND error? Well, the basic idea is that if you have 32 bits, there's a certain range of values that you can represent.",
+        "slide_number": 22,
+        "start_time": 1941.225,
+        "end_time": 1953.275,
+        "duration": 12.05
+      },
+      {
+        "sentence_id": 244,
+        "text": " If you have 64 bits, that range expands.",
+        "slide_number": 22,
+        "start_time": 1953.475,
+        "end_time": 1956.925,
+        "duration": 3.45
+      },
+      {
+        "sentence_id": 245,
+        "text": " So a program that might cause a NAND when you use 32 bits might actually avoid the NAND when you use 64 bits.",
+        "slide_number": 22,
+        "start_time": 1957.125,
+        "end_time": 1964.7,
+        "duration": 7.575
+      },
+      {
+        "sentence_id": 246,
+        "text": " If you use a program that uses even bigger numbers, you can eventually still get NANDs for 64 bits.",
+        "slide_number": 22,
+        "start_time": 1964.9,
+        "end_time": 1971.725,
+        "duration": 6.825
+      },
+      {
+        "sentence_id": 247,
+        "text": " It's just that fewer programs cause problems using 64 bits than using 32.",
+        "slide_number": 22,
+        "start_time": 1971.925,
+        "end_time": 1978.025,
+        "duration": 6.1
+      },
+      {
+        "sentence_id": 248,
+        "text": " One example is if you look at the PyLearn2 repository that I used to work on in grad school before we had TensorFlow, you can look at some of the unit tests, and when I compute the KL divergence between two Gaussian distributions, if I use float64, the unit test expects the KL divergence to have a minimum value of 0.",
+        "slide_number": 22,
+        "start_time": 1978.225,
+        "end_time": 1999.0,
+        "duration": 20.775
+      },
+      {
+        "sentence_id": 249,
+        "text": " But if I use float32, the unit test actually has to allow the KL divergence to go slightly negative.",
+        "slide_number": 22,
+        "start_time": 1999.2,
+        "end_time": 2006.45,
+        "duration": 7.25
+      },
+      {
+        "sentence_id": 250,
+        "text": " So one example of how we can get rounding errors and they can affect this code is what happens when you add a very small number to a larger number.",
+        "slide_number": 23,
+        "start_time": 2006.65,
+        "end_time": 2015.7,
+        "duration": 9.05
+      },
+      {
+        "sentence_id": 251,
+        "text": " So we're going to make an array using 32 floats, and we're going to store the value 0 and the value 10 to the minus 8 in this array.",
+        "slide_number": 23,
+        "start_time": 2015.9,
+        "end_time": 2024.3,
+        "duration": 8.4
+      },
+      {
+        "sentence_id": 252,
+        "text": " If we compute the argmax of this array, the argmax is 1 because position 0 has a value of 0, position 1 has a positive but very small value of 10 to the minus 8.",
+        "slide_number": 23,
+        "start_time": 2024.5,
+        "end_time": 2036.4,
+        "duration": 11.9
+      },
+      {
+        "sentence_id": 253,
+        "text": " So now suppose that we take these numbers and we add them to a much larger number.",
+        "slide_number": 23,
+        "start_time": 2036.6,
+        "end_time": 2041.775,
+        "duration": 5.175
+      },
+      {
+        "sentence_id": 254,
+        "text": " We add them to 1.",
+        "slide_number": 23,
+        "start_time": 2041.975,
+        "end_time": 2043.75,
+        "duration": 1.775
+      },
+      {
+        "sentence_id": 255,
+        "text": " Well, 0 is going to have 1 added to it and end up with a value of 1.",
+        "slide_number": 23,
+        "start_time": 2043.95,
+        "end_time": 2049.05,
+        "duration": 5.1
+      },
+      {
+        "sentence_id": 256,
+        "text": " Ideally, 1 plus 10 to the minus 8 would be represented as 1, sorry, 1 after the correct number of zeros.",
+        "slide_number": 23,
+        "start_time": 2049.25,
+        "end_time": 2057.0,
+        "duration": 7.75
+      },
+      {
+        "sentence_id": 257,
+        "text": " In this case, it's actually going to get rounded to 1, which isn't quite what we want.",
+        "slide_number": 23,
+        "start_time": 2057.2,
+        "end_time": 2062.45,
+        "duration": 5.25
+      },
+      {
+        "sentence_id": 258,
+        "text": " When you take the argmax of the new array where we added 1 to it, we actually get that the argmax is 0 now because numpy breaks ties to the first index that's tied for the max.",
+        "slide_number": 23,
+        "start_time": 2062.65,
+        "end_time": 2073.5,
+        "duration": 10.85
+      },
+      {
+        "sentence_id": 259,
+        "text": " So this addition of a number that caused rounding error has actually downstream changed the results quite a lot.",
+        "slide_number": 23,
+        "start_time": 2073.7,
+        "end_time": 2080.875,
+        "duration": 7.175
+      },
+      {
+        "sentence_id": 260,
+        "text": " We only really wanted to extract a single bit from this computation, and we're now actually getting the value of that bit wrong.",
+        "slide_number": 23,
+        "start_time": 2081.075,
+        "end_time": 2088.675,
+        "duration": 7.6
+      },
+      {
+        "sentence_id": 261,
+        "text": " There's some secondary effects that happen when we have rounding error and overflow and underflow errors.",
+        "slide_number": 24,
+        "start_time": 2088.875,
+        "end_time": 2095.65,
+        "duration": 6.775
+      },
+      {
+        "sentence_id": 262,
+        "text": " What happens is after the first error, we do some more math, and then the second error causes a bigger problem.",
+        "slide_number": 24,
+        "start_time": 2095.85,
+        "end_time": 2102.75,
+        "duration": 6.9
+      },
+      {
+        "sentence_id": 263,
+        "text": " So for example, say we have some code that computes x minus y.",
+        "slide_number": 24,
+        "start_time": 2102.95,
+        "end_time": 2107.3,
+        "duration": 4.35
+      },
+      {
+        "sentence_id": 264,
+        "text": " x minus y is a relatively safe thing to do to start with.",
+        "slide_number": 24,
+        "start_time": 2107.5,
+        "end_time": 2111.675,
+        "duration": 4.175
+      },
+      {
+        "sentence_id": 265,
+        "text": " There's definitely some ways it can go wrong, but there's not anything fundamentally wrong with doing a subtraction.",
+        "slide_number": 24,
+        "start_time": 2111.875,
+        "end_time": 2118.7,
+        "duration": 6.825
+      },
+      {
+        "sentence_id": 266,
+        "text": " But now suppose that x overflows to inf, y overflows to inf.",
+        "slide_number": 24,
+        "start_time": 2118.9,
+        "end_time": 2123.55,
+        "duration": 4.65
+      },
+      {
+        "sentence_id": 267,
+        "text": " Well, then we've got infinity minus infinity, and we don't really know which infinity is larger.",
+        "slide_number": 24,
+        "start_time": 2123.75,
+        "end_time": 2129.825,
+        "duration": 6.075
+      },
+      {
+        "sentence_id": 268,
+        "text": " This kind of operation is not really defined.",
+        "slide_number": 24,
+        "start_time": 2130.025,
+        "end_time": 2133.35,
+        "duration": 3.325
+      },
+      {
+        "sentence_id": 269,
+        "text": " So now our x minus y will turn these infs into nans.",
+        "slide_number": 24,
+        "start_time": 2133.55,
+        "end_time": 2137.575,
+        "duration": 4.025
+      },
+      {
+        "sentence_id": 270,
+        "text": " A lot of the time when you have overflow, the way that you first see it is that you'll get a nan in your loss function or your gradient.",
+        "slide_number": 24,
+        "start_time": 2137.775,
+        "end_time": 2145.575,
+        "duration": 7.8
+      },
+      {
+        "sentence_id": 271,
+        "text": " So somewhere in your computational graph, you'll get an inf, and then by the time it actually gets printed out or plotted somewhere, it will have been turned into a nan by these additional steps of arithmetic that came afterward.",
+        "slide_number": 24,
+        "start_time": 2145.775,
+        "end_time": 2159.15,
+        "duration": 13.375
+      },
+      {
+        "sentence_id": 272,
+        "text": " One of the main functions that's often the culprit of numerical precision problems in deep learning programs is the exp function that computes the natural logarithm space e raised to the power of x.",
+        "slide_number": 25,
+        "start_time": 2159.35,
+        "end_time": 2172.375,
+        "duration": 13.025
+      },
+      {
+        "sentence_id": 273,
+        "text": " This will overflow for large values of x, and a lot of the time when I say large values, I am talking about extremely large values.",
+        "slide_number": 25,
+        "start_time": 2172.575,
+        "end_time": 2181.35,
+        "duration": 8.775
+      },
+      {
+        "sentence_id": 274,
+        "text": " For exp, when I say large values, I'm actually talking about numbers that are not very big.",
+        "slide_number": 25,
+        "start_time": 2181.55,
+        "end_time": 2187.575,
+        "duration": 6.025
+      },
+      {
+        "sentence_id": 275,
+        "text": " If you're using float32, a value of 89 passed to exp will overflow to inf.",
+        "slide_number": 25,
+        "start_time": 2187.775,
+        "end_time": 2193.65,
+        "duration": 5.875
+      },
+      {
+        "sentence_id": 276,
+        "text": " To make sure that your program doesn't have trouble with exp, just never use large x as the argument for exp, and make sure that you design the structure of your functions that you compute so that they will never actually pass a large x to exp.",
+        "slide_number": 25,
+        "start_time": 2193.85,
+        "end_time": 2208.05,
+        "duration": 14.2
+      },
+      {
+        "sentence_id": 277,
+        "text": " A lot of the rest of this lecture will be about ideas for how you can prevent that from happening in specific cases.",
+        "slide_number": 25,
+        "start_time": 2208.25,
+        "end_time": 2215.125,
+        "duration": 6.875
+      },
+      {
+        "sentence_id": 278,
+        "text": " The other big problem with exp is that if your argument to it is very negative, exp of x can underflow.",
+        "slide_number": 25,
+        "start_time": 2215.325,
+        "end_time": 2222.075,
+        "duration": 6.75
+      },
+      {
+        "sentence_id": 279,
+        "text": " This may not be a problem.",
+        "slide_number": 25,
+        "start_time": 2222.275,
+        "end_time": 2224.35,
+        "duration": 2.075
+      },
+      {
+        "sentence_id": 280,
+        "text": " If you think about it, exp of a very negative number is just some small number epsilon, and if you round that number down to zero, you've only made a mistake of size epsilon.",
+        "slide_number": 25,
+        "start_time": 2224.55,
+        "end_time": 2235.275,
+        "duration": 10.725
+      },
+      {
+        "sentence_id": 281,
+        "text": " So if that was your final output of the function, it's not a very big error.",
+        "slide_number": 25,
+        "start_time": 2235.475,
+        "end_time": 2240.4,
+        "duration": 4.925
+      },
+      {
+        "sentence_id": 282,
+        "text": " Unfortunately, if you then do other math on top of this output, rounding a small number epsilon down to zero can be catastrophic.",
+        "slide_number": 25,
+        "start_time": 2240.6,
+        "end_time": 2249.375,
+        "duration": 8.775
+      },
+      {
+        "sentence_id": 283,
+        "text": " If you're using exp of x in a denominator or as an argument to a logarithm and so on, it can cause really big problems.",
+        "slide_number": 25,
+        "start_time": 2249.575,
+        "end_time": 2257.75,
+        "duration": 8.175
+      },
+      {
+        "sentence_id": 284,
+        "text": " Another case where you can sometimes encounter danger is when you have subtraction, especially if you want to guarantee that the output of the subtraction is going to be positive.",
+        "slide_number": 26,
+        "start_time": 2257.95,
+        "end_time": 2268.9,
+        "duration": 10.95
+      },
+      {
+        "sentence_id": 285,
+        "text": " So if you have two values x and y and you know algebraically that you can prove that x is always greater than y, in a computer you may actually find that x minus y ends up being negative.",
+        "slide_number": 26,
+        "start_time": 2269.1,
+        "end_time": 2281.8,
+        "duration": 12.7
+      },
+      {
+        "sentence_id": 286,
+        "text": " So if you relied on x minus y being positive in subsequent steps of your program, you could run into trouble.",
+        "slide_number": 26,
+        "start_time": 2282.0,
+        "end_time": 2289.325,
+        "duration": 7.325
+      },
+      {
+        "sentence_id": 287,
+        "text": " One case where we see this a lot is computing the variance.",
+        "slide_number": 26,
+        "start_time": 2289.525,
+        "end_time": 2293.3,
+        "duration": 3.775
+      },
+      {
+        "sentence_id": 288,
+        "text": " So there's one way that you can write the variance where it's the expectation of a squared value.",
+        "slide_number": 26,
+        "start_time": 2293.5,
+        "end_time": 2299.175,
+        "duration": 5.675
+      },
+      {
+        "sentence_id": 289,
+        "text": " If you implement the variance this way in your code, it's always going to give you positive numbers because the output of the squaring value will always be non I shouldn't say positive, sorry.",
+        "slide_number": 26,
+        "start_time": 2299.375,
+        "end_time": 2310.6,
+        "duration": 11.225
+      },
+      {
+        "sentence_id": 290,
+        "text": " And then if you look at the difference between the expectation of the squared value of the function and the square of the expected value of the function, algebraically that's a perfectly valid way of rearranging this expression for the variance.",
+        "slide_number": 26,
+        "start_time": 2310.8,
+        "end_time": 2325.225,
+        "duration": 14.425
+      },
+      {
+        "sentence_id": 291,
+        "text": " And a lot of time this is actually the one where we actually have access to those values to compute it.",
+        "slide_number": 26,
+        "start_time": 2325.425,
+        "end_time": 2331.825,
+        "duration": 6.4
+      },
+      {
+        "sentence_id": 292,
+        "text": " Unfortunately it's numerically unstable because if we have a little bit of rounding error on the left and a little bit of rounding error on the right and these values were very close to zero to start with, if the rounding error goes in the wrong direction we can end up with a small negative value instead of zero.",
+        "slide_number": 26,
+        "start_time": 2332.025,
+        "end_time": 2350.475,
+        "duration": 18.45
+      },
+      {
+        "sentence_id": 293,
+        "text": " And that can cause trouble especially if you were planning to pass this value to a square root or a logarithm later on.",
+        "slide_number": 26,
+        "start_time": 2350.675,
+        "end_time": 2357.95,
+        "duration": 7.275
+      },
+      {
+        "sentence_id": 294,
+        "text": " Logarithm and square root are also functions where you want to be very careful.",
+        "slide_number": 27,
+        "start_time": 2358.15,
+        "end_time": 2363.25,
+        "duration": 5.1
+      },
+      {
+        "sentence_id": 295,
+        "text": " The logarithm of zero is negative infinity and the logarithm of a negative number is imaginary.",
+        "slide_number": 27,
+        "start_time": 2363.45,
+        "end_time": 2370.15,
+        "duration": 6.7
+      },
+      {
+        "sentence_id": 296,
+        "text": " Usually in software frameworks like NumPy we end up treating that as a not a number.",
+        "slide_number": 27,
+        "start_time": 2370.35,
+        "end_time": 2376.075,
+        "duration": 5.725
+      },
+      {
+        "sentence_id": 297,
+        "text": " The square root of zero is zero so that's actually safe, but the derivative of square root has a divide by zero if you take the derivative at x equals zero.",
+        "slide_number": 27,
+        "start_time": 2376.275,
+        "end_time": 2386.5,
+        "duration": 10.225
+      },
+      {
+        "sentence_id": 298,
+        "text": " So you definitely want to avoid underflow or rounding to a negative value in the argument to either log or square root.",
+        "slide_number": 27,
+        "start_time": 2386.7,
+        "end_time": 2394.425,
+        "duration": 7.725
+      },
+      {
+        "sentence_id": 299,
+        "text": " One very common place where this comes up is when we compute the standard deviation.",
+        "slide_number": 27,
+        "start_time": 2394.625,
+        "end_time": 2400.075,
+        "duration": 5.45
+      },
+      {
+        "sentence_id": 300,
+        "text": " The standard deviation is the square root of the variance.",
+        "slide_number": 27,
+        "start_time": 2400.275,
+        "end_time": 2404.15,
+        "duration": 3.875
+      },
+      {
+        "sentence_id": 301,
+        "text": " So if you compute the variance using the dangerous strategy from this slide you can end up with this rounding to a small negative number and then you take the square root of that small negative number and run into trouble.",
+        "slide_number": 26,
+        "start_time": 2404.35,
+        "end_time": 2417.925,
+        "duration": 13.575
+      },
+      {
+        "sentence_id": 302,
+        "text": " The logarithm of x is a common pattern that comes up a lot in deep learning.",
+        "slide_number": 28,
+        "start_time": 2418.125,
+        "end_time": 2423.4,
+        "duration": 5.275
+      },
+      {
+        "sentence_id": 303,
+        "text": " We often see this when we're computing log probabilities and the probability is based on taking the exp of some argument.",
+        "slide_number": 28,
+        "start_time": 2423.6,
+        "end_time": 2431.25,
+        "duration": 7.65
+      },
+      {
+        "sentence_id": 304,
+        "text": " Whenever you see this you should simplify it to just the value x.",
+        "slide_number": 28,
+        "start_time": 2431.45,
+        "end_time": 2435.65,
+        "duration": 4.2
+      },
+      {
+        "sentence_id": 305,
+        "text": " Theano will do this for you automatically, a lot of frameworks don't.",
+        "slide_number": 28,
+        "start_time": 2435.85,
+        "end_time": 2440.2,
+        "duration": 4.35
+      },
+      {
+        "sentence_id": 306,
+        "text": " And if you do this you can avoid overflowing the exp because you just take x rather than computing exp of x first before computing the log.",
+        "slide_number": 28,
+        "start_time": 2440.4,
+        "end_time": 2449.475,
+        "duration": 9.075
+      },
+      {
+        "sentence_id": 307,
+        "text": " You can also avoid underflow in exp which then cause the logarithm to turn into negative inf.",
+        "slide_number": 28,
+        "start_time": 2449.675,
+        "end_time": 2455.975,
+        "duration": 6.3
+      },
+      {
+        "sentence_id": 308,
+        "text": " So now I have a little bit of an exercise for you.",
+        "slide_number": 29,
+        "start_time": 2456.175,
+        "end_time": 2459.5,
+        "duration": 3.325
+      },
+      {
+        "sentence_id": 309,
+        "text": " Let's say that we're doing a little bit of a hack to avoid a divide by zero.",
+        "slide_number": 29,
+        "start_time": 2459.7,
+        "end_time": 2464.4,
+        "duration": 4.7
+      },
+      {
+        "sentence_id": 310,
+        "text": " We want to take a normalized, we want to compute a normalized version of x where x will have unit standard deviation and we divide x by some estimate of the standard deviation in order to do that.",
+        "slide_number": 29,
+        "start_time": 2464.6,
+        "end_time": 2477.325,
+        "duration": 12.725
+      },
+      {
+        "sentence_id": 311,
+        "text": " We know that our standard deviation might have some round to zero trouble so we're going to add a small constant epsilon of 10 to the minus 7 to our standard deviation in order to make sure we don't divide by zero when we compute the normalized version of x.",
+        "slide_number": 29,
+        "start_time": 2477.525,
+        "end_time": 2493.825,
+        "duration": 16.3
+      },
+      {
+        "sentence_id": 312,
+        "text": " So there's two different ways we can imagine doing this.",
+        "slide_number": 29,
+        "start_time": 2494.025,
+        "end_time": 2497.5,
+        "duration": 3.475
+      },
+      {
+        "sentence_id": 313,
+        "text": " One is we could take the square root of epsilon plus the variance and use that as our standard deviation.",
+        "slide_number": 29,
+        "start_time": 2497.7,
+        "end_time": 2504.275,
+        "duration": 6.575
+      },
+      {
+        "sentence_id": 314,
+        "text": " The other version of the hack is we could take epsilon plus the square root of the variance.",
+        "slide_number": 29,
+        "start_time": 2504.475,
+        "end_time": 2509.875,
+        "duration": 5.4
+      },
+      {
+        "sentence_id": 315,
+        "text": " So which of these is the better way to implement this hack? Does anybody want to answer on the chat? The first one.",
+        "slide_number": 29,
+        "start_time": 2510.075,
+        "end_time": 2516.925,
+        "duration": 6.85
+      },
+      {
+        "sentence_id": 316,
+        "text": " So why do you say the first one? Oh you got to vote for the second one as well.",
+        "slide_number": 29,
+        "start_time": 2517.125,
+        "end_time": 2521.9,
+        "duration": 4.775
+      },
+      {
+        "sentence_id": 317,
+        "text": " So does somebody want to give a reason for one of their votes? So the square root of eps will be too small.",
+        "slide_number": 29,
+        "start_time": 2522.1,
+        "end_time": 2527.85,
+        "duration": 5.75
+      },
+      {
+        "sentence_id": 318,
+        "text": " That can definitely happen if your eps is already just barely as big as you can represent and variance is zero, it can round down.",
+        "slide_number": 29,
+        "start_time": 2528.05,
+        "end_time": 2536.3,
+        "duration": 8.25
+      },
+      {
+        "sentence_id": 319,
+        "text": " There's also another issue here which is think about what happens if the variance is already implemented safely and we know that it won't get rounded down too low.",
+        "slide_number": 29,
+        "start_time": 2536.5,
+        "end_time": 2546.225,
+        "duration": 9.725
+      },
+      {
+        "sentence_id": 320,
+        "text": " Let's also suppose we make epsilon a little bit bigger so if we divide by square root of epsilon that won't give us divide by zero.",
+        "slide_number": 29,
+        "start_time": 2546.425,
+        "end_time": 2555.275,
+        "duration": 8.85
+      },
+      {
+        "sentence_id": 321,
+        "text": " Is there any other problem that might come up here? So there is one other problem that might come up here.",
+        "slide_number": 29,
+        "start_time": 2555.475,
+        "end_time": 2561.45,
+        "duration": 5.975
+      },
+      {
+        "sentence_id": 322,
+        "text": " If we use this version where we have the epsilon plus square root of the variance we can actually get, when we compute the derivative of normalized x later on, we can have this problem that the square root of the variance might be evaluated exactly for the variance being equal to zero and when we take the derivative of square root we actually get a divide by zero in that case.",
+        "slide_number": 29,
+        "start_time": 2561.65,
+        "end_time": 2583.6,
+        "duration": 21.95
+      },
+      {
+        "sentence_id": 323,
+        "text": " So usually you want to put the epsilon inside the square root but you do need to make sure that your epsilon is big enough that it won't get rounded down to zero when you take the square root.",
+        "slide_number": 29,
+        "start_time": 2583.8,
+        "end_time": 2594.625,
+        "duration": 10.825
+      },
+      {
+        "sentence_id": 324,
+        "text": " Another function that comes up all the time in deep learning is log sum exp.",
+        "slide_number": 30,
+        "start_time": 2594.825,
+        "end_time": 2599.8,
+        "duration": 4.975
+      },
+      {
+        "sentence_id": 325,
+        "text": " You see this in things like the cross entropy function.",
+        "slide_number": 30,
+        "start_time": 2600.0,
+        "end_time": 2603.525,
+        "duration": 3.525
+      },
+      {
+        "sentence_id": 326,
+        "text": " The naive way of implementing this is if you have an array you take you apply exp to the array then you sum out the exp values and then you take the log at the end.",
+        "slide_number": 30,
+        "start_time": 2603.725,
+        "end_time": 2613.525,
+        "duration": 9.8
+      },
+      {
+        "sentence_id": 327,
+        "text": " The failure modes to this are, there's two different ways it can go wrong.",
+        "slide_number": 30,
+        "start_time": 2613.725,
+        "end_time": 2618.175,
+        "duration": 4.45
+      },
+      {
+        "sentence_id": 328,
+        "text": " One is if any of your entries in the array is big your exp can overflow.",
+        "slide_number": 30,
+        "start_time": 2618.375,
+        "end_time": 2623.05,
+        "duration": 4.675
+      },
+      {
+        "sentence_id": 329,
+        "text": " So you just take exp of some large number in float 32 you know a value of 90 would do this to you.",
+        "slide_number": 30,
+        "start_time": 2623.25,
+        "end_time": 2629.65,
+        "duration": 6.4
+      },
+      {
+        "sentence_id": 330,
+        "text": " You overflow, now you've got an inf here.",
+        "slide_number": 30,
+        "start_time": 2629.85,
+        "end_time": 2632.6,
+        "duration": 2.75
+      },
+      {
+        "sentence_id": 331,
+        "text": " When you start doing arithmetic on the inf it's probably going to turn into a noun pretty soon.",
+        "slide_number": 30,
+        "start_time": 2632.8,
+        "end_time": 2638.4,
+        "duration": 5.6
+      },
+      {
+        "sentence_id": 332,
+        "text": " And that one's relatively obvious.",
+        "slide_number": 30,
+        "start_time": 2638.6,
+        "end_time": 2641.2,
+        "duration": 2.6
+      },
+      {
+        "sentence_id": 333,
+        "text": " A lot of people realize that that one's going to happen.",
+        "slide_number": 30,
+        "start_time": 2641.4,
+        "end_time": 2644.725,
+        "duration": 3.325
+      },
+      {
+        "sentence_id": 334,
+        "text": " Another case that this can fail is if all of the entries in the array are very negative then all of the exps underflow to zero.",
+        "slide_number": 30,
+        "start_time": 2644.925,
+        "end_time": 2653.2,
+        "duration": 8.275
+      },
+      {
+        "sentence_id": 335,
+        "text": " Individually each of these mistakes in the exp is not a big deal.",
+        "slide_number": 30,
+        "start_time": 2653.4,
+        "end_time": 2657.625,
+        "duration": 4.225
+      },
+      {
+        "sentence_id": 336,
+        "text": " The exp of a very negative number is some small number epsilon.",
+        "slide_number": 30,
+        "start_time": 2657.825,
+        "end_time": 2662.325,
+        "duration": 4.5
+      },
+      {
+        "sentence_id": 337,
+        "text": " You round that to zero your error is only order of epsilon.",
+        "slide_number": 30,
+        "start_time": 2662.525,
+        "end_time": 2666.725,
+        "duration": 4.2
+      },
+      {
+        "sentence_id": 338,
+        "text": " Your error is only exactly epsilon.",
+        "slide_number": 30,
+        "start_time": 2666.925,
+        "end_time": 2669.8,
+        "duration": 2.875
+      },
+      {
+        "sentence_id": 339,
+        "text": " The problem is when you sum up all the zeros if all of them are literally zero then the sum is also literally zero and then you pass that to a log.",
+        "slide_number": 30,
+        "start_time": 2670.0,
+        "end_time": 2679.125,
+        "duration": 9.125
+      },
+      {
+        "sentence_id": 340,
+        "text": " So you get a negative inf at the end even if that's not algebraically the correct answer.",
+        "slide_number": 30,
+        "start_time": 2679.325,
+        "end_time": 2685.025,
+        "duration": 5.7
+      },
+      {
+        "sentence_id": 341,
+        "text": " So the good news is there's a relatively simple trick that lets us fix this.",
+        "slide_number": 30,
+        "start_time": 2685.225,
+        "end_time": 2689.975,
+        "duration": 4.75
+      },
+      {
+        "sentence_id": 342,
+        "text": " The way it works is we take the maximum of the array and then we subtract the maximum off all of the entries.",
+        "slide_number": 31,
+        "start_time": 2690.175,
+        "end_time": 2697.05,
+        "duration": 6.875
+      },
+      {
+        "sentence_id": 343,
+        "text": " Then we compute log sum exp of this new safe array that had the max subtracted off of it and we add the max back on to the result after we take the log.",
+        "slide_number": 31,
+        "start_time": 2697.25,
+        "end_time": 2707.025,
+        "duration": 9.775
+      },
+      {
+        "sentence_id": 344,
+        "text": " In tensorflow there's a built version that does this for you tf log sum exp.",
+        "slide_number": 31,
+        "start_time": 2707.225,
+        "end_time": 2712.725,
+        "duration": 5.5
+      },
+      {
+        "sentence_id": 345,
+        "text": " You do need to know to use that though.",
+        "slide_number": 31,
+        "start_time": 2712.925,
+        "end_time": 2715.3,
+        "duration": 2.375
+      },
+      {
+        "sentence_id": 346,
+        "text": " Someone was saying don't all the deep learning frameworks already solve this.",
+        "slide_number": 31,
+        "start_time": 2715.5,
+        "end_time": 2720.075,
+        "duration": 4.575
+      },
+      {
+        "sentence_id": 347,
+        "text": " Well a lot of them provide solutions to it but you have to know to use those solutions.",
+        "slide_number": 31,
+        "start_time": 2720.275,
+        "end_time": 2725.475,
+        "duration": 5.2
+      },
+      {
+        "sentence_id": 348,
+        "text": " So whenever you see yourself doing a log sum exp be sure to use the stable variant of it.",
+        "slide_number": 31,
+        "start_time": 2725.675,
+        "end_time": 2731.525,
+        "duration": 5.85
+      },
+      {
+        "sentence_id": 349,
+        "text": " If we look at why this works, first off we need to make sure that we're actually computing the value that we want.",
+        "slide_number": 32,
+        "start_time": 2731.725,
+        "end_time": 2738.325,
+        "duration": 6.6
+      },
+      {
+        "sentence_id": 350,
+        "text": " We want to see that the new expression is algebraically equivalent to the old one.",
+        "slide_number": 32,
+        "start_time": 2738.525,
+        "end_time": 2743.5,
+        "duration": 4.975
+      },
+      {
+        "sentence_id": 351,
+        "text": " So the way we can see this is we've got this variable m representing the max.",
+        "slide_number": 32,
+        "start_time": 2743.7,
+        "end_time": 2748.775,
+        "duration": 5.075
+      },
+      {
+        "sentence_id": 352,
+        "text": " We've got this vector a representing the array.",
+        "slide_number": 32,
+        "start_time": 2748.975,
+        "end_time": 2752.25,
+        "duration": 3.275
+      },
+      {
+        "sentence_id": 353,
+        "text": " The new value that we're computing is m plus log sum over i of exp of ai minus m.",
+        "slide_number": 32,
+        "start_time": 2752.45,
+        "end_time": 2758.375,
+        "duration": 5.925
+      },
+      {
+        "sentence_id": 354,
+        "text": " Well each of these exp terms we can use the fact that exp of ai minus m turns into exp of ai divided by exp of m and so we've simplified these terms inside the sum.",
+        "slide_number": 32,
+        "start_time": 2758.575,
+        "end_time": 2770.125,
+        "duration": 11.55
+      },
+      {
+        "sentence_id": 355,
+        "text": " Now it turns out that every term in the sum has this factor division by exp of m and this factor doesn't depend on i at all.",
+        "slide_number": 32,
+        "start_time": 2770.325,
+        "end_time": 2778.225,
+        "duration": 7.9
+      },
+      {
+        "sentence_id": 356,
+        "text": " So we can actually pull it outside the summation.",
+        "slide_number": 32,
+        "start_time": 2778.425,
+        "end_time": 2781.5,
+        "duration": 3.075
+      },
+      {
+        "sentence_id": 357,
+        "text": " So now we've got this one over exp m factor multiplied by this summation factor.",
+        "slide_number": 32,
+        "start_time": 2781.7,
+        "end_time": 2787.3,
+        "duration": 5.6
+      },
+      {
+        "sentence_id": 358,
+        "text": " Well a logarithm of two factors can be split into the sum of the logarithm of both those factors.",
+        "slide_number": 32,
+        "start_time": 2787.5,
+        "end_time": 2793.625,
+        "duration": 6.125
+      },
+      {
+        "sentence_id": 359,
+        "text": " The logarithm of one over exp is actually just negative log of exp.",
+        "slide_number": 32,
+        "start_time": 2793.825,
+        "end_time": 2798.775,
+        "duration": 4.95
+      },
+      {
+        "sentence_id": 360,
+        "text": " So we get m minus log exp m plus the sum over all these factors.",
+        "slide_number": 32,
+        "start_time": 2798.975,
+        "end_time": 2803.875,
+        "duration": 4.9
+      },
+      {
+        "sentence_id": 361,
+        "text": " This log exp obviously that turns into the identity so we get m minus m.",
+        "slide_number": 32,
+        "start_time": 2804.075,
+        "end_time": 2809.3,
+        "duration": 5.225
+      },
+      {
+        "sentence_id": 362,
+        "text": " This cancels and oh I actually have a mistake.",
+        "slide_number": 32,
+        "start_time": 2809.5,
+        "end_time": 2812.875,
+        "duration": 3.375
+      },
+      {
+        "sentence_id": 363,
+        "text": " I left out the log here but there should be a log right there.",
+        "slide_number": 32,
+        "start_time": 2813.075,
+        "end_time": 2816.825,
+        "duration": 3.75
+      },
+      {
+        "sentence_id": 364,
+        "text": " So we've actually recovered the original version of the expression that we were trying to optimize.",
+        "slide_number": 32,
+        "start_time": 2817.025,
+        "end_time": 2823.1,
+        "duration": 6.075
+      },
+      {
+        "sentence_id": 365,
+        "text": " So the other thing we need to check to see that this works is we need to make sure that the two failure modes we identified earlier are gone.",
+        "slide_number": 33,
+        "start_time": 2823.3,
+        "end_time": 2831.8,
+        "duration": 8.5
+      },
+      {
+        "sentence_id": 366,
+        "text": " So we notice that there's a way that we can overflow the original version.",
+        "slide_number": 33,
+        "start_time": 2832.0,
+        "end_time": 2836.65,
+        "duration": 4.65
+      },
+      {
+        "sentence_id": 367,
+        "text": " We've also noticed that there was a way we could underflow every term of the original version and then get a negative int when we pass it to the log.",
+        "slide_number": 33,
+        "start_time": 2836.85,
+        "end_time": 2845.625,
+        "duration": 8.775
+      },
+      {
+        "sentence_id": 368,
+        "text": " So first let's look at the overflow case.",
+        "slide_number": 33,
+        "start_time": 2845.825,
+        "end_time": 2848.65,
+        "duration": 2.825
+      },
+      {
+        "sentence_id": 369,
+        "text": " Because we subtract off the max all of the entries of safe array are at most zero.",
+        "slide_number": 33,
+        "start_time": 2848.85,
+        "end_time": 2854.25,
+        "duration": 5.4
+      },
+      {
+        "sentence_id": 370,
+        "text": " Exp of zero is just one so we can compute that without any overflow.",
+        "slide_number": 33,
+        "start_time": 2854.45,
+        "end_time": 2859.35,
+        "duration": 4.9
+      },
+      {
+        "sentence_id": 371,
+        "text": " So we've eliminated the overflow problem.",
+        "slide_number": 33,
+        "start_time": 2859.55,
+        "end_time": 2862.475,
+        "duration": 2.925
+      },
+      {
+        "sentence_id": 372,
+        "text": " Next there was the case where every value of the exp underflows.",
+        "slide_number": 33,
+        "start_time": 2862.675,
+        "end_time": 2866.95,
+        "duration": 4.275
+      },
+      {
+        "sentence_id": 373,
+        "text": " Well we can still have a problem where some of the exp terms underflow.",
+        "slide_number": 33,
+        "start_time": 2867.15,
+        "end_time": 2871.325,
+        "duration": 4.175
+      },
+      {
+        "sentence_id": 374,
+        "text": " The good news is subtracting off the max actually means that there has to be at least one entry of safe array that's equal to zero.",
+        "slide_number": 33,
+        "start_time": 2871.525,
+        "end_time": 2880.225,
+        "duration": 8.7
+      },
+      {
+        "sentence_id": 375,
+        "text": " Any entries that were tied for the max now have a value of zero and so those are not going to underflow when we take the x.",
+        "slide_number": 33,
+        "start_time": 2880.425,
+        "end_time": 2888.15,
+        "duration": 7.725
+      },
+      {
+        "sentence_id": 376,
+        "text": " They'll get a value of one and that's a nice stable value that can be computed easily.",
+        "slide_number": 33,
+        "start_time": 2888.35,
+        "end_time": 2893.725,
+        "duration": 5.375
+      },
+      {
+        "sentence_id": 377,
+        "text": " That means that the sum is now at least one and we can safely pass that sum to the logarithm.",
+        "slide_number": 33,
+        "start_time": 2893.925,
+        "end_time": 2899.775,
+        "duration": 5.85
+      },
+      {
+        "sentence_id": 378,
+        "text": " So someone is asking if there's any book or blog summarizing all these numerical computation problems in the context of deep learning.",
+        "slide_number": 33,
+        "start_time": 2899.975,
+        "end_time": 2909.125,
+        "duration": 9.15
+      },
+      {
+        "sentence_id": 379,
+        "text": " There are definitely books about numerical computation.",
+        "slide_number": 33,
+        "start_time": 2909.325,
+        "end_time": 2913.15,
+        "duration": 3.825
+      },
+      {
+        "sentence_id": 380,
+        "text": " A lot of them don't really focus specifically on the problems that come up a lot in deep learning.",
+        "slide_number": 33,
+        "start_time": 2913.35,
+        "end_time": 2919.425,
+        "duration": 6.075
+      },
+      {
+        "sentence_id": 381,
+        "text": " And I don't actually know of one that is focused in that way.",
+        "slide_number": 33,
+        "start_time": 2919.625,
+        "end_time": 2923.35,
+        "duration": 3.725
+      },
+      {
+        "sentence_id": 382,
+        "text": " I will probably write an article about it or add it to the second edition of the deep learning textbook.",
+        "slide_number": 33,
+        "start_time": 2923.55,
+        "end_time": 2929.825,
+        "duration": 6.275
+      },
+      {
+        "sentence_id": 383,
+        "text": " But I don't have a good resource to point you to yet other than this lecture.",
+        "slide_number": 33,
+        "start_time": 2930.025,
+        "end_time": 2934.375,
+        "duration": 4.35
+      },
+      {
+        "sentence_id": 384,
+        "text": " The softmax function comes up all the time in deep learning.",
+        "slide_number": 34,
+        "start_time": 2934.575,
+        "end_time": 2938.575,
+        "duration": 4.0
+      },
+      {
+        "sentence_id": 385,
+        "text": " We use it as the output of most neural nets for classification, for generating text, for selecting discrete actions in reinforcement learning agents.",
+        "slide_number": 34,
+        "start_time": 2938.775,
+        "end_time": 2948.775,
+        "duration": 10.0
+      },
+      {
+        "sentence_id": 386,
+        "text": " The main advice for the softmax is that you should use your library's built softmax function.",
+        "slide_number": 34,
+        "start_time": 2948.975,
+        "end_time": 2954.575,
+        "duration": 5.6
+      },
+      {
+        "sentence_id": 387,
+        "text": " If you try to make your own it's easy to mess up and get a numerically unstable version.",
+        "slide_number": 34,
+        "start_time": 2954.775,
+        "end_time": 2960.225,
+        "duration": 5.45
+      },
+      {
+        "sentence_id": 388,
+        "text": " If you do build your own the way that you should do it is you should take the argument to the softmax, the logits, and you subtract off the maximum value before you pass it through the softmax.",
+        "slide_number": 34,
+        "start_time": 2960.425,
+        "end_time": 2971.4,
+        "duration": 10.975
+      },
+      {
+        "sentence_id": 389,
+        "text": " The reason this works is very similar to the log exp.",
+        "slide_number": 34,
+        "start_time": 2971.6,
+        "end_time": 2975.275,
+        "duration": 3.675
+      },
+      {
+        "sentence_id": 390,
+        "text": " I won't walk through exactly what all of the justification for it is, but it's basically the same logic as what we just saw with log exp.",
+        "slide_number": 34,
+        "start_time": 2975.475,
+        "end_time": 2984.25,
+        "duration": 8.775
+      },
+      {
+        "sentence_id": 391,
+        "text": " The sigmoid function is also very common in deep learning and it's essentially the same thing as softmax.",
+        "slide_number": 35,
+        "start_time": 2984.45,
+        "end_time": 2991.15,
+        "duration": 6.7
+      },
+      {
+        "sentence_id": 392,
+        "text": " It's basically a softmax where one of the inputs is hard to zero and you pass out just one of the outputs.",
+        "slide_number": 35,
+        "start_time": 2991.35,
+        "end_time": 2998.25,
+        "duration": 6.9
+      },
+      {
+        "sentence_id": 393,
+        "text": " So once again the recommendation is to use your library's built sigmoid function.",
+        "slide_number": 35,
+        "start_time": 2998.45,
+        "end_time": 3003.95,
+        "duration": 5.5
+      },
+      {
+        "sentence_id": 394,
+        "text": " If you don't you can you can stabilize it using the same trick as with the softmax.",
+        "slide_number": 35,
+        "start_time": 3004.15,
+        "end_time": 3009.1,
+        "duration": 4.95
+      },
+      {
+        "sentence_id": 395,
+        "text": " The cross function is the loss for most neural nets that we train, especially if you have a softmax output.",
+        "slide_number": 36,
+        "start_time": 3009.3,
+        "end_time": 3016.225,
+        "duration": 6.925
+      },
+      {
+        "sentence_id": 396,
+        "text": " Everything that I say here also applies with sigmoid, just replace the word softmax with sigmoid.",
+        "slide_number": 36,
+        "start_time": 3016.425,
+        "end_time": 3022.6,
+        "duration": 6.175
+      },
+      {
+        "sentence_id": 397,
+        "text": " This is probably one of the most common things that I see people screw up in deep learning, is they implement their own cross function and they compute it using the probabilities.",
+        "slide_number": 36,
+        "start_time": 3022.8,
+        "end_time": 3033.275,
+        "duration": 10.475
+      },
+      {
+        "sentence_id": 398,
+        "text": " They actually literally apply the softmax and then compute the loss.",
+        "slide_number": 36,
+        "start_time": 3033.475,
+        "end_time": 3037.85,
+        "duration": 4.375
+      },
+      {
+        "sentence_id": 399,
+        "text": " What you actually want to do is use the logits, the values output by the neural net before you get to the softmax, and you want to compute your loss in terms of those.",
+        "slide_number": 36,
+        "start_time": 3038.05,
+        "end_time": 3048.075,
+        "duration": 10.025
+      },
+      {
+        "sentence_id": 400,
+        "text": " The reason is that the probabilities will lose gradient when the softmax saturates.",
+        "slide_number": 36,
+        "start_time": 3048.275,
+        "end_time": 3053.5,
+        "duration": 5.225
+      },
+      {
+        "sentence_id": 401,
+        "text": " The cross function won't saturate unless you're already getting the right answer and then you don't need any gradient because you're already winning.",
+        "slide_number": 36,
+        "start_time": 3053.7,
+        "end_time": 3061.6,
+        "duration": 7.9
+      },
+      {
+        "sentence_id": 402,
+        "text": " The short recommendation for how to write good code is to use a numerically stable version of the cross function that's already provided to you by your library.",
+        "slide_number": 36,
+        "start_time": 3061.8,
+        "end_time": 3071.7,
+        "duration": 9.9
+      },
+      {
+        "sentence_id": 403,
+        "text": " If you're using tensorflow, you can use tf cross with logits.",
+        "slide_number": 36,
+        "start_time": 3071.9,
+        "end_time": 3076.175,
+        "duration": 4.275
+      },
+      {
+        "sentence_id": 404,
+        "text": " If you're using another software framework, you need to be very careful and check that it actually is computing the cross using the logits rather than the probabilities.",
+        "slide_number": 36,
+        "start_time": 3076.375,
+        "end_time": 3086.125,
+        "duration": 9.75
+      },
+      {
+        "sentence_id": 405,
+        "text": " A lot of frameworks screw this up and use the output of the softmax rather than the input to the softmax.",
+        "slide_number": 36,
+        "start_time": 3086.325,
+        "end_time": 3092.825,
+        "duration": 6.5
+      },
+      {
+        "sentence_id": 406,
+        "text": " It's a common enough problem that I've actually seen this in frameworks that I've used.",
+        "slide_number": 36,
+        "start_time": 3093.025,
+        "end_time": 3098.15,
+        "duration": 5.125
+      },
+      {
+        "sentence_id": 407,
+        "text": " If you do make your own cross function, you should use the stabilization tricks for the softmax and the log that come up inside this loss function in order to stabilize it.",
+        "slide_number": 36,
+        "start_time": 3098.35,
+        "end_time": 3108.85,
+        "duration": 10.5
+      },
+      {
+        "sentence_id": 408,
+        "text": " In general, if you have some bugs that you're encountering, there are a few really simple strategies that you can follow to catch them.",
+        "slide_number": 37,
+        "start_time": 3109.05,
+        "end_time": 3116.95,
+        "duration": 7.9
+      },
+      {
+        "sentence_id": 409,
+        "text": " One thing is that if you increase the learning rate for your gradient descent algorithm and the loss function value gets stuck, that for a very large learning rate you find that your loss is flat over time as you take more steps.",
+        "slide_number": 37,
+        "start_time": 3117.15,
+        "end_time": 3131.05,
+        "duration": 13.9
+      },
+      {
+        "sentence_id": 410,
+        "text": " That probably means that the gradient is getting routed down to zero somewhere in your graph, so you probably are losing numerical precision and ending up without a gradient.",
+        "slide_number": 37,
+        "start_time": 3131.25,
+        "end_time": 3141.675,
+        "duration": 10.425
+      },
+      {
+        "sentence_id": 411,
+        "text": " Otherwise, a large learning rate should make you move faster and faster and actually cause explosion rather than getting stuck.",
+        "slide_number": 37,
+        "start_time": 3141.875,
+        "end_time": 3149.825,
+        "duration": 7.95
+      },
+      {
+        "sentence_id": 412,
+        "text": " The most common way that I've seen this happen is when the cross loss is calculated using probabilities instead of logits.",
+        "slide_number": 37,
+        "start_time": 3150.025,
+        "end_time": 3157.425,
+        "duration": 7.4
+      },
+      {
+        "sentence_id": 413,
+        "text": " If the softmax rounds a probability to one or zero, then the gradient through it is gone and you can't do very much about it.",
+        "slide_number": 37,
+        "start_time": 3157.625,
+        "end_time": 3165.425,
+        "duration": 7.8
+      },
+      {
+        "sentence_id": 414,
+        "text": " A lot of the time people that encounter this problem with extreme values of the softmax will sort of hack around it by clipping the value of the softmax somehow or other to avoid extreme values, and that will make sure that you don't get nouns in the forward prop like when you take a log of the softmax, but it will also mean that you get zeros in the back prop when you try to compute the gradients.",
+        "slide_number": 37,
+        "start_time": 3165.625,
+        "end_time": 3188.3,
+        "duration": 22.675
+      },
+      {
+        "sentence_id": 415,
+        "text": " So that's a really common bug, and it's pretty easy to identify by the learning curve being flat.",
+        "slide_number": 37,
+        "start_time": 3188.5,
+        "end_time": 3194.625,
+        "duration": 6.125
+      },
+      {
+        "sentence_id": 416,
+        "text": " I've actually seen this a lot in third open source implementations of generative adversarial nodes, and this is one of those cases where it'll look like you don't have a bug because if you use a small enough learning rate your code will basically work, but it just won't perform quite as well as it ought to, and if you use a large learning rate then it'll break, and it will look like the algorithm is not robust to hyperparameters, but really the problem is that your code is not numerically precise enough to handle some of the larger learning rates.",
+        "slide_number": 37,
+        "start_time": 3194.825,
+        "end_time": 3226.325,
+        "duration": 31.5
+      },
+      {
+        "sentence_id": 417,
+        "text": " Another one of the bug hunting strategies I use is just if you see an explosion, immediately become very suspicious of anywhere that you see a log x square root or division in your code, and just look and see if you're doing a divide by zero, a square root of a negative number, an x of a large number, and so on.",
+        "slide_number": 38,
+        "start_time": 3226.525,
+        "end_time": 3246.075,
+        "duration": 19.55
+      },
+      {
+        "sentence_id": 418,
+        "text": " Also you should always suspect the code that has changed the most recently.",
+        "slide_number": 38,
+        "start_time": 3246.275,
+        "end_time": 3251.125,
+        "duration": 4.85
+      },
+      {
+        "sentence_id": 419,
+        "text": " So for example if you were running your code and everything's fine and then eventually you add something like batch norm and suddenly you see explosion, then you should probably suspect that maybe the problem is when you divide by the square root of the variance in your batch norm, and that's very likely to be where the problem is.",
+        "slide_number": 38,
+        "start_time": 3251.325,
+        "end_time": 3269.775,
+        "duration": 18.45
+      },
+      {
+        "sentence_id": 420,
+        "text": " A lot of the time I find that when I'm helping people like interns or brain residents, just following this bug hunting strategy with my colleagues at Google Brain will help me almost immediately solve problems that were very mysterious for someone who is new to deep learning, and if you can learn this pattern it can accelerate your workflow quite a lot.",
+        "slide_number": 38,
+        "start_time": 3269.975,
+        "end_time": 3290.6,
+        "duration": 20.625
+      },
+      {
+        "sentence_id": 421,
+        "text": " Okay thanks, glad you enjoyed the talk.",
+        "slide_number": 38,
+        "start_time": 3290.8,
+        "end_time": 3293.6,
+        "duration": 2.8
+      }
+    ]
+  }
