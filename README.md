@@ -66,16 +66,18 @@ Follow these steps to reproduce the demo video:
    - Long press "Demo" lecture
    - Change week from "Week 1-1" to "Iter 1"
 6. Test video player (portrait):
+
+   *Note that due to some issues with the emulator, the volume is quite low. We recommend running the video with maximum volume to hear the TTS audio.*
    - Tap "Demo" lecture
    - Scroll through transcript
    - Tap any sentence to skip to that timestamp
-7. Test video player (landscape):
+8. Test video player (landscape):
    - Rotate screen to landscape
    - Test 15-second skip buttons
    - Open/close transcript panel
    - Pause video
    - Return to home screen
-8. Test search functionality:
+9. Test search functionality:
    - Press search button
    - Type "proce"
    - Verify search results appear
@@ -83,25 +85,25 @@ Follow these steps to reproduce the demo video:
    - Verify if the player screen appears
    - Verify if recent searches features run
    - Navigate back to home
-9. Open menu
-10. Show "수업 추가" screen
-11. Test course editing:
+10. Open menu
+11. Show "수업 추가" screen
+12. Test course editing:
     - Open course edit screen
     - Add a new course
     - Drag "Demo" lecture down in "소프트웨어 개발의 원리와 실습" course
     - Delete "Week 2-1" lecture from "외계행성과 생명" course
     - Return to home and verify changes
-12. Test tag editing:
+13. Test tag editing:
     - Open tag editor
     - Change tag tone to "네온"
     - Rename "25-2" tag to "This Semester"
     - Create new tag
     - Apply changes
-13. Apply new tags:
+14. Apply new tags:
     - Open course editor
     - Add "새 태그" to newly created course
     - Verify changes on home screen
-14. Settings exploration:
+15. Settings exploration:
     - Open settings
     - Review each option screen
     - Test each feature
