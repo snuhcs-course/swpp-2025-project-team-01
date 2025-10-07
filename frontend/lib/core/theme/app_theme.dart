@@ -6,7 +6,7 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: lightScheme,   // ← color_scheme.dart 에 있는 lightScheme 사용
+      colorScheme: lightScheme, // ← color_scheme.dart 에 있는 lightScheme 사용
       scaffoldBackgroundColor: const Color(0xFFF2F3F6),
 
       extensions: <ThemeExtension<dynamic>>[
@@ -30,9 +30,7 @@ class AppTheme {
         color: Colors.white,
         elevation: 1.5,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
       chipTheme: const ChipThemeData(
@@ -112,14 +110,35 @@ class AppTheme {
         bodyLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         bodyMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         bodySmall: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        displayLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
-        displayMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
-        displaySmall: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
-        headlineLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
-        headlineMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
-        headlineSmall: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
+        displayLarge: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w900,
+        ),
+        displayMedium: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w900,
+        ),
+        displaySmall: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w900,
+        ),
+        headlineLarge: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w900,
+        ),
+        headlineMedium: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w900,
+        ),
+        headlineSmall: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w900,
+        ),
         titleLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
-        titleMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
+        titleMedium: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w900,
+        ),
         titleSmall: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
       ),
     );
@@ -180,14 +199,35 @@ class AppTheme {
         bodyLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         bodyMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         bodySmall: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        displayLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-        displayMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-        displaySmall: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-        headlineLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-        headlineMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-        headlineSmall: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+        displayLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
+        displayMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
+        displaySmall: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
+        headlineLarge: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
+        headlineMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
+        headlineSmall: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
         titleLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-        titleMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+        titleMedium: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
         titleSmall: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
       ),
     );

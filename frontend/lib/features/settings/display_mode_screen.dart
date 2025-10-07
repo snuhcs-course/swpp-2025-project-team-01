@@ -50,7 +50,8 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
 
   /// 시스템의 현재 라이트/다크 모드 확인
   bool _isSystemDarkMode() {
-    final brightness = SchedulerBinding.instance.platformDispatcher.platformBrightness;
+    final brightness =
+        SchedulerBinding.instance.platformDispatcher.platformBrightness;
     return brightness == Brightness.dark;
   }
 
@@ -63,24 +64,29 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(children: [
-          _rowOption(l10n.lightMode, 'light'),
-          _rowOption(l10n.darkMode, 'dark'),
-          _rowOption(l10n.systemSettings, 'system'),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          // 미니 프리뷰(단순 자리 표시자)
-          Row(
-            children: [
-              _previewBox(dark: false, label: l10n.lightMode),
-              const SizedBox(width: 8),
-              _previewBox(dark: true, label: l10n.darkMode),
-              const SizedBox(width: 8),
-              _previewBox(dark: _isSystemDarkMode(), label: l10n.systemSettings),
-            ],
-          ),
-        ]),
+        child: Column(
+          children: [
+            _rowOption(l10n.lightMode, 'light'),
+            _rowOption(l10n.darkMode, 'dark'),
+            _rowOption(l10n.systemSettings, 'system'),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            // 미니 프리뷰(단순 자리 표시자)
+            Row(
+              children: [
+                _previewBox(dark: false, label: l10n.lightMode),
+                const SizedBox(width: 8),
+                _previewBox(dark: true, label: l10n.darkMode),
+                const SizedBox(width: 8),
+                _previewBox(
+                  dark: _isSystemDarkMode(),
+                  label: l10n.systemSettings,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -108,7 +114,10 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
             border: Border.all(color: Colors.black12),
           ),
           alignment: Alignment.center,
-          child: Text(label ?? '', style: TextStyle(color: dark ? Colors.white70 : Colors.black54)),
+          child: Text(
+            label ?? '',
+            style: TextStyle(color: dark ? Colors.white70 : Colors.black54),
+          ),
         ),
       ),
     );

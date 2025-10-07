@@ -3,7 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// 접근성 설정을 관리하는 전역 서비스
 class AccessibilityService extends ChangeNotifier {
-  static final AccessibilityService _instance = AccessibilityService._internal();
+  static final AccessibilityService _instance =
+      AccessibilityService._internal();
   factory AccessibilityService() => _instance;
   AccessibilityService._internal();
 
@@ -24,7 +25,8 @@ class AccessibilityService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _highContrast = prefs.getBool('accessibility_high_contrast') ?? false;
     _reduceMotion = prefs.getBool('accessibility_reduce_motion') ?? false;
-    _emphasizeCaptions = prefs.getBool('accessibility_emphasize_captions') ?? true;
+    _emphasizeCaptions =
+        prefs.getBool('accessibility_emphasize_captions') ?? true;
     _isInitialized = true;
     notifyListeners();
   }

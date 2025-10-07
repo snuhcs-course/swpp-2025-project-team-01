@@ -31,7 +31,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subjects = repo.getSubjects().where((s) => !_deletedSubjectIds.contains(s.id)).toList();
+    final subjects = repo
+        .getSubjects()
+        .where((s) => !_deletedSubjectIds.contains(s.id))
+        .toList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -53,7 +56,22 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
         itemBuilder: (_, i) {
           final s = subjects[i];
           final lectureIds = _workingLectureIds[s.id]!;
-          final lectures = lectureIds.map((id) => repo.lecturesBySubject(s.id).firstWhere((l) => l.id == id, orElse: () => Lecture(id: id, subjectId: s.id, weekLabel: 'Week ?', title: 'Untitled', durationSec: 0))).toList();
+          final lectures = lectureIds
+              .map(
+                (id) => repo
+                    .lecturesBySubject(s.id)
+                    .firstWhere(
+                      (l) => l.id == id,
+                      orElse: () => Lecture(
+                        id: id,
+                        subjectId: s.id,
+                        weekLabel: 'Week ?',
+                        title: 'Untitled',
+                        durationSec: 0,
+                      ),
+                    ),
+              )
+              .toList();
           return _SubjectEditPanel(
             subject: s,
             lectures: lectures,
@@ -76,7 +94,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
               }
             },
             onEditTags: () async {
-              final selectedTags = await _showTagSelector(context, _workingTagIds[s.id] ?? []);
+              final selectedTags = await _showTagSelector(
+                context,
+                _workingTagIds[s.id] ?? [],
+              );
               if (selectedTags != null && mounted) {
                 setState(() {
                   _workingTagIds[s.id] = selectedTags;
@@ -120,9 +141,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
         backgroundColor: Colors.transparent,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -149,7 +168,9 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                 padding: const EdgeInsets.all(32),
                 decoration: const BoxDecoration(
                   color: Color(0xFFE8E8E8),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -218,7 +239,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     );
   }
 
-  Future<List<String>?> _showTagSelector(BuildContext context, List<String> currentTagIds) {
+  Future<List<String>?> _showTagSelector(
+    BuildContext context,
+    List<String> currentTagIds,
+  ) {
     final allTags = repo.getTags();
     final selectedTagIds = Set<String>.from(currentTagIds);
 
@@ -291,7 +315,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                 autofocus: true,
               ),
               const SizedBox(height: 16),
-              Text(AppLocalizations.of(context).selectTagsOptional, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(
+                AppLocalizations.of(context).selectTagsOptional,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
               const SizedBox(height: 8),
               SizedBox(
                 width: double.maxFinite,
@@ -330,7 +357,11 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
               onPressed: () {
                 if (titleController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(AppLocalizations.of(context).pleaseEnterSubjectName)),
+                    SnackBar(
+                      content: Text(
+                        AppLocalizations.of(context).pleaseEnterSubjectName,
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -344,9 +375,14 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     );
 
     if (result == true && mounted) {
-      await repo.createSubject(titleController.text.trim(), selectedTagIds.toList());
+      await repo.createSubject(
+        titleController.text.trim(),
+        selectedTagIds.toList(),
+      );
       // 새로 생성된 과목의 작업 복사본 초기화
-      final newSubject = repo.getSubjects().firstWhere((s) => s.title == titleController.text.trim());
+      final newSubject = repo.getSubjects().firstWhere(
+        (s) => s.title == titleController.text.trim(),
+      );
       setState(() {
         _workingLectureIds[newSubject.id] = [];
         _workingTagIds[newSubject.id] = List.from(selectedTagIds);
@@ -386,61 +422,88 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(children: [
-          // 검은 헤더 느낌 (간략화)
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(children: [
-              Expanded(child: Text(widget.subject.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: widget.onEditTags,
-                child: Text(AppLocalizations.of(context).editTags2, style: const TextStyle(color: Colors.white70)),
+        child: Column(
+          children: [
+            // 검은 헤더 느낌 (간략화)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 8),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.redAccent.shade200, foregroundColor: Colors.white),
-                onPressed: widget.onDeleteSubject,
-                child: Text(AppLocalizations.of(context).deleteSubject),
-              ),
-              IconButton(
-                color: Colors.white,
-                icon: Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
-                onPressed: () => setState(() => expanded = !expanded),
-              ),
-            ]),
-          ),
-          if (!expanded) const SizedBox.shrink() else ...[
-            const SizedBox(height: 12),
-            ReorderableListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: widget.lectures.length,
-              onReorder: widget.onReorder,
-              itemBuilder: (_, idx) {
-                final lec = widget.lectures[idx];
-                return Container(
-                  key: ValueKey(lec.id),
-                  child: ListTile(
-                    leading: ReorderableDragStartListener(
-                      index: idx,
-                      child: const Icon(Icons.drag_handle),
-                    ),
-                    title: Text('${lec.weekLabel}  •  ${lec.title}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.remove_circle, color: Colors.red),
-                      onPressed: () => widget.onDeleteLecture(lec),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.subject.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                );
-              },
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: widget.onEditTags,
+                    child: Text(
+                      AppLocalizations.of(context).editTags2,
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.redAccent.shade200,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: widget.onDeleteSubject,
+                    child: Text(AppLocalizations.of(context).deleteSubject),
+                  ),
+                  IconButton(
+                    color: Colors.white,
+                    icon: Icon(
+                      expanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                    ),
+                    onPressed: () => setState(() => expanded = !expanded),
+                  ),
+                ],
+              ),
             ),
+            if (!expanded)
+              const SizedBox.shrink()
+            else ...[
+              const SizedBox(height: 12),
+              ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: widget.lectures.length,
+                onReorder: widget.onReorder,
+                itemBuilder: (_, idx) {
+                  final lec = widget.lectures[idx];
+                  return Container(
+                    key: ValueKey(lec.id),
+                    child: ListTile(
+                      leading: ReorderableDragStartListener(
+                        index: idx,
+                        child: const Icon(Icons.drag_handle),
+                      ),
+                      title: Text('${lec.weekLabel}  •  ${lec.title}'),
+                      trailing: IconButton(
+                        icon: const Icon(
+                          Icons.remove_circle,
+                          color: Colors.red,
+                        ),
+                        onPressed: () => widget.onDeleteLecture(lec),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
@@ -463,11 +526,23 @@ class _BottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         color: const Color(0xFFEDEDED),
-        child: Row(children: [
-          Expanded(child: FilledButton(onPressed: onPrimary, child: Text(primaryLabel))),
-          const SizedBox(width: 12),
-          Expanded(child: OutlinedButton(onPressed: onSecondary, child: Text(secondaryLabel))),
-        ]),
+        child: Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: onPrimary,
+                child: Text(primaryLabel),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onSecondary,
+                child: Text(secondaryLabel),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

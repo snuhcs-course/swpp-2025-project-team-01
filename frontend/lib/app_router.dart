@@ -23,7 +23,7 @@ class Routes {
   static const search = '/search';
   static const lectureForm = '/lectures/new';
   static const subjectTag = '/manage';
-  static const player = '/player';        // args: { lectureId, startSlide? }
+  static const player = '/player'; // args: { lectureId, startSlide? }
   static const settings = '/settings';
 
   static const settingsDisplay = '/settings/display';
@@ -49,7 +49,9 @@ class AppRouter {
       case Routes.subjectTag:
         return MaterialPageRoute(builder: (_) => const SubjectTagScreen());
       case Routes.player:
-        return MaterialPageRoute(builder: (_) => PlayerScreen(args: s.arguments));
+        return MaterialPageRoute(
+          builder: (_) => PlayerScreen(args: s.arguments),
+        );
       case Routes.settings:
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case Routes.settings:
@@ -66,11 +68,12 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const HelpScreen());
       case Routes.subjectsEdit:
         return MaterialPageRoute(builder: (_) => const SubjectsEditScreen());
-      case Routes.tagsEdit: 
+      case Routes.tagsEdit:
         return MaterialPageRoute(builder: (_) => const TagsEditScreen());
       default:
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(body: Center(child: Text('Not Found'))),
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Not Found'))),
         );
     }
   }

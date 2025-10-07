@@ -10,8 +10,8 @@ class Repo extends ChangeNotifier {
   Repo._();
   static final instance = Repo._();
 
-  late Directory _docs;            // <Documents>/review
-  late Directory _dataDir;         // <Documents>/review/data
+  late Directory _docs; // <Documents>/review
+  late Directory _dataDir; // <Documents>/review/data
 
   Map<String, Subject> _subjects = {};
   Map<String, Tag> _tags = {};
@@ -22,7 +22,9 @@ class Repo extends ChangeNotifier {
   VoidCallback? _onDataChanged;
 
   Future<void> init() async {
-    _docs = Directory('${(await getApplicationDocumentsDirectory()).path}/review');
+    _docs = Directory(
+      '${(await getApplicationDocumentsDirectory()).path}/review',
+    );
     _dataDir = Directory('${_docs.path}/data')..createSync(recursive: true);
 
     await _ensureSeed('subjects.json');
@@ -33,7 +35,10 @@ class Repo extends ChangeNotifier {
     await _loadTagTheme();
 
     // 모든 강의 메타 로드
-    final allLectureIds = _subjects.values.expand((s) => s.lectureIds).toSet().toList();
+    final allLectureIds = _subjects.values
+        .expand((s) => s.lectureIds)
+        .toSet()
+        .toList();
     await preloadLectures(allLectureIds);
   }
 
@@ -59,7 +64,7 @@ class Repo extends ChangeNotifier {
           favorite: m['favorite'] ?? false,
           tagIds: (m['tagIds'] as List).cast<String>(),
           lectureIds: (m['lectureIds'] as List).cast<String>(),
-        )
+        ),
     };
   }
 
@@ -73,7 +78,7 @@ class Repo extends ChangeNotifier {
           id: m['id'],
           name: m['name'],
           color: _parseHex(m['color']),
-        )
+        ),
     };
   }
 
@@ -84,15 +89,22 @@ class Repo extends ChangeNotifier {
   }
 
   // ====== 공개 API (UI에서 사용) ======
-  Future<void> ensureReady() async { /* 앱 시작 시 main()에서 await Repo.instance.init(); */ }
+  Future<void> ensureReady() async {
+    /* 앱 시작 시 main()에서 await Repo.instance.init(); */
+  }
 
-  List<Subject> getSubjects({bool favoritesOnly = false, List<String> filterTagIds = const []}) {
+  List<Subject> getSubjects({
+    bool favoritesOnly = false,
+    List<String> filterTagIds = const [],
+  }) {
     var list = _subjects.values.toList()
-      ..sort((a,b)=> a.title.compareTo(b.title)); // 또는 order 사용
+      ..sort((a, b) => a.title.compareTo(b.title)); // 또는 order 사용
     if (favoritesOnly) list = list.where((s) => s.favorite).toList();
     if (filterTagIds.isNotEmpty) {
       // intersection: 선택한 모든 태그를 가진 과목만 표시
-      list = list.where((s) => filterTagIds.every((tagId) => s.tagIds.contains(tagId))).toList();
+      list = list
+          .where((s) => filterTagIds.every((tagId) => s.tagIds.contains(tagId)))
+          .toList();
     }
     return list;
   }
@@ -132,7 +144,9 @@ class Repo extends ChangeNotifier {
     if (_lectures.containsKey(lectureId)) return _lectures[lectureId];
 
     try {
-      final metaString = await rootBundle.loadString('assets/lectures/$lectureId/meta.json');
+      final metaString = await rootBundle.loadString(
+        'assets/lectures/$lectureId/meta.json',
+      );
       final meta = jsonDecode(metaString) as Map<String, dynamic>;
 
       final lecture = Lecture(
@@ -156,9 +170,19 @@ class Repo extends ChangeNotifier {
     if (s == null) return [];
 
     // 동기적으로 캐시된 강의 반환 (없으면 빈 객체)
-    return s.lectureIds.map((id) =>
-      _lectures[id] ?? Lecture(id: id, subjectId: subjectId, weekLabel: 'Week ?', title: 'Untitled', durationSec: 0)
-    ).toList();
+    return s.lectureIds
+        .map(
+          (id) =>
+              _lectures[id] ??
+              Lecture(
+                id: id,
+                subjectId: subjectId,
+                weekLabel: 'Week ?',
+                title: 'Untitled',
+                durationSec: 0,
+              ),
+        )
+        .toList();
   }
 
   Future<void> preloadLectures(List<String> lectureIds) async {
@@ -175,26 +199,41 @@ class Repo extends ChangeNotifier {
   }
 
   Future<void> _saveSubjects() async {
-    final list = _subjects.values.map((s) => {
-      'id': s.id,
-      'title': s.title,
-      'favorite': s.favorite,
-      'tagIds': s.tagIds,
-      'lectureIds': s.lectureIds,
-    }).toList();
+    final list = _subjects.values
+        .map(
+          (s) => {
+            'id': s.id,
+            'title': s.title,
+            'favorite': s.favorite,
+            'tagIds': s.tagIds,
+            'lectureIds': s.lectureIds,
+          },
+        )
+        .toList();
     final f = File('${_dataDir.path}/subjects.json');
-    await f.writeAsString(const JsonEncoder.withIndent('  ').convert({'schemaVersion':1,'subjects':list}));
+    await f.writeAsString(
+      const JsonEncoder.withIndent(
+        '  ',
+      ).convert({'schemaVersion': 1, 'subjects': list}),
+    );
   }
 
   Future<void> saveTags(List<Tag> tags) async {
     _tags = {for (final t in tags) t.id: t};
-    final list = tags.map((t) => {'id': t.id, 'name': t.name, 'color': _toHex(t.color)}).toList();
+    final list = tags
+        .map((t) => {'id': t.id, 'name': t.name, 'color': _toHex(t.color)})
+        .toList();
     final f = File('${_dataDir.path}/tags.json');
-    await f.writeAsString(const JsonEncoder.withIndent('  ').convert({'schemaVersion':1,'tags':list}));
+    await f.writeAsString(
+      const JsonEncoder.withIndent(
+        '  ',
+      ).convert({'schemaVersion': 1, 'tags': list}),
+    );
     notifyListeners();
   }
 
-  String _toHex(int argb) => '#${(argb & 0xFFFFFFFF).toRadixString(16).padLeft(8,'0').toUpperCase()}';
+  String _toHex(int argb) =>
+      '#${(argb & 0xFFFFFFFF).toRadixString(16).padLeft(8, '0').toUpperCase()}';
 
   // 태그 색상 테마 로드
   Future<void> _loadTagTheme() async {
@@ -220,7 +259,10 @@ class Repo extends ChangeNotifier {
   }
 
   // 과목의 수업 순서 업데이트
-  Future<void> updateSubjectLectures(String subjectId, List<String> lectureIds) async {
+  Future<void> updateSubjectLectures(
+    String subjectId,
+    List<String> lectureIds,
+  ) async {
     final s = _subjects[subjectId];
     if (s != null) {
       _subjects[subjectId] = s.copyWith(lectureIds: lectureIds);
@@ -271,7 +313,11 @@ class Repo extends ChangeNotifier {
   }
 
   // 강의 메타데이터 업데이트
-  Future<void> updateLecture(String lectureId, {String? weekLabel, String? title}) async {
+  Future<void> updateLecture(
+    String lectureId, {
+    String? weekLabel,
+    String? title,
+  }) async {
     final lecture = _lectures[lectureId];
     if (lecture != null) {
       _lectures[lectureId] = lecture.copyWith(

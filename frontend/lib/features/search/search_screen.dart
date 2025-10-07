@@ -140,10 +140,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.search),
-        backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: Text(l10n.search), backgroundColor: Colors.white),
       body: Column(
         children: [
           // 검색 바
@@ -162,9 +159,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     value: _searchScope,
                     underline: const SizedBox(),
                     items: [
-                      DropdownMenuItem(value: SearchScope.lecture, child: Text(l10n.searchByLecture)),
-                      DropdownMenuItem(value: SearchScope.week, child: Text(l10n.searchByWeek)),
-                      DropdownMenuItem(value: SearchScope.subject, child: Text(l10n.searchBySubject)),
+                      DropdownMenuItem(
+                        value: SearchScope.lecture,
+                        child: Text(l10n.searchByLecture),
+                      ),
+                      DropdownMenuItem(
+                        value: SearchScope.week,
+                        child: Text(l10n.searchByWeek),
+                      ),
+                      DropdownMenuItem(
+                        value: SearchScope.subject,
+                        child: Text(l10n.searchBySubject),
+                      ),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -206,13 +212,19 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.black87, width: 2),
+                        borderSide: const BorderSide(
+                          color: Colors.black87,
+                          width: 2,
+                        ),
                       ),
                     ),
                     onChanged: (value) {
-                      _performSearch(value); // 실시간 검색 (저장 안함) - _performSearch가 setState 호출함
+                      _performSearch(
+                        value,
+                      ); // 실시간 검색 (저장 안함) - _performSearch가 setState 호출함
                     },
-                    onSubmitted: (value) => _performSearch(value, saveToRecent: true), // 엔터 시 저장
+                    onSubmitted: (value) =>
+                        _performSearch(value, saveToRecent: true), // 엔터 시 저장
                   ),
                 ),
               ],
@@ -221,7 +233,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
           // 최근 검색어 또는 검색 결과
           Expanded(
-            child: _isSearching ? _buildSearchResults() : _buildRecentSearches(),
+            child: _isSearching
+                ? _buildSearchResults()
+                : _buildRecentSearches(),
           ),
         ],
       ),
@@ -232,7 +246,10 @@ class _SearchScreenState extends State<SearchScreen> {
     final l10n = AppLocalizations.of(context);
     if (_recentSearches.isEmpty) {
       return Center(
-        child: Text(l10n.noRecentSearches, style: const TextStyle(color: Colors.black38)),
+        child: Text(
+          l10n.noRecentSearches,
+          style: const TextStyle(color: Colors.black38),
+        ),
       );
     }
 
@@ -241,7 +258,10 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(l10n.recentSearches, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          child: Text(
+            l10n.recentSearches,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
         ),
         ListView.builder(
           shrinkWrap: true,
@@ -257,7 +277,10 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               onTap: () {
                 _searchController.text = query;
-                _performSearch(query, saveToRecent: false); // 이미 최근 검색어이므로 다시 저장 안함
+                _performSearch(
+                  query,
+                  saveToRecent: false,
+                ); // 이미 최근 검색어이므로 다시 저장 안함
               },
             );
           },
@@ -270,7 +293,10 @@ class _SearchScreenState extends State<SearchScreen> {
     final l10n = AppLocalizations.of(context);
     if (_searchResults.isEmpty) {
       return Center(
-        child: Text(l10n.noSearchResults, style: const TextStyle(color: Colors.black38)),
+        child: Text(
+          l10n.noSearchResults,
+          style: const TextStyle(color: Colors.black38),
+        ),
       );
     }
 
@@ -289,12 +315,18 @@ class _SearchScreenState extends State<SearchScreen> {
         );
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: 4,
+          ),
           title: Row(
             children: [
               Text(
                 lecture.weekLabel,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -315,7 +347,11 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           onTap: () {
-            Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lecture.id});
+            Navigator.pushNamed(
+              context,
+              Routes.player,
+              arguments: {'lectureId': lecture.id},
+            );
           },
         );
       },

@@ -26,19 +26,15 @@ class Lecture {
     this.slidesPath,
   });
 
-  Lecture copyWith({
-    String? weekLabel,
-    String? title,
-  }) =>
-      Lecture(
-        id: id,
-        subjectId: subjectId,
-        weekLabel: weekLabel ?? this.weekLabel,
-        title: title ?? this.title,
-        durationSec: durationSec,
-        thumbs: thumbs,
-        slidesPath: slidesPath,
-      );
+  Lecture copyWith({String? weekLabel, String? title}) => Lecture(
+    id: id,
+    subjectId: subjectId,
+    weekLabel: weekLabel ?? this.weekLabel,
+    title: title ?? this.title,
+    durationSec: durationSec,
+    thumbs: thumbs,
+    slidesPath: slidesPath,
+  );
 }
 
 /// 과목 모델 클래스
@@ -56,12 +52,15 @@ class Subject {
     this.lectureIds = const [],
   });
 
-  Subject copyWith({bool? favorite, List<String>? tagIds, List<String>? lectureIds}) =>
-      Subject(
-        id: id,
-        title: title,
-        favorite: favorite ?? this.favorite,
-        tagIds: tagIds ?? this.tagIds,
-        lectureIds: lectureIds ?? this.lectureIds
-      );
+  Subject copyWith({
+    bool? favorite,
+    List<String>? tagIds,
+    List<String>? lectureIds,
+  }) => Subject(
+    id: id,
+    title: title,
+    favorite: favorite ?? this.favorite,
+    tagIds: tagIds ?? this.tagIds,
+    lectureIds: lectureIds ?? this.lectureIds,
+  );
 }

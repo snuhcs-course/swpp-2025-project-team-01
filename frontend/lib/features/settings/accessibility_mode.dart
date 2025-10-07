@@ -67,7 +67,10 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(l10n.accessibilityAppliedImmediately, style: const TextStyle(color: Colors.black54)),
+              child: Text(
+                l10n.accessibilityAppliedImmediately,
+                style: const TextStyle(color: Colors.black54),
+              ),
             ),
           ],
         ),

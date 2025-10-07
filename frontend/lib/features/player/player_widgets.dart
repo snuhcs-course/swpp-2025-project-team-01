@@ -129,7 +129,9 @@ class _SkipButtonState extends State<SkipButton> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: _showBackground ? Colors.white.withValues(alpha: 0.3) : Colors.transparent,
+          color: _showBackground
+              ? Colors.white.withValues(alpha: 0.3)
+              : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Column(
@@ -305,7 +307,10 @@ class TopControlBarLandscape extends StatelessWidget {
         children: [
           BackButton(onPressed: onBack),
           const Spacer(),
-          CaptionButton(isEnabled: isCaptionEnabled, onPressed: onCaptionToggle),
+          CaptionButton(
+            isEnabled: isCaptionEnabled,
+            onPressed: onCaptionToggle,
+          ),
           const SizedBox(width: 8),
           SyncButton(isSynced: isSynced, onPressed: onSyncToggle),
         ],

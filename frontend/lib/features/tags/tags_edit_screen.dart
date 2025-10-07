@@ -12,29 +12,89 @@ class TagColorTheme {
 
   static const List<TagColorTheme> themes = [
     TagColorTheme('파스텔', [
-      0xFFFFDADA, 0xFFFFE4C4, 0xFFFFF4B3, 0xFFE8F5E9, 0xFFB3E5FC,
-      0xFFE1BEE7, 0xFFF8BBD0, 0xFFFFCCBC, 0xFFD1C4E9, 0xFFC5E1A5,
-      0xFFFFE082, 0xFFFFAB91, 0xFFCE93D8, 0xFFA5D6A7, 0xFFB39DDB,
+      0xFFFFDADA,
+      0xFFFFE4C4,
+      0xFFFFF4B3,
+      0xFFE8F5E9,
+      0xFFB3E5FC,
+      0xFFE1BEE7,
+      0xFFF8BBD0,
+      0xFFFFCCBC,
+      0xFFD1C4E9,
+      0xFFC5E1A5,
+      0xFFFFE082,
+      0xFFFFAB91,
+      0xFFCE93D8,
+      0xFFA5D6A7,
+      0xFFB39DDB,
     ]),
     TagColorTheme('비비드', [
-      0xFFFF6B6B, 0xFFFFAA33, 0xFFFFEB3B, 0xFF66BB6A, 0xFF42A5F5,
-      0xFF9C27B0, 0xFFEC407A, 0xFFFF7043, 0xFF7E57C2, 0xFF9CCC65,
-      0xFFFDD835, 0xFFFF8A65, 0xFFAB47BC, 0xFF81C784, 0xFF8E24AA,
+      0xFFFF6B6B,
+      0xFFFFAA33,
+      0xFFFFEB3B,
+      0xFF66BB6A,
+      0xFF42A5F5,
+      0xFF9C27B0,
+      0xFFEC407A,
+      0xFFFF7043,
+      0xFF7E57C2,
+      0xFF9CCC65,
+      0xFFFDD835,
+      0xFFFF8A65,
+      0xFFAB47BC,
+      0xFF81C784,
+      0xFF8E24AA,
     ]),
     TagColorTheme('네온', [
-      0xFFFF1744, 0xFFFF9100, 0xFFFFEA00, 0xFF00E676, 0xFF00B0FF,
-      0xFFD500F9, 0xFFFF4081, 0xFFFF6E40, 0xFF651FFF, 0xFF76FF03,
-      0xFFC6FF00, 0xFFFF3D00, 0xFFE040FB, 0xFF00E5FF, 0xFFAA00FF,
+      0xFFFF1744,
+      0xFFFF9100,
+      0xFFFFEA00,
+      0xFF00E676,
+      0xFF00B0FF,
+      0xFFD500F9,
+      0xFFFF4081,
+      0xFFFF6E40,
+      0xFF651FFF,
+      0xFF76FF03,
+      0xFFC6FF00,
+      0xFFFF3D00,
+      0xFFE040FB,
+      0xFF00E5FF,
+      0xFFAA00FF,
     ]),
     TagColorTheme('소프트', [
-      0xFFEFDBD5, 0xFFF3E5DC, 0xFFFFF8DC, 0xFFE8F4EA, 0xFFE0F2F7,
-      0xFFF3E5F5, 0xFFFCE4EC, 0xFFFBE9E7, 0xFFEDE7F6, 0xFFE7EED3,
-      0xFFFFF9C4, 0xFFFFE0B2, 0xFFF1E1F5, 0xFFDCEDC8, 0xFFE1BEE7,
+      0xFFEFDBD5,
+      0xFFF3E5DC,
+      0xFFFFF8DC,
+      0xFFE8F4EA,
+      0xFFE0F2F7,
+      0xFFF3E5F5,
+      0xFFFCE4EC,
+      0xFFFBE9E7,
+      0xFFEDE7F6,
+      0xFFE7EED3,
+      0xFFFFF9C4,
+      0xFFFFE0B2,
+      0xFFF1E1F5,
+      0xFFDCEDC8,
+      0xFFE1BEE7,
     ]),
     TagColorTheme('어스톤', [
-      0xFFBCAAA4, 0xFFD7CCC8, 0xFFE6D7C3, 0xFFC5E1A5, 0xFFB0BEC5,
-      0xFFCE93D8, 0xFFF48FB1, 0xFFFFAB91, 0xFFB39DDB, 0xFFA5D6A7,
-      0xFFDCE775, 0xFFFFCC80, 0xFFBA68C8, 0xFF90CAF9, 0xFF9FA8DA,
+      0xFFBCAAA4,
+      0xFFD7CCC8,
+      0xFFE6D7C3,
+      0xFFC5E1A5,
+      0xFFB0BEC5,
+      0xFFCE93D8,
+      0xFFF48FB1,
+      0xFFFFAB91,
+      0xFFB39DDB,
+      0xFFA5D6A7,
+      0xFFDCE775,
+      0xFFFFCC80,
+      0xFFBA68C8,
+      0xFF90CAF9,
+      0xFF9FA8DA,
     ]),
   ];
 
@@ -118,7 +178,10 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(AppLocalizations.of(context).colorTheme, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    AppLocalizations.of(context).colorTheme,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -148,10 +211,10 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           const SizedBox(height: 16),
           // 칩 그리드
           Wrap(
-            spacing: 8, runSpacing: 8,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              for (int i = 0; i < _tags.length; i++)
-                _buildTagChip(i),
+              for (int i = 0; i < _tags.length; i++) _buildTagChip(i),
               ActionChip(
                 label: const Text('+', style: TextStyle(color: Colors.black)),
                 onPressed: _addNewTag,
@@ -166,19 +229,36 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                TextField(
-                  controller: _nameC,
-                  decoration: InputDecoration(labelText: AppLocalizations.of(context).tagName),
-                  enableIMEPersonalizedLearning: false,
-                ),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(child: FilledButton(onPressed: _apply, child: Text(AppLocalizations.of(context).apply))),
-                  const SizedBox(width: 8),
-                  Expanded(child: OutlinedButton(onPressed: _cancel, child: Text(AppLocalizations.of(context).cancel))),
-                ]),
-              ]),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _nameC,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).tagName,
+                    ),
+                    enableIMEPersonalizedLearning: false,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _apply,
+                          child: Text(AppLocalizations.of(context).apply),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _cancel,
+                          child: Text(AppLocalizations.of(context).cancel),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -199,7 +279,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           await repo.saveTags(_tags); // 태그 저장
           if (context.mounted) {
             // 홈으로 완전 복귀 (홈 화면 재생성으로 태그 업데이트 반영)
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/', (route) => false);
           }
         },
         onSecondary: () async {
@@ -207,7 +289,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           await repo.saveTagTheme(_originalTheme);
           if (context.mounted) {
             // 홈으로 완전 복귀 (변경사항 없이)
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/', (route) => false);
           }
         },
       ),
@@ -246,9 +330,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   void _addNewTag() {
     // 15개 제한 체크
     if (_tags.length >= 15) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('태그는 최대 15개까지 생성할 수 있습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('태그는 최대 15개까지 생성할 수 있습니다.')));
       return;
     }
 
@@ -264,11 +348,13 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     final colorIndex = _tags.length % theme.colors.length;
 
     setState(() {
-      _tags.add(Tag(
-        id: 'new_${DateTime.now().millisecondsSinceEpoch}',
-        name: newName,
-        color: theme.colors[colorIndex],
-      ));
+      _tags.add(
+        Tag(
+          id: 'new_${DateTime.now().millisecondsSinceEpoch}',
+          name: newName,
+          color: theme.colors[colorIndex],
+        ),
+      );
       _selected = _tags.length - 1;
       _isNewTag = true;
     });
@@ -287,9 +373,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     // 빈 이름 체크
     if (newName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('태그 이름을 입력해주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('태그 이름을 입력해주세요.')));
       return;
     }
 
@@ -326,11 +412,17 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     // 삭제하려는 태그를 사용 중인 과목이 있는지 확인
     final tagToDelete = _tags[_selected];
     final subjects = repo.getSubjects();
-    final usingSubjects = subjects.where((s) => s.tagIds.contains(tagToDelete.id)).toList();
+    final usingSubjects = subjects
+        .where((s) => s.tagIds.contains(tagToDelete.id))
+        .toList();
 
     if (usingSubjects.isNotEmpty) {
       // 경고 다이얼로그 표시
-      final shouldDelete = await _showDeleteWarning(context, tagToDelete.name, usingSubjects);
+      final shouldDelete = await _showDeleteWarning(
+        context,
+        tagToDelete.name,
+        usingSubjects,
+      );
       if (shouldDelete != true) return;
     }
 
@@ -343,7 +435,11 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     });
   }
 
-  Future<bool?> _showDeleteWarning(BuildContext context, String tagName, List<Subject> usingSubjects) {
+  Future<bool?> _showDeleteWarning(
+    BuildContext context,
+    String tagName,
+    List<Subject> usingSubjects,
+  ) {
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
@@ -351,9 +447,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
         backgroundColor: Colors.transparent,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -380,7 +474,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                 padding: const EdgeInsets.all(32),
                 decoration: const BoxDecoration(
                   color: Color(0xFFE8E8E8),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -466,11 +562,23 @@ class _BottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         color: const Color(0xFFEDEDED),
-        child: Row(children: [
-          Expanded(child: FilledButton(onPressed: onPrimary, child: Text(primaryLabel))),
-          const SizedBox(width: 12),
-          Expanded(child: OutlinedButton(onPressed: onSecondary, child: Text(secondaryLabel))),
-        ]),
+        child: Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: onPrimary,
+                child: Text(primaryLabel),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onSecondary,
+                child: Text(secondaryLabel),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

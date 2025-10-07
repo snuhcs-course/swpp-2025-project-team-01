@@ -86,9 +86,7 @@ class _TtsScreenState extends State<TtsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -111,18 +109,28 @@ class _TtsScreenState extends State<TtsScreen> {
           children: [
             // TTS 음성 성별
             Text(
-              AppLocalizations.of(context).isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender',
+              AppLocalizations.of(context).isKorean
+                  ? 'TTS 음성 성별'
+                  : 'TTS Voice Gender',
               style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: _genderButton(AppLocalizations.of(context).isKorean ? '남성' : 'Male', _gender == '남성', context),
+                  child: _genderButton(
+                    AppLocalizations.of(context).isKorean ? '남성' : 'Male',
+                    _gender == '남성',
+                    context,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _genderButton(AppLocalizations.of(context).isKorean ? '여성' : 'Female', _gender == '여성', context),
+                  child: _genderButton(
+                    AppLocalizations.of(context).isKorean ? '여성' : 'Female',
+                    _gender == '여성',
+                    context,
+                  ),
                 ),
               ],
             ),
@@ -137,13 +145,9 @@ class _TtsScreenState extends State<TtsScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: _accentButton('Am', _accent == 'Am', context),
-                ),
+                Expanded(child: _accentButton('Am', _accent == 'Am', context)),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _accentButton('Br', _accent == 'Br', context),
-                ),
+                Expanded(child: _accentButton('Br', _accent == 'Br', context)),
               ],
             ),
 
@@ -151,7 +155,9 @@ class _TtsScreenState extends State<TtsScreen> {
 
             // 재생 속도
             Text(
-              AppLocalizations.of(context).isKorean ? '재생 속도' : 'Playback Speed',
+              AppLocalizations.of(context).isKorean
+                  ? '재생 속도'
+                  : 'Playback Speed',
               style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
             ),
             const SizedBox(height: 24),
@@ -189,9 +195,13 @@ class _TtsScreenState extends State<TtsScreen> {
                           activeTrackColor: const Color(0xFF424242),
                           inactiveTrackColor: const Color(0xFFE0E0E0),
                           thumbColor: const Color(0xFF424242),
-                          overlayColor: const Color(0xFF424242).withValues(alpha: 0.1),
+                          overlayColor: const Color(
+                            0xFF424242,
+                          ).withValues(alpha: 0.1),
                           trackHeight: 4,
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 8,
+                          ),
                         ),
                         child: Slider(
                           value: _speedToSlider(_speed),
@@ -229,11 +239,17 @@ class _TtsScreenState extends State<TtsScreen> {
                 children: [
                   Text(
                     'x${0.5.toStringAsFixed(1)}',
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF999999)),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF999999),
+                    ),
                   ),
                   Text(
                     'x${2.0.toStringAsFixed(1)}',
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF999999)),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF999999),
+                    ),
                   ),
                 ],
               ),
@@ -245,7 +261,9 @@ class _TtsScreenState extends State<TtsScreen> {
   }
 
   Widget _genderButton(String label, bool isSelected, BuildContext context) {
-    final actualValue = AppLocalizations.of(context).isKorean ? label : (label == 'Male' ? '남성' : '여성');
+    final actualValue = AppLocalizations.of(context).isKorean
+        ? label
+        : (label == 'Male' ? '남성' : '여성');
     return GestureDetector(
       onTap: () => _saveGender(actualValue),
       child: Container(

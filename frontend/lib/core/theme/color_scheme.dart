@@ -76,10 +76,7 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
   }
 
   @override
-  AppHighlights lerp(
-    covariant ThemeExtension<AppHighlights>? other,
-    double t,
-  ) {
+  AppHighlights lerp(covariant ThemeExtension<AppHighlights>? other, double t) {
     if (other is! AppHighlights) return this;
 
     return AppHighlights(
@@ -97,18 +94,15 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
   }
 
   List<TagHighlight> get tagHighlights => [
-        TagHighlight(background: list1, foreground: onList1),
-        TagHighlight(background: list2, foreground: onList2),
-        TagHighlight(background: list3, foreground: onList3),
-      ];
+    TagHighlight(background: list1, foreground: onList1),
+    TagHighlight(background: list2, foreground: onList2),
+    TagHighlight(background: list3, foreground: onList3),
+  ];
 }
 
 /// 태그 하이라이트 색상을 담는 클래스
 class TagHighlight {
-  const TagHighlight({
-    required this.background,
-    required this.foreground,
-  });
+  const TagHighlight({required this.background, required this.foreground});
 
   final Color background;
   final Color foreground;

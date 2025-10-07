@@ -91,16 +91,17 @@ class TranscriptData {
   final TranscriptMetadata metadata;
   final List<TranscriptSentence> timestamps;
 
-  TranscriptData({
-    required this.metadata,
-    required this.timestamps,
-  });
+  TranscriptData({required this.metadata, required this.timestamps});
 
   factory TranscriptData.fromJson(Map<String, dynamic> json) {
     return TranscriptData(
-      metadata: TranscriptMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
+      metadata: TranscriptMetadata.fromJson(
+        json['metadata'] as Map<String, dynamic>,
+      ),
       timestamps: (json['timestamps'] as List)
-          .map((item) => TranscriptSentence.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => TranscriptSentence.fromJson(item as Map<String, dynamic>),
+          )
           .toList(),
     );
   }

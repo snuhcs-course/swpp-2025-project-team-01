@@ -4,8 +4,10 @@ import 'dart:async';
 /// 오디오 재생 서비스
 class AudioService {
   final AudioPlayer _player = AudioPlayer();
-  final StreamController<Duration> _positionController = StreamController<Duration>.broadcast();
-  final StreamController<PlayerState> _stateController = StreamController<PlayerState>.broadcast();
+  final StreamController<Duration> _positionController =
+      StreamController<Duration>.broadcast();
+  final StreamController<PlayerState> _stateController =
+      StreamController<PlayerState>.broadcast();
   String? _currentAssetPath;
 
   Stream<Duration> get positionStream => _positionController.stream;
@@ -50,7 +52,8 @@ class AudioService {
 
   /// 재생
   Future<void> play() async {
-    if (_player.state == PlayerState.stopped || _player.state == PlayerState.completed) {
+    if (_player.state == PlayerState.stopped ||
+        _player.state == PlayerState.completed) {
       if (_currentAssetPath != null) {
         await _player.play(AssetSource(_currentAssetPath!));
       }

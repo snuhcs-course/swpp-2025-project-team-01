@@ -15,9 +15,7 @@ class CustomDrawer extends StatelessWidget {
       return _NoAnimationDrawer();
     } else {
       // 일반 Drawer
-      return Drawer(
-        child: _DrawerContent(),
-      );
+      return Drawer(child: _DrawerContent());
     }
   }
 }
@@ -27,11 +25,11 @@ class _NoAnimationDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).drawerTheme.backgroundColor ?? Theme.of(context).canvasColor,
+      color:
+          Theme.of(context).drawerTheme.backgroundColor ??
+          Theme.of(context).canvasColor,
       elevation: 16,
-      child: SafeArea(
-        child: _DrawerContent(),
-      ),
+      child: SafeArea(child: _DrawerContent()),
     );
   }
 }
@@ -46,7 +44,10 @@ class _DrawerContent extends StatelessWidget {
         const DrawerHeader(
           child: Align(
             alignment: Alignment.bottomLeft,
-            child: Text('메뉴', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+            child: Text(
+              '메뉴',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
           ),
         ),
         ListTile(

@@ -9,7 +9,9 @@ class HelpScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(title: const Text('Help')), // Keep as Help in both languages
+      appBar: AppBar(
+        title: const Text('Help'),
+      ), // Keep as Help in both languages
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
       body: const Padding(
         padding: EdgeInsets.all(16),

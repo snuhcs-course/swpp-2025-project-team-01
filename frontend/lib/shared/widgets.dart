@@ -5,7 +5,11 @@ import 'package:flutter/material.dart';
 class PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
-  const PrimaryButton({super.key, required this.label, required this.onPressed});
+  const PrimaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +38,14 @@ class LoadingOverlay extends StatelessWidget {
     return ColoredBox(
       color: Colors.black45,
       child: Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 12),
-          Text(message, style: const TextStyle(color: Colors.white)),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 12),
+            Text(message, style: const TextStyle(color: Colors.white)),
+          ],
+        ),
       ),
     );
   }

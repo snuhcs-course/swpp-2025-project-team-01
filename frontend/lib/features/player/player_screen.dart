@@ -104,21 +104,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final lectureId = map['lectureId'] ?? 'lec_demo_001';
 
       // meta.json 로드
-      final metaJson = await rootBundle.loadString('assets/lectures/$lectureId/meta.json');
+      final metaJson = await rootBundle.loadString(
+        'assets/lectures/$lectureId/meta.json',
+      );
       final metaData = json.decode(metaJson);
       _lectureMetadata = LectureMetadata.fromJson(metaData);
 
       // transcript.json 로드
-      final transcriptJson = await rootBundle.loadString('assets/lectures/$lectureId/transcript.json');
+      final transcriptJson = await rootBundle.loadString(
+        'assets/lectures/$lectureId/transcript.json',
+      );
       final transcriptJsonData = json.decode(transcriptJson);
       _transcriptData = TranscriptData.fromJson(transcriptJsonData);
 
       // PDF 로드
       final pdfPath = 'assets/lectures/$lectureId/${lectureId}_slides.pdf';
       _pdfDocument = await PdfDocument.openAsset(pdfPath);
-      _pdfController = PdfController(
-        document: PdfDocument.openAsset(pdfPath),
-      );
+      _pdfController = PdfController(document: PdfDocument.openAsset(pdfPath));
 
       setState(() {
         _totalTime = _transcriptData!.metadata.totalDuration;
@@ -126,7 +128,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       });
 
       // 오디오 파일 로드 및 자동 재생
-      await _audioService.loadAudio('lectures/$lectureId/lecture_with_slides.opus');
+      await _audioService.loadAudio(
+        'lectures/$lectureId/lecture_with_slides.opus',
+      );
 
       // 약간의 딜레이 후 재생 (오디오 로드 완료 대기)
       await Future.delayed(const Duration(milliseconds: 500));
@@ -165,7 +169,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     for (int i = 0; i < _transcriptData!.timestamps.length; i++) {
       final sentence = _transcriptData!.timestamps[i];
-      if (_currentTime >= sentence.startTime && _currentTime < sentence.endTime) {
+      if (_currentTime >= sentence.startTime &&
+          _currentTime < sentence.endTime) {
         if (_currentSentenceIndex != i) {
           setState(() {
             _currentSentenceIndex = i;
@@ -198,7 +203,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final key = _sentenceKeys[_currentSentenceIndex!];
     if (key?.currentContext == null) return;
 
-    final RenderBox? renderBox = key!.currentContext!.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        key!.currentContext!.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     // 아이템의 위치 계산
@@ -207,11 +213,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     // ScrollController의 현재 위치
     final scrollOffset = _transcriptScrollController.offset;
-    final viewportHeight = _transcriptScrollController.position.viewportDimension;
+    final viewportHeight =
+        _transcriptScrollController.position.viewportDimension;
 
     // ListView 컨테이너의 위치를 찾아야 함
-    final scrollContext = _transcriptScrollController.position.context.storageContext;
-    final RenderBox? scrollRenderBox = scrollContext.findRenderObject() as RenderBox?;
+    final scrollContext =
+        _transcriptScrollController.position.context.storageContext;
+    final RenderBox? scrollRenderBox =
+        scrollContext.findRenderObject() as RenderBox?;
     if (scrollRenderBox == null) return;
 
     final scrollPosition = scrollRenderBox.localToGlobal(Offset.zero);
@@ -220,13 +229,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final relativePosition = itemPosition.dy - scrollPosition.dy;
 
     // 현재 문장을 viewport의 중앙에 배치
-    final targetOffset = scrollOffset + relativePosition - (viewportHeight / 2) + (itemHeight / 2);
+    final targetOffset =
+        scrollOffset +
+        relativePosition -
+        (viewportHeight / 2) +
+        (itemHeight / 2);
 
     // 자동 스크롤 시작
     _isAutoScrolling = true;
 
     await _transcriptScrollController.animateTo(
-      targetOffset.clamp(0.0, _transcriptScrollController.position.maxScrollExtent),
+      targetOffset.clamp(
+        0.0,
+        _transcriptScrollController.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
@@ -238,7 +254,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _seekToSentence(int index) {
     if (_transcriptData == null) return;
     final sentence = _transcriptData!.timestamps[index];
-    _audioService.seek(Duration(milliseconds: (sentence.startTime * 1000).toInt()));
+    _audioService.seek(
+      Duration(milliseconds: (sentence.startTime * 1000).toInt()),
+    );
   }
 
   void _seekToSlide(int slideNumber) {
@@ -249,7 +267,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final sentence = _transcriptData!.timestamps[i];
       if (sentence.slideNumber == slideNumber) {
         // 오디오를 해당 시간으로 이동
-        _audioService.seek(Duration(milliseconds: (sentence.startTime * 1000).toInt()));
+        _audioService.seek(
+          Duration(milliseconds: (sentence.startTime * 1000).toInt()),
+        );
 
         // 사용자 스크롤 상태 해제하여 자동 스크롤 활성화
         setState(() {
@@ -281,11 +301,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -386,11 +402,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
             },
             onSkipBackward: () {
               final newTime = (_currentTime - 15).clamp(0, _totalTime);
-              _audioService.seek(Duration(milliseconds: (newTime * 1000).toInt()));
+              _audioService.seek(
+                Duration(milliseconds: (newTime * 1000).toInt()),
+              );
             },
             onSkipForward: () {
               final newTime = (_currentTime + 15).clamp(0, _totalTime);
-              _audioService.seek(Duration(milliseconds: (newTime * 1000).toInt()));
+              _audioService.seek(
+                Duration(milliseconds: (newTime * 1000).toInt()),
+              );
             },
           ),
 
@@ -408,7 +428,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   _isUserScrolling = false;
                 });
                 _scrollTimer?.cancel();
-                _audioService.seek(Duration(milliseconds: (value * 1000).toInt()));
+                _audioService.seek(
+                  Duration(milliseconds: (value * 1000).toInt()),
+                );
 
                 // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
                 Future.delayed(const Duration(milliseconds: 100), () {
@@ -439,7 +461,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
         color: const Color(0xFFF5F5F5),
         child: Center(
           child: Icon(
-            _isPagesExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+            _isPagesExpanded
+                ? Icons.keyboard_arrow_up
+                : Icons.keyboard_arrow_down,
             color: Colors.grey[700],
             size: 28,
           ),
@@ -486,11 +510,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
               child: FutureBuilder<Uint8List>(
                 future: _renderPdfPage(pageNumber),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                    return Image.memory(
-                      snapshot.data!,
-                      fit: BoxFit.contain,
-                    );
+                  if (snapshot.connectionState == ConnectionState.done &&
+                      snapshot.hasData) {
+                    return Image.memory(snapshot.data!, fit: BoxFit.contain);
                   }
                   return Center(
                     child: Column(
@@ -508,7 +530,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         Text(
                           '$pageNumber',
                           style: TextStyle(
-                            color: isCurrentPage ? Colors.blue : Colors.grey[800],
+                            color: isCurrentPage
+                                ? Colors.blue
+                                : Colors.grey[800],
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                           ),
@@ -530,9 +554,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return Container(
         width: double.infinity,
         color: const Color(0xFFFAFAFA),
-        child: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        child: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -572,8 +594,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       sentence.text,
                       style: TextStyle(
                         fontSize: isCurrentSentence ? 18 : 14,
-                        fontWeight: isCurrentSentence ? FontWeight.bold : FontWeight.normal,
-                        color: isCurrentSentence ? Colors.black : Colors.grey[600],
+                        fontWeight: isCurrentSentence
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isCurrentSentence
+                            ? Colors.black
+                            : Colors.grey[600],
                         height: 1.6,
                       ),
                     ),
@@ -639,7 +665,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
 
                 // 비디오 컨트롤 오버레이
-                if (_showControls && !_isPagesExpanded) _buildHorizontalVideoControls(),
+                if (_showControls && !_isPagesExpanded)
+                  _buildHorizontalVideoControls(),
 
                 // 하단 슬라이드 토글 바
                 if (_isPagesExpanded)
@@ -755,7 +782,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
           TopControlBarLandscape(
             onBack: () => Navigator.pop(context),
             isCaptionEnabled: _isCaptionEnabled,
-            onCaptionToggle: () => setState(() => _isCaptionEnabled = !_isCaptionEnabled),
+            onCaptionToggle: () =>
+                setState(() => _isCaptionEnabled = !_isCaptionEnabled),
             isSynced: _isSynced,
             onSyncToggle: () => setState(() => _isSynced = !_isSynced),
           ),
@@ -774,11 +802,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
             },
             onSkipBackward: () {
               final newTime = (_currentTime - 15).clamp(0, _totalTime);
-              _audioService.seek(Duration(milliseconds: (newTime * 1000).toInt()));
+              _audioService.seek(
+                Duration(milliseconds: (newTime * 1000).toInt()),
+              );
             },
             onSkipForward: () {
               final newTime = (_currentTime + 15).clamp(0, _totalTime);
-              _audioService.seek(Duration(milliseconds: (newTime * 1000).toInt()));
+              _audioService.seek(
+                Duration(milliseconds: (newTime * 1000).toInt()),
+              );
             },
           ),
 
@@ -796,7 +828,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   _isUserScrolling = false;
                 });
                 _scrollTimer?.cancel();
-                _audioService.seek(Duration(milliseconds: (value * 1000).toInt()));
+                _audioService.seek(
+                  Duration(milliseconds: (value * 1000).toInt()),
+                );
 
                 // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
                 Future.delayed(const Duration(milliseconds: 100), () {
@@ -880,7 +914,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     child: FutureBuilder<Uint8List>(
                       future: _renderPdfPage(pageNumber),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+                        if (snapshot.connectionState == ConnectionState.done &&
+                            snapshot.hasData) {
                           return Image.memory(
                             snapshot.data!,
                             fit: BoxFit.contain,
@@ -902,7 +937,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               Text(
                                 '$pageNumber',
                                 style: TextStyle(
-                                  color: isCurrentPage ? Colors.blue : Colors.grey[700],
+                                  color: isCurrentPage
+                                      ? Colors.blue
+                                      : Colors.grey[700],
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                 ),

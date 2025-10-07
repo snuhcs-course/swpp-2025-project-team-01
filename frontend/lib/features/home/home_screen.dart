@@ -74,43 +74,58 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: MediaQuery.of(context).size.width * 0.75,
                         height: double.infinity,
                         child: SafeArea(
-                          child: ListView(padding: EdgeInsets.zero, children: [
-                            DrawerHeader(
-                              child: Align(
-                                alignment: Alignment.bottomLeft,
-                                child: Text(l10n.menu, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                          child: ListView(
+                            padding: EdgeInsets.zero,
+                            children: [
+                              DrawerHeader(
+                                child: Align(
+                                  alignment: Alignment.bottomLeft,
+                                  child: Text(
+                                    l10n.menu,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            ListTile(
-                              title: Text(l10n.addLecture),
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                Navigator.pushNamed(context, Routes.lectureForm);
-                              },
-                            ),
-                            ListTile(
-                              title: Text(l10n.editSubjects),
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                Navigator.pushNamed(context, Routes.subjectsEdit);
-                              },
-                            ),
-                            ListTile(
-                              title: Text(l10n.editTags),
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                Navigator.pushNamed(context, Routes.tagsEdit);
-                              },
-                            ),
-                            const Divider(),
-                            ListTile(
-                              title: Text(l10n.settings),
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                Navigator.pushNamed(context, Routes.settings);
-                              },
-                            ),
-                          ]),
+                              ListTile(
+                                title: Text(l10n.addLecture),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.pushNamed(
+                                    context,
+                                    Routes.lectureForm,
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                title: Text(l10n.editSubjects),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.pushNamed(
+                                    context,
+                                    Routes.subjectsEdit,
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                title: Text(l10n.editTags),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.pushNamed(context, Routes.tagsEdit);
+                                },
+                              ),
+                              const Divider(),
+                              ListTile(
+                                title: Text(l10n.settings),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.pushNamed(context, Routes.settings);
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -135,43 +150,52 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: reduceMotion
           ? null
           : Drawer(
-              child: ListView(padding: EdgeInsets.zero, children: [
-                DrawerHeader(
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Text(l10n.menu, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  DrawerHeader(
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Text(
+                        l10n.menu,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                ListTile(
-                  title: Text(l10n.addLecture),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, Routes.lectureForm);
-                  },
-                ),
-                ListTile(
-                  title: Text(l10n.editSubjects),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, Routes.subjectsEdit);
-                  },
-                ),
-                ListTile(
-                  title: Text(l10n.editTags),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, Routes.tagsEdit);
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  title: Text(l10n.settings),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, Routes.settings);
-                  },
-                ),
-              ]),
+                  ListTile(
+                    title: Text(l10n.addLecture),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, Routes.lectureForm);
+                    },
+                  ),
+                  ListTile(
+                    title: Text(l10n.editSubjects),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, Routes.subjectsEdit);
+                    },
+                  ),
+                  ListTile(
+                    title: Text(l10n.editTags),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, Routes.tagsEdit);
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    title: Text(l10n.settings),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, Routes.settings);
+                    },
+                  ),
+                ],
+              ),
             ),
       body: CustomScrollView(
         slivers: [
@@ -179,26 +203,28 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-              child: Row(children: [
-                FilterPill(
-                  icon: Icons.tune,
-                  label: l10n.filter,
-                  active: showTagFilter,
-                  onTap: () => setState(() {
-                    showTagFilter = !showTagFilter;
-                    // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
-                    if (!showTagFilter) {
-                      selectedTagIds.clear();
-                    }
-                  }),
-                ),
-                const SizedBox(width: 12),
-                FavoritePill(
-                  active: favoritesOnly,
-                  onTap: () => setState(() => favoritesOnly = !favoritesOnly),
-                  label: l10n.favorites,
-                ),
-              ]),
+              child: Row(
+                children: [
+                  FilterPill(
+                    icon: Icons.tune,
+                    label: l10n.filter,
+                    active: showTagFilter,
+                    onTap: () => setState(() {
+                      showTagFilter = !showTagFilter;
+                      // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
+                      if (!showTagFilter) {
+                        selectedTagIds.clear();
+                      }
+                    }),
+                  ),
+                  const SizedBox(width: 12),
+                  FavoritePill(
+                    active: favoritesOnly,
+                    onTap: () => setState(() => favoritesOnly = !favoritesOnly),
+                    label: l10n.favorites,
+                  ),
+                ],
+              ),
             ),
           ),
           // 태그 칩 그리드 (필터 버튼 클릭 시만 표시)
@@ -223,7 +249,12 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, i) {
               final s = subjects[i];
               final subjectTags = s.tagIds
-                  .map((tid) => tags.cast<Tag?>().firstWhere((t) => t?.id == tid, orElse: () => null))
+                  .map(
+                    (tid) => tags.cast<Tag?>().firstWhere(
+                      (t) => t?.id == tid,
+                      orElse: () => null,
+                    ),
+                  )
                   .whereType<Tag>()
                   .toList();
               // 태그 정렬: 숫자 > 한글 > 영어
@@ -240,7 +271,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Repository가 notifyListeners()를 호출하므로 setState 불필요
                   },
                   onOpenLecture: (Lecture lec) {
-                    Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lec.id});
+                    Navigator.pushNamed(
+                      context,
+                      Routes.player,
+                      arguments: {'lectureId': lec.id},
+                    );
                   },
                   onLectureUpdated: () {
                     // Repository가 notifyListeners()를 호출하므로 setState 불필요

@@ -75,8 +75,12 @@ class _ReViewAppState extends State<ReViewApp> {
     final reduceMotion = accessibilityService.reduceMotion;
 
     // 고대비 모드가 활성화되면 고대비 테마 사용
-    ThemeData lightTheme = isHighContrast ? AppTheme.lightHighContrast : AppTheme.light;
-    ThemeData darkTheme = isHighContrast ? AppTheme.darkHighContrast : AppTheme.dark;
+    ThemeData lightTheme = isHighContrast
+        ? AppTheme.lightHighContrast
+        : AppTheme.light;
+    ThemeData darkTheme = isHighContrast
+        ? AppTheme.darkHighContrast
+        : AppTheme.dark;
 
     // 모션 줄이기가 활성화되면 페이지 전환 애니메이션 제거
     return MaterialApp(
@@ -121,9 +125,7 @@ class _ReViewAppState extends State<ReViewApp> {
               )
             : null,
         drawerTheme: reduceMotion
-            ? const DrawerThemeData(
-                endShape: RoundedRectangleBorder(),
-              )
+            ? const DrawerThemeData(endShape: RoundedRectangleBorder())
             : null,
       ),
       themeMode: themeMode,

@@ -48,21 +48,21 @@ class _LanguageScreenState extends State<LanguageScreen> {
             RadioListTile<String>(
               value: 'ko',
               groupValue: currentLang,
-              title: const Text(
-                '한국어 / Korean',
-                style: TextStyle(fontSize: 18),
+              title: const Text('한국어 / Korean', style: TextStyle(fontSize: 18)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 8,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               onChanged: (v) => _saveLanguage(v!),
             ),
             RadioListTile<String>(
               value: 'en',
               groupValue: currentLang,
-              title: const Text(
-                'English',
-                style: TextStyle(fontSize: 18),
+              title: const Text('English', style: TextStyle(fontSize: 18)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 8,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               onChanged: (v) => _saveLanguage(v!),
             ),
           ],
