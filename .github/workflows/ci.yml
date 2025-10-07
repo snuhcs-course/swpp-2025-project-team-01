@@ -32,9 +32,9 @@ jobs:
     #- name: Run backend unit tests
     #  run: python run_backend_unit_tests.py
 
-  # Flutter 검사
-  flutter-checks:
-    name: Flutter Checks
+  # Linter for Dart: warnings are treated as errors
+  dart-linter-test:
+    name: Dart Lint Check
     runs-on: ubuntu-latest
     defaults:
       run:
