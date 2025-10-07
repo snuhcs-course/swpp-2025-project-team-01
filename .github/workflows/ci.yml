@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, frontend ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, frontend ]
 
 jobs:
   build:
@@ -31,3 +31,34 @@ jobs:
     # Add necessary script executions accordingly.
     #- name: Run backend unit tests
     #  run: python run_backend_unit_tests.py
+
+  # Flutter 검사
+  flutter-checks:
+    name: Flutter Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.4'
+        channel: 'stable'
+        cache: true
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Format check
+      run: dart format --output=none --set-exit-if-changed .
+    
+    - name: Analyze
+      run: flutter analyze --fatal-infos --fatal-warnings
+    
+    # 나중에 추가
+    # - name: Test
+    #  run: flutter test
