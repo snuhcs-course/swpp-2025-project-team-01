@@ -34,7 +34,6 @@ jobs:
 
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
-    name: Dart Lint Check
     runs-on: ubuntu-latest
     defaults:
       run:
