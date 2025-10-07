@@ -4,15 +4,15 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:pdfx/pdfx.dart';
 import 'dart:convert';
 import 'dart:async';
-import 'dart:typed_data';
-import '../../core/utils.dart';
-import 'player_widgets.dart';
-import 'models/lecture_data.dart';
-import 'services/audio_service.dart';
+
+import 'package:re_view/features/player/player_widgets.dart';
+import 'package:re_view/features/player/models/lecture_data.dart';
+import 'package:re_view/features/player/services/audio_service.dart';
 
 class PlayerScreen extends StatefulWidget {
-  final Object? args;
   const PlayerScreen({super.key, this.args});
+
+  final Object? args;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -68,7 +68,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _setupScrollListener() {
     _transcriptScrollController.addListener(() {
       // 자동 스크롤 중이면 무시
-      if (_isAutoScrolling) return;
+      if (_isAutoScrolling) {
+        return;
+      }
 
       // 사용자가 스크롤 중임을 표시
       if (!_isUserScrolling) {
@@ -107,15 +109,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final metaJson = await rootBundle.loadString(
         'assets/lectures/$lectureId/meta.json',
       );
-      final metaData = json.decode(metaJson);
-      _lectureMetadata = LectureMetadata.fromJson(metaData);
+
+      try {
+        final metaData = json.decode(metaJson) as Map<String, dynamic>;
+        _lectureMetadata = LectureMetadata.fromJson(metaData);
+      } catch (e) {
+        throw FormatException('Invalid metadata format');
+      }
 
       // transcript.json 로드
       final transcriptJson = await rootBundle.loadString(
         'assets/lectures/$lectureId/transcript.json',
       );
-      final transcriptJsonData = json.decode(transcriptJson);
-      _transcriptData = TranscriptData.fromJson(transcriptJsonData);
+
+      try {
+        final transcriptJsonData = json.decode(transcriptJson) as Map<String, dynamic>;
+        _transcriptData = TranscriptData.fromJson(transcriptJsonData);
+      } catch (e) {
+        throw FormatException('Invalid metadata format');
+      }
 
       // PDF 로드
       final pdfPath = 'assets/lectures/$lectureId/${lectureId}_slides.pdf';
@@ -165,7 +177,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _updateCurrentSentence() {
-    if (_transcriptData == null) return;
+    if (_transcriptData == null) {
+      return;
+    }
 
     for (int i = 0; i < _transcriptData!.timestamps.length; i++) {
       final sentence = _transcriptData!.timestamps[i];
@@ -196,16 +210,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _scrollToCurrentSentence() async {
-    if (_currentSentenceIndex == null || _transcriptData == null) return;
-    if (!_transcriptScrollController.hasClients) return;
+    if (_currentSentenceIndex == null || _transcriptData == null) {
+      return;
+    }
+
+    if (!_transcriptScrollController.hasClients) {
+      return;
+    }
 
     // GlobalKey를 사용하여 정확한 위치 계산
     final key = _sentenceKeys[_currentSentenceIndex!];
-    if (key?.currentContext == null) return;
+    if (key?.currentContext == null) {
+      return;
+    }
 
     final RenderBox? renderBox =
         key!.currentContext!.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
+    if (renderBox == null) {
+      return;
+    }
 
     // 아이템의 위치 계산
     final itemPosition = renderBox.localToGlobal(Offset.zero);
@@ -221,8 +244,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
         _transcriptScrollController.position.context.storageContext;
     final RenderBox? scrollRenderBox =
         scrollContext.findRenderObject() as RenderBox?;
-    if (scrollRenderBox == null) return;
-
+    if (scrollRenderBox == null) {
+      return;
+    }
     final scrollPosition = scrollRenderBox.localToGlobal(Offset.zero);
 
     // 아이템의 상대적 위치 계산
@@ -252,7 +276,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _seekToSentence(int index) {
-    if (_transcriptData == null) return;
+    if (_transcriptData == null) {
+      return;
+    }
     final sentence = _transcriptData!.timestamps[index];
     _audioService.seek(
       Duration(milliseconds: (sentence.startTime * 1000).toInt()),
@@ -260,7 +286,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _seekToSlide(int slideNumber) {
-    if (_transcriptData == null) return;
+    if (_transcriptData == null) {
+      return;
+    }
 
     // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
     for (int i = 0; i < _transcriptData!.timestamps.length; i++) {

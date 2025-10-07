@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../core/utils.dart';
+import 'package:re_view/core/utils.dart';
 
 /// 비디오 컨트롤 공통 위젯 모듈
 
 // 뒤로가기 버튼
 class BackButton extends StatelessWidget {
-  final VoidCallback onPressed;
   const BackButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -19,13 +20,14 @@ class BackButton extends StatelessWidget {
 
 // 싱크 토글 버튼
 class SyncButton extends StatelessWidget {
-  final bool isSynced;
-  final VoidCallback onPressed;
   const SyncButton({
     super.key,
     required this.isSynced,
     required this.onPressed,
   });
+
+  final bool isSynced;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +44,14 @@ class SyncButton extends StatelessWidget {
 
 // 자막 버튼
 class CaptionButton extends StatelessWidget {
-  final bool isEnabled;
-  final VoidCallback onPressed;
   const CaptionButton({
     super.key,
     required this.isEnabled,
     required this.onPressed,
   });
+
+  final bool isEnabled;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -65,13 +68,14 @@ class CaptionButton extends StatelessWidget {
 
 // 재생/정지 버튼
 class PlayPauseButton extends StatelessWidget {
-  final bool isPlaying;
-  final VoidCallback onPressed;
   const PlayPauseButton({
     super.key,
     required this.isPlaying,
     required this.onPressed,
   });
+
+  final bool isPlaying;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -89,13 +93,14 @@ class PlayPauseButton extends StatelessWidget {
 
 // 15초 앞/뒤로 이동 버튼
 class SkipButton extends StatefulWidget {
-  final bool isForward; // true면 앞으로, false면 뒤로
-  final VoidCallback onPressed;
   const SkipButton({
     super.key,
     required this.isForward,
     required this.onPressed,
   });
+
+  final bool isForward; // true면 앞으로, false면 뒤로
+  final VoidCallback onPressed;
 
   @override
   State<SkipButton> createState() => _SkipButtonState();
@@ -160,16 +165,16 @@ class _SkipButtonState extends State<SkipButton> {
 
 // 타임라인 슬라이더
 class VideoTimelineSlider extends StatelessWidget {
-  final double currentTime;
-  final double totalTime;
-  final ValueChanged<double> onChanged;
-
   const VideoTimelineSlider({
     super.key,
     required this.currentTime,
     required this.totalTime,
     required this.onChanged,
   });
+
+  final double currentTime;
+  final double totalTime;
+  final ValueChanged<double> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -226,11 +231,6 @@ class VideoTimelineSlider extends StatelessWidget {
 
 // 중앙 재생 컨트롤 (재생/정지 + 15초 앞뒤)
 class CenterPlayControls extends StatelessWidget {
-  final bool isPlaying;
-  final VoidCallback onPlayPause;
-  final VoidCallback onSkipBackward;
-  final VoidCallback onSkipForward;
-
   const CenterPlayControls({
     super.key,
     required this.isPlaying,
@@ -238,6 +238,11 @@ class CenterPlayControls extends StatelessWidget {
     required this.onSkipBackward,
     required this.onSkipForward,
   });
+
+  final bool isPlaying;
+  final VoidCallback onPlayPause;
+  final VoidCallback onSkipBackward;
+  final VoidCallback onSkipForward;
 
   @override
   Widget build(BuildContext context) {
@@ -256,16 +261,16 @@ class CenterPlayControls extends StatelessWidget {
 
 // 상단 컨트롤 바 (세로 모드용)
 class TopControlBarPortrait extends StatelessWidget {
-  final VoidCallback onBack;
-  final bool isSynced;
-  final VoidCallback onSyncToggle;
-
   const TopControlBarPortrait({
     super.key,
     required this.onBack,
     required this.isSynced,
     required this.onSyncToggle,
   });
+
+  final VoidCallback onBack;
+  final bool isSynced;
+  final VoidCallback onSyncToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -284,12 +289,6 @@ class TopControlBarPortrait extends StatelessWidget {
 
 // 상단 컨트롤 바 (가로 모드용)
 class TopControlBarLandscape extends StatelessWidget {
-  final VoidCallback onBack;
-  final bool isCaptionEnabled;
-  final VoidCallback onCaptionToggle;
-  final bool isSynced;
-  final VoidCallback onSyncToggle;
-
   const TopControlBarLandscape({
     super.key,
     required this.onBack,
@@ -298,6 +297,12 @@ class TopControlBarLandscape extends StatelessWidget {
     required this.isSynced,
     required this.onSyncToggle,
   });
+
+  final VoidCallback onBack;
+  final bool isCaptionEnabled;
+  final VoidCallback onCaptionToggle;
+  final bool isSynced;
+  final VoidCallback onSyncToggle;
 
   @override
   Widget build(BuildContext context) {

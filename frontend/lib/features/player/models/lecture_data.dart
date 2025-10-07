@@ -1,13 +1,4 @@
-// 강의 데이터 모델
-
 class LectureMetadata {
-  final String lectureId;
-  final String subjectId;
-  final String title;
-  final String weekLabel;
-  final int durationSec;
-  final int slides;
-
   LectureMetadata({
     required this.lectureId,
     required this.subjectId,
@@ -27,16 +18,16 @@ class LectureMetadata {
       slides: json['slides'] as int,
     );
   }
+
+  final String lectureId;
+  final String subjectId;
+  final String title;
+  final String weekLabel;
+  final int durationSec;
+  final int slides;
 }
 
 class TranscriptMetadata {
-  final int totalSentences;
-  final double totalDuration;
-  final String voice;
-  final double speed;
-  final String languageCode;
-  final int sampleRate;
-
   TranscriptMetadata({
     required this.totalSentences,
     required this.totalDuration,
@@ -56,16 +47,16 @@ class TranscriptMetadata {
       sampleRate: json['sample_rate'] as int,
     );
   }
+
+  final int totalSentences;
+  final double totalDuration;
+  final String voice;
+  final double speed;
+  final String languageCode;
+  final int sampleRate;
 }
 
 class TranscriptSentence {
-  final int sentenceId;
-  final String text;
-  final int slideNumber;
-  final double startTime;
-  final double endTime;
-  final double duration;
-
   TranscriptSentence({
     required this.sentenceId,
     required this.text,
@@ -85,12 +76,16 @@ class TranscriptSentence {
       duration: (json['duration'] as num).toDouble(),
     );
   }
+
+  final int sentenceId;
+  final String text;
+  final int slideNumber;
+  final double startTime;
+  final double endTime;
+  final double duration;
 }
 
 class TranscriptData {
-  final TranscriptMetadata metadata;
-  final List<TranscriptSentence> timestamps;
-
   TranscriptData({required this.metadata, required this.timestamps});
 
   factory TranscriptData.fromJson(Map<String, dynamic> json) {
@@ -105,4 +100,7 @@ class TranscriptData {
           .toList(),
     );
   }
+
+  final TranscriptMetadata metadata;
+  final List<TranscriptSentence> timestamps;
 }
