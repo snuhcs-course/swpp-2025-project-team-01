@@ -17,17 +17,20 @@ const _panelShadow = BoxShadow(
 
 /// 필터 pill 버튼 위젯
 class FilterPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool active;
-  const FilterPill({
+
+    const FilterPill({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
     this.active = false,
   });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+
 
   @override
   Widget build(BuildContext context) {
@@ -76,15 +79,17 @@ class FilterPill extends StatelessWidget {
 
 /// 즐겨찾기 pill 버튼 위젯
 class FavoritePill extends StatelessWidget {
-  final bool active;
-  final VoidCallback onTap;
-  final String label;
-  const FavoritePill({
+
+    const FavoritePill({
     super.key,
     required this.active,
     required this.onTap,
     required this.label,
   });
+
+  final bool active;
+  final VoidCallback onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -136,15 +141,18 @@ class FavoritePill extends StatelessWidget {
 
 /// 태그 칩 그리드 위젯
 class TagChips extends StatelessWidget {
-  final List<Tag> tags;
-  final Set<String> selected;
-  final ValueChanged<String> onToggle;
+
   const TagChips({
     super.key,
     required this.tags,
     required this.selected,
     required this.onToggle,
   });
+
+  final List<Tag> tags;
+  final Set<String> selected;
+  final ValueChanged<String> onToggle;
+
 
   @override
   Widget build(BuildContext context) {
@@ -175,13 +183,6 @@ class TagChips extends StatelessWidget {
 
 /// 과목 패널 위젯 (접고 펼칠 수 있는 강의 목록 포함)
 class SubjectPanel extends StatefulWidget {
-  final Subject subject;
-  final List<Tag> tags;
-  final List<Lecture> lectures;
-  final VoidCallback onToggleFavorite;
-  final ValueChanged<Lecture> onOpenLecture;
-  final VoidCallback? onLectureUpdated;
-
   const SubjectPanel({
     super.key,
     required this.subject,
@@ -191,6 +192,13 @@ class SubjectPanel extends StatefulWidget {
     required this.onOpenLecture,
     this.onLectureUpdated,
   });
+
+  final Subject subject;
+  final List<Tag> tags;
+  final List<Lecture> lectures;
+  final VoidCallback onToggleFavorite;
+  final ValueChanged<Lecture> onOpenLecture;
+  final VoidCallback? onLectureUpdated;
 
   @override
   State<SubjectPanel> createState() => _SubjectPanelState();
@@ -374,15 +382,16 @@ class _SubjectPanelState extends State<SubjectPanel>
 
 /// 강의 카드 위젯 (PDF 썸네일 포함)
 class LectureCard extends StatefulWidget {
-  final Lecture lec;
-  final ValueChanged<Lecture> onTap;
-  final VoidCallback? onUpdated;
   const LectureCard({
     super.key,
     required this.lec,
     required this.onTap,
     this.onUpdated,
   });
+
+  final Lecture lec;
+  final ValueChanged<Lecture> onTap;
+  final VoidCallback? onUpdated;
 
   @override
   State<LectureCard> createState() => _LectureCardState();
@@ -548,8 +557,8 @@ class _LectureCardState extends State<LectureCard> {
 
 /// 강의 상세정보 편집 다이얼로그
 class _LectureDetailDialog extends StatefulWidget {
-  final Lecture lecture;
   const _LectureDetailDialog({required this.lecture});
+  final Lecture lecture;
 
   @override
   State<_LectureDetailDialog> createState() => _LectureDetailDialogState();
