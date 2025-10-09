@@ -1,11 +1,11 @@
 // 홈 메인: 상단 필터/즐겨찾기 pill + 태그칩 + 과목 패널 리스트
 import 'package:flutter/material.dart';
-import '../../app_router.dart';
-import '../../core/accessibility_service.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../data/models.dart';
-import '../../data/repository.dart';
-import 'home_widgets.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/accessibility_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/data/models.dart';
+import 'package:re_view/data/repository.dart';
+import 'package:re_view/features/home/home_widgets.dart';
 
 /// 메인 홈 화면
 class HomeScreen extends StatefulWidget {
