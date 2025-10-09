@@ -20,8 +20,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final Set<String> selectedTagIds = {};
 
   // 싱글톤 인스턴스를 한 번만 가져옴
-  late final _repo = Repo.instance;
-  late final _accessibilityService = AccessibilityService();
+  late final Repo _repo = Repo.instance;
+  late final AccessibilityService _accessibilityService = AccessibilityService();
 
   @override
   void initState() {
@@ -247,8 +247,8 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverList.builder(
             itemCount: subjects.length,
             itemBuilder: (context, i) {
-              final s = subjects[i];
-              final subjectTags = s.tagIds
+              final Subject s = subjects[i];
+              final List<Tag> subjectTags = s.tagIds
                   .map(
                     (tid) => tags.cast<Tag?>().firstWhere(
                       (t) => t?.id == tid,
@@ -259,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   .toList();
               // 태그 정렬: 숫자 > 한글 > 영어
               subjectTags.sort((a, b) => _repo.compareTagNames(a.name, b.name));
-              final lectures = _repo.lecturesBySubject(s.id);
+              final List<Lecture> lectures = _repo.lecturesBySubject(s.id);
               return Padding(
                 padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
                 child: SubjectPanel(
