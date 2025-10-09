@@ -1,11 +1,11 @@
 // 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
-import '../../core/accessibility_service.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../core/theme/color_scheme.dart';
-import '../../data/models.dart';
-import '../../data/repository.dart';
+import 'package:re_view/core/accessibility_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/theme/color_scheme.dart';
+import 'package:re_view/data/models.dart';
+import 'package:re_view/data/repository.dart';
 
 const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
 const _panelRadius = 22.0;
@@ -31,8 +31,8 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = active ? Colors.black87 : Colors.white;
-    final fg = active ? Colors.white : Colors.black87;
+    final Color bg = active ? Colors.black87 : Colors.white;
+    final Color fg = active ? Colors.white : Colors.black87;
 
     return Container(
       decoration: BoxDecoration(
@@ -88,11 +88,11 @@ class FavoritePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final h = context.highlights;
-    final bg = active ? Colors.black87 : Colors.white;
-    final fg = active ? Colors.white : Colors.black87;
-    final starColor = active ? h.important : Colors.black87;
-    final starIcon = active ? Icons.star : Icons.star_border;
+    final AppHighlights h = context.highlights;
+    final Color bg = active ? Colors.black87 : Colors.white;
+    final Color fg = active ? Colors.white : Colors.black87;
+    final Color starColor = active ? h.important : Colors.black87;
+    final IconData starIcon = active ? Icons.star : Icons.star_border;
 
     return Container(
       decoration: BoxDecoration(
@@ -152,9 +152,9 @@ class TagChips extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: List.generate(tags.length, (i) {
-        final t = tags[i];
-        final isSel = selected.contains(t.id);
-        final tagColor = Color(t.color);
+        final Tag t = tags[i];
+        final bool isSel = selected.contains(t.id);
+        final Color tagColor = Color(t.color);
         return ChoiceChip(
           label: Text(
             '#${t.name}',
@@ -205,8 +205,8 @@ class _SubjectPanelState extends State<SubjectPanel>
   @override
   void initState() {
     super.initState();
-    final accessibilityService = AccessibilityService();
-    final duration = accessibilityService.getAnimationDuration(
+    final AccessibilityService accessibilityService = AccessibilityService();
+    final Duration duration = accessibilityService.getAnimationDuration(
       const Duration(milliseconds: 300),
     );
 
@@ -225,8 +225,8 @@ class _SubjectPanelState extends State<SubjectPanel>
   }
 
   void _toggleExpanded() {
-    final accessibilityService = AccessibilityService();
-    final reduceMotion = accessibilityService.reduceMotion;
+    final AccessibilityService accessibilityService = AccessibilityService();
+    final bool reduceMotion = accessibilityService.reduceMotion;
 
     setState(() {
       expanded = !expanded;
@@ -247,7 +247,7 @@ class _SubjectPanelState extends State<SubjectPanel>
 
   @override
   Widget build(BuildContext context) {
-    final h = context.highlights;
+    final AppHighlights h = context.highlights;
 
     return Container(
       decoration: BoxDecoration(
@@ -355,8 +355,8 @@ class _SubjectPanelState extends State<SubjectPanel>
 
   List<Widget> _subjectTagChips(BuildContext context, List<Tag> tags) {
     return List.generate(tags.length, (i) {
-      final t = tags[i];
-      final tagColor = Color(t.color);
+      final Tag t = tags[i];
+      final Color tagColor = Color(t.color);
       return ChoiceChip(
         label: Text('#${t.name}', style: const TextStyle(color: Colors.black)),
         selected: false,
@@ -424,10 +424,10 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     try {
-      final document = await PdfDocument.openAsset(widget.lec.slidesPath!);
-      final page = await document.getPage(1);
+      final PdfDocument document = await PdfDocument.openAsset(widget.lec.slidesPath!);
+      final PdfPage page = await document.getPage(1);
       // 즉시 렌더링하여 캐싱
-      final image = await page.render(
+      final PdfPageImage? image = await page.render(
         width: page.width * 2,
         height: page.height * 2,
         format: PdfPageImageFormat.png,
@@ -533,8 +533,8 @@ class _LectureCardState extends State<LectureCard> {
     );
   }
 
-  void _showLectureDetailDialog(BuildContext context) async {
-    final result = await showDialog<bool>(
+  Future<void> _showLectureDetailDialog(BuildContext context) async {
+    final bool? result = await showDialog<bool>(
       context: context,
       builder: (context) => _LectureDetailDialog(lecture: widget.lec),
     );
@@ -574,14 +574,14 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
   }
 
   String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
+    final int minutes = seconds ~/ 60;
+    final int secs = seconds % 60;
     return '$minutes:${secs.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return AlertDialog(
       titlePadding: EdgeInsets.zero,
       title: Container(

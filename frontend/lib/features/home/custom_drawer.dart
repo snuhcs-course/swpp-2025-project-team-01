@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../app_router.dart';
-import '../../core/accessibility_service.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/accessibility_service.dart';
 
 /// 모션 줄이기를 지원하는 커스텀 Drawer
 class CustomDrawer extends StatelessWidget {
