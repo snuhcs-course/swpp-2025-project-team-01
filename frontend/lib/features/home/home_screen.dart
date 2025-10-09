@@ -21,7 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 싱글톤 인스턴스를 한 번만 가져옴
   late final Repo _repo = Repo.instance;
-  late final AccessibilityService _accessibilityService = AccessibilityService();
+  late final AccessibilityService _accessibilityService =
+      AccessibilityService();
 
   @override
   void initState() {

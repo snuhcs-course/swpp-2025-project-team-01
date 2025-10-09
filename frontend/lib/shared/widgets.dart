@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 /// 전체 너비를 차지하는 주요 버튼 위젯
 class PrimaryButton extends StatelessWidget {
-
   const PrimaryButton({
     super.key,
     required this.label,

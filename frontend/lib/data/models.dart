@@ -10,7 +10,6 @@ class Tag {
 
 /// 강의 모델 클래스
 class Lecture {
-
   const Lecture({
     required this.id,
     required this.subjectId,
@@ -28,7 +27,6 @@ class Lecture {
   final int durationSec;
   final List<String> thumbs; // 이미지 경로/URL
   final String? slidesPath; // PDF 슬라이드 경로
-
 
   Lecture copyWith({String? weekLabel, String? title}) => Lecture(
     id: id,
@@ -50,7 +48,7 @@ class Subject {
     this.tagIds = const [],
     this.lectureIds = const [],
   });
-  
+
   final String id;
   final String title;
   final bool favorite;

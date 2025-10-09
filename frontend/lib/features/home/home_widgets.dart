@@ -17,8 +17,7 @@ const _panelShadow = BoxShadow(
 
 /// 필터 pill 버튼 위젯
 class FilterPill extends StatelessWidget {
-
-    const FilterPill({
+  const FilterPill({
     super.key,
     required this.icon,
     required this.label,
@@ -30,7 +29,6 @@ class FilterPill extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool active;
-
 
   @override
   Widget build(BuildContext context) {
@@ -79,8 +77,7 @@ class FilterPill extends StatelessWidget {
 
 /// 즐겨찾기 pill 버튼 위젯
 class FavoritePill extends StatelessWidget {
-
-    const FavoritePill({
+  const FavoritePill({
     super.key,
     required this.active,
     required this.onTap,
@@ -141,7 +138,6 @@ class FavoritePill extends StatelessWidget {
 
 /// 태그 칩 그리드 위젯
 class TagChips extends StatelessWidget {
-
   const TagChips({
     super.key,
     required this.tags,
@@ -152,7 +148,6 @@ class TagChips extends StatelessWidget {
   final List<Tag> tags;
   final Set<String> selected;
   final ValueChanged<String> onToggle;
-
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +428,9 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     try {
-      final PdfDocument document = await PdfDocument.openAsset(widget.lec.slidesPath!);
+      final PdfDocument document = await PdfDocument.openAsset(
+        widget.lec.slidesPath!,
+      );
       final PdfPage page = await document.getPage(1);
       // 즉시 렌더링하여 캐싱
       final PdfPageImage? image = await page.render(

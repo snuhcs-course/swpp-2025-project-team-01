@@ -51,8 +51,10 @@ class Repo extends ChangeNotifier {
 
   Future<void> _loadSubjects() async {
     final File f = File('${_dataDir.path}/subjects.json');
-    final Map<String, dynamic> j = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-    final List<Map<String, dynamic>> list = (j['subjects'] as List).cast<Map<String, dynamic>>();
+    final Map<String, dynamic> j =
+        jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+    final List<Map<String, dynamic>> list = (j['subjects'] as List)
+        .cast<Map<String, dynamic>>();
     _subjects = {
       for (final m in list)
         m['id'] as String: Subject(
@@ -67,8 +69,10 @@ class Repo extends ChangeNotifier {
 
   Future<void> _loadTags() async {
     final File f = File('${_dataDir.path}/tags.json');
-    final Map<String, dynamic> j = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
-    final List<Map<String, dynamic>> list = (j['tags'] as List).cast<Map<String, dynamic>>();
+    final Map<String, dynamic> j =
+        jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+    final List<Map<String, dynamic>> list = (j['tags'] as List)
+        .cast<Map<String, dynamic>>();
     _tags = {
       for (final m in list)
         m['id'] as String: Tag(
@@ -156,7 +160,8 @@ class Repo extends ChangeNotifier {
       final String metaString = await rootBundle.loadString(
         'assets/lectures/$lectureId/meta.json',
       );
-      final Map<String, dynamic> meta = jsonDecode(metaString) as Map<String, dynamic>;
+      final Map<String, dynamic> meta =
+          jsonDecode(metaString) as Map<String, dynamic>;
 
       final Lecture lecture = Lecture(
         id: meta['lectureId'] as String? ?? lectureId,
@@ -296,7 +301,8 @@ class Repo extends ChangeNotifier {
   Future<void> deleteLecture(String subjectId, String lectureId) async {
     final Subject? s = _subjects[subjectId];
     if (s != null) {
-      final List<String> newLectureIds = List<String>.from(s.lectureIds)..remove(lectureId);
+      final List<String> newLectureIds = List<String>.from(s.lectureIds)
+        ..remove(lectureId);
       _subjects[subjectId] = s.copyWith(lectureIds: newLectureIds);
       _lectures.remove(lectureId);
       await _saveSubjects();
