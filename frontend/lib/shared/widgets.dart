@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 
 /// 전체 너비를 차지하는 주요 버튼 위젯
 class PrimaryButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
+
   const PrimaryButton({
     super.key,
     required this.label,
     required this.onPressed,
   });
+
+  final String label;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +25,18 @@ class PrimaryButton extends StatelessWidget {
 
 /// 빈 상태를 표시하는 위젯
 class EmptyState extends StatelessWidget {
-  final String message;
   const EmptyState({super.key, required this.message});
+  final String message;
+
   @override
   Widget build(BuildContext context) => Center(child: Text(message));
 }
 
 /// 로딩 중임을 표시하는 오버레이 위젯
 class LoadingOverlay extends StatelessWidget {
-  final String message;
   const LoadingOverlay({super.key, this.message = 'Processing...'});
+  final String message;
+
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
