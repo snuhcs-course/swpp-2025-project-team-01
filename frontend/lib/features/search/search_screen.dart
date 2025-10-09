@@ -1,10 +1,10 @@
 // 검색 화면: 강의명 검색, 최근 검색어
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../app_router.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../data/models.dart';
-import '../../data/repository.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/data/models.dart';
+import 'package:re_view/data/repository.dart';
 
 /// 검색 화면
 class SearchScreen extends StatefulWidget {
@@ -43,8 +43,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _saveRecentSearch(String query) async {
-    if (query.trim().isEmpty) return;
-
+    if (query.trim().isEmpty) {
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     _recentSearches.remove(query); // 중복 제거
     _recentSearches.insert(0, query); // 맨 앞에 추가
@@ -111,7 +112,9 @@ class _SearchScreenState extends State<SearchScreen> {
     // 검색 범위에 따라 필터링
     final results = allLectures.where((lec) {
       // 빈 Lecture 객체 필터링 (제대로 로드되지 않은 것)
-      if (lec.title == 'Untitled') return false;
+      if (lec.title == 'Untitled') {
+        return false;
+      }
 
       final searchQuery = query.toLowerCase();
       switch (_searchScope) {
