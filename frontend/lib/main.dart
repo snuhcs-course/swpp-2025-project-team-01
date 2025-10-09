@@ -1,13 +1,13 @@
 // 앱 엔트리: 테마 + 라우터 연결
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'app_router.dart';
-import 'core/accessibility_service.dart';
-import 'core/language_service.dart';
-import 'core/localization/app_localizations.dart';
-import 'core/theme/app_theme.dart';
-import 'core/theme/theme_manager.dart';
-import 'data/repository.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/accessibility_service.dart';
+import 'package:re_view/core/language_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/theme/app_theme.dart';
+import 'package:re_view/core/theme/theme_manager.dart';
+import 'package:re_view/data/repository.dart';
 
 /// 앱 진입점 - Repository 초기화 후 앱 실행
 void main() async {
@@ -75,10 +75,10 @@ class _ReViewAppState extends State<ReViewApp> {
     final reduceMotion = accessibilityService.reduceMotion;
 
     // 고대비 모드가 활성화되면 고대비 테마 사용
-    ThemeData lightTheme = isHighContrast
+    final ThemeData lightTheme = isHighContrast
         ? AppTheme.lightHighContrast
         : AppTheme.light;
-    ThemeData darkTheme = isHighContrast
+    final ThemeData darkTheme = isHighContrast
         ? AppTheme.darkHighContrast
         : AppTheme.dark;
 
