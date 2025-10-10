@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
+import 'package:re_view/features/player/core/pdf_cache_service.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key, this.args});
@@ -39,10 +40,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
   PdfDocument? _pdfDocument;
   int _currentPage = 1;
 
-  // PDF 페이지 이미지 캐싱 (20개 단위)
-  final Map<int, Uint8List> _pageImageCache = {};
-  final Map<int, Future<Uint8List>> _pageImageFutures = {};
-  static const int _cacheChunkSize = 20;
+  // PDF 페이지 이미지 캐싱 서비스
+  final PdfCacheService _pdfCacheService = PdfCacheService();
 
   // Transcript 스크롤 관련
   final ScrollController _transcriptScrollController = ScrollController();
@@ -200,7 +199,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
             _pdfController?.jumpToPage(sentence.slideNumber);
 
             // 다음 청크 미리 로딩
-            _preloadPageImagesIfNeeded(sentence.slideNumber);
+            final totalPages = _lectureMetadata?.slides ?? 0;
+            _pdfCacheService.preloadPageImagesIfNeeded(sentence.slideNumber, totalPages);
           }
 
           // 사용자가 스크롤 중이 아니면 자동으로 스크롤
@@ -230,11 +230,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       await page.close();
       await tempDocument.close();
 
-      // 첫 페이지를 캐시에 저장
+      // 첫 페이지를 캐시 서비스에 저장
       if (mounted && pageImage != null) {
-        setState(() {
-          _pageImageCache[1] = pageImage.bytes;
-        });
+        _pdfCacheService.setCachedImage(1, pageImage.bytes);
+        setState(() {}); // UI 업데이트
       }
     } catch (e) {
       print('Error loading first page quickly: $e');
@@ -246,6 +245,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     try {
       // 전체 PDF 문서 로드
       _pdfDocument = await PdfDocument.openAsset(pdfPath);
+      _pdfCacheService.setPdfDocument(_pdfDocument);
 
       if (mounted) {
         setState(() {
@@ -256,98 +256,27 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
 
       // 2-21번 페이지 미리 캐싱 (백그라운드)
-      _preloadPageImages(2);
+      final totalPages = _lectureMetadata?.slides ?? 10;
+      _pdfCacheService.preloadPageImages(2, totalPages);
     } catch (e) {
       print('Error loading full PDF document: $e');
     }
   }
 
-  // 특정 페이지가 속한 청크의 시작 페이지 번호 계산
-  // 1번 페이지는 별도, 2-21, 22-41, 42-61...
-  int _getChunkStartPage(int pageNumber) {
-    if (pageNumber == 1) {
-      return 1;
-    }
-    // 2페이지부터는 20개 단위 청크
-    return ((pageNumber - 2) ~/ _cacheChunkSize) * _cacheChunkSize + 2;
-  }
+  // 슬라이드 리스트 스크롤 시 호출되는 핸들러
+  void _handleSlidesListScroll(int visibleEndPage) {
+    final totalPages = _lectureMetadata?.slides ?? 0;
 
-  // 페이지가 필요할 때 해당 청크를 미리 로딩
-  void _preloadPageImagesIfNeeded(int pageNumber) {
-    final chunkStart = _getChunkStartPage(pageNumber);
+    // 보이는 마지막 페이지의 청크가 캐싱되어 있는지 확인하고, 없으면 로딩
+    _pdfCacheService.preloadPageImagesIfNeeded(visibleEndPage, totalPages);
 
-    // 이미 캐싱된 청크인지 확인
-    if (_pageImageCache.containsKey(chunkStart)) {
-      return;
-    }
-
-    _preloadPageImages(chunkStart);
-  }
-
-  // 특정 청크의 페이지들을 미리 로딩 (20개 단위)
-  void _preloadPageImages(int startPage) {
-    if (_pdfDocument == null || _lectureMetadata == null) {
-      return;
-    }
-
-    final totalPages = _lectureMetadata!.slides;
-    final endPage = (startPage + _cacheChunkSize - 1).clamp(1, totalPages);
-
-    for (int pageNumber = startPage; pageNumber <= endPage; pageNumber++) {
-      // 이미 캐싱되었거나 로딩 중이면 스킵
-      if (_pageImageCache.containsKey(pageNumber) ||
-          _pageImageFutures.containsKey(pageNumber)) {
-        continue;
+    // 다음 청크도 미리 로딩 (스무스한 스크롤을 위해)
+    if (visibleEndPage < totalPages) {
+      final nextChunkStart = _pdfCacheService.getChunkStartPage(visibleEndPage + 1);
+      if (nextChunkStart != _pdfCacheService.getChunkStartPage(visibleEndPage)) {
+        _pdfCacheService.preloadPageImagesIfNeeded(nextChunkStart, totalPages);
       }
-
-      // Future를 생성하고 저장
-      final future = _renderPdfPage(pageNumber);
-      _pageImageFutures[pageNumber] = future;
-
-      // Future가 완료되면 캐시에 저장
-      future.then((imageBytes) {
-        if (mounted) {
-          setState(() {
-            _pageImageCache[pageNumber] = imageBytes;
-            _pageImageFutures.remove(pageNumber);
-          });
-        }
-      }).catchError((error) {
-        print('Error loading page $pageNumber: $error');
-        _pageImageFutures.remove(pageNumber);
-      });
     }
-  }
-
-  // 캐시된 이미지 또는 Future를 반환
-  Future<Uint8List> _getCachedOrRenderPage(int pageNumber) {
-    // 이미 캐시된 경우
-    if (_pageImageCache.containsKey(pageNumber)) {
-      return Future.value(_pageImageCache[pageNumber]!);
-    }
-
-    // 로딩 중인 경우
-    if (_pageImageFutures.containsKey(pageNumber)) {
-      return _pageImageFutures[pageNumber]!;
-    }
-
-    // 캐시되지 않은 경우 새로 로딩
-    final future = _renderPdfPage(pageNumber);
-    _pageImageFutures[pageNumber] = future;
-
-    future.then((imageBytes) {
-      if (mounted) {
-        setState(() {
-          _pageImageCache[pageNumber] = imageBytes;
-          _pageImageFutures.remove(pageNumber);
-        });
-      }
-    }).catchError((error) {
-      print('Error loading page $pageNumber: $error');
-      _pageImageFutures.remove(pageNumber);
-    });
-
-    return future;
   }
 
   Future<void> _scrollToCurrentSentence() async {
@@ -451,22 +380,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
   }
 
-  Future<Uint8List> _renderPdfPage(int pageNumber) async {
-    if (_pdfDocument == null) {
-      throw Exception('PDF document not loaded');
-    }
-
-    final page = await _pdfDocument!.getPage(pageNumber);
-    final pageImage = await page.render(
-      width: page.width * 2,
-      height: page.height * 2,
-      format: PdfPageImageFormat.png,
-    );
-    await page.close();
-
-    return pageImage!.bytes;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -529,13 +442,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   });
                 },
               )
-            else if (_pageImageCache.containsKey(1))
+            else if (_pdfCacheService.getCachedImageDirect(1) != null)
               // 첫 페이지 캐시가 있으면 표시
               Container(
                 color: Colors.black87,
                 child: Center(
                   child: Image.memory(
-                    _pageImageCache[1]!,
+                    _pdfCacheService.getCachedImageDirect(1)!,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -664,7 +577,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
         currentPage: _currentPage,
         itemWidth: 180,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        getCachedOrRenderPage: _getCachedOrRenderPage,
+        getCachedOrRenderPage: _pdfCacheService.getCachedOrRenderPage,
+        getCachedImage: _pdfCacheService.getCachedImageDirect,
         onPageTap: (pageNumber) {
           _pdfController?.jumpToPage(pageNumber);
           setState(() {
@@ -673,6 +587,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
           _seekToSlide(pageNumber);
         },
+        onScroll: _handleSlidesListScroll, // 스크롤 시 자동 캐싱
       ),
     );
   }
@@ -784,13 +699,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       });
                     },
                   )
-                else if (_pageImageCache.containsKey(1))
+                else if (_pdfCacheService.getCachedImageDirect(1) != null)
                   // 첫 페이지 캐시가 있으면 표시
                   Container(
                     color: Colors.black87,
                     child: Center(
                       child: Image.memory(
-                        _pageImageCache[1]!,
+                        _pdfCacheService.getCachedImageDirect(1)!,
                         fit: BoxFit.contain,
                       ),
                     ),
@@ -1030,13 +945,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
               currentPage: _currentPage,
               itemWidth: 150,
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-              getCachedOrRenderPage: _getCachedOrRenderPage,
+              getCachedOrRenderPage: _pdfCacheService.getCachedOrRenderPage,
+              getCachedImage: _pdfCacheService.getCachedImageDirect,
               onPageTap: (pageNumber) {
                 _pdfController?.jumpToPage(pageNumber);
                 setState(() {
                   _currentPage = pageNumber;
                 });
               },
+              onScroll: _handleSlidesListScroll, // 스크롤 시 자동 캐싱
             ),
           ),
         ],

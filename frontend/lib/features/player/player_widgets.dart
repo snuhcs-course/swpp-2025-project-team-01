@@ -326,7 +326,7 @@ class TopControlBarLandscape extends StatelessWidget {
 }
 
 /// PDF 슬라이드 리스트 (가로/세로 모드 공통 사용)
-class PdfSlidesList extends StatelessWidget {
+class PdfSlidesList extends StatefulWidget {
   const PdfSlidesList({
     super.key,
     required this.pageCount,
@@ -335,6 +335,8 @@ class PdfSlidesList extends StatelessWidget {
     required this.padding,
     required this.getCachedOrRenderPage,
     required this.onPageTap,
+    this.getCachedImage,
+    this.onScroll,
   });
 
   final int pageCount;
@@ -342,23 +344,73 @@ class PdfSlidesList extends StatelessWidget {
   final double itemWidth;
   final EdgeInsets padding;
   final Future<Uint8List> Function(int pageNumber) getCachedOrRenderPage;
+  final Uint8List? Function(int pageNumber)? getCachedImage; // 캐시된 이미지 직접 조회
   final void Function(int pageNumber) onPageTap;
+  final void Function(int visibleEndPage)? onScroll; // 스크롤 시 보이는 마지막 페이지 전달
+
+  @override
+  State<PdfSlidesList> createState() => _PdfSlidesListState();
+}
+
+class _PdfSlidesListState extends State<PdfSlidesList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) { 
+      return;
+    }
+
+    // 현재 스크롤 위치 계산
+    final scrollOffset = _scrollController.offset;
+    final viewportWidth = _scrollController.position.viewportDimension;
+
+    // 보이는 영역의 끝 위치
+    final visibleEnd = scrollOffset + viewportWidth;
+
+    // 각 아이템의 너비 (itemWidth + separator)
+    final itemTotalWidth = widget.itemWidth + 12;
+
+    // 보이는 영역의 마지막 페이지 번호 계산
+    final visibleEndPage = ((visibleEnd - widget.padding.left) / itemTotalWidth).ceil();
+
+    // 스크롤 콜백 호출 (범위 체크)
+    if (visibleEndPage > 0 && visibleEndPage <= widget.pageCount) {
+      widget.onScroll?.call(visibleEndPage);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: padding,
+      controller: _scrollController,
+      padding: widget.padding,
       scrollDirection: Axis.horizontal,
-      itemCount: pageCount,
+      itemCount: widget.pageCount,
       separatorBuilder: (_, __) => const SizedBox(width: 12),
       itemBuilder: (context, index) {
         final pageNumber = index + 1;
-        final isCurrentPage = currentPage == pageNumber;
+        final isCurrentPage = widget.currentPage == pageNumber;
+
+        // 캐시된 이미지가 있는지 먼저 확인
+        final cachedImage = widget.getCachedImage?.call(pageNumber);
 
         return GestureDetector(
-          onTap: () => onPageTap(pageNumber),
+          onTap: () => widget.onPageTap(pageNumber),
           child: Container(
-            width: itemWidth,
+            width: widget.itemWidth,
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(
@@ -367,44 +419,49 @@ class PdfSlidesList extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: FutureBuilder<Uint8List>(
-              future: getCachedOrRenderPage(pageNumber),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done &&
-                    snapshot.hasData) {
-                  return Image.memory(
-                    snapshot.data!,
+            child: cachedImage != null
+                ? Image.memory(
+                    cachedImage,
                     fit: BoxFit.contain,
-                  );
-                }
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Slide',
-                        style: TextStyle(
-                          color: Colors.grey[isCurrentPage ? 500 : 400],
-                          fontSize: itemWidth > 160 ? 12 : 10,
-                          fontWeight: FontWeight.w400,
+                  )
+                : FutureBuilder<Uint8List>(
+                    future: widget.getCachedOrRenderPage(pageNumber),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done &&
+                          snapshot.hasData) {
+                        return Image.memory(
+                          snapshot.data!,
+                          fit: BoxFit.contain,
+                        );
+                      }
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Slide',
+                              style: TextStyle(
+                                color: Colors.grey[isCurrentPage ? 500 : 400],
+                                fontSize: widget.itemWidth > 160 ? 12 : 10,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            SizedBox(height: widget.itemWidth > 160 ? 4 : 2),
+                            Text(
+                              '$pageNumber',
+                              style: TextStyle(
+                                color: isCurrentPage
+                                    ? Colors.blue
+                                    : Colors.grey[widget.itemWidth > 160 ? 800 : 700],
+                                fontSize: widget.itemWidth > 160 ? 32 : 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      SizedBox(height: itemWidth > 160 ? 4 : 2),
-                      Text(
-                        '$pageNumber',
-                        style: TextStyle(
-                          color: isCurrentPage
-                              ? Colors.blue
-                              : Colors.grey[itemWidth > 160 ? 800 : 700],
-                          fontSize: itemWidth > 160 ? 32 : 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         );
       },
