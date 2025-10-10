@@ -57,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         // Figma: 좌 햄버거, 중앙 타이틀, 우 검색
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: Builder(
           builder: (scaffoldContext) => IconButton(
             icon: const Icon(Icons.menu),
