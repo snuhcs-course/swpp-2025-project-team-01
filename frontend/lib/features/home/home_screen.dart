@@ -244,47 +244,61 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          // 과목 패널 리스트
-          SliverList.builder(
-            itemCount: subjects.length,
-            itemBuilder: (context, i) {
-              final Subject s = subjects[i];
-              final List<Tag> subjectTags = s.tagIds
-                  .map(
-                    (tid) => tags.cast<Tag?>().firstWhere(
-                      (t) => t?.id == tid,
-                      orElse: () => null,
-                    ),
-                  )
-                  .whereType<Tag>()
-                  .toList();
-              // 태그 정렬: 숫자 > 한글 > 영어
-              subjectTags.sort((a, b) => _repo.compareTagNames(a.name, b.name));
-              final List<Lecture> lectures = _repo.lecturesBySubject(s.id);
-              return Padding(
-                padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
-                child: SubjectPanel(
-                  subject: s,
-                  tags: subjectTags,
-                  lectures: lectures,
-                  onToggleFavorite: () async {
-                    await _repo.toggleSubjectFavorite(s.id);
-                    // Repository가 notifyListeners()를 호출하므로 setState 불필요
-                  },
-                  onOpenLecture: (Lecture lec) {
-                    Navigator.pushNamed(
-                      context,
-                      Routes.player,
-                      arguments: {'lectureId': lec.id},
-                    );
-                  },
-                  onLectureUpdated: () {
-                    // Repository가 notifyListeners()를 호출하므로 setState 불필요
-                  },
+          // 과목 패널 리스트 또는 빈 상태 메시지
+          if (subjects.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: EmptyStateMessage(
+                  message: favoritesOnly
+                      ? '즐겨찾기된 과목이 없습니다.'
+                      : selectedTagIds.isNotEmpty
+                          ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
+                          : '',
                 ),
-              );
-            },
-          ),
+              ),
+            )
+          else
+            SliverList.builder(
+              itemCount: subjects.length,
+              itemBuilder: (context, i) {
+                final Subject s = subjects[i];
+                final List<Tag> subjectTags = s.tagIds
+                    .map(
+                      (tid) => tags.cast<Tag?>().firstWhere(
+                        (t) => t?.id == tid,
+                        orElse: () => null,
+                      ),
+                    )
+                    .whereType<Tag>()
+                    .toList();
+                // 태그 정렬: 숫자 > 한글 > 영어
+                subjectTags.sort((a, b) => _repo.compareTagNames(a.name, b.name));
+                final List<Lecture> lectures = _repo.lecturesBySubject(s.id);
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
+                  child: SubjectPanel(
+                    subject: s,
+                    tags: subjectTags,
+                    lectures: lectures,
+                    onToggleFavorite: () async {
+                      await _repo.toggleSubjectFavorite(s.id);
+                      // Repository가 notifyListeners()를 호출하므로 setState 불필요
+                    },
+                    onOpenLecture: (Lecture lec) {
+                      Navigator.pushNamed(
+                        context,
+                        Routes.player,
+                        arguments: {'lectureId': lec.id},
+                      );
+                    },
+                    onLectureUpdated: () {
+                      // Repository가 notifyListeners()를 호출하므로 setState 불필요
+                    },
+                  ),
+                );
+              },
+            ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),

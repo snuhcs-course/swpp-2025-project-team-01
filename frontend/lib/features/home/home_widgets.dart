@@ -15,6 +15,35 @@ const _panelShadow = BoxShadow(
   offset: Offset(0, 3),
 );
 
+/// 빈 상태 메시지 위젯
+class EmptyStateMessage extends StatelessWidget {
+  const EmptyStateMessage({
+    super.key,
+    required this.message,
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    if (message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Center(
+      child: Text(
+        message,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.black54,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
 /// 필터 pill 버튼 위젯
 class FilterPill extends StatelessWidget {
   const FilterPill({
