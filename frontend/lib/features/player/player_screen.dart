@@ -684,6 +684,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ),
                   ),
 
+                // 자막 표시 (자막 기능이 켜져 있을 때만)
+                if (_isCaptionEnabled && !_showTranscriptPanel)
+                  _buildCaptionOverlay(),
+
                 // 비디오 컨트롤 오버레이
                 if (_showControls && !_isPagesExpanded)
                   _buildHorizontalVideoControls(),
@@ -846,7 +850,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 // 슬라이더를 움직일 때 사용자 스크롤 상태 해제
                 setState(() {
                   _isAutoScrolling = true;
-                  _isPlaying = true;
                 });
                 _scrollTimer?.cancel();
                 _audioService.seek(
@@ -854,12 +857,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 );
 
                 // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
-                if (_isAutoScrolling) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToCurrentSentence();
-                  });
-                }
-                _isPlaying = false;
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  if (_isAutoScrolling) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _scrollToCurrentSentence();
+                    });
+                  }
+                });
               },
             ),
           ),
@@ -924,6 +928,48 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 자막 오버레이 위젯
+  Widget _buildCaptionOverlay() {
+    // 현재 재생 중인 문장 텍스트 가져오기
+    String captionText = '';
+    if (_currentSentenceIndex != null && _transcriptData != null) {
+      captionText = _transcriptData!.timestamps[_currentSentenceIndex!].text;
+    }
+
+    // 텍스트가 없으면 아무것도 표시하지 않음
+    if (captionText.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: _showControls ? 80 : 20, // 컨트롤이 표시되면 스크롤바 위로 이동
+      child: Center(
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            captionText,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+        ),
       ),
     );
   }
