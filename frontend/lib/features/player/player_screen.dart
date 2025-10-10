@@ -952,6 +952,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 setState(() {
                   _currentPage = pageNumber;
                 });
+                // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
+                _seekToSlide(pageNumber);
               },
               onScroll: _handleSlidesListScroll, // 스크롤 시 자동 캐싱
             ),
