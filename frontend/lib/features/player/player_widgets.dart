@@ -25,20 +25,68 @@ class SyncButton extends StatelessWidget {
     super.key,
     required this.isSynced,
     required this.onPressed,
+    this.pageDifference,
   });
 
   final bool isSynced;
   final VoidCallback onPressed;
+  final int? pageDifference;
+
+  String _getDifferenceText(int difference) {
+    if (difference == 0) {
+      return '동기화됨';
+    }
+    final absValue = difference.abs();
+    if (difference < 0) {
+      return '$absValue 페이지 앞';
+    } else {
+      return '$absValue 페이지 뒤';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(
-        isSynced ? Icons.sync : Icons.sync_disabled,
-        color: Colors.white,
-        size: 28,
-      ),
+    final showDifference = !isSynced && pageDifference != null;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        IconButton(
+          onPressed: onPressed,
+          icon: Icon(
+            isSynced ? Icons.sync : Icons.sync_disabled,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+        if (showDifference)
+          Positioned(
+            top: 48, // IconButton 아래에 위치
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                _getDifferenceText(pageDifference!),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -267,11 +315,13 @@ class TopControlBarPortrait extends StatelessWidget {
     required this.onBack,
     required this.isSynced,
     required this.onSyncToggle,
+    this.pageDifference,
   });
 
   final VoidCallback onBack;
   final bool isSynced;
   final VoidCallback onSyncToggle;
+  final int? pageDifference;
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +331,11 @@ class TopControlBarPortrait extends StatelessWidget {
         children: [
           BackButton(onPressed: onBack),
           const Spacer(),
-          SyncButton(isSynced: isSynced, onPressed: onSyncToggle),
+          SyncButton(
+            isSynced: isSynced,
+            onPressed: onSyncToggle,
+            pageDifference: pageDifference,
+          ),
         ],
       ),
     );
@@ -297,6 +351,7 @@ class TopControlBarLandscape extends StatelessWidget {
     required this.onCaptionToggle,
     required this.isSynced,
     required this.onSyncToggle,
+    this.pageDifference,
   });
 
   final VoidCallback onBack;
@@ -304,6 +359,7 @@ class TopControlBarLandscape extends StatelessWidget {
   final VoidCallback onCaptionToggle;
   final bool isSynced;
   final VoidCallback onSyncToggle;
+  final int? pageDifference;
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +374,11 @@ class TopControlBarLandscape extends StatelessWidget {
             onPressed: onCaptionToggle,
           ),
           const SizedBox(width: 8),
-          SyncButton(isSynced: isSynced, onPressed: onSyncToggle),
+          SyncButton(
+            isSynced: isSynced,
+            onPressed: onSyncToggle,
+            pageDifference: pageDifference,
+          ),
         ],
       ),
     );

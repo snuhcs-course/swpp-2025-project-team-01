@@ -195,9 +195,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
             _currentSentenceIndex = i;
           });
 
-          // 슬라이드 번호가 변경되었으면 PDF 페이지도 변경
-          if (_currentPage != sentence.slideNumber) {
-            _currentPage = sentence.slideNumber;
+          // Sync가 활성화된 경우에만 슬라이드 자동 이동
+          if (_isSynced && _currentPage != sentence.slideNumber) {
+            setState(() {
+              _currentPage = sentence.slideNumber;
+            });
             _pdfController?.jumpToPage(sentence.slideNumber);
 
             // 다음 청크 미리 로딩
@@ -213,6 +215,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
         return;
       }
     }
+  }
+
+  // Sync되었을 때의 페이지 번호를 반환 (현재 오디오 시간 기준)
+  int? _getSyncedPageNumber() {
+    if (_transcriptData == null || _currentSentenceIndex == null) {
+      return null;
+    }
+    return _transcriptData!.timestamps[_currentSentenceIndex!].slideNumber;
+  }
+
+  // 페이지 차이를 계산 (syncedPage - currentPage)
+  int? _getPageDifference() {
+    final syncedPage = _getSyncedPageNumber();
+    if (syncedPage == null) {
+      return null;
+    }
+    return syncedPage - _currentPage;
   }
 
   // 첫 페이지만 빠르게 렌더링 (전체 PDF 로드 전)
@@ -444,6 +463,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             onBack: () => Navigator.pop(context),
             isSynced: _isSynced,
             onSyncToggle: () => setState(() => _isSynced = !_isSynced),
+            pageDifference: _getPageDifference(),
           ),
 
           const Spacer(),
@@ -709,6 +729,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     child: SyncButton(
                       isSynced: _isSynced,
                       onPressed: () => setState(() => _isSynced = !_isSynced),
+                      pageDifference: _getPageDifference(),
                     ),
                   ),
 
@@ -810,6 +831,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 setState(() => _isCaptionEnabled = !_isCaptionEnabled),
             isSynced: _isSynced,
             onSyncToggle: () => setState(() => _isSynced = !_isSynced),
+            pageDifference: _getPageDifference(),
           ),
 
           const Spacer(),
