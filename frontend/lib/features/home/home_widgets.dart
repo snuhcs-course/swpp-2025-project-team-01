@@ -389,16 +389,11 @@ class _SubjectPanelState extends State<SubjectPanel>
     return List.generate(tags.length, (i) {
       final Tag t = tags[i];
       final Color tagColor = Color(t.color);
-      return ChoiceChip(
+      return Chip(
         label: Text('#${t.name}', style: const TextStyle(color: Colors.black)),
-        selected: false,
-        onSelected: (_) {}, // onSelected를 null이 아닌 빈 함수로
         backgroundColor: tagColor,
-        selectedColor: tagColor,
-        disabledColor: tagColor, // 비활성화 시에도 색상 유지
         elevation: 2,
         side: BorderSide.none,
-        showCheckmark: false,
       );
     });
   }
