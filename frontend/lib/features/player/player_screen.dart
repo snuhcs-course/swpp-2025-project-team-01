@@ -659,72 +659,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return Container(
       height: 150,
       color: const Color(0xFFEEEEEE),
-      child: ListView.separated(
+      child: PdfSlidesList(
+        pageCount: pageCount,
+        currentPage: _currentPage,
+        itemWidth: 180,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: pageCount,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final pageNumber = index + 1;
-          final isCurrentPage = _currentPage == pageNumber;
-
-          return GestureDetector(
-            onTap: () {
-              _pdfController?.jumpToPage(pageNumber);
-              setState(() {
-                _currentPage = pageNumber;
-              });
-
-              // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
-              _seekToSlide(pageNumber);
-            },
-            child: Container(
-              width: 180,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(
-                  color: isCurrentPage ? Colors.blue : Colors.grey[300]!,
-                  width: isCurrentPage ? 3 : 1,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: FutureBuilder<Uint8List>(
-                future: _getCachedOrRenderPage(pageNumber),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done &&
-                      snapshot.hasData) {
-                    return Image.memory(snapshot.data!, fit: BoxFit.contain);
-                  }
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Slide',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$pageNumber',
-                          style: TextStyle(
-                            color: isCurrentPage
-                                ? Colors.blue
-                                : Colors.grey[800],
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
+        getCachedOrRenderPage: _getCachedOrRenderPage,
+        onPageTap: (pageNumber) {
+          _pdfController?.jumpToPage(pageNumber);
+          setState(() {
+            _currentPage = pageNumber;
+          });
+          // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
+          _seekToSlide(pageNumber);
         },
       ),
     );
@@ -1078,72 +1025,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ),
           // 슬라이드 목록
           Expanded(
-            child: ListView.separated(
+            child: PdfSlidesList(
+              pageCount: _lectureMetadata?.slides ?? 10,
+              currentPage: _currentPage,
+              itemWidth: 150,
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-              scrollDirection: Axis.horizontal,
-              itemCount: _lectureMetadata?.slides ?? 10,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final pageNumber = index + 1;
-                final isCurrentPage = _currentPage == pageNumber;
-
-                return GestureDetector(
-                  onTap: () {
-                    _pdfController?.jumpToPage(pageNumber);
-                    setState(() {
-                      _currentPage = pageNumber;
-                    });
-                  },
-                  child: Container(
-                    width: 150,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(
-                        color: isCurrentPage ? Colors.blue : Colors.grey[300]!,
-                        width: isCurrentPage ? 3 : 1,
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: FutureBuilder<Uint8List>(
-                      future: _getCachedOrRenderPage(pageNumber),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.done &&
-                            snapshot.hasData) {
-                          return Image.memory(
-                            snapshot.data!,
-                            fit: BoxFit.contain,
-                          );
-                        }
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Slide',
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '$pageNumber',
-                                style: TextStyle(
-                                  color: isCurrentPage
-                                      ? Colors.blue
-                                      : Colors.grey[700],
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                );
+              getCachedOrRenderPage: _getCachedOrRenderPage,
+              onPageTap: (pageNumber) {
+                _pdfController?.jumpToPage(pageNumber);
+                setState(() {
+                  _currentPage = pageNumber;
+                });
               },
             ),
           ),

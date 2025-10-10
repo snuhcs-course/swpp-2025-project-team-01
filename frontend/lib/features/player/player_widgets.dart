@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:re_view/core/utils.dart';
 
@@ -320,6 +321,93 @@ class TopControlBarLandscape extends StatelessWidget {
           SyncButton(isSynced: isSynced, onPressed: onSyncToggle),
         ],
       ),
+    );
+  }
+}
+
+/// PDF 슬라이드 리스트 (가로/세로 모드 공통 사용)
+class PdfSlidesList extends StatelessWidget {
+  final int pageCount;
+  final int currentPage;
+  final double itemWidth;
+  final EdgeInsets padding;
+  final Future<Uint8List> Function(int pageNumber) getCachedOrRenderPage;
+  final void Function(int pageNumber) onPageTap;
+
+  const PdfSlidesList({
+    super.key,
+    required this.pageCount,
+    required this.currentPage,
+    required this.itemWidth,
+    required this.padding,
+    required this.getCachedOrRenderPage,
+    required this.onPageTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: padding,
+      scrollDirection: Axis.horizontal,
+      itemCount: pageCount,
+      separatorBuilder: (_, __) => const SizedBox(width: 12),
+      itemBuilder: (context, index) {
+        final pageNumber = index + 1;
+        final isCurrentPage = currentPage == pageNumber;
+
+        return GestureDetector(
+          onTap: () => onPageTap(pageNumber),
+          child: Container(
+            width: itemWidth,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: isCurrentPage ? Colors.blue : Colors.grey[300]!,
+                width: isCurrentPage ? 3 : 1,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: FutureBuilder<Uint8List>(
+              future: getCachedOrRenderPage(pageNumber),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done &&
+                    snapshot.hasData) {
+                  return Image.memory(
+                    snapshot.data!,
+                    fit: BoxFit.contain,
+                  );
+                }
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Slide',
+                        style: TextStyle(
+                          color: Colors.grey[isCurrentPage ? 500 : 400],
+                          fontSize: itemWidth > 160 ? 12 : 10,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      SizedBox(height: itemWidth > 160 ? 4 : 2),
+                      Text(
+                        '$pageNumber',
+                        style: TextStyle(
+                          color: isCurrentPage
+                              ? Colors.blue
+                              : Colors.grey[itemWidth > 160 ? 800 : 700],
+                          fontSize: itemWidth > 160 ? 32 : 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
