@@ -4,13 +4,11 @@ Matches lecture transcripts to PDF slide pages using multimodal embeddings
 """
 
 import torch
-import numpy as np
 from PIL import Image
 import fitz  # PyMuPDF
 import io
 from tqdm import tqdm
 from typing import List, Dict, Optional
-from pathlib import Path
 import gc
 
 from transformers import AutoModel
@@ -32,7 +30,10 @@ class SlideMatchingProcessor:
         exponential_scale: float = 3.0,
         use_confidence_boost: bool = False,
         confidence_threshold: float = 0.95,
-        confidence_weight: float = 1.5
+        confidence_weight: float = 1.5,
+        use_context_similarity: bool = False,
+        context_weight: float = 0.3,
+        context_update_rate: float = 0.3
     ):
         """
         Initialize slide matching processor.
@@ -48,6 +49,9 @@ class SlideMatchingProcessor:
             use_confidence_boost: Boost scores when top2 is low
             confidence_threshold: Threshold for confidence boosting
             confidence_weight: Weight multiplier for confidence boost
+            use_context_similarity: Enable context-aware scoring via EMA
+            context_weight: Weight for context similarity contribution
+            context_update_rate: Update rate for EMA
         """
         self.model_name = model_name
         self.device = device
@@ -59,6 +63,9 @@ class SlideMatchingProcessor:
         self.use_confidence_boost = use_confidence_boost
         self.confidence_threshold = confidence_threshold
         self.confidence_weight = confidence_weight
+        self.use_context_similarity = use_context_similarity
+        self.context_weight = context_weight
+        self.context_update_rate = context_update_rate
         self.model = None
 
         print(f"Initializing Slide Matching Processor")
@@ -198,78 +205,97 @@ class SlideMatchingProcessor:
 
         # Normalize scores
         max_scores_per_query = torch.max(scores, dim = 1, keepdim = True)[0]
-        normalized_scores = scores / max_scores_per_query
+        scores = scores / max_scores_per_query
+
+        # Apply exponential scaling if enabled (Apply before confidence boost)
+        if self.use_exponential_scaling:
+            scores = torch.exp(self.exponential_scale * (scores - 1))
+            print(f'Applied exponential scaling with scale = {self.exponential_scale}')
 
         # Apply confidence boost if enabled
         if self.use_confidence_boost:
-            top2_scores, _ = torch.topk(normalized_scores, k = 2, dim = 1)
+            top2_scores, _ = torch.topk(scores, k = 2, dim = 1)
             top2_norm_scores = top2_scores[:, 1]
 
             boost_mask = (top2_norm_scores < self.confidence_threshold).unsqueeze(1)
-            normalized_scores = torch.where(
+            scores = torch.where(
                 boost_mask,
-                normalized_scores * self.confidence_weight,
-                normalized_scores
-            )
+                scores * self.confidence_weight,
+                scores
+            ) # use broadcasting
 
             boost_count = boost_mask.sum().item()
             print(f'Applied confidence boost to {boost_count}/{len(top2_norm_scores)} queries')
 
-        # Apply exponential scaling if enabled
-        if self.use_exponential_scaling:
-            normalized_scores = torch.exp(self.exponential_scale * (normalized_scores - 1))
-            print(f'Applied exponential scaling with scale = {self.exponential_scale}')
-
-        # Convert to numpy for DP
-        scores_np = normalized_scores.cpu().numpy()
-        num_queries, num_pages = scores_np.shape
+        assert scores.dtype == torch.float32
+        num_queries, num_pages = scores.shape
 
         # Dynamic Programming with jump penalty
-        dp = np.full((num_queries, num_pages), -np.inf)
-        backtrack = np.zeros((num_queries, num_pages), dtype = int)
+        dp = torch.full((num_queries, num_pages), float('-inf'), device = self.device, dtype = torch.float32)
+        backtrack = torch.zeros((num_queries, num_pages), device = self.device, dtype = torch.long)
 
         # Initialize first query
-        dp[0, :] = scores_np[0, :]
+        dp[0, :] = scores[0, :]
+
+        # Initialize context scores (EMA of similarity scores per slide)
+        context_scores = torch.zeros(num_pages, device = self.device, dtype = torch.float32)
+        if self.use_context_similarity:
+            context_scores = self.context_update_rate * (scores[0, :] - context_scores)
+
+        # Precompute jump penalty matrix (num_pages x num_pages)
+        # penalty[k, j] = penalty when jumping from slide k to slide j
+        pages_idx = torch.arange(num_pages, device = self.device)
+        k_grid = pages_idx.unsqueeze(1) # [num_pages, 1]
+        j_grid = pages_idx.unsqueeze(0) # [1, num_pages]
+
+        # Forward jumps: k < j, penalty = (j - k - 1) * jump_penalty
+        forward_penalty = (j_grid - k_grid - 1) * self.jump_penalty
+
+        # Backward jumps: j < k, penalty = (k - j) * jump_penalty * backward_weight
+        backward_penalty = (k_grid - j_grid) * self.jump_penalty * self.backward_weight
+
+        # Combined penalty matrix
+        penalty_matrix = torch.where(k_grid < j_grid, forward_penalty, backward_penalty)
 
         # Fill DP table
         for i in range(1, num_queries):
-            for j in range(num_pages):
-                current_score = scores_np[i, j]
+            current_score = scores[i, :].unsqueeze(0) # [1, num_pages]
 
-                # Try all possible previous page assignments
-                for k in range(num_pages):
-                    # Jump penalty
-                    penalty = 0
-                    if k < j:  # forward jump
-                        penalty = (j - k - 1) * self.jump_penalty
-                    elif j < k:  # backward jump
-                        penalty = (k - j) * self.jump_penalty * self.backward_weight
+            if self.use_context_similarity:
+                current_score += self.context_weight * context_scores.unsqueeze(0)
+            
+            # Vectorized DP transition
+            prev_dp = dp[i - 1, :].unsqueeze(1) # [num_pages, 1]
+            current_score_grid = current_score.expand(num_pages, num_pages) # [num_pages, num_pages]
 
-                    score_with_penalty = dp[i - 1, k] + current_score - penalty
+            # scores_with_penalty[k,  j] = dp[i - 1, k] + score[i, j] - penalty[k, j]
+            scores_with_penalty = prev_dp + current_score_grid - penalty_matrix
 
-                    if score_with_penalty > dp[i, j]:
-                        dp[i, j] = score_with_penalty
-                        backtrack[i, j] = k
+            # Find best previous page k for each current page j
+            dp[i, :], backtrack[i, :] = torch.max(scores_with_penalty, dim = 0)
+
+            # Update context scores
+            if self.use_context_similarity:
+                context_scores += self.context_update_rate * (scores[i, :] - context_scores)
 
         # Backtrack to find optimal path
-        best_matches = np.zeros(num_queries, dtype = int)
-        best_matches[-1] = np.argmax(dp[-1, :])
+        best_matches = torch.zeros(num_queries, device = self.device, dtype = torch.long)
+        best_matches[-1] = torch.argmax(dp[-1, :])
 
         for i in range(num_queries - 2, -1, -1):
             best_matches[i] = backtrack[i + 1, best_matches[i + 1]]
 
         # Get confidence scores
-        confidence_scores = np.array([
-            scores_np[i, best_matches[i]] for i in range(num_queries)
-        ])
+        query_indices = torch.arange(num_queries, device = self.device)
+        confidence_scores = scores[query_indices, best_matches]
 
         # Build results
         results = []
         for i, query in enumerate(queries):
             result = {
                 "text": query,
-                "matched_page": int(best_matches[i]) + 1,  # 1-based index
-                "confidence_score": float(confidence_scores[i])
+                "matched_page": int(best_matches[i].item()) + 1,  # 1-based index
+                "confidence_score": float(confidence_scores[i].item())
             }
             results.append(result)
 
