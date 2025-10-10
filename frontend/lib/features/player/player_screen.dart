@@ -39,6 +39,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
   PdfDocument? _pdfDocument;
   int _currentPage = 1;
 
+  // PDF 페이지 이미지 캐싱 (20개 단위)
+  final Map<int, Uint8List> _pageImageCache = {};
+  final Map<int, Future<Uint8List>> _pageImageFutures = {};
+  static const int _cacheChunkSize = 20;
+
   // Transcript 스크롤 관련
   final ScrollController _transcriptScrollController = ScrollController();
   bool _isUserScrolling = false;
@@ -129,30 +134,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
         throw FormatException('Invalid metadata format');
       }
 
-      // PDF 로드
+      // 첫 페이지만 빠르게 렌더링 (전체 PDF 로드 전)
       final pdfPath = 'assets/lectures/$lectureId/${lectureId}_slides.pdf';
-      _pdfDocument = await PdfDocument.openAsset(pdfPath);
-      _pdfController = PdfController(document: PdfDocument.openAsset(pdfPath));
+      await _renderFirstPageQuickly(pdfPath);
 
       setState(() {
         _totalTime = _transcriptData!.metadata.totalDuration;
         _isLoading = false;
       });
 
+      // 백그라운드에서 전체 PDF 문서 로드 및 나머지 페이지 캐싱
+      _loadFullPdfDocument(pdfPath);
+
       // 오디오 파일 로드 및 자동 재생
       await _audioService.loadAudio(
         'lectures/$lectureId/lecture_with_slides.opus',
       );
 
-      // 약간의 딜레이 후 재생 (오디오 로드 완료 대기)
-      await Future.delayed(const Duration(milliseconds: 500));
       await _audioService.play();
 
       setState(() {
         _isPlaying = true;
       });
     } catch (e) {
-      print('Error loading lecture data: $e');
       setState(() {
         _isLoading = false;
       });
@@ -194,6 +198,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
           if (_currentPage != sentence.slideNumber) {
             _currentPage = sentence.slideNumber;
             _pdfController?.jumpToPage(sentence.slideNumber);
+
+            // 다음 청크 미리 로딩
+            _preloadPageImagesIfNeeded(sentence.slideNumber);
           }
 
           // 사용자가 스크롤 중이 아니면 자동으로 스크롤
@@ -207,6 +214,140 @@ class _PlayerScreenState extends State<PlayerScreen> {
         return;
       }
     }
+  }
+
+  // 첫 페이지만 빠르게 렌더링 (전체 PDF 로드 전)
+  Future<void> _renderFirstPageQuickly(String pdfPath) async {
+    try {
+      // 임시로 PDF 문서를 열어서 첫 페이지만 렌더링
+      final tempDocument = await PdfDocument.openAsset(pdfPath);
+      final page = await tempDocument.getPage(1);
+      final pageImage = await page.render(
+        width: page.width * 2,
+        height: page.height * 2,
+        format: PdfPageImageFormat.png,
+      );
+      await page.close();
+      await tempDocument.close();
+
+      // 첫 페이지를 캐시에 저장
+      if (mounted && pageImage != null) {
+        setState(() {
+          _pageImageCache[1] = pageImage.bytes;
+        });
+      }
+    } catch (e) {
+      print('Error loading first page quickly: $e');
+    }
+  }
+
+  // 백그라운드에서 전체 PDF 문서 로드 및 캐싱
+  Future<void> _loadFullPdfDocument(String pdfPath) async {
+    try {
+      // 전체 PDF 문서 로드
+      _pdfDocument = await PdfDocument.openAsset(pdfPath);
+
+      if (mounted) {
+        setState(() {
+          _pdfController = PdfController(
+            document: Future.value(_pdfDocument!),
+          );
+        });
+      }
+
+      // 2-21번 페이지 미리 캐싱 (백그라운드)
+      _preloadPageImages(2);
+    } catch (e) {
+      print('Error loading full PDF document: $e');
+    }
+  }
+
+  // 특정 페이지가 속한 청크의 시작 페이지 번호 계산
+  // 1번 페이지는 별도, 2-21, 22-41, 42-61...
+  int _getChunkStartPage(int pageNumber) {
+    if (pageNumber == 1) {
+      return 1;
+    }
+    // 2페이지부터는 20개 단위 청크
+    return ((pageNumber - 2) ~/ _cacheChunkSize) * _cacheChunkSize + 2;
+  }
+
+  // 페이지가 필요할 때 해당 청크를 미리 로딩
+  void _preloadPageImagesIfNeeded(int pageNumber) {
+    final chunkStart = _getChunkStartPage(pageNumber);
+
+    // 이미 캐싱된 청크인지 확인
+    if (_pageImageCache.containsKey(chunkStart)) {
+      return;
+    }
+
+    _preloadPageImages(chunkStart);
+  }
+
+  // 특정 청크의 페이지들을 미리 로딩 (20개 단위)
+  void _preloadPageImages(int startPage) {
+    if (_pdfDocument == null || _lectureMetadata == null) {
+      return;
+    }
+
+    final totalPages = _lectureMetadata!.slides;
+    final endPage = (startPage + _cacheChunkSize - 1).clamp(1, totalPages);
+
+    for (int pageNumber = startPage; pageNumber <= endPage; pageNumber++) {
+      // 이미 캐싱되었거나 로딩 중이면 스킵
+      if (_pageImageCache.containsKey(pageNumber) ||
+          _pageImageFutures.containsKey(pageNumber)) {
+        continue;
+      }
+
+      // Future를 생성하고 저장
+      final future = _renderPdfPage(pageNumber);
+      _pageImageFutures[pageNumber] = future;
+
+      // Future가 완료되면 캐시에 저장
+      future.then((imageBytes) {
+        if (mounted) {
+          setState(() {
+            _pageImageCache[pageNumber] = imageBytes;
+            _pageImageFutures.remove(pageNumber);
+          });
+        }
+      }).catchError((error) {
+        print('Error loading page $pageNumber: $error');
+        _pageImageFutures.remove(pageNumber);
+      });
+    }
+  }
+
+  // 캐시된 이미지 또는 Future를 반환
+  Future<Uint8List> _getCachedOrRenderPage(int pageNumber) {
+    // 이미 캐시된 경우
+    if (_pageImageCache.containsKey(pageNumber)) {
+      return Future.value(_pageImageCache[pageNumber]!);
+    }
+
+    // 로딩 중인 경우
+    if (_pageImageFutures.containsKey(pageNumber)) {
+      return _pageImageFutures[pageNumber]!;
+    }
+
+    // 캐시되지 않은 경우 새로 로딩
+    final future = _renderPdfPage(pageNumber);
+    _pageImageFutures[pageNumber] = future;
+
+    future.then((imageBytes) {
+      if (mounted) {
+        setState(() {
+          _pageImageCache[pageNumber] = imageBytes;
+          _pageImageFutures.remove(pageNumber);
+        });
+      }
+    }).catchError((error) {
+      print('Error loading page $pageNumber: $error');
+      _pageImageFutures.remove(pageNumber);
+    });
+
+    return future;
   }
 
   Future<void> _scrollToCurrentSentence() async {
@@ -388,7 +529,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   });
                 },
               )
+            else if (_pageImageCache.containsKey(1))
+              // 첫 페이지 캐시가 있으면 표시
+              Container(
+                color: Colors.black87,
+                child: Center(
+                  child: Image.memory(
+                    _pageImageCache[1]!,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              )
             else
+              // 로딩 중
               Container(
                 color: Colors.black87,
                 child: const Center(
@@ -536,7 +689,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: FutureBuilder<Uint8List>(
-                future: _renderPdfPage(pageNumber),
+                future: _getCachedOrRenderPage(pageNumber),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.done &&
                       snapshot.hasData) {
@@ -684,7 +837,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       });
                     },
                   )
+                else if (_pageImageCache.containsKey(1))
+                  // 첫 페이지 캐시가 있으면 표시
+                  Container(
+                    color: Colors.black87,
+                    child: Center(
+                      child: Image.memory(
+                        _pageImageCache[1]!,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  )
                 else
+                  // 로딩 중
                   Container(
                     color: Colors.black87,
                     child: const Center(
@@ -940,7 +1105,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: FutureBuilder<Uint8List>(
-                      future: _renderPdfPage(pageNumber),
+                      future: _getCachedOrRenderPage(pageNumber),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.done &&
                             snapshot.hasData) {
