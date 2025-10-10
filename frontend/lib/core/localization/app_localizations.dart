@@ -97,6 +97,7 @@ class AppLocalizations {
   String get tagName => isKorean ? '이름' : 'Name';
   String get apply => isKorean ? '적용' : 'Apply';
   String get newTag => isKorean ? '새 태그' : 'New Tag';
+  String get deleteTag => isKorean ? '태그 삭제' : 'Delete Tag';
   String get maxTagsReached =>
       isKorean ? '태그는 최대 15개까지 생성할 수 있습니다.' : 'You can create up to 15 tags.';
   String get pleaseEnterTagName =>
