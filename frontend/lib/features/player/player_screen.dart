@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:pdfx/pdfx.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
@@ -44,17 +45,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
   final PdfCacheService _pdfCacheService = PdfCacheService();
 
   // Transcript 스크롤 관련
-  final ScrollController _transcriptScrollController = ScrollController();
-  bool _isUserScrolling = false;
-  bool _isAutoScrolling = false;
+  late AutoScrollController _transcriptScrollController;
+  bool _isAutoScrolling = true;
   Timer? _scrollTimer;
-  final Map<int, GlobalKey> _sentenceKeys = {};
 
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _transcriptScrollController = AutoScrollController(
+      viewportBoundaryGetter: () =>
+          Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).size.height / 2),
+      axis: Axis.vertical,
+    );
     _loadLectureData();
     _setupAudioListeners();
     _setupScrollListener();
@@ -71,16 +75,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   void _setupScrollListener() {
     _transcriptScrollController.addListener(() {
-      // 자동 스크롤 중이면 무시
+      // 사용자가 스크롤 중임을 표시 (자동 스크롤 비활성화)
       if (_isAutoScrolling) {
-        return;
-      }
-
-      // 사용자가 스크롤 중임을 표시
-      if (!_isUserScrolling) {
         if (mounted) {
           setState(() {
-            _isUserScrolling = true;
+            _isAutoScrolling = false;
           });
         }
       }
@@ -88,17 +87,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
       // 기존 타이머 취소
       _scrollTimer?.cancel();
 
-      // 0.5초 후에 자동 스크롤 재개
-      _scrollTimer = Timer(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          setState(() {
-            _isUserScrolling = false;
-          });
+      // 1초 후에 자동 스크롤 재개
+      _scrollTimer = Timer(const Duration(milliseconds: 1000), () {
+        if (!_isAutoScrolling) {
+          if (mounted) {
+            setState(() {
+              _isAutoScrolling = true;
+            });
+          }
         }
-        // PostFrameCallback을 사용하여 다음 프레임에서 스크롤
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+
+        // 영상이 재생 중일 때만 스크롤
+        if (_isPlaying) {
           _scrollToCurrentSentence();
-        });
+        }
       });
     });
   }
@@ -203,12 +205,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
             _pdfCacheService.preloadPageImagesIfNeeded(sentence.slideNumber, totalPages);
           }
 
-          // 사용자가 스크롤 중이 아니면 자동으로 스크롤
-          if (!_isUserScrolling) {
-            // PostFrameCallback을 사용하여 다음 프레임에서 스크롤
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _scrollToCurrentSentence();
-            });
+          // 사용자가 스크롤 중이 아니고, 영상이 재생 중일 때만 자동으로 스크롤
+          if (_isAutoScrolling && _isPlaying) {
+            _scrollToCurrentSentence();
           }
         }
         return;
@@ -288,61 +287,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return;
     }
 
-    // GlobalKey를 사용하여 정확한 위치 계산
-    final key = _sentenceKeys[_currentSentenceIndex!];
-    if (key?.currentContext == null) {
+    // 영상이 재생 중이 아니면 스크롤하지 않음
+    if (!_isPlaying) {
       return;
     }
 
-    final RenderBox? renderBox =
-        key!.currentContext!.findRenderObject() as RenderBox?;
-    if (renderBox == null) {
-      return;
-    }
-
-    // 아이템의 위치 계산
-    final itemPosition = renderBox.localToGlobal(Offset.zero);
-    final itemHeight = renderBox.size.height;
-
-    // ScrollController의 현재 위치
-    final scrollOffset = _transcriptScrollController.offset;
-    final viewportHeight =
-        _transcriptScrollController.position.viewportDimension;
-
-    // ListView 컨테이너의 위치를 찾아야 함
-    final scrollContext =
-        _transcriptScrollController.position.context.storageContext;
-    final RenderBox? scrollRenderBox =
-        scrollContext.findRenderObject() as RenderBox?;
-    if (scrollRenderBox == null) {
-      return;
-    }
-    final scrollPosition = scrollRenderBox.localToGlobal(Offset.zero);
-
-    // 아이템의 상대적 위치 계산
-    final relativePosition = itemPosition.dy - scrollPosition.dy;
-
-    // 현재 문장을 viewport의 중앙에 배치
-    final targetOffset =
-        scrollOffset +
-        relativePosition -
-        (viewportHeight / 2) +
-        (itemHeight / 2);
-
-    // 자동 스크롤 시작
-    _isAutoScrolling = true;
-
-    await _transcriptScrollController.animateTo(
-      targetOffset.clamp(
-        0.0,
-        _transcriptScrollController.position.maxScrollExtent,
-      ),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
+    // AutoScrollController를 사용하여 자동 스크롤 (빠른 애니메이션)
+    await _transcriptScrollController.scrollToIndex(
+      _currentSentenceIndex!,
+      preferPosition: AutoScrollPosition.middle,
+      duration: const Duration(milliseconds: 150),
     );
 
-    // 자동 스크롤 종료
-    _isAutoScrolling = false;
   }
 
   void _seekToSentence(int index) {
@@ -365,15 +321,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final sentence = _transcriptData!.timestamps[i];
       if (sentence.slideNumber == slideNumber) {
         // 오디오를 해당 시간으로 이동
-        _audioService.seek(
-          Duration(milliseconds: (sentence.startTime * 1000).toInt()),
-        );
+        _audioService
+            .seek(
+              Duration(milliseconds: (sentence.startTime * 1000).toInt()),
+            )
+            .then((_) {
+          if (!mounted) {
+            return;
+          }
+          _scrollTimer?.cancel();
 
-        // 사용자 스크롤 상태 해제하여 자동 스크롤 활성화
-        setState(() {
-          _isUserScrolling = false;
+          // 사용자 스크롤 상태 해제하여 자동 스크롤 활성화
+          setState(() {
+            _isAutoScrolling = true;
+            _currentSentenceIndex = i; // 현재 문장 인덱스 업데이트
+          });
+          _scrollToCurrentSentence();
         });
-        _scrollTimer?.cancel();
 
         return;
       }
@@ -519,7 +483,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               onChanged: (value) {
                 // 슬라이더를 움직일 때 사용자 스크롤 상태 해제
                 setState(() {
-                  _isUserScrolling = false;
+                  _isAutoScrolling = true;
                 });
                 _scrollTimer?.cancel();
                 _audioService.seek(
@@ -528,7 +492,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
                 // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
                 Future.delayed(const Duration(milliseconds: 100), () {
-                  if (!_isUserScrolling) {
+                  if (_isAutoScrolling) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       _scrollToCurrentSentence();
                     });
@@ -625,25 +589,26 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 final sentence = _transcriptData!.timestamps[index];
                 final isCurrentSentence = _currentSentenceIndex == index;
 
-                // GlobalKey 생성 및 저장
-                _sentenceKeys.putIfAbsent(index, () => GlobalKey());
-
-                return GestureDetector(
-                  key: _sentenceKeys[index],
-                  onTap: () => _seekToSentence(index),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      sentence.text,
-                      style: TextStyle(
-                        fontSize: isCurrentSentence ? 18 : 14,
-                        fontWeight: isCurrentSentence
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isCurrentSentence
-                            ? Colors.black
-                            : Colors.grey[600],
-                        height: 1.6,
+                return AutoScrollTag(
+                  key: ValueKey(index),
+                  controller: _transcriptScrollController,
+                  index: index,
+                  child: GestureDetector(
+                    onTap: () => _seekToSentence(index),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        sentence.text,
+                        style: TextStyle(
+                          fontSize: isCurrentSentence ? 18 : 14,
+                          fontWeight: isCurrentSentence
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isCurrentSentence
+                              ? Colors.black
+                              : Colors.grey[600],
+                          height: 1.6,
+                        ),
                       ),
                     ),
                   ),
@@ -880,7 +845,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
               onChanged: (value) {
                 // 슬라이더를 움직일 때 사용자 스크롤 상태 해제
                 setState(() {
-                  _isUserScrolling = false;
+                  _isAutoScrolling = true;
+                  _isPlaying = true;
                 });
                 _scrollTimer?.cancel();
                 _audioService.seek(
@@ -888,13 +854,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 );
 
                 // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  if (!_isUserScrolling) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _scrollToCurrentSentence();
-                    });
-                  }
-                });
+                if (_isAutoScrolling) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToCurrentSentence();
+                  });
+                }
+                _isPlaying = false;
               },
             ),
           ),
