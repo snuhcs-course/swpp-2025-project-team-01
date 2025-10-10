@@ -297,6 +297,16 @@ class Repo extends ChangeNotifier {
     }
   }
 
+  // 과목 이름 업데이트
+  Future<void> updateSubjectTitle(String subjectId, String newTitle) async {
+    final Subject? s = _subjects[subjectId];
+    if (s != null) {
+      _subjects[subjectId] = s.copyWith(title: newTitle);
+      await _saveSubjects();
+      notifyListeners();
+    }
+  }
+
   // 수업 삭제 (과목에서 제거)
   Future<void> deleteLecture(String subjectId, String lectureId) async {
     final Subject? s = _subjects[subjectId];
