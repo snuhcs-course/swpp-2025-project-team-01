@@ -327,13 +327,6 @@ class TopControlBarLandscape extends StatelessWidget {
 
 /// PDF 슬라이드 리스트 (가로/세로 모드 공통 사용)
 class PdfSlidesList extends StatelessWidget {
-  final int pageCount;
-  final int currentPage;
-  final double itemWidth;
-  final EdgeInsets padding;
-  final Future<Uint8List> Function(int pageNumber) getCachedOrRenderPage;
-  final void Function(int pageNumber) onPageTap;
-
   const PdfSlidesList({
     super.key,
     required this.pageCount,
@@ -343,6 +336,13 @@ class PdfSlidesList extends StatelessWidget {
     required this.getCachedOrRenderPage,
     required this.onPageTap,
   });
+
+  final int pageCount;
+  final int currentPage;
+  final double itemWidth;
+  final EdgeInsets padding;
+  final Future<Uint8List> Function(int pageNumber) getCachedOrRenderPage;
+  final void Function(int pageNumber) onPageTap;
 
   @override
   Widget build(BuildContext context) {
