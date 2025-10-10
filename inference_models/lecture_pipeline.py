@@ -6,7 +6,7 @@ Combines ASR, Slide Matching, and TTS to reconstruct lectures from audio and PDF
 import json
 import os
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 from asr_processor import ASRProcessor
@@ -41,6 +41,9 @@ class LecturePipeline:
         use_confidence_boost: bool = False,
         confidence_threshold: float = 0.95,
         confidence_weight: float = 1.5,
+        use_context_similarity: bool = False,
+        context_weight: float = 0.3,
+        context_update_rate: float = 0.3,
 
         # TTS settings
         tts_voice: str = 'af_heart',
@@ -68,6 +71,9 @@ class LecturePipeline:
             use_confidence_boost: Boost scores when confidence is low
             confidence_threshold: Confidence threshold
             confidence_weight: Confidence boost weight
+            use_context_similarity: Enable context-aware scoring via EMA
+            context_weight: weight for context similarity contribution
+            context_update_rate: Update rate for EMA
             tts_voice: TTS voice style
             tts_speed: TTS playback speed
             tts_lang_code: TTS language code
@@ -100,7 +106,10 @@ class LecturePipeline:
             exponential_scale = exponential_scale,
             use_confidence_boost = use_confidence_boost,
             confidence_threshold = confidence_threshold,
-            confidence_weight = confidence_weight
+            confidence_weight = confidence_weight,
+            use_context_similarity = use_context_similarity,
+            context_weight = context_weight,
+            context_update_rate = context_update_rate
         )
 
         self.tts = TTSProcessor(
@@ -120,7 +129,7 @@ class LecturePipeline:
         sentence_splitter: Optional[callable] = None,
         export_audio_formats: Optional[List[str]] = None,
         save_intermediate: bool = True
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """
         Run the complete lecture reconstruction pipeline.
 
@@ -317,8 +326,8 @@ if __name__ == "__main__":
 
     # Run pipeline
     results = pipeline.run(
-        audio_path = 'lecture_recording.mp3',
-        pdf_path = 'lecture_slides.pdf',
+        audio_path = 'test_lecture/lecture_recording.mp3',
+        pdf_path = 'test_lecture/lecture_slides.pdf',
         lecture_name = 'my_lecture',
         sentence_splitter = simple_sentence_splitter,
         export_audio_formats = ['opus'],
