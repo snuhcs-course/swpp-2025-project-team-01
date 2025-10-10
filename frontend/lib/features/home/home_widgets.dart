@@ -542,6 +542,16 @@ class _LectureCardState extends State<LectureCard> {
   }
 
   Widget _buildThumbnail() {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        color: Colors.white,
+        child: _buildThumbnailContent(),
+      ),
+    );
+  }
+
+  Widget _buildThumbnailContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -556,10 +566,21 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     if (_cachedImage != null) {
+      // PDF의 비율 계산
+      final double pdfAspectRatio = _pdfPage!.width / _pdfPage!.height;
+      const double targetAspectRatio = 16 / 9;
+
+      // 4:3 비율인 경우 (또는 16:9보다 세로로 긴 경우) contain으로 중앙 정렬
+      // 16:9 비율인 경우 cover로 꽉 채우기
+      final BoxFit fit = pdfAspectRatio < targetAspectRatio
+          ? BoxFit.contain // 4:3 등 세로로 긴 경우 - 좌우 여백
+          : BoxFit.cover;   // 16:9 등 가로로 긴 경우 - 꽉 채우기
+
       return Image.memory(
         _cachedImage!.bytes,
-        fit: BoxFit.fitWidth,
+        fit: fit,
         width: double.infinity,
+        height: double.infinity,
       );
     }
 
