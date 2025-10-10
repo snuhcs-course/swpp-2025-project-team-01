@@ -283,9 +283,9 @@ class _SubjectPanelState extends State<SubjectPanel>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: expanded ? Colors.white : Colors.transparent,
         borderRadius: BorderRadius.circular(_panelRadius),
-        boxShadow: const [_panelShadow],
+        boxShadow: expanded ? const [_panelShadow] : const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -500,11 +500,11 @@ class _LectureCardState extends State<LectureCard> {
       onLongPress: () => _showLectureDetailDialog(context),
       child: Ink(
         decoration: BoxDecoration(
-          color: const Color(0xFFF6F7FA),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.transparent,
+          
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0F000000),
+              color: Colors.transparent,
               blurRadius: 6,
               offset: Offset(0, 2),
             ),
