@@ -230,13 +230,16 @@ class SubjectPanel extends StatefulWidget {
 
 class _SubjectPanelState extends State<SubjectPanel>
     with SingleTickerProviderStateMixin {
-  bool expanded = true;
+  late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
 
   @override
   void initState() {
     super.initState();
+    // Repository에서 저장된 상태 로드
+    expanded = Repo.instance.getSubjectExpandedState(widget.subject.id);
+
     final AccessibilityService accessibilityService = AccessibilityService();
     final Duration duration = accessibilityService.getAnimationDuration(
       const Duration(milliseconds: 300),
@@ -247,7 +250,7 @@ class _SubjectPanelState extends State<SubjectPanel>
       parent: _animationController,
       curve: accessibilityService.getAnimationCurve(Curves.easeInOut),
     );
-    _animationController.value = 1.0;
+    _animationController.value = expanded ? 1.0 : 0.0;
   }
 
   @override
@@ -263,6 +266,9 @@ class _SubjectPanelState extends State<SubjectPanel>
     setState(() {
       expanded = !expanded;
     });
+
+    // Repository에 상태 저장
+    Repo.instance.saveSubjectExpandedState(widget.subject.id, expanded);
 
     if (reduceMotion) {
       // 모션 줄이기가 활성화되면 즉시 전환

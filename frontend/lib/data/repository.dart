@@ -17,6 +17,7 @@ class Repo extends ChangeNotifier {
   Map<String, Tag> _tags = {};
   final Map<String, Lecture> _lectures = {}; // 강의 메타는 필요 시 디렉토리별로 로드
   String _currentTagTheme = '파스텔'; // 현재 선택된 태그 색상 테마
+  final Map<String, bool> _subjectExpandedStates = {}; // 과목별 펼침/접힘 상태
 
   Future<void> init() async {
     _docs = Directory(
@@ -30,6 +31,7 @@ class Repo extends ChangeNotifier {
     await _loadSubjects();
     await _loadTags();
     await _loadTagTheme();
+    await loadSubjectExpandedStates();
 
     // 모든 강의 메타 로드
     final List<String> allLectureIds = _subjects.values
@@ -212,6 +214,36 @@ class Repo extends ChangeNotifier {
     _subjects[id] = s.copyWith(favorite: !s.favorite);
     await _saveSubjects();
     notifyListeners();
+  }
+
+  // 과목 펼침/접힘 상태 로드
+  Future<void> loadSubjectExpandedStates() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final List<String>? keys = prefs.getStringList('subject_expanded_states');
+    if (keys != null) {
+      for (final key in keys) {
+        final bool? value = prefs.getBool('subject_expanded_$key');
+        if (value != null) {
+          _subjectExpandedStates[key] = value;
+        }
+      }
+    }
+  }
+
+  // 과목 펼침/접힘 상태 저장
+  Future<void> saveSubjectExpandedState(String subjectId, bool expanded) async {
+    _subjectExpandedStates[subjectId] = expanded;
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('subject_expanded_$subjectId', expanded);
+    await prefs.setStringList(
+      'subject_expanded_states',
+      _subjectExpandedStates.keys.toList(),
+    );
+  }
+
+  // 과목 펼침/접힘 상태 가져오기 (기본값: true)
+  bool getSubjectExpandedState(String subjectId) {
+    return _subjectExpandedStates[subjectId] ?? true;
   }
 
   Future<void> _saveSubjects() async {
