@@ -1,12 +1,14 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import '../../core/utils.dart';
+import 'package:re_view/core/utils.dart';
 
 /// 비디오 컨트롤 공통 위젯 모듈
 
 // 뒤로가기 버튼
 class BackButton extends StatelessWidget {
-  final VoidCallback onPressed;
   const BackButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -19,36 +21,86 @@ class BackButton extends StatelessWidget {
 
 // 싱크 토글 버튼
 class SyncButton extends StatelessWidget {
-  final bool isSynced;
-  final VoidCallback onPressed;
   const SyncButton({
     super.key,
     required this.isSynced,
     required this.onPressed,
+    this.pageDifference,
   });
+
+  final bool isSynced;
+  final VoidCallback onPressed;
+  final int? pageDifference;
+
+  String _getDifferenceText(int difference) {
+    if (difference == 0) {
+      return '동기화됨';
+    }
+    final absValue = difference.abs();
+    if (difference < 0) {
+      return '$absValue 페이지 앞';
+    } else {
+      return '$absValue 페이지 뒤';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(
-        isSynced ? Icons.sync : Icons.sync_disabled,
-        color: Colors.white,
-        size: 28,
-      ),
+    final showDifference = !isSynced && pageDifference != null;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        IconButton(
+          onPressed: onPressed,
+          icon: Icon(
+            isSynced ? Icons.sync : Icons.sync_disabled,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+        if (showDifference)
+          Positioned(
+            top: 48, // IconButton 아래에 위치
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                _getDifferenceText(pageDifference!),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
 
 // 자막 버튼
 class CaptionButton extends StatelessWidget {
-  final bool isEnabled;
-  final VoidCallback onPressed;
   const CaptionButton({
     super.key,
     required this.isEnabled,
     required this.onPressed,
   });
+
+  final bool isEnabled;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -65,13 +117,14 @@ class CaptionButton extends StatelessWidget {
 
 // 재생/정지 버튼
 class PlayPauseButton extends StatelessWidget {
-  final bool isPlaying;
-  final VoidCallback onPressed;
   const PlayPauseButton({
     super.key,
     required this.isPlaying,
     required this.onPressed,
   });
+
+  final bool isPlaying;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -89,13 +142,14 @@ class PlayPauseButton extends StatelessWidget {
 
 // 15초 앞/뒤로 이동 버튼
 class SkipButton extends StatefulWidget {
-  final bool isForward; // true면 앞으로, false면 뒤로
-  final VoidCallback onPressed;
   const SkipButton({
     super.key,
     required this.isForward,
     required this.onPressed,
   });
+
+  final bool isForward; // true면 앞으로, false면 뒤로
+  final VoidCallback onPressed;
 
   @override
   State<SkipButton> createState() => _SkipButtonState();
@@ -160,16 +214,16 @@ class _SkipButtonState extends State<SkipButton> {
 
 // 타임라인 슬라이더
 class VideoTimelineSlider extends StatelessWidget {
-  final double currentTime;
-  final double totalTime;
-  final ValueChanged<double> onChanged;
-
   const VideoTimelineSlider({
     super.key,
     required this.currentTime,
     required this.totalTime,
     required this.onChanged,
   });
+
+  final double currentTime;
+  final double totalTime;
+  final ValueChanged<double> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -226,11 +280,6 @@ class VideoTimelineSlider extends StatelessWidget {
 
 // 중앙 재생 컨트롤 (재생/정지 + 15초 앞뒤)
 class CenterPlayControls extends StatelessWidget {
-  final bool isPlaying;
-  final VoidCallback onPlayPause;
-  final VoidCallback onSkipBackward;
-  final VoidCallback onSkipForward;
-
   const CenterPlayControls({
     super.key,
     required this.isPlaying,
@@ -238,6 +287,11 @@ class CenterPlayControls extends StatelessWidget {
     required this.onSkipBackward,
     required this.onSkipForward,
   });
+
+  final bool isPlaying;
+  final VoidCallback onPlayPause;
+  final VoidCallback onSkipBackward;
+  final VoidCallback onSkipForward;
 
   @override
   Widget build(BuildContext context) {
@@ -256,16 +310,18 @@ class CenterPlayControls extends StatelessWidget {
 
 // 상단 컨트롤 바 (세로 모드용)
 class TopControlBarPortrait extends StatelessWidget {
-  final VoidCallback onBack;
-  final bool isSynced;
-  final VoidCallback onSyncToggle;
-
   const TopControlBarPortrait({
     super.key,
     required this.onBack,
     required this.isSynced,
     required this.onSyncToggle,
+    this.pageDifference,
   });
+
+  final VoidCallback onBack;
+  final bool isSynced;
+  final VoidCallback onSyncToggle;
+  final int? pageDifference;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +331,11 @@ class TopControlBarPortrait extends StatelessWidget {
         children: [
           BackButton(onPressed: onBack),
           const Spacer(),
-          SyncButton(isSynced: isSynced, onPressed: onSyncToggle),
+          SyncButton(
+            isSynced: isSynced,
+            onPressed: onSyncToggle,
+            pageDifference: pageDifference,
+          ),
         ],
       ),
     );
@@ -284,12 +344,6 @@ class TopControlBarPortrait extends StatelessWidget {
 
 // 상단 컨트롤 바 (가로 모드용)
 class TopControlBarLandscape extends StatelessWidget {
-  final VoidCallback onBack;
-  final bool isCaptionEnabled;
-  final VoidCallback onCaptionToggle;
-  final bool isSynced;
-  final VoidCallback onSyncToggle;
-
   const TopControlBarLandscape({
     super.key,
     required this.onBack,
@@ -297,7 +351,15 @@ class TopControlBarLandscape extends StatelessWidget {
     required this.onCaptionToggle,
     required this.isSynced,
     required this.onSyncToggle,
+    this.pageDifference,
   });
+
+  final VoidCallback onBack;
+  final bool isCaptionEnabled;
+  final VoidCallback onCaptionToggle;
+  final bool isSynced;
+  final VoidCallback onSyncToggle;
+  final int? pageDifference;
 
   @override
   Widget build(BuildContext context) {
@@ -312,9 +374,157 @@ class TopControlBarLandscape extends StatelessWidget {
             onPressed: onCaptionToggle,
           ),
           const SizedBox(width: 8),
-          SyncButton(isSynced: isSynced, onPressed: onSyncToggle),
+          SyncButton(
+            isSynced: isSynced,
+            onPressed: onSyncToggle,
+            pageDifference: pageDifference,
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// PDF 슬라이드 리스트 (가로/세로 모드 공통 사용)
+class PdfSlidesList extends StatefulWidget {
+  const PdfSlidesList({
+    super.key,
+    required this.pageCount,
+    required this.currentPage,
+    required this.itemWidth,
+    required this.padding,
+    required this.getCachedOrRenderPage,
+    required this.onPageTap,
+    this.getCachedImage,
+    this.onScroll,
+  });
+
+  final int pageCount;
+  final int currentPage;
+  final double itemWidth;
+  final EdgeInsets padding;
+  final Future<Uint8List> Function(int pageNumber) getCachedOrRenderPage;
+  final Uint8List? Function(int pageNumber)? getCachedImage; // 캐시된 이미지 직접 조회
+  final void Function(int pageNumber) onPageTap;
+  final void Function(int visibleEndPage)? onScroll; // 스크롤 시 보이는 마지막 페이지 전달
+
+  @override
+  State<PdfSlidesList> createState() => _PdfSlidesListState();
+}
+
+class _PdfSlidesListState extends State<PdfSlidesList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) { 
+      return;
+    }
+
+    // 현재 스크롤 위치 계산
+    final scrollOffset = _scrollController.offset;
+    final viewportWidth = _scrollController.position.viewportDimension;
+
+    // 보이는 영역의 끝 위치
+    final visibleEnd = scrollOffset + viewportWidth;
+
+    // 각 아이템의 너비 (itemWidth + separator)
+    final itemTotalWidth = widget.itemWidth + 12;
+
+    // 보이는 영역의 마지막 페이지 번호 계산
+    final visibleEndPage = ((visibleEnd - widget.padding.left) / itemTotalWidth).ceil();
+
+    // 스크롤 콜백 호출 (범위 체크)
+    if (visibleEndPage > 0 && visibleEndPage <= widget.pageCount) {
+      widget.onScroll?.call(visibleEndPage);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      controller: _scrollController,
+      padding: widget.padding,
+      scrollDirection: Axis.horizontal,
+      itemCount: widget.pageCount,
+      separatorBuilder: (_, __) => const SizedBox(width: 12),
+      itemBuilder: (context, index) {
+        final pageNumber = index + 1;
+        final isCurrentPage = widget.currentPage == pageNumber;
+
+        // 캐시된 이미지가 있는지 먼저 확인
+        final cachedImage = widget.getCachedImage?.call(pageNumber);
+
+        return GestureDetector(
+          onTap: () => widget.onPageTap(pageNumber),
+          child: Container(
+            width: widget.itemWidth,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(
+                color: isCurrentPage ? Colors.blue : Colors.grey[300]!,
+                width: isCurrentPage ? 3 : 1,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: cachedImage != null
+                ? Image.memory(
+                    cachedImage,
+                    fit: BoxFit.contain,
+                  )
+                : FutureBuilder<Uint8List>(
+                    future: widget.getCachedOrRenderPage(pageNumber),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done &&
+                          snapshot.hasData) {
+                        return Image.memory(
+                          snapshot.data!,
+                          fit: BoxFit.contain,
+                        );
+                      }
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Slide',
+                              style: TextStyle(
+                                color: Colors.grey[isCurrentPage ? 500 : 400],
+                                fontSize: widget.itemWidth > 160 ? 12 : 10,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            SizedBox(height: widget.itemWidth > 160 ? 4 : 2),
+                            Text(
+                              '$pageNumber',
+                              style: TextStyle(
+                                color: isCurrentPage
+                                    ? Colors.blue
+                                    : Colors.grey[widget.itemWidth > 160 ? 800 : 700],
+                                fontSize: widget.itemWidth > 160 ? 32 : 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        );
+      },
     );
   }
 }

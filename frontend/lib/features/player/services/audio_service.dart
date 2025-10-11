@@ -3,16 +3,6 @@ import 'dart:async';
 
 /// 오디오 재생 서비스
 class AudioService {
-  final AudioPlayer _player = AudioPlayer();
-  final StreamController<Duration> _positionController =
-      StreamController<Duration>.broadcast();
-  final StreamController<PlayerState> _stateController =
-      StreamController<PlayerState>.broadcast();
-  String? _currentAssetPath;
-
-  Stream<Duration> get positionStream => _positionController.stream;
-  Stream<PlayerState> get stateStream => _stateController.stream;
-
   AudioService() {
     // AudioContext 설정 (Android에서 중요)
     _player.setAudioContext(
@@ -63,18 +53,18 @@ class AudioService {
   }
 
   /// 일시정지
-  Future<void> pause() async {
-    await _player.pause();
+  Future<void> pause() {
+    return _player.pause();
   }
 
   /// 특정 위치로 이동
-  Future<void> seek(Duration position) async {
-    await _player.seek(position);
+  Future<void> seek(Duration position) {
+    return _player.seek(position);
   }
 
   /// 현재 재생 위치 가져오기
-  Future<Duration?> getCurrentPosition() async {
-    return await _player.getCurrentPosition();
+  Future<Duration?> getCurrentPosition() {
+    return _player.getCurrentPosition();
   }
 
   /// 재생 중인지 확인
@@ -86,4 +76,14 @@ class AudioService {
     _positionController.close();
     _stateController.close();
   }
+
+  final AudioPlayer _player = AudioPlayer();
+  final StreamController<Duration> _positionController =
+      StreamController<Duration>.broadcast();
+  final StreamController<PlayerState> _stateController =
+      StreamController<PlayerState>.broadcast();
+  String? _currentAssetPath;
+
+  Stream<Duration> get positionStream => _positionController.stream;
+  Stream<PlayerState> get stateStream => _stateController.stream;
 }
