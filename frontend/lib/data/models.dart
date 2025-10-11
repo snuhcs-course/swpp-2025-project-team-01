@@ -56,12 +56,13 @@ class Subject {
   final List<String> lectureIds;
 
   Subject copyWith({
+    String? title,
     bool? favorite,
     List<String>? tagIds,
     List<String>? lectureIds,
   }) => Subject(
     id: id,
-    title: title,
+    title: title ?? this.title,
     favorite: favorite ?? this.favorite,
     tagIds: tagIds ?? this.tagIds,
     lectureIds: lectureIds ?? this.lectureIds,
