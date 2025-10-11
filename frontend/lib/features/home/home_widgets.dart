@@ -15,6 +15,35 @@ const _panelShadow = BoxShadow(
   offset: Offset(0, 3),
 );
 
+/// 빈 상태 메시지 위젯
+class EmptyStateMessage extends StatelessWidget {
+  const EmptyStateMessage({
+    super.key,
+    required this.message,
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    if (message.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Center(
+      child: Text(
+        message,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.black54,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
 /// 필터 pill 버튼 위젯
 class FilterPill extends StatelessWidget {
   const FilterPill({
@@ -201,13 +230,16 @@ class SubjectPanel extends StatefulWidget {
 
 class _SubjectPanelState extends State<SubjectPanel>
     with SingleTickerProviderStateMixin {
-  bool expanded = true;
+  late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
 
   @override
   void initState() {
     super.initState();
+    // Repository에서 저장된 상태 로드
+    expanded = Repo.instance.getSubjectExpandedState(widget.subject.id);
+
     final AccessibilityService accessibilityService = AccessibilityService();
     final Duration duration = accessibilityService.getAnimationDuration(
       const Duration(milliseconds: 300),
@@ -218,7 +250,7 @@ class _SubjectPanelState extends State<SubjectPanel>
       parent: _animationController,
       curve: accessibilityService.getAnimationCurve(Curves.easeInOut),
     );
-    _animationController.value = 1.0;
+    _animationController.value = expanded ? 1.0 : 0.0;
   }
 
   @override
@@ -234,6 +266,9 @@ class _SubjectPanelState extends State<SubjectPanel>
     setState(() {
       expanded = !expanded;
     });
+
+    // Repository에 상태 저장
+    Repo.instance.saveSubjectExpandedState(widget.subject.id, expanded);
 
     if (reduceMotion) {
       // 모션 줄이기가 활성화되면 즉시 전환
@@ -254,9 +289,9 @@ class _SubjectPanelState extends State<SubjectPanel>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: expanded ? Colors.white : Colors.transparent,
         borderRadius: BorderRadius.circular(_panelRadius),
-        boxShadow: const [_panelShadow],
+        boxShadow: expanded ? const [_panelShadow] : const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -360,16 +395,11 @@ class _SubjectPanelState extends State<SubjectPanel>
     return List.generate(tags.length, (i) {
       final Tag t = tags[i];
       final Color tagColor = Color(t.color);
-      return ChoiceChip(
+      return Chip(
         label: Text('#${t.name}', style: const TextStyle(color: Colors.black)),
-        selected: false,
-        onSelected: (_) {}, // onSelected를 null이 아닌 빈 함수로
         backgroundColor: tagColor,
-        selectedColor: tagColor,
-        disabledColor: tagColor, // 비활성화 시에도 색상 유지
         elevation: 2,
         side: BorderSide.none,
-        showCheckmark: false,
       );
     });
   }
@@ -471,11 +501,11 @@ class _LectureCardState extends State<LectureCard> {
       onLongPress: () => _showLectureDetailDialog(context),
       child: Ink(
         decoration: BoxDecoration(
-          color: const Color(0xFFF6F7FA),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.transparent,
+          
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0F000000),
+              color: Colors.transparent,
               blurRadius: 6,
               offset: Offset(0, 2),
             ),
@@ -513,6 +543,16 @@ class _LectureCardState extends State<LectureCard> {
   }
 
   Widget _buildThumbnail() {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        color: Colors.white,
+        child: _buildThumbnailContent(),
+      ),
+    );
+  }
+
+  Widget _buildThumbnailContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -527,10 +567,21 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     if (_cachedImage != null) {
+      // PDF의 비율 계산
+      final double pdfAspectRatio = _pdfPage!.width / _pdfPage!.height;
+      const double targetAspectRatio = 16 / 9;
+
+      // 4:3 비율인 경우 (또는 16:9보다 세로로 긴 경우) contain으로 중앙 정렬
+      // 16:9 비율인 경우 cover로 꽉 채우기
+      final BoxFit fit = pdfAspectRatio < targetAspectRatio
+          ? BoxFit.contain // 4:3 등 세로로 긴 경우 - 좌우 여백
+          : BoxFit.cover;   // 16:9 등 가로로 긴 경우 - 꽉 채우기
+
       return Image.memory(
         _cachedImage!.bytes,
-        fit: BoxFit.fitWidth,
+        fit: fit,
         width: double.infinity,
+        height: double.infinity,
       );
     }
 
