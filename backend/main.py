@@ -111,7 +111,7 @@ async def run_pipeline_in_executor(
         audio_path = audio_path,
         pdf_path = pdf_path,
         lecture_name = lecture_name,
-        simple_sentence_splitter = simple_sentence_splitter,
+        sentence_splitter = simple_sentence_splitter,
         save_intermediate = False
     )
     return output
