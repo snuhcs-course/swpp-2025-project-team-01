@@ -34,6 +34,10 @@ backend/venv/
 **/__pycache__/
 *.py[cod]
 
+# AI Inference test data
+inference_models/test_lecture/
+inference_models/pipeline_output/
+
 # Keystore files
 *.jks
 *.keystore

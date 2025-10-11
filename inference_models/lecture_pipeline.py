@@ -6,12 +6,48 @@ Combines ASR, Slide Matching, and TTS to reconstruct lectures from audio and PDF
 import json
 import os
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
+from dataclasses import dataclass, asdict
 
 from asr_processor import ASRProcessor
 from slide_matching_processor import SlideMatchingProcessor
 from tts_processor import TTSProcessor
+
+
+@dataclass
+class PipelineOutput:
+    """
+    Structured output for API responses.
+    Contains paths to generated files and metadata for client delivery.
+    """
+    # Core outputs for client delivery
+    audio_file: str  # Path to Opus audio file
+    timestamps_file: str  # Path to timestamps.json
+
+    # Metadata for client
+    lecture_name: str = ""
+    total_duration: float = 0.0  # seconds
+    total_sentences: int = 0
+    audio_sample_rate: int = 24000
+
+    # Processing info
+    timestamp: str = ""
+    output_directory: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        return asdict(self)
+
+    def get_client_files(self) -> Dict[str, str]:
+        """
+        Get only the files that should be sent to client.
+        Returns dict with format: {file_type: file_path}
+        """
+        return {
+            'audio': self.audio_file,
+            'timestamps': self.timestamps_file
+        }
 
 
 class LecturePipeline:
@@ -34,13 +70,16 @@ class LecturePipeline:
         # Slide matching settings
         matching_model: str = 'nvidia/llama-nemoretriever-colembed-3b-v1',
         matching_batch_size: int = 4,
-        jump_penalty: float = 0.1,
+        jump_penalty: float = 0.2,
         backward_weight: float = 2.0,
-        use_exponential_scaling: bool = False,
-        exponential_scale: float = 3.0,
-        use_confidence_boost: bool = False,
-        confidence_threshold: float = 0.95,
-        confidence_weight: float = 1.5,
+        use_exponential_scaling: bool = True,
+        exponential_scale: float = 2.8,
+        use_confidence_boost: bool = True,
+        confidence_threshold: float = 0.925,
+        confidence_weight: float = 2.25,
+        use_context_similarity: bool = True,
+        context_weight: float = 0.05,
+        context_update_rate: float = 0.25,
 
         # TTS settings
         tts_voice: str = 'af_heart',
@@ -68,6 +107,9 @@ class LecturePipeline:
             use_confidence_boost: Boost scores when confidence is low
             confidence_threshold: Confidence threshold
             confidence_weight: Confidence boost weight
+            use_context_similarity: Enable context-aware scoring via EMA
+            context_weight: weight for context similarity contribution
+            context_update_rate: Update rate for EMA
             tts_voice: TTS voice style
             tts_speed: TTS playback speed
             tts_lang_code: TTS language code
@@ -100,7 +142,10 @@ class LecturePipeline:
             exponential_scale = exponential_scale,
             use_confidence_boost = use_confidence_boost,
             confidence_threshold = confidence_threshold,
-            confidence_weight = confidence_weight
+            confidence_weight = confidence_weight,
+            use_context_similarity = use_context_similarity,
+            context_weight = context_weight,
+            context_update_rate = context_update_rate
         )
 
         self.tts = TTSProcessor(
@@ -118,9 +163,8 @@ class LecturePipeline:
         pdf_path: str,
         lecture_name: Optional[str] = None,
         sentence_splitter: Optional[callable] = None,
-        export_audio_formats: Optional[List[str]] = None,
         save_intermediate: bool = True
-    ) -> Dict[str, any]:
+    ) -> PipelineOutput:
         """
         Run the complete lecture reconstruction pipeline.
 
@@ -129,11 +173,10 @@ class LecturePipeline:
             pdf_path: Path to lecture PDF file
             lecture_name: Optional lecture name for output files
             sentence_splitter: Optional function to split transcript into sentences
-            export_audio_formats: Optional list of audio formats to export ['opus', 'aac']
-            save_intermediate: Save intermediate results
+            save_intermediate: Save intermediate results (WAV, transcript, matching.json)
 
         Returns:
-            Dictionary with all pipeline results
+            PipelineOutput object with paths to Opus audio and timestamps.json
         """
         # Generate lecture name if not provided
         if lecture_name is None:
@@ -224,18 +267,16 @@ class LecturePipeline:
         print("STEP 3/3: TTS - Generating Audio with Slide Alignment")
         print("="*60)
 
-        output_audio_path = os.path.join(lecture_output_dir, "reconstructed.wav")
-        output_json_path = os.path.join(lecture_output_dir, "timestamps.json") if save_intermediate else None
+        # Generate WAV file first (intermediate)
+        output_wav_path = os.path.join(lecture_output_dir, "reconstructed.wav")
+        output_json_path = os.path.join(lecture_output_dir, "timestamps.json")
 
         tts_result = self.tts.generate_from_matching_results(
             matching_results = matching_results,
-            output_audio_path = output_audio_path,
+            output_audio_path = output_wav_path,
             output_json_path = output_json_path,
-            export_formats = export_audio_formats
+            export_formats = ['opus']  # Always export to Opus for client
         )
-
-        results['tts'] = tts_result
-        results['output_audio'] = output_audio_path
 
         print(f"\n✓ TTS Complete: {tts_result['metadata']['total_duration']:.2f}s audio generated")
 
@@ -243,8 +284,11 @@ class LecturePipeline:
         self.tts.unload_model()
 
         # ====================================================================
-        # Save final results
+        # Prepare output paths
         # ====================================================================
+        output_opus_path = os.path.join(lecture_output_dir, "reconstructed.opus")
+
+        # Save intermediate files if requested
         if save_intermediate:
             final_results_path = os.path.join(lecture_output_dir, "pipeline_results.json")
             with open(final_results_path, 'w', encoding = 'utf-8') as f:
@@ -261,19 +305,35 @@ class LecturePipeline:
                     'matching': {
                         'num_matches': results['matching']['num_matches']
                     },
-                    'tts': results['tts'],
-                    'output_audio': results['output_audio']
+                    'tts': tts_result,
+                    'output_audio': output_opus_path
                 }
                 json.dump(json_results, f, ensure_ascii = False, indent = 2)
             print(f"\n✓ Final results saved: {final_results_path}")
+        else:
+            # If not saving intermediate files, remove WAV file
+            if os.path.exists(output_wav_path):
+                os.remove(output_wav_path)
+                print(f"\n✓ Intermediate WAV file removed (kept Opus only)")
 
         print("\n" + "="*60)
         print("PIPELINE COMPLETE!")
         print("="*60)
         print(f"Output directory: {lecture_output_dir}")
-        print(f"Reconstructed audio: {output_audio_path}")
+        print(f"Client audio file: {output_opus_path}")
+        print(f"Client timestamps file: {output_json_path}")
 
-        return results
+        # Return structured output for API
+        return PipelineOutput(
+            audio_file = output_opus_path,
+            timestamps_file = output_json_path,
+            lecture_name = lecture_name,
+            total_duration = tts_result['metadata']['total_duration'],
+            total_sentences = tts_result['metadata']['total_sentences'],
+            audio_sample_rate = tts_result['metadata']['sample_rate'],
+            timestamp = results['timestamp'],
+            output_directory = lecture_output_dir
+        )
 
 
 def simple_sentence_splitter(text: str) -> List[str]:
@@ -303,8 +363,16 @@ if __name__ == "__main__":
         asr_batch_size = 4,
 
         # Matching settings
-        jump_penalty = 0.1,
+        jump_penalty = 0.2,
         backward_weight = 2.0,
+        use_exponential_scaling = True,
+        exponential_scale = 2.8,
+        use_confidence_boost = True,
+        confidence_threshold = 0.925,
+        confidence_weight = 2.25,
+        use_context_similarity = True,
+        context_weight = 0.05,
+        context_update_rate = 0.25,
 
         # TTS settings
         tts_voice = 'af_heart',
@@ -316,16 +384,18 @@ if __name__ == "__main__":
     )
 
     # Run pipeline
-    results = pipeline.run(
-        audio_path = 'lecture_recording.mp3',
-        pdf_path = 'lecture_slides.pdf',
+    output = pipeline.run(
+        audio_path = 'test_lecture/lecture_recording.mp3',
+        pdf_path = 'test_lecture/lecture_slides.pdf',
         lecture_name = 'my_lecture',
         sentence_splitter = simple_sentence_splitter,
-        export_audio_formats = ['opus'],
         save_intermediate = True
     )
 
     print(f"\n✓ Pipeline completed successfully!")
-    print(f"  - Transcript length: {results['asr']['length']} characters")
-    print(f"  - Matched sentences: {results['matching']['num_matches']}")
-    print(f"  - Audio duration: {results['tts']['metadata']['total_duration']:.2f}s")
+    print(f"  - Lecture name: {output.lecture_name}")
+    print(f"  - Total sentences: {output.total_sentences}")
+    print(f"  - Audio duration: {output.total_duration:.2f}s")
+    print(f"\n✓ Client files:")
+    for file_type, file_path in output.get_client_files().items():
+        print(f"  - {file_type}: {file_path}")

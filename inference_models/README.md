@@ -62,10 +62,13 @@ results = pipeline.run(
 ```
 
 **Output files** (in `./output/my_lecture/`):
+- `reconstructed.opus` - Reconstructed audio (compressed, default format)
+- `timestamps.json` - Timing metadata with slide numbers
+
+**Intermediate files** (saved when `save_intermediate=True`):
 - `transcript.txt` - Full transcription
 - `matching.json` - Slide alignment data
-- `reconstructed.wav` - Reconstructed audio
-- `timestamps.json` - Timing metadata with slide numbers
+- `reconstructed.wav` - Uncompressed audio
 - `pipeline_results.json` - Complete pipeline results
 
 ## Usage
@@ -83,13 +86,16 @@ pipeline = LecturePipeline(
     asr_batch_size=4,         # Batch size for ASR processing
 
     # Matching settings
-    jump_penalty=0.1,         # Penalty for slide jumps (default: 0.1)
+    jump_penalty=0.2,         # Penalty for slide jumps (default: 0.2)
     backward_weight=2.0,      # Extra penalty for backward jumps (default: 2.0)
-    use_exponential_scaling=False,  # Apply exponential scaling to scores
-    exponential_scale=3.0,    # Exponential scale factor
-    use_confidence_boost=False,  # Boost scores when confidence is low
-    confidence_threshold=0.95,  # Confidence threshold
-    confidence_weight=1.5,    # Confidence boost weight
+    use_exponential_scaling=True,  # Apply exponential scaling to scores (default: True)
+    exponential_scale=2.8,    # Exponential scale factor (default: 2.8)
+    use_confidence_boost=True,  # Boost scores when confidence is low (default: True)
+    confidence_threshold=0.925,  # Confidence threshold (default: 0.925)
+    confidence_weight=2.25,    # Confidence boost weight (default: 2.25)
+    use_context_similarity=True,  # Enable context-aware scoring via EMA (default: True)
+    context_weight=0.05,      # Weight for context similarity contribution (default: 0.05)
+    context_update_rate=0.25,  # Update rate for EMA (default: 0.25)
 
     # TTS settings
     tts_voice='af_heart',     # Voice style (af_heart, af_bella, af_sarah, am_adam, am_michael)
@@ -107,7 +113,6 @@ results = pipeline.run(
     pdf_path='lecture_slides.pdf',
     lecture_name='my_lecture',
     sentence_splitter=simple_sentence_splitter,  # Split transcript into sentences (or None for full transcript)
-    export_audio_formats=['opus'],  # Additional export formats
     save_intermediate=True                 # Save intermediate results
 )
 ```
@@ -143,7 +148,7 @@ from slide_matching_processor import SlideMatchingProcessor
 matcher = SlideMatchingProcessor(
     device='cuda',
     batch_size=4,          # Batch size for embedding computation (default: 4)
-    jump_penalty=0.1,      # Default: 0.1
+    jump_penalty=0.2,      # Default: 0.2
     backward_weight=2.0    # Default: 2.0
 )
 matcher.load_model()
@@ -246,13 +251,16 @@ The `LecturePipeline` automatically unloads models between stages to prevent VRA
 |-----------|---------|-------------|
 | `matching_model` | `nvidia/llama-nemoretriever-colembed-3b-v1` | Multimodal model name |
 | `matching_batch_size` | `4` | Batch size for embedding computation |
-| `jump_penalty` | `0.1` | Penalty for slide jumps |
+| `jump_penalty` | `0.2` | Penalty for slide jumps |
 | `backward_weight` | `2.0` | Multiplier for backward jump penalty |
-| `use_exponential_scaling` | `False` | Apply exponential scaling to scores |
-| `exponential_scale` | `3.0` | Exponential scale factor |
-| `use_confidence_boost` | `False` | Boost scores when confidence is low |
-| `confidence_threshold` | `0.95` | Threshold for confidence boosting |
-| `confidence_weight` | `1.5` | Weight multiplier for confidence boost |
+| `use_exponential_scaling` | `True` | Apply exponential scaling to scores |
+| `exponential_scale` | `2.8` | Exponential scale factor |
+| `use_confidence_boost` | `True` | Boost scores when confidence is low |
+| `confidence_threshold` | `0.925` | Threshold for confidence boosting |
+| `confidence_weight` | `2.25` | Weight multiplier for confidence boost |
+| `use_context_similarity` | `True` | Enable context-aware scoring via EMA |
+| `context_weight` | `0.05` | Weight for context similarity contribution |
+| `context_update_rate` | `0.25` | Update rate for EMA |
 
 ### TTS Parameters
 
@@ -272,19 +280,18 @@ Plain text transcription of the lecture audio.
 
 ### Matching Results (`.json`)
 ```json
-{
-  "lecture_name": "my_lecture",
-  "total_sentences": 150,
-  "results": [
-    {
-      "sentence_id": 1,
-      "text": "Welcome to the lecture.",
-      "matched_slide": 1,
-      "confidence_score": 0.95
-    },
-    ...
-  ]
-}
+[
+  {
+    "text": "Welcome to the lecture.",
+    "matched_page": 1,
+    "confidence_score": 0.95
+  },
+  {
+    "text": "Today we discuss AI.",
+    "matched_page": 2,
+    "confidence_score": 0.92
+  }
+]
 ```
 
 ### Timestamps File (`.json`)
@@ -348,9 +355,9 @@ pipeline = LecturePipeline(
 ```python
 # Adjust penalties for better temporal coherence
 pipeline = LecturePipeline(
-    jump_penalty=0.2,           # Increase to discourage jumps
-    backward_weight=3.0,        # Increase to heavily penalize backward jumps
-    use_exponential_scaling=True,
-    exponential_scale=3.0       # Amplify score differences
+    jump_penalty=0.3,           # Increase from default 0.2 to discourage jumps
+    backward_weight=3.0,        # Increase from default 2.0 to heavily penalize backward jumps
+    exponential_scale=3.0,      # Increase from default 2.8 to amplify score differences
+    context_weight=0.1          # Increase from default 0.05 for stronger context influence
 )
 ```
