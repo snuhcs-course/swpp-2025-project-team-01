@@ -24,16 +24,16 @@ class SlideMatchingProcessor:
         model_name: str = 'nvidia/llama-nemoretriever-colembed-3b-v1',
         device: str = 'cuda',
         batch_size: int = 4,
-        jump_penalty: float = 0.1,
+        jump_penalty: float = 0.2,
         backward_weight: float = 2.0,
-        use_exponential_scaling: bool = False,
-        exponential_scale: float = 3.0,
-        use_confidence_boost: bool = False,
-        confidence_threshold: float = 0.95,
-        confidence_weight: float = 1.5,
-        use_context_similarity: bool = False,
-        context_weight: float = 0.3,
-        context_update_rate: float = 0.3
+        use_exponential_scaling: bool = True,
+        exponential_scale: float = 2.8,
+        use_confidence_boost: bool = True,
+        confidence_threshold: float = 0.925,
+        confidence_weight: float = 2.25,
+        use_context_similarity: bool = True,
+        context_weight: float = 0.05,
+        context_update_rate: float = 0.25
     ):
         """
         Initialize slide matching processor.
@@ -355,8 +355,16 @@ class SlideMatchingProcessor:
 if __name__ == "__main__":
     # Example usage
     processor = SlideMatchingProcessor(
-        jump_penalty = 0.1,
-        backward_weight = 2.0
+        jump_penalty = 0.2,
+        backward_weight = 2.0,
+        use_exponential_scaling = True,
+        exponential_scale = 2.8,
+        use_confidence_boost = True,
+        confidence_threshold = 0.925,
+        confidence_weight = 2.25,
+        use_context_similarity = True,
+        context_weight = 0.05,
+        context_update_rate = 0.25
     )
 
     # Example: match a transcript to slides
