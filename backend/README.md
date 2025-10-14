@@ -430,6 +430,79 @@ All error responses include a `detail` field with error message.
 
 ---
 
+## Testing the API
+
+### Prerequisites
+
+1. **Start the server**:
+   ```bash
+   cd backend
+   uvicorn main:app --reload
+   ```
+
+2. **Install test script dependencies** (for Python test script):
+   ```bash
+   pip install requests sseclient-py
+   ```
+
+### Method 1: Python Test Script (Recommended)
+
+The easiest way to test all endpoints including SSE streaming:
+
+```bash
+cd backend
+python test_api.py
+```
+
+**Example output:**
+```
+============================================================
+Re:view Backend API Test Suite
+============================================================
+🧪 Testing root endpoint...
+✅ Root endpoint returns redirect to /docs
+
+🧪 Testing /api/synchronize/stream endpoint...
+📁 Audio: lecture_recording.mp3 (2.34 MB)
+📁 PDF: lecture_slides.pdf (156.78 KB)
+
+📤 Uploading files and starting processing...
+
+📊 Progress updates:
+------------------------------------------------------------
+[  5.0%] uploading              | Files uploaded, waiting for processing...
+[ 10.0%] processing_asr         | Processing ASR (chunk 1/2)...
+[ 45.0%] processing_asr         | Processing ASR (chunk 2/2)...
+[ 55.0%] processing_matching    | Matching slides to transcript...
+[ 75.0%] processing_tts         | Generating audio (sentence 45/120)...
+[ 95.0%] creating_output        | Creating download package...
+------------------------------------------------------------
+✅ Processing completed successfully!
+🆔 Job ID: 3f8a2b1c-4d5e-6f7g-8h9i-0j1k2l3m4n5o
+
+🧪 Testing /api/synchronize/status/3f8a2b1c-...
+✅ Status endpoint working:
+   Status: completed
+   Progress: 100.0%
+
+🧪 Testing /api/synchronize/download/3f8a2b1c-...
+✅ Download successful: test_output.zip (1234.56 KB)
+📦 ZIP contents: audio.opus, timestamps.json
+✅ ZIP file structure is correct
+
+============================================================
+Test Summary
+============================================================
+✅ PASS  | Root endpoint
+✅ PASS  | Synchronize stream
+------------------------------------------------------------
+Total: 2/2 tests passed
+
+🎉 All tests passed!
+```
+
+---
+
 ## Common Issues
 
 1. **SSE connection issues**
