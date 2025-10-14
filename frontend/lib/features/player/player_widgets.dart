@@ -429,7 +429,7 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
   }
 
   void _handleScroll() {
-    if (!_scrollController.hasClients) { 
+    if (!_scrollController.hasClients) {
       return;
     }
 
@@ -444,7 +444,8 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
     final itemTotalWidth = widget.itemWidth + 12;
 
     // 보이는 영역의 마지막 페이지 번호 계산
-    final visibleEndPage = ((visibleEnd - widget.padding.left) / itemTotalWidth).ceil();
+    final visibleEndPage = ((visibleEnd - widget.padding.left) / itemTotalWidth)
+        .ceil();
 
     // 스크롤 콜백 호출 (범위 체크)
     if (visibleEndPage > 0 && visibleEndPage <= widget.pageCount) {
@@ -480,10 +481,7 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
               borderRadius: BorderRadius.circular(4),
             ),
             child: cachedImage != null
-                ? Image.memory(
-                    cachedImage,
-                    fit: BoxFit.contain,
-                  )
+                ? Image.memory(cachedImage, fit: BoxFit.contain)
                 : FutureBuilder<Uint8List>(
                     future: widget.getCachedOrRenderPage(pageNumber),
                     builder: (context, snapshot) {
@@ -512,7 +510,9 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
                               style: TextStyle(
                                 color: isCurrentPage
                                     ? Colors.blue
-                                    : Colors.grey[widget.itemWidth > 160 ? 800 : 700],
+                                    : Colors.grey[widget.itemWidth > 160
+                                          ? 800
+                                          : 700],
                                 fontSize: widget.itemWidth > 160 ? 32 : 24,
                                 fontWeight: FontWeight.bold,
                               ),

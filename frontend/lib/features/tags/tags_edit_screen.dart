@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../data/models.dart';
-import '../../data/repository.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/data/models.dart';
+import 'package:re_view/data/repository.dart';
 
 /// 태그 색상 테마
 ///
 /// 태그에 적용할 수 있는 5가지 색상 테마를 제공합니다.
 /// 각 테마는 15개의 색상으로 구성되어 있으며, 태그가 15개를 초과하면 순환 방식으로 색상이 재사용됩니다.
 class TagColorTheme {
+  const TagColorTheme(this.name, this.colors);
+
   /// 테마 이름 (예: '파스텔', '비비드')
   final String name;
 
   /// 테마에 포함된 색상 리스트 (ARGB 형식)
   final List<int> colors;
-
-  const TagColorTheme(this.name, this.colors);
 
   /// 사용 가능한 모든 테마
   static const List<TagColorTheme> themes = [

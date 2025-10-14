@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../core/theme/theme_manager.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/theme/theme_manager.dart';
 
 /// 디스플레이 모드 설정 화면 (Figma 2-4-1. Display Mode)
 ///

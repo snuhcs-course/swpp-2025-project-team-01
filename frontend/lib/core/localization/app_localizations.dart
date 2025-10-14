@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 
 /// 앱의 다국어 지원을 위한 클래스
 class AppLocalizations {
-  final Locale locale;
-
   AppLocalizations(this.locale);
+  final Locale locale;
 
   static AppLocalizations of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;

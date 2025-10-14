@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../data/repository.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/data/repository.dart';
 
 /// 강의 생성/편집 화면
 ///

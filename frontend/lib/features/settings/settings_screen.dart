@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../app_router.dart';
-import '../../core/localization/app_localizations.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 /// 설정 메인 화면 (Figma 2-4. Settings)
 ///

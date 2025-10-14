@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/localization/app_localizations.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 /// TTS(Text-to-Speech) 설정 화면 (Figma 2-4-2. TTS)
 ///

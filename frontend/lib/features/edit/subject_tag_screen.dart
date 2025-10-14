@@ -1,6 +1,6 @@
 // 과목/태그 관리 통합 (간단 리스트 + 삭제 버튼 예시)
 import 'package:flutter/material.dart';
-import '../../data/repository.dart';
+import 'package:re_view/data/repository.dart';
 
 /// 과목/태그 관리 화면
 class SubjectTagScreen extends StatelessWidget {
