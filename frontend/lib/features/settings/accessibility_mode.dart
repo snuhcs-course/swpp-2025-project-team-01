@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/accessibility_service.dart';
-import '../../core/localization/app_localizations.dart';
+import 'package:re_view/core/accessibility_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 /// 접근성 설정 화면 (Figma 2-4-3. Accessibility)
 ///

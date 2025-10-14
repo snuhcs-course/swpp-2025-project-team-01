@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../data/models.dart';
-import '../../data/repository.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/data/models.dart';
+import 'package:re_view/data/repository.dart';
 
 /// 과목 편집 화면 (Figma 2-2. Modifying Subjects)
 ///

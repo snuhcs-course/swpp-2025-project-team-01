@@ -3,10 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// 접근성 설정을 관리하는 전역 서비스
 class AccessibilityService extends ChangeNotifier {
-  static final AccessibilityService _instance =
-      AccessibilityService._internal();
   factory AccessibilityService() => _instance;
   AccessibilityService._internal();
+  static final AccessibilityService _instance =
+      AccessibilityService._internal();
 
   bool _highContrast = false;
   bool _reduceMotion = false;
@@ -20,7 +20,9 @@ class AccessibilityService extends ChangeNotifier {
 
   /// 앱 시작 시 설정 로드
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      return;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     _highContrast = prefs.getBool('accessibility_high_contrast') ?? false;
@@ -33,7 +35,9 @@ class AccessibilityService extends ChangeNotifier {
 
   /// 고대비 설정 변경
   Future<void> setHighContrast(bool value) async {
-    if (_highContrast == value) return;
+    if (_highContrast == value) {
+      return;
+    }
 
     _highContrast = value;
     final prefs = await SharedPreferences.getInstance();
@@ -43,7 +47,9 @@ class AccessibilityService extends ChangeNotifier {
 
   /// 모션 줄이기 설정 변경
   Future<void> setReduceMotion(bool value) async {
-    if (_reduceMotion == value) return;
+    if (_reduceMotion == value) {
+      return;
+    }
 
     _reduceMotion = value;
     final prefs = await SharedPreferences.getInstance();
@@ -53,7 +59,9 @@ class AccessibilityService extends ChangeNotifier {
 
   /// 자막 강조 설정 변경
   Future<void> setEmphasizeCaptions(bool value) async {
-    if (_emphasizeCaptions == value) return;
+    if (_emphasizeCaptions == value) {
+      return;
+    }
 
     _emphasizeCaptions = value;
     final prefs = await SharedPreferences.getInstance();

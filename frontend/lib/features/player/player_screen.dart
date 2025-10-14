@@ -129,7 +129,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       );
 
       try {
-        final transcriptJsonData = json.decode(transcriptJson) as Map<String, dynamic>;
+        final transcriptJsonData =
+            json.decode(transcriptJson) as Map<String, dynamic>;
         _transcriptData = TranscriptData.fromJson(transcriptJsonData);
       } catch (e) {
         throw FormatException('Invalid metadata format');
@@ -204,7 +205,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
             // 다음 청크 미리 로딩
             final totalPages = _lectureMetadata?.slides ?? 0;
-            _pdfCacheService.preloadPageImagesIfNeeded(sentence.slideNumber, totalPages);
+            _pdfCacheService.preloadPageImagesIfNeeded(
+              sentence.slideNumber,
+              totalPages,
+            );
           }
 
           // 사용자가 스크롤 중이 아니고, 영상이 재생 중일 때만 자동으로 스크롤
@@ -267,9 +271,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
       if (mounted) {
         setState(() {
-          _pdfController = PdfController(
-            document: Future.value(_pdfDocument!),
-          );
+          _pdfController = PdfController(document: Future.value(_pdfDocument!));
         });
       }
 
@@ -290,8 +292,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     // 다음 청크도 미리 로딩 (스무스한 스크롤을 위해)
     if (visibleEndPage < totalPages) {
-      final nextChunkStart = _pdfCacheService.getChunkStartPage(visibleEndPage + 1);
-      if (nextChunkStart != _pdfCacheService.getChunkStartPage(visibleEndPage)) {
+      final nextChunkStart = _pdfCacheService.getChunkStartPage(
+        visibleEndPage + 1,
+      );
+      if (nextChunkStart !=
+          _pdfCacheService.getChunkStartPage(visibleEndPage)) {
         _pdfCacheService.preloadPageImagesIfNeeded(nextChunkStart, totalPages);
       }
     }
@@ -317,7 +322,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
       preferPosition: AutoScrollPosition.middle,
       duration: const Duration(milliseconds: 150),
     );
-
   }
 
   void _seekToSentence(int index) {
@@ -341,22 +345,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
       if (sentence.slideNumber == slideNumber) {
         // 오디오를 해당 시간으로 이동
         _audioService
-            .seek(
-              Duration(milliseconds: (sentence.startTime * 1000).toInt()),
-            )
+            .seek(Duration(milliseconds: (sentence.startTime * 1000).toInt()))
             .then((_) {
-          if (!mounted) {
-            return;
-          }
-          _scrollTimer?.cancel();
+              if (!mounted) {
+                return;
+              }
+              _scrollTimer?.cancel();
 
-          // 사용자 스크롤 상태 해제하여 자동 스크롤 활성화
-          setState(() {
-            _isAutoScrolling = true;
-            _currentSentenceIndex = i; // 현재 문장 인덱스 업데이트
-          });
-          _scrollToCurrentSentence();
-        });
+              // 사용자 스크롤 상태 해제하여 자동 스크롤 활성화
+              setState(() {
+                _isAutoScrolling = true;
+                _currentSentenceIndex = i; // 현재 문장 인덱스 업데이트
+              });
+              _scrollToCurrentSentence();
+            });
 
         return;
       }

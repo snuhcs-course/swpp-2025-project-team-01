@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/language_service.dart';
+import 'package:re_view/core/language_service.dart';
 
 /// 언어 설정 화면 (Figma 2-4-4. Language)
 ///

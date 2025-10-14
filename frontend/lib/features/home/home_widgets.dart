@@ -17,10 +17,7 @@ const _panelShadow = BoxShadow(
 
 /// 빈 상태 메시지 위젯
 class EmptyStateMessage extends StatelessWidget {
-  const EmptyStateMessage({
-    super.key,
-    required this.message,
-  });
+  const EmptyStateMessage({super.key, required this.message});
 
   final String message;
 
@@ -502,7 +499,7 @@ class _LectureCardState extends State<LectureCard> {
       child: Ink(
         decoration: BoxDecoration(
           color: Colors.transparent,
-          
+
           boxShadow: const [
             BoxShadow(
               color: Colors.transparent,
@@ -545,10 +542,7 @@ class _LectureCardState extends State<LectureCard> {
   Widget _buildThumbnail() {
     return AspectRatio(
       aspectRatio: 16 / 9,
-      child: Container(
-        color: Colors.white,
-        child: _buildThumbnailContent(),
-      ),
+      child: Container(color: Colors.white, child: _buildThumbnailContent()),
     );
   }
 
@@ -574,8 +568,9 @@ class _LectureCardState extends State<LectureCard> {
       // 4:3 비율인 경우 (또는 16:9보다 세로로 긴 경우) contain으로 중앙 정렬
       // 16:9 비율인 경우 cover로 꽉 채우기
       final BoxFit fit = pdfAspectRatio < targetAspectRatio
-          ? BoxFit.contain // 4:3 등 세로로 긴 경우 - 좌우 여백
-          : BoxFit.cover;   // 16:9 등 가로로 긴 경우 - 꽉 채우기
+          ? BoxFit
+                .contain // 4:3 등 세로로 긴 경우 - 좌우 여백
+          : BoxFit.cover; // 16:9 등 가로로 긴 경우 - 꽉 채우기
 
       return Image.memory(
         _cachedImage!.bytes,

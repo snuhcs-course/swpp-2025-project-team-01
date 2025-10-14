@@ -60,13 +60,15 @@ class PdfCacheService {
       _pageImageFutures[pageNumber] = future;
 
       // Future가 완료되면 캐시에 저장
-      future.then((imageBytes) {
-        _pageImageCache[pageNumber] = imageBytes;
-        _pageImageFutures.remove(pageNumber);
-      }).catchError((error) {
-        print('Error loading page $pageNumber: $error');
-        _pageImageFutures.remove(pageNumber);
-      });
+      future
+          .then((imageBytes) {
+            _pageImageCache[pageNumber] = imageBytes;
+            _pageImageFutures.remove(pageNumber);
+          })
+          .catchError((error) {
+            print('Error loading page $pageNumber: $error');
+            _pageImageFutures.remove(pageNumber);
+          });
     }
   }
 
@@ -103,13 +105,15 @@ class PdfCacheService {
     final future = _renderPdfPage(pageNumber);
     _pageImageFutures[pageNumber] = future;
 
-    future.then((imageBytes) {
-      _pageImageCache[pageNumber] = imageBytes;
-      _pageImageFutures.remove(pageNumber);
-    }).catchError((error) {
-      print('Error loading page $pageNumber: $error');
-      _pageImageFutures.remove(pageNumber);
-    });
+    future
+        .then((imageBytes) {
+          _pageImageCache[pageNumber] = imageBytes;
+          _pageImageFutures.remove(pageNumber);
+        })
+        .catchError((error) {
+          print('Error loading page $pageNumber: $error');
+          _pageImageFutures.remove(pageNumber);
+        });
 
     return future;
   }

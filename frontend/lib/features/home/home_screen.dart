@@ -255,8 +255,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   message: favoritesOnly
                       ? '즐겨찾기된 과목이 없습니다.'
                       : selectedTagIds.isNotEmpty
-                          ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
-                          : '',
+                      ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
+                      : '',
                 ),
               ),
             )
@@ -275,7 +275,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     .whereType<Tag>()
                     .toList();
                 // 태그 정렬: 숫자 > 한글 > 영어
-                subjectTags.sort((a, b) => _repo.compareTagNames(a.name, b.name));
+                subjectTags.sort(
+                  (a, b) => _repo.compareTagNames(a.name, b.name),
+                );
                 final List<Lecture> lectures = _repo.lecturesBySubject(s.id);
                 return Padding(
                   padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
