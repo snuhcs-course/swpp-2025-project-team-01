@@ -1,29 +1,63 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import StreamingResponse, RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.background import BackgroundTask
+from sse_starlette.sse import EventSourceResponse
 import sys
 from pathlib import Path
 import shutil
 import io
 import zipfile
-from datetime import datetime
+from datetime import datetime, timedelta
 import asyncio
 import aiofiles
 from contextlib import asynccontextmanager
+from typing import Callable
+from enum import Enum
+import uuid
 
 # Add inference_models directory to path
 sys.path.append(str(Path(__file__).parent.parent / "inference_models"))
 from lecture_pipeline import LecturePipeline, PipelineOutput, simple_sentence_splitter
 
-# Global variable
+# Job Status Enum
+class JobStatus(str, Enum):
+    PENDING = "pending"
+    UPLOADING = "uploading"
+    PROCESSING_ASR = "processing_asr"
+    PROCESSING_MATCHING = "processing_matching"
+    PROCESSING_TTS = "processing_tts"
+    CREATING_OUTPUT = "creating_output"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+# Job Information
+class JobInfo:
+    def __init__(self, job_id: str):
+        self.job_id = job_id
+        self.status = JobStatus.PENDING
+        self.progress = 0.0  # 0.0 to 100.0
+        self.message = ""
+        self.error: str | None = None
+        self.output_path: Path | None = None
+        self.created_at = datetime.now()
+        self.completed_at: datetime | None = None
+        self.downloaded = False  # Track if file has been downloaded by client
+
+# Global variables
 pipeline: LecturePipeline | None = None
 ml_inference_semaphore: asyncio.Semaphore | None = None
+jobs: dict[str, JobInfo] = {}  # job_id -> JobInfo
+job_cleanup_task: asyncio.Task | None = None
+
 UPLOAD_DIR = Path('./uploads')
 OUTPUT_DIR = Path('./pipeline_output')
+JOB_RETENTION_MINUTES = 30  # Keep completed jobs for 30 minutes if not downloaded
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan - initialize and cleanup resources."""
-    global ml_inference_semaphore, pipeline
+    global ml_inference_semaphore, pipeline, job_cleanup_task
 
     UPLOAD_DIR.mkdir(exist_ok = True)
     OUTPUT_DIR.mkdir(exist_ok = True)
@@ -37,8 +71,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f'⚠️  Warning: Failed to pre-load pipeline: {e}')
         print('   Pipeline will be loaded lazily on first request')
-    
+
+    # Start background cleanup task
+    job_cleanup_task = asyncio.create_task(cleanup_old_jobs())
+    print('🧹 Started job cleanup task')
+
     yield
+
+    # Cancel cleanup task
+    if job_cleanup_task:
+        job_cleanup_task.cancel()
+        try:
+            await job_cleanup_task
+        except asyncio.CancelledError:
+            pass
 
     if pipeline is not None:
         print("🧹 Cleaning up ML pipeline...")
@@ -54,6 +100,15 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title = 'Re:view Lecture API',
     lifespan = lifespan
+)
+
+# CORS middleware configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["*"],  # Configure this for production
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"],
 )
 
 def get_pipeline() -> LecturePipeline:
@@ -98,50 +153,195 @@ def get_pipeline() -> LecturePipeline:
 async def run_pipeline_in_executor(
     audio_path: str,
     pdf_path: str,
-    lecture_name: str
+    lecture_name: str,
+    progress_callback: Callable[[JobStatus, float, str], None] | None = None
 ) -> PipelineOutput:
     """
     Run ML pipeline in a thread pool to avoid blocking event loop.
     This is necessary because the pipeline operations are CPU/GPU intensive.
+
+    Args:
+        audio_path: Path to audio file
+        pdf_path: Path to PDF file
+        lecture_name: Name for this lecture
+        progress_callback: Optional callback to report progress (status, progress, message)
     """
     pipeline_instance = get_pipeline()
 
+    # Wrapper to convert pipeline progress to job progress
+    def pipeline_progress_wrapper(stage: str, progress: float, message: str):
+        if progress_callback:
+            # Convert stage string to JobStatus
+            status_map = {
+                "processing_asr": JobStatus.PROCESSING_ASR,
+                "processing_matching": JobStatus.PROCESSING_MATCHING,
+                "processing_tts": JobStatus.PROCESSING_TTS
+            }
+            status = status_map.get(stage, JobStatus.PROCESSING_ASR)
+            progress_callback(status, progress, message)
+
+    # Run the pipeline with progress callback
     output = await asyncio.to_thread(
         pipeline_instance.run,
         audio_path = audio_path,
         pdf_path = pdf_path,
         lecture_name = lecture_name,
         sentence_splitter = simple_sentence_splitter,
-        save_intermediate = False
+        save_intermediate = False,
+        progress_callback = pipeline_progress_wrapper
     )
+
     return output
 
-@app.post('/api/synchronize')
-async def synchronize(
+async def cleanup_old_jobs():
+    """Background task to clean up old completed jobs (non-downloaded files after 30 minutes)."""
+    global jobs
+    while True:
+        try:
+            await asyncio.sleep(60)  # Check every 1 minute
+            current_time = datetime.now()
+            jobs_to_remove = []
+
+            for job_id, job_info in jobs.items():
+                if job_info.status in [JobStatus.COMPLETED, JobStatus.FAILED]:
+                    if job_info.completed_at:
+                        age = current_time - job_info.completed_at
+                        # Clean up if not downloaded after retention period
+                        if not job_info.downloaded and age > timedelta(minutes=JOB_RETENTION_MINUTES):
+                            jobs_to_remove.append(job_id)
+                            # Clean up output file
+                            if job_info.output_path and job_info.output_path.exists():
+                                await asyncio.to_thread(job_info.output_path.unlink)
+                                print(f"🧹 Deleted non-downloaded file: {job_id} (age: {age.total_seconds()/60:.1f} min)")
+
+            for job_id in jobs_to_remove:
+                del jobs[job_id]
+                print(f"🧹 Cleaned up old job: {job_id}")
+        except Exception as e:
+            print(f"⚠️  Error in cleanup task: {e}")
+
+async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str):
+    """Background task to process a lecture synchronization job."""
+    global jobs
+    job_info = jobs[job_id]
+
+    try:
+        # Update job status
+        job_info.status = JobStatus.UPLOADING
+        job_info.progress = 5.0
+        job_info.message = "Files uploaded, waiting for processing..."
+
+        # Define progress callback
+        def update_progress(status: JobStatus, progress: float, message: str):
+            job_info.status = status
+            job_info.progress = progress
+            job_info.message = message
+
+        # Wait for semaphore and run pipeline
+        async with ml_inference_semaphore:
+            job_info.message = "Starting pipeline..."
+            output: PipelineOutput = await run_pipeline_in_executor(
+                audio_path = str(audio_path),
+                pdf_path = str(pdf_path),
+                lecture_name = lecture_name,
+                progress_callback = update_progress
+            )
+
+        # Verify output files exist
+        audio_file_path = Path(output.audio_file)
+        timestamps_file_path = Path(output.timestamps_file)
+
+        if not audio_file_path.exists():
+            raise Exception('Audio file generation failed')
+        if not timestamps_file_path.exists():
+            raise Exception('Timestamps file generation failed')
+
+        # Create ZIP file
+        job_info.status = JobStatus.CREATING_OUTPUT
+        job_info.progress = 95.0
+        job_info.message = "Creating download package..."
+
+        zip_path = OUTPUT_DIR / f"{job_id}.zip"
+        await asyncio.to_thread(
+            create_zip_file_to_disk,
+            str(audio_file_path),
+            str(timestamps_file_path),
+            str(zip_path)
+        )
+
+        # Clean up intermediate output directory
+        output_dir = Path(output.output_directory)
+        if output_dir.exists():
+            await asyncio.to_thread(shutil.rmtree, output_dir)
+
+        # Mark as completed
+        job_info.status = JobStatus.COMPLETED
+        job_info.progress = 100.0
+        job_info.message = "Processing completed successfully!"
+        job_info.output_path = zip_path
+        job_info.completed_at = datetime.now()
+
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"❌ Job {job_id} failed with error:")
+        print(error_details)
+
+        job_info.status = JobStatus.FAILED
+        job_info.error = str(e)
+        job_info.message = f"Processing failed: {str(e)}"
+        job_info.completed_at = datetime.now()
+
+        # Clean up on error
+        try:
+            output_dir = OUTPUT_DIR / lecture_name
+            if output_dir.exists():
+                await asyncio.to_thread(shutil.rmtree, output_dir)
+                print(f"🧹 Cleaned up output directory for failed job: {job_id}")
+        except Exception as cleanup_error:
+            print(f"⚠️  Error during output directory cleanup: {cleanup_error}")
+
+    finally:
+        # Clean up uploaded files
+        try:
+            if audio_path.exists():
+                await asyncio.to_thread(audio_path.unlink)
+                print(f"🧹 Cleaned up uploaded audio file: {job_id}")
+        except Exception as e:
+            print(f"⚠️  Error deleting audio file: {e}")
+
+        try:
+            if pdf_path.exists():
+                await asyncio.to_thread(pdf_path.unlink)
+                print(f"🧹 Cleaned up uploaded PDF file: {job_id}")
+        except Exception as e:
+            print(f"⚠️  Error deleting PDF file: {e}")
+
+@app.post('/api/synchronize/stream')
+async def synchronize_stream(
     audio: UploadFile = File(..., description = 'Lecture audio file (mp3, wav, etc.)'),
     lecture_note: UploadFile = File(..., description = 'Lecture slides PDF')
 ):
     """
-    Synchronize lecture audio with slides.
+    Synchronize lecture audio with slides with real-time progress updates via SSE.
 
-    Returns a ZIP file containing:
-    - audio.opus: Reconstructed audio file
-    - timestamps.json: Timestamps with slide alignment
+    This endpoint returns Server-Sent Events (SSE) with progress updates.
+    Once completed, use the job_id to download the result via /api/synchronize/download/{job_id}
 
     Args:
         audio: Lecture audio file
         lecture_note: Lecture slides PDF file
 
     Returns:
-        ZIP file with audio.opus and timestamps.json
+        SSE stream with progress updates and final job_id
 
-    Note:
-        Due to GPU resource constraints, only one inference can run at a time.
-        Concurrent requests will be queued automatically.
+    SSE Event Format:
+        - data: JSON object with {status, progress, message, job_id}
+        - Final event includes job_id for downloading results
     """
-
-    # Generate unique lecture name based on timestamp
-    lecture_name = f"lecture_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    # Generate unique job ID and lecture name
+    job_id = str(uuid.uuid4())
+    lecture_name = f"lecture_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{job_id[:8]}"
 
     # Preserve original file extensions
     audio_ext = Path(audio.filename).suffix or '.mp3'
@@ -150,7 +350,12 @@ async def synchronize(
     audio_path = UPLOAD_DIR / f'{lecture_name}_audio{audio_ext}'
     pdf_path = UPLOAD_DIR / f'{lecture_name}_pdf{pdf_ext}'
 
+    # Create job info
+    job_info = JobInfo(job_id)
+    jobs[job_id] = job_info
+
     try:
+        # Save uploaded files
         async with aiofiles.open(audio_path, 'wb') as f:
             content = await audio.read()
             await f.write(content)
@@ -159,60 +364,185 @@ async def synchronize(
             content = await lecture_note.read()
             await f.write(content)
 
-        async with ml_inference_semaphore:
-            output: PipelineOutput = await run_pipeline_in_executor(
-                audio_path = str(audio_path),
-                pdf_path = str(pdf_path),
-                lecture_name = lecture_name
-            )
+        # Start background processing
+        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name))
 
-        # Verify output files exist before creating ZIP
-        audio_file_path = Path(output.audio_file)
-        timestamps_file_path = Path(output.timestamps_file)
+        # SSE generator with disconnect detection
+        async def event_generator():
+            import json
+            try:
+                while True:
+                    job = jobs.get(job_id)
+                    if not job:
+                        yield {
+                            "event": "error",
+                            "data": json.dumps({"error": "Job not found"})
+                        }
+                        break
 
-        if not audio_file_path.exists():
-            raise HTTPException(status_code = 500, detail = 'Audio file generation failed')
-        if not timestamps_file_path.exists():
-            raise HTTPException(status_code = 500, detail = 'Timestamps file generation failed')
+                    # Send current status
+                    yield {
+                        "event": "progress",
+                        "data": json.dumps({
+                            "job_id": job_id,
+                            "status": job.status,
+                            "progress": job.progress,
+                            "message": job.message
+                        })
+                    }
 
-        zip_buffer = await asyncio.to_thread(
-            create_zip_file,
-            str(audio_file_path),
-            str(timestamps_file_path)
-        )
+                    # Check if done
+                    if job.status == JobStatus.COMPLETED:
+                        yield {
+                            "event": "complete",
+                            "data": json.dumps({
+                                "job_id": job_id,
+                                "status": job.status,
+                                "progress": job.progress,
+                                "message": job.message
+                            })
+                        }
+                        break
+                    elif job.status == JobStatus.FAILED:
+                        yield {
+                            "event": "error",
+                            "data": json.dumps({
+                                "job_id": job_id,
+                                "status": job.status,
+                                "error": job.error,
+                                "message": job.message
+                            })
+                        }
+                        break
 
-        output_dir = Path(output.output_directory)
-        if output_dir.exists():
-            await asyncio.to_thread(shutil.rmtree, output_dir)
-        
-        return StreamingResponse(
-            zip_buffer,
-            media_type = 'application/zip',
-            headers = {
-                'Content-Disposition': f'attachment; filename=lecture_output.zip'
-            }
-        )
+                    # Wait before next update
+                    await asyncio.sleep(0.5)
+
+            except asyncio.CancelledError:
+                # Client disconnected
+                print(f"🔌 SSE client disconnected for job: {job_id}")
+                raise
+            except Exception as e:
+                print(f"⚠️  SSE error for job {job_id}: {e}")
+                raise
+
+        return EventSourceResponse(event_generator())
+
     except Exception as e:
         # Clean up on error
-        output_dir = OUTPUT_DIR / lecture_name
-        if output_dir.exists():
-            await asyncio.to_thread(shutil.rmtree, output_dir)
-        raise HTTPException(status_code = 500, detail = f'Synchronization failed: {str(e)}')
-    
-    finally:
+        if job_id in jobs:
+            del jobs[job_id]
         if audio_path.exists():
             await asyncio.to_thread(audio_path.unlink)
         if pdf_path.exists():
             await asyncio.to_thread(pdf_path.unlink)
+        raise HTTPException(status_code = 500, detail = f'Failed to start synchronization: {str(e)}')
 
 def create_zip_file(audio_file: str, timestamp_file: str) -> io.BytesIO:
-    """Create ZIP file with audio and timestamps. Run in executor."""
+    """Create ZIP file with audio and timestamps in memory. Run in executor."""
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.write(audio_file, arcname = 'audio.opus')
         zip_file.write(timestamp_file, arcname = 'timestamps.json')
     zip_buffer.seek(0)
     return zip_buffer
+
+def create_zip_file_to_disk(audio_file: str, timestamp_file: str, output_path: str) -> None:
+    """Create ZIP file with audio and timestamps to disk. Run in executor."""
+    with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.write(audio_file, arcname = 'audio.opus')
+        zip_file.write(timestamp_file, arcname = 'timestamps.json')
+
+@app.get('/api/synchronize/status/{job_id}')
+async def get_job_status(job_id: str):
+    """
+    Get the current status of a synchronization job.
+
+    Args:
+        job_id: The unique job identifier
+
+    Returns:
+        JSON object with job status information
+    """
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code = 404, detail = 'Job not found')
+
+    return {
+        "job_id": job_id,
+        "status": job.status,
+        "progress": job.progress,
+        "message": job.message,
+        "error": job.error,
+        "created_at": job.created_at.isoformat(),
+        "completed_at": job.completed_at.isoformat() if job.completed_at else None
+    }
+
+@app.get('/api/synchronize/download/{job_id}')
+async def download_result(job_id: str):
+    """
+    Download the result ZIP file for a completed synchronization job.
+
+    Args:
+        job_id: The unique job identifier
+
+    Returns:
+        ZIP file containing audio.opus and timestamps.json
+
+    Raises:
+        404: Job not found
+        400: Job not completed yet or failed
+        500: Output file not found
+    """
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code = 404, detail = 'Job not found')
+
+    if job.status == JobStatus.FAILED:
+        raise HTTPException(
+            status_code = 400,
+            detail = f'Job failed: {job.error}'
+        )
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(
+            status_code = 400,
+            detail = f'Job not completed yet. Current status: {job.status}'
+        )
+
+    if not job.output_path or not job.output_path.exists():
+        raise HTTPException(
+            status_code = 500,
+            detail = 'Output file not found'
+        )
+
+    # Mark as downloaded
+    job.downloaded = True
+    output_path = job.output_path
+
+    # Cleanup function to run after file is sent
+    def cleanup_after_send():
+        """Cleanup function that runs after FileResponse completes sending the file."""
+        try:
+            if output_path and output_path.exists():
+                output_path.unlink()
+                print(f"🧹 Deleted downloaded file: {job_id}")
+        except Exception as e:
+            print(f"⚠️  Error deleting file {job_id}: {e}")
+
+        try:
+            if job_id in jobs:
+                del jobs[job_id]
+                print(f"🧹 Removed job after download: {job_id}")
+        except Exception as e:
+            print(f"⚠️  Error removing job {job_id}: {e}")
+
+    return FileResponse(
+        path = str(output_path),
+        media_type = 'application/zip',
+        filename = 'lecture_output.zip',
+        background = BackgroundTask(cleanup_after_send)  # Cleanup after file is fully sent
+    )
 
 @app.get('/')
 async def root():
