@@ -9,7 +9,7 @@ import librosa
 import soundfile as sf
 import os
 import gc
-from typing import Optional, List, Dict
+from typing import Any, Callable
 from pathlib import Path
 
 
@@ -65,8 +65,9 @@ class ASRProcessor:
         input_file: str,
         chunk_seconds: int = 300,
         batch_size: int = 3,
-        temp_dir: str = "temp_chunks"
-    ) -> Optional[str]:
+        temp_dir: str = "temp_chunks",
+        progress_callback: Callable[[float, str], None] | None = None
+    ) -> str | None:
         """
         Split audio file and transcribe in batches.
 
@@ -75,17 +76,24 @@ class ASRProcessor:
             chunk_seconds: Chunk duration in seconds
             batch_size: Batch size for processing
             temp_dir: Temporary directory for chunks
+            progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
             Full transcript or None if no splitting needed
         """
         print(f"Loading audio file: {input_file}")
 
+        if progress_callback:
+            progress_callback(5.0, "Loading audio file...")
+
         # Load audio file as mono
         audio, sr = librosa.load(input_file, sr = None, mono = True)
         total_duration = len(audio) / sr
 
         print(f"Total duration: {total_duration:.1f}s ({total_duration/60:.1f}min)")
+
+        if progress_callback:
+            progress_callback(10.0, f"Audio loaded: {total_duration/60:.1f} minutes")
 
         # If file is short enough, don't split
         if total_duration <= chunk_seconds:
@@ -125,6 +133,9 @@ class ASRProcessor:
         # Batch processing
         print("Starting batch processing...")
 
+        if progress_callback:
+            progress_callback(20.0, f"Transcribing {len(chunk_files)} chunks...")
+
         # Clear GPU memory
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -139,12 +150,20 @@ class ASRProcessor:
                     batch_size = batch_size
                 )
 
+            if progress_callback:
+                progress_callback(70.0, "Processing transcription results...")
+
             # Extract transcripts
             transcripts = []
             for idx, output in enumerate(outputs, 1):
                 transcript = output.text if hasattr(output, 'text') else str(output)
                 transcripts.append(transcript)
                 print(f"Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
+
+                # Report progress per chunk
+                if progress_callback:
+                    chunk_progress = 70.0 + (idx / len(chunk_files)) * 20.0
+                    progress_callback(chunk_progress, f"Processed chunk {idx}/{len(chunk_files)}")
 
             # Show GPU memory usage
             if torch.cuda.is_available():
@@ -161,7 +180,8 @@ class ASRProcessor:
                 torch.cuda.synchronize()
             gc.collect()
 
-            return ""
+            # Re-raise with context
+            raise RuntimeError(f"ASR batch processing failed: {str(e)}") from e
 
         # Clean up temp files
         print("\nCleaning up temporary files...")
@@ -185,8 +205,9 @@ class ASRProcessor:
         audio_path: str,
         chunk_seconds: int = 300,
         batch_size: int = 4,
-        output_path: Optional[str] = None
-    ) -> Dict[str, any]:
+        output_path: str | None = None,
+        progress_callback: Callable[[float, str], None] | None = None
+    ) -> dict[str, Any]:
         """
         Transcribe audio file with automatic chunking.
 
@@ -195,6 +216,8 @@ class ASRProcessor:
             chunk_seconds: Chunk duration for long files
             batch_size: Batch size for processing (adjust based on VRAM)
             output_path: Optional path to save transcript
+            progress_callback: Optional callback function(progress: float, message: str)
+                             progress is 0-100 representing percentage completion
 
         Returns:
             Dictionary with transcript and metadata
@@ -206,22 +229,36 @@ class ASRProcessor:
         print("ASR Transcription")
         print("="*60)
 
+        if progress_callback:
+            progress_callback(0.0, "Loading audio file...")
+
         # Try auto-split transcription
         split_result = self._auto_split_transcribe(
             audio_path,
             chunk_seconds = chunk_seconds,
-            batch_size = batch_size
+            batch_size = batch_size,
+            progress_callback = progress_callback
         )
 
         if split_result is None:
-            # Process original file directly
+            # Process original file directly (short audio)
             print("Processing original file directly:")
+
+            if progress_callback:
+                progress_callback(50.0, "Transcribing audio...")
+
             with torch.no_grad():
                 output = self.model.transcribe([audio_path])
             transcript = output[0].text
+
+            if progress_callback:
+                progress_callback(95.0, "Transcription complete")
         else:
-            # Use split result
+            # Use split result (already reported progress in _auto_split_transcribe)
             transcript = split_result
+
+        if progress_callback:
+            progress_callback(100.0, "Finalizing transcription...")
 
         print()
         print("="*60)
