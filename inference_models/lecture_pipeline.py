@@ -6,7 +6,7 @@ Combines ASR, Slide Matching, and TTS to reconstruct lectures from audio and PDF
 import json
 import os
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Callable, Any
 from datetime import datetime
 from dataclasses import dataclass, asdict
 
@@ -35,11 +35,11 @@ class PipelineOutput:
     timestamp: str = ""
     output_directory: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
-    def get_client_files(self) -> Dict[str, str]:
+    def get_client_files(self) -> dict[str, str]:
         """
         Get only the files that should be sent to client.
         Returns dict with format: {file_type: file_path}
@@ -161,9 +161,10 @@ class LecturePipeline:
         self,
         audio_path: str,
         pdf_path: str,
-        lecture_name: Optional[str] = None,
-        sentence_splitter: Optional[callable] = None,
-        save_intermediate: bool = True
+        lecture_name: str | None = None,
+        sentence_splitter: Callable[[str], list[str]] | None = None,
+        save_intermediate: bool = True,
+        progress_callback: Callable[[str, float, str], None] | None = None
     ) -> PipelineOutput:
         """
         Run the complete lecture reconstruction pipeline.
@@ -174,6 +175,9 @@ class LecturePipeline:
             lecture_name: Optional lecture name for output files
             sentence_splitter: Optional function to split transcript into sentences
             save_intermediate: Save intermediate results (WAV, transcript, matching.json)
+            progress_callback: Optional callback function(stage: str, progress: float, message: str)
+                             stage is one of: "processing_asr", "processing_matching", "processing_tts"
+                             progress is 0-100 representing percentage completion within that stage
 
         Returns:
             PipelineOutput object with paths to Opus audio and timestamps.json
@@ -204,19 +208,33 @@ class LecturePipeline:
         print("STEP 1/3: ASR - Transcribing Audio")
         print("="*60)
 
+        if progress_callback:
+            progress_callback("processing_asr", 10.0, "Starting ASR processing...")
+
         transcript_path = os.path.join(lecture_output_dir, "transcript.txt") if save_intermediate else None
+
+        # Create a wrapper callback for ASR progress
+        def asr_progress_callback(progress: float, message: str):
+            if progress_callback:
+                # Map ASR progress (0-100) to pipeline progress (10-40)
+                pipeline_progress = 10.0 + (progress * 0.3)
+                progress_callback("processing_asr", pipeline_progress, f"ASR: {message}")
 
         asr_result = self.asr.transcribe(
             audio_path = audio_path,
             chunk_seconds = self.asr_chunk_seconds,
             batch_size = self.asr_batch_size,
-            output_path = transcript_path
+            output_path = transcript_path,
+            progress_callback = asr_progress_callback
         )
 
         transcript = asr_result['transcript']
         results['asr'] = asr_result
 
         print(f"\n✓ ASR Complete: {len(transcript)} characters")
+
+        if progress_callback:
+            progress_callback("processing_asr", 40.0, "ASR processing completed")
 
         # Optionally unload ASR model to free memory
         self.asr.unload_model()
@@ -228,6 +246,9 @@ class LecturePipeline:
         print("STEP 2/3: Slide Matching - Matching to PDF Slides")
         print("="*60)
 
+        if progress_callback:
+            progress_callback("processing_matching", 40.0, "Starting slide matching...")
+
         # Split transcript into sentences if splitter provided
         if sentence_splitter is not None:
             sentences = sentence_splitter(transcript)
@@ -237,10 +258,18 @@ class LecturePipeline:
             sentences = None
             print("Using full transcript as single query")
 
+        # Create a wrapper callback for matching progress
+        def matching_progress_callback(progress: float, message: str):
+            if progress_callback:
+                # Map matching progress (0-100) to pipeline progress (40-70)
+                pipeline_progress = 40.0 + (progress * 0.3)
+                progress_callback("processing_matching", pipeline_progress, f"Matching: {message}")
+
         matching_results = self.matcher.match_transcript_to_slides(
             transcript = transcript,
             pdf_path = pdf_path,
-            sentences = sentences
+            sentences = sentences,
+            progress_callback = matching_progress_callback
         )
 
         results['matching'] = {
@@ -257,6 +286,9 @@ class LecturePipeline:
 
         print(f"\n✓ Slide Matching Complete: {len(matching_results)} matches")
 
+        if progress_callback:
+            progress_callback("processing_matching", 70.0, "Slide matching completed")
+
         # Optionally unload matching model to free memory
         self.matcher.unload_model()
 
@@ -267,18 +299,32 @@ class LecturePipeline:
         print("STEP 3/3: TTS - Generating Audio with Slide Alignment")
         print("="*60)
 
+        if progress_callback:
+            progress_callback("processing_tts", 70.0, "Starting TTS generation...")
+
         # Generate WAV file first (intermediate)
         output_wav_path = os.path.join(lecture_output_dir, "reconstructed.wav")
         output_json_path = os.path.join(lecture_output_dir, "timestamps.json")
+
+        # Create a wrapper callback for TTS progress
+        def tts_progress_callback(progress: float, message: str):
+            if progress_callback:
+                # Map TTS progress (0-100) to pipeline progress (70-95)
+                pipeline_progress = 70.0 + (progress * 0.25)
+                progress_callback("processing_tts", pipeline_progress, f"TTS: {message}")
 
         tts_result = self.tts.generate_from_matching_results(
             matching_results = matching_results,
             output_audio_path = output_wav_path,
             output_json_path = output_json_path,
-            export_formats = ['opus']  # Always export to Opus for client
+            export_formats = ['opus'],  # Always export to Opus for client
+            progress_callback = tts_progress_callback
         )
 
         print(f"\n✓ TTS Complete: {tts_result['metadata']['total_duration']:.2f}s audio generated")
+
+        if progress_callback:
+            progress_callback("processing_tts", 95.0, "TTS generation completed")
 
         # Optionally unload TTS model
         self.tts.unload_model()
@@ -336,7 +382,7 @@ class LecturePipeline:
         )
 
 
-def simple_sentence_splitter(text: str) -> List[str]:
+def simple_sentence_splitter(text: str) -> list[str]:
     """
     Simple sentence splitter (splits on '. ', '! ', '? ').
     For production use, consider using NLTK or spaCy.
