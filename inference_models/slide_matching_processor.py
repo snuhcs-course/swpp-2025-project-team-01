@@ -8,7 +8,7 @@ from PIL import Image
 import fitz  # PyMuPDF
 import io
 from tqdm import tqdm
-from typing import List, Dict, Optional
+from typing import Callable
 import gc
 
 from transformers import AutoModel
@@ -109,7 +109,7 @@ class SlideMatchingProcessor:
         self,
         pdf_path: str,
         target_dpi: int = 150
-    ) -> List[Image.Image]:
+    ) -> list[Image.Image]:
         """
         Extract all pages from PDF as images.
 
@@ -142,8 +142,8 @@ class SlideMatchingProcessor:
 
     def compute_embeddings(
         self,
-        queries: List[str],
-        images: List[Image.Image]
+        queries: list[str],
+        images: list[Image.Image]
     ) -> tuple:
         """
         Compute embeddings for queries and images.
@@ -185,8 +185,8 @@ class SlideMatchingProcessor:
         self,
         query_embeddings: torch.Tensor,
         image_embeddings: torch.Tensor,
-        queries: List[str]
-    ) -> List[Dict]:
+        queries: list[str]
+    ) -> list[dict]:
         """
         Match queries to slides using dynamic programming.
 
@@ -305,8 +305,9 @@ class SlideMatchingProcessor:
         self,
         transcript: str,
         pdf_path: str,
-        sentences: Optional[List[str]] = None
-    ) -> List[Dict]:
+        sentences: list[str] | None = None,
+        progress_callback: Callable[[float, str], None] | None = None
+    ) -> list[dict]:
         """
         Match transcript to PDF slides.
 
@@ -314,6 +315,7 @@ class SlideMatchingProcessor:
             transcript: Full transcript text (used if sentences not provided)
             pdf_path: Path to PDF file
             sentences: Optional pre-split sentences (if None, uses full transcript as one query)
+            progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
             List of matching results with page numbers
@@ -324,6 +326,9 @@ class SlideMatchingProcessor:
         print("="*60)
         print("Slide Matching")
         print("="*60)
+
+        if progress_callback:
+            progress_callback(0.0, "Extracting PDF pages...")
 
         # Extract PDF pages
         page_images = self.extract_pdf_pages(pdf_path)
@@ -337,13 +342,22 @@ class SlideMatchingProcessor:
 
         print(f"Matching {len(queries)} queries to {len(page_images)} slides")
 
+        if progress_callback:
+            progress_callback(30.0, "Computing embeddings...")
+
         # Compute embeddings
         query_embeddings, image_embeddings = self.compute_embeddings(queries, page_images)
+
+        if progress_callback:
+            progress_callback(70.0, "Matching slides...")
 
         # Match with DP
         results = self.match_with_dp(query_embeddings, image_embeddings, queries)
 
         print(f"\nMatching complete: {len(results)} results")
+
+        if progress_callback:
+            progress_callback(100.0, "Matching completed")
 
         if torch.cuda.is_available():
             max_memory = torch.cuda.max_memory_allocated() / 1024**3

@@ -35,6 +35,8 @@ backend/venv/
 *.py[cod]
 
 # AI Inference test data
+backend/test_lecture/
+backend/pipeline_output/
 inference_models/test_lecture/
 inference_models/pipeline_output/
 

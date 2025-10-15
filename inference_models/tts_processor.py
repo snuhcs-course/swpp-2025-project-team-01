@@ -9,7 +9,8 @@ from kokoro import KPipeline
 import soundfile as sf
 import subprocess
 import os
-from typing import List, Dict, Optional
+import gc
+from typing import Any, Callable
 from pathlib import Path
 
 
@@ -61,15 +62,17 @@ class TTSProcessor:
         if self.pipeline is not None:
             del self.pipeline
             self.pipeline = None
+            gc.collect()
             print("TTS pipeline unloaded")
 
     def generate_audio(
         self,
-        sentences: List[Dict[str, any]],
+        sentences: list[dict[str, Any]],
         output_audio_path: str = "lecture_audio.wav",
-        output_json_path: Optional[str] = None,
-        export_formats: Optional[List[str]] = None
-    ) -> Dict[str, any]:
+        output_json_path: str | None = None,
+        export_formats: list[str] | None = None,
+        progress_callback: Callable[[float, str], None] | None = None
+    ) -> dict[str, Any]:
         """
         Generate audio from sentences with slide alignment.
 
@@ -78,6 +81,7 @@ class TTSProcessor:
             output_audio_path: Output WAV file path
             output_json_path: Optional JSON metadata output path
             export_formats: Optional list of additional formats ['opus', 'aac']
+            progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
             Dictionary with metadata and timestamps
@@ -87,16 +91,25 @@ class TTSProcessor:
 
         print(f"Generating audio for {len(sentences)} sentences...")
 
+        if progress_callback:
+            progress_callback(0.0, "Starting TTS generation...")
+
         # Result storage
         all_audio = []
         timestamp_data = []
         current_time = 0.0
 
+        total_sentences = len(sentences)
         for idx, sentence_info in enumerate(sentences):
             text = sentence_info.get('text', '')
             slide_number = sentence_info.get('slide_number', 1)
 
             print(f"Processing: [{idx+1}/{len(sentences)}] [Slide {slide_number}] {text[:50]}...")
+
+            if progress_callback:
+                # Update progress for each sentence (0-80% of TTS stage)
+                sentence_progress = (idx / total_sentences) * 80.0
+                progress_callback(sentence_progress, f"Generating audio for sentence {idx+1}/{total_sentences}...")
 
             try:
                 # TTS generation
@@ -137,6 +150,9 @@ class TTSProcessor:
 
         # Merge all audio
         if all_audio:
+            if progress_callback:
+                progress_callback(80.0, "Merging audio segments...")
+
             # Add silence between sentences
             silence = np.zeros(int(self.silence_duration * self.sample_rate))
             merged_audio = []
@@ -151,6 +167,9 @@ class TTSProcessor:
 
             final_audio = np.concatenate(merged_audio)
 
+            if progress_callback:
+                progress_callback(85.0, "Saving audio file...")
+
             # Save WAV file
             Path(output_audio_path).parent.mkdir(parents = True, exist_ok = True)
             sf.write(output_audio_path, final_audio, self.sample_rate)
@@ -163,7 +182,12 @@ class TTSProcessor:
 
             # Additional format conversion
             if export_formats:
+                if progress_callback:
+                    progress_callback(90.0, "Converting audio formats...")
                 self._convert_formats(output_audio_path, export_formats, wav_size)
+
+        if progress_callback:
+            progress_callback(95.0, "Saving metadata...")
 
         # Save JSON metadata
         output_data = {
@@ -184,12 +208,15 @@ class TTSProcessor:
                 json.dump(output_data, f, ensure_ascii = False, indent = 2)
             print(f"✓ Timestamp JSON saved: {output_json_path}")
 
+        if progress_callback:
+            progress_callback(100.0, "TTS generation completed")
+
         return output_data
 
     def _convert_formats(
         self,
         wav_path: str,
-        formats: List[str],
+        formats: list[str],
         wav_size: float
     ):
         """
@@ -242,11 +269,12 @@ class TTSProcessor:
 
     def generate_from_matching_results(
         self,
-        matching_results: List[Dict[str, any]],
+        matching_results: list[dict[str, Any]],
         output_audio_path: str = "lecture_audio.wav",
-        output_json_path: Optional[str] = None,
-        export_formats: Optional[List[str]] = None
-    ) -> Dict[str, any]:
+        output_json_path: str | None = None,
+        export_formats: list[str] | None = None,
+        progress_callback: Callable[[float, str], None] | None = None
+    ) -> dict[str, Any]:
         """
         Generate audio from slide matching results.
 
@@ -255,6 +283,7 @@ class TTSProcessor:
             output_audio_path: Output WAV file path
             output_json_path: Optional JSON metadata output path
             export_formats: Optional list of additional formats
+            progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
             Dictionary with metadata and timestamps
@@ -271,7 +300,8 @@ class TTSProcessor:
             sentences = sentences,
             output_audio_path = output_audio_path,
             output_json_path = output_json_path,
-            export_formats = export_formats
+            export_formats = export_formats,
+            progress_callback = progress_callback
         )
 
 
