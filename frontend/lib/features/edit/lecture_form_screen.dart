@@ -49,12 +49,26 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     _weekController.dispose();
     _titleController.dispose();
     _scrollController.dispose();
+
+    // 모든 오디오 파일 엔트리 dispose
+    for (final entry in _audioFiles) {
+      entry.dispose();
+    }
+
     super.dispose();
+  }
+
+  // AppLocalizations 캐싱
+  AppLocalizations? _l10n;
+
+  AppLocalizations get l10n {
+    _l10n ??= AppLocalizations.of(context);
+    return _l10n!;
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    _l10n = AppLocalizations.of(context);
     final subjects = repo.getSubjects();
 
     return Scaffold(
@@ -344,7 +358,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               ),
             ),
             child: Text(
-              AppLocalizations.of(context).isKorean ? '추가' : 'Add',
+              l10n.isKorean ? '추가' : 'Add',
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -362,7 +376,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 다중 오디오 파일 모드일 때는 페이지 범위 입력 필드도 함께 표시합니다.
   Widget _buildAudioFileEntry(int index) {
     final entry = _audioFiles[index];
-    final l10n = AppLocalizations.of(context);
 
     return Column(
       children: [
@@ -540,7 +553,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     for (int i = 0; i < _audioFiles.length; i++) {
       if (_audioFiles[i].filePath == null) {
         _showToast(
-          AppLocalizations.of(context).isKorean
+          l10n.isKorean
               ? '파일을 순서대로 업로드해주세요'
               : 'Please upload files in order',
         );
@@ -600,7 +613,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 파일 삭제 확인 다이얼로그 표시
   void _showDeleteConfirmation(VoidCallback onConfirm) {
-    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -640,8 +652,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 3. 슬라이드 PDF 업로드 여부
   /// 4. 최소 1개의 오디오 파일 업로드 여부
   void _createLecture() {
-    final l10n = AppLocalizations.of(context);
-
     // 1. 강의 주차 검증
     if (_weekController.text.trim().isEmpty) {
       _showToast(l10n.isKorean ? '주차를 입력해주세요' : 'Please enter week');
