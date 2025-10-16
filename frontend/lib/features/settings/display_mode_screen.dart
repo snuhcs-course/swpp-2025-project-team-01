@@ -131,10 +131,12 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
   /// [value]: 이 옵션의 값 ('light', 'dark', 'system')
   Widget _rowOption(String label, String value) {
     return ListTile(
-      leading: Radio<String>(
-        value: value,
+      leading: RadioGroup<String>(
         groupValue: _mode,
         onChanged: (v) => _changeMode(v!),
+        child: Column(children: <Widget>[
+          Radio<String>(value: value)
+        ],)
       ),
       title: Text(label),
       onTap: () => _changeMode(value),
