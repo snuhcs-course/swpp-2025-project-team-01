@@ -10,34 +10,30 @@ class LanguageService extends ChangeNotifier {
   static const String defaultLanguage = 'ko';
 
   Locale _locale = const Locale('ko', 'KR');
+  SharedPreferences? _prefs;
 
   Locale get locale => _locale;
 
   /// 앱 시작 시 저장된 언어 로드
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lang = prefs.getString(_key) ?? defaultLanguage;
+    _prefs = await SharedPreferences.getInstance();
+    final lang = _prefs!.getString(_key) ?? defaultLanguage;
     _locale = _localeFromString(lang);
     notifyListeners();
   }
 
-  /// 저장된 언어 설정을 가져옵니다 (하위호환용 static 메서드)
-  static Future<String> getLanguage() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_key) ?? defaultLanguage;
-  }
-
   /// 언어 설정을 저장합니다
   Future<void> setLanguage(String language) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, language);
+    await _ensureInitialized();
+    await _prefs!.setString(_key, language);
     _locale = _localeFromString(language);
     notifyListeners();
   }
 
-  /// 하위호환용 static 메서드
-  static Future<void> setLanguageStatic(String language) async {
-    await instance.setLanguage(language);
+  Future<void> _ensureInitialized() async {
+    if (_prefs == null) {
+      await initialize();
+    }
   }
 
   Locale _localeFromString(String lang) {
