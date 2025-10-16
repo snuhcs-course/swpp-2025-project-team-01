@@ -75,16 +75,21 @@ class _LanguageScreenState extends State<LanguageScreen> {
             RadioGroup<String>(
               groupValue: currentLang,
               onChanged: (v) => _saveLanguage(v!),
-              child: Column(children: <Widget>[
-                RadioListTile<String>(
-                  value: 'ko',
-                  title: const Text('한국어 / Korean', style: TextStyle(fontSize: 18)),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
+              child: Column(
+                children: <Widget>[
+                  RadioListTile<String>(
+                    value: 'ko',
+                    title: const Text(
+                      '한국어 / Korean',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
                   ),
-                )
-              ],)
+                ],
+              ),
             ),
 
             // 2. English 선택
@@ -92,16 +97,21 @@ class _LanguageScreenState extends State<LanguageScreen> {
             RadioGroup<String>(
               groupValue: currentLang,
               onChanged: (v) => _saveLanguage(v!),
-              child: Column(children: <Widget>[
-                RadioListTile<String>(
-                  value: 'en',
-                  title: const Text('English', style: TextStyle(fontSize: 18)),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
+              child: Column(
+                children: <Widget>[
+                  RadioListTile<String>(
+                    value: 'en',
+                    title: const Text(
+                      'English',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
                   ),
-                )
-              ],)
+                ],
+              ),
             ),
           ],
         ),

@@ -134,9 +134,7 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
       leading: RadioGroup<String>(
         groupValue: _mode,
         onChanged: (v) => _changeMode(v!),
-        child: Column(children: <Widget>[
-          Radio<String>(value: value)
-        ],)
+        child: Column(children: <Widget>[Radio<String>(value: value)]),
       ),
       title: Text(label),
       onTap: () => _changeMode(value),
