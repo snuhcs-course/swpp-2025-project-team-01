@@ -253,9 +253,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(32),
                 child: EmptyStateMessage(
                   message: favoritesOnly
-                      ? '즐겨찾기된 과목이 없습니다.'
+                      ? l10n.noFavoriteSubjects
                       : selectedTagIds.isNotEmpty
-                      ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
+                      ? l10n.noSubjectsWithSelectedTags
                       : '',
                 ),
               ),
