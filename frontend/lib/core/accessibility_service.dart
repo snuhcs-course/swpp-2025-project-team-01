@@ -63,7 +63,7 @@ class AccessibilityService extends ChangeNotifier {
   /// 고대비 설정 변경
   Future<void> setHighContrast(bool value) async {
     await _updateSetting(
-      'accesibility_high_contrast',
+      'accessibility_high_contrast',
       value,
       () => _highContrast,
       (v) => _highContrast = v,
@@ -73,7 +73,7 @@ class AccessibilityService extends ChangeNotifier {
   /// 모션 줄이기 설정 변경
   Future<void> setReduceMotion(bool value) async {
     await _updateSetting(
-      'accesibility_reduce_motion',
+      'accessibility_reduce_motion',
       value,
       () => _reduceMotion,
       (v) => _reduceMotion = v,
@@ -83,7 +83,7 @@ class AccessibilityService extends ChangeNotifier {
   /// 자막 강조 설정 변경
   Future<void> setEmphasizeCaptions(bool value) async {
     await _updateSetting(
-      'accesibility_emphasize_captions',
+      'accessibility_emphasize_captions',
       value,
       () => _emphasizeCaptions,
       (v) => _emphasizeCaptions = v,
