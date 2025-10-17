@@ -1,11 +1,10 @@
 // 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
-import 'package:re_view/core/accessibility_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
 const _panelRadius = 22.0;
@@ -235,17 +234,18 @@ class _SubjectPanelState extends State<SubjectPanel>
   void initState() {
     super.initState();
     // Repository에서 저장된 상태 로드
-    expanded = Repo.instance.getSubjectExpandedState(widget.subject.id);
+    expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
 
-    final AccessibilityService accessibilityService = AccessibilityService();
-    final Duration duration = accessibilityService.getAnimationDuration(
-      const Duration(milliseconds: 300),
-    );
+    final reduceMotion =
+        HiveManager.instance.settings.accessibilityReduceMotion;
+    final Duration duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 300);
 
     _animationController = AnimationController(duration: duration, vsync: this);
     _expandAnimation = CurvedAnimation(
       parent: _animationController,
-      curve: accessibilityService.getAnimationCurve(Curves.easeInOut),
+      curve: reduceMotion ? Curves.linear : Curves.easeInOut,
     );
     _animationController.value = expanded ? 1.0 : 0.0;
   }
@@ -257,15 +257,15 @@ class _SubjectPanelState extends State<SubjectPanel>
   }
 
   void _toggleExpanded() {
-    final AccessibilityService accessibilityService = AccessibilityService();
-    final bool reduceMotion = accessibilityService.reduceMotion;
+    final bool reduceMotion =
+        HiveManager.instance.settings.accessibilityReduceMotion;
 
     setState(() {
       expanded = !expanded;
     });
 
-    // Repository에 상태 저장
-    Repo.instance.saveSubjectExpandedState(widget.subject.id, expanded);
+    // Hive에 상태 저장
+    HiveManager.instance.setSubjectExpandedState(widget.subject.id, expanded);
 
     if (reduceMotion) {
       // 모션 줄이기가 활성화되면 즉시 전환
@@ -718,11 +718,8 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
         ),
         FilledButton(
           onPressed: () async {
-            await Repo.instance.updateLecture(
-              widget.lecture.id,
-              weekLabel: _weekController.text,
-              title: _titleController.text,
-            );
+            // TODO: LectureService 구현 또는 별도 로직 필요
+            // 현재 HiveManager는 강의 데이터를 관리하지 않음
             if (context.mounted) {
               Navigator.pop(context, true); // true를 반환하여 새로고침 필요함을 알림
             }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/core/theme/theme_manager.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 디스플레이 모드 설정 화면 (Figma 2-4-1. Display Mode)
 ///
@@ -17,7 +17,7 @@ import 'package:re_view/core/theme/theme_manager.dart';
 /// - 본문: 라디오 버튼 3개 (각 모드 선택)
 /// - 하단: 미니 프리뷰 박스 3개 (각 모드의 시각적 미리보기)
 ///
-/// ThemeManager를 통해 설정을 저장 및 관리합니다.
+/// HiveManager를 통해 설정을 저장 및 관리합니다.
 class DisplayModeScreen extends StatefulWidget {
   const DisplayModeScreen({super.key});
 
@@ -35,36 +35,20 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
     _loadMode();
   }
 
-  /// ThemeManager에서 저장된 디스플레이 모드 불러오기
+  /// HiveManager에서 저장된 디스플레이 모드 불러오기
   void _loadMode() {
-    final themeMode = ThemeManager.instance.themeMode;
     setState(() {
-      _mode = _themeModeToString(themeMode);
+      _mode = HiveManager.instance.settings.theme;
     });
-  }
-
-  /// ThemeMode를 문자열로 변환
-  ///
-  /// [mode]: Flutter의 ThemeMode 열거형
-  /// 반환값: 'light', 'dark', 또는 'system'
-  String _themeModeToString(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return 'light';
-      case ThemeMode.dark:
-        return 'dark';
-      default:
-        return 'system';
-    }
   }
 
   /// 디스플레이 모드 변경 및 저장
   ///
-  /// ThemeManager를 통해 선택한 모드를 저장하고 즉시 적용합니다.
+  /// HiveManager를 통해 선택한 모드를 저장하고 즉시 적용합니다.
   ///
   /// [mode]: 'light', 'dark', 또는 'system'
   Future<void> _changeMode(String mode) async {
-    await ThemeManager.instance.setThemeMode(mode);
+    await HiveManager.instance.updateTheme(mode);
     setState(() {
       _mode = mode;
     });

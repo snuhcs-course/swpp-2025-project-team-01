@@ -1,10 +1,9 @@
 // 홈 메인: 상단 필터/즐겨찾기 pill + 태그칩 + 과목 패널 리스트
 import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
-import 'package:re_view/core/accessibility_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 
 /// 메인 홈 화면
@@ -19,26 +18,23 @@ class _HomeScreenState extends State<HomeScreen> {
   bool showTagFilter = false;
   final Set<String> selectedTagIds = {};
 
-  // 싱글톤 인스턴스를 한 번만 가져옴
-  late final Repo _repo = Repo.instance;
-  late final AccessibilityService _accessibilityService =
-      AccessibilityService();
+  late final HiveManager _manager = HiveManager.instance;
 
   @override
   void initState() {
     super.initState();
     // Repository 변경 리스너 등록
-    _repo.addListener(_onRepoChanged);
+    _manager.addListener(_onDataChanged);
   }
 
   @override
   void dispose() {
     // 리스너 제거
-    _repo.removeListener(_onRepoChanged);
+    _manager.removeListener(_onDataChanged);
     super.dispose();
   }
 
-  void _onRepoChanged() {
+  void _onDataChanged() {
     if (mounted) {
       setState(() {});
     }
@@ -47,12 +43,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tags = _repo.getTags();
-    final subjects = _repo.getSubjects(
-      favoritesOnly: favoritesOnly,
-      filterTagIds: selectedTagIds.toList(),
-    );
-    final reduceMotion = _accessibilityService.reduceMotion;
+    final tags = _manager.getTags().map((ht) => ht.toTag()).toList();
+    final subjects = _manager
+        .getSubjects(
+          favoritesOnly: favoritesOnly,
+          filterTagIds: selectedTagIds.toList(),
+        )
+        .map((hs) => hs.toSubject())
+        .toList();
+    final reduceMotion = _manager.settings.accessibilityReduceMotion;
 
     return Scaffold(
       appBar: AppBar(
@@ -266,19 +265,48 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, i) {
                 final Subject s = subjects[i];
                 final List<Tag> subjectTags = s.tagIds
-                    .map(
-                      (tid) => tags.cast<Tag?>().firstWhere(
-                        (t) => t?.id == tid,
-                        orElse: () => null,
-                      ),
-                    )
+                    .map((tid) {
+                      try {
+                        return tags.firstWhere((t) => t.id == tid);
+                      } catch (_) {
+                        return null;
+                      }
+                    })
                     .whereType<Tag>()
                     .toList();
                 // 태그 정렬: 숫자 > 한글 > 영어
-                subjectTags.sort(
-                  (a, b) => _repo.compareTagNames(a.name, b.name),
-                );
-                final List<Lecture> lectures = _repo.lecturesBySubject(s.id);
+                int _getNameType(String name) {
+                  if (name.isEmpty) {
+                    return 3;
+                  }
+                  final first = name[0];
+                  if (RegExp(r'[0-9]').hasMatch(first)) {
+                    return 0;
+                  }
+                  if (RegExp(r'[ㄱ-ㅎ가-힣]').hasMatch(first)) {
+                    return 1;
+                  }
+                  if (RegExp(r'[a-zA-Z]').hasMatch(first)) {
+                    return 2;
+                  }
+                  return 3;
+                }
+
+                int _compareTagNames(String a, String b) {
+                  final aType = _getNameType(a);
+                  final bType = _getNameType(b);
+                  if (aType != bType) {
+                    return aType.compareTo(bType);
+                  }
+                  return a.compareTo(b);
+                }
+
+                subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));
+
+                final lectures = _manager
+                    .getLecturesBySubject(s.id)
+                    .map((l) => l.toLecture())
+                    .toList();
                 return Padding(
                   padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
                   child: SubjectPanel(
@@ -286,8 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     tags: subjectTags,
                     lectures: lectures,
                     onToggleFavorite: () async {
-                      await _repo.toggleSubjectFavorite(s.id);
-                      // Repository가 notifyListeners()를 호출하므로 setState 불필요
+                      await _manager.toggleSubjectFavorite(s.id);
                     },
                     onOpenLecture: (Lecture lec) {
                       Navigator.pushNamed(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:re_view/core/language_service.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 언어 설정 화면 (Figma 2-4-4. Language)
 ///
@@ -23,19 +23,19 @@ class LanguageScreen extends StatefulWidget {
 
 class _LanguageScreenState extends State<LanguageScreen> {
   // 언어 서비스 인스턴스
-  final _service = LanguageService.instance;
+  final _manager = HiveManager.instance;
 
   @override
   void initState() {
     super.initState();
     // 언어 변경 리스너 등록 (언어 변경 시 자동 UI 업데이트)
-    _service.addListener(_onLanguageChanged);
+    _manager.addListener(_onLanguageChanged);
   }
 
   @override
   void dispose() {
     // 메모리 누수 방지를 위해 리스너 제거
-    _service.removeListener(_onLanguageChanged);
+    _manager.removeListener(_onLanguageChanged);
     super.dispose();
   }
 
@@ -52,13 +52,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
   ///
   /// [value]: 언어 코드 ('ko' 또는 'en')
   Future<void> _saveLanguage(String value) async {
-    await _service.setLanguage(value);
+    await _manager.updateLanguage(value);
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentLang = _service.locale.languageCode;
+    final currentLang = _manager.settings.language;
 
     return Scaffold(
       // 상단 앱바 (한영 모두 표시)

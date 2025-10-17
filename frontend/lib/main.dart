@@ -2,20 +2,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:re_view/app_router.dart';
-import 'package:re_view/core/accessibility_service.dart';
-import 'package:re_view/core/language_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/app_theme.dart';
-import 'package:re_view/core/theme/theme_manager.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
 
-/// 앱 진입점 - Repository 초기화 후 앱 실행
+/// 앱 진입점 - HiveManager 초기화 후 앱 실행
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Repo.instance.init();
-  await ThemeManager.instance.loadThemeMode();
-  await AccessibilityService().initialize();
-  await LanguageService.instance.initialize();
+  await HiveManager.instance.init();
   runApp(const ReViewApp());
 }
 
@@ -31,48 +25,54 @@ class _ReViewAppState extends State<ReViewApp> {
   @override
   void initState() {
     super.initState();
-    // ThemeManager 변경 리스너 등록
-    ThemeManager.instance.addListener(_onThemeChanged);
-    // AccessibilityService 변경 리스너 등록
-    AccessibilityService().addListener(_onAccessibilityChanged);
-    // LanguageService 변경 리스너 등록
-    LanguageService.instance.addListener(_onLanguageChanged);
+    // HiveManager 변경 리스너 등록 (테마, 언어, 접근성 모두 통합)
+    HiveManager.instance.addListener(_onDataChanged);
   }
 
   @override
   void dispose() {
     // 리스너 제거
-    ThemeManager.instance.removeListener(_onThemeChanged);
-    AccessibilityService().removeListener(_onAccessibilityChanged);
-    LanguageService.instance.removeListener(_onLanguageChanged);
+    HiveManager.instance.removeListener(_onDataChanged);
     super.dispose();
   }
 
-  void _onThemeChanged() {
+  void _onDataChanged() {
     if (mounted) {
       setState(() {});
     }
   }
 
-  void _onAccessibilityChanged() {
-    if (mounted) {
-      setState(() {});
+  // String → ThemeMode 변환
+  ThemeMode _themeModeFromString(String mode) {
+    switch (mode) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
     }
   }
 
-  void _onLanguageChanged() {
-    if (mounted) {
-      setState(() {});
+  // String → Locale 변환
+  Locale _localeFromString(String lang) {
+    switch (lang) {
+      case 'ko':
+        return const Locale('ko', 'KR');
+      case 'en':
+        return const Locale('en', 'US');
+      default:
+        return const Locale('ko', 'KR');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final accessibilityService = AccessibilityService();
-    final languageService = LanguageService.instance;
-    final themeMode = ThemeManager.instance.themeMode;
-    final isHighContrast = accessibilityService.highContrast;
-    final reduceMotion = accessibilityService.reduceMotion;
+    final hive = HiveManager.instance;
+    final themeMode = _themeModeFromString(hive.settings.theme);
+    final locale = _localeFromString(hive.settings.language);
+    final isHighContrast = hive.settings.accessibilityHighContrast;
+    final reduceMotion = hive.settings.accessibilityReduceMotion;
 
     // 고대비 모드가 활성화되면 고대비 테마 사용
     final ThemeData lightTheme = isHighContrast
@@ -85,7 +85,7 @@ class _ReViewAppState extends State<ReViewApp> {
     // 모션 줄이기가 활성화되면 페이지 전환 애니메이션 제거
     return MaterialApp(
       title: 'Re:View',
-      locale: languageService.locale,
+      locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
         AppLocalizations.delegate,

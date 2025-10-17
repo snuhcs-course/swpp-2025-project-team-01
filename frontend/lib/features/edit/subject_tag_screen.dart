@@ -1,15 +1,15 @@
 // 과목/태그 관리 통합 (간단 리스트 + 삭제 버튼 예시)
 import 'package:flutter/material.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 과목/태그 관리 화면
 class SubjectTagScreen extends StatelessWidget {
   const SubjectTagScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    final repo = Repo.instance;
-    final subjects = repo.getSubjects();
-    final tags = repo.getTags();
+    final manager = HiveManager.instance;
+    final subjects = manager.getSubjects().map((hs) => hs.toSubject()).toList();
+    final tags = manager.getTags().map((ht) => ht.toTag()).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('과목/태그 관리')),

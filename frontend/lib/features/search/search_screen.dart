@@ -1,10 +1,9 @@
 // 검색 화면: 강의명 검색, 최근 검색어
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 검색 화면
 class SearchScreen extends StatefulWidget {
@@ -36,9 +35,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadRecentSearches() async {
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _recentSearches = prefs.getStringList('recent_searches') ?? [];
+      _recentSearches = HiveManager.instance.getRecentSearches();
     });
   }
 
@@ -46,33 +44,22 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.trim().isEmpty) {
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    _recentSearches.remove(query); // 중복 제거
-    _recentSearches.insert(0, query); // 맨 앞에 추가
-    if (_recentSearches.length > 3) {
-      _recentSearches = _recentSearches.sublist(0, 3); // 최대 3개
-    }
-    await prefs.setStringList('recent_searches', _recentSearches);
-    setState(() {});
+    await HiveManager.instance.addRecentSearch(query);
+    setState(() {
+      _recentSearches = HiveManager.instance.getRecentSearches();
+    });
   }
 
   Future<void> _removeRecentSearch(String query) async {
-    final prefs = await SharedPreferences.getInstance();
-    _recentSearches.remove(query);
-    await prefs.setStringList('recent_searches', _recentSearches);
-    setState(() {});
+    await HiveManager.instance.removeRecentSearch(query);
+    setState(() {
+      _recentSearches = HiveManager.instance.getRecentSearches();
+    });
   }
 
   String _getHintText() {
     final l10n = AppLocalizations.of(context);
-    switch (_searchScope) {
-      case SearchScope.lecture:
-        return l10n.searchPlaceholder;
-      case SearchScope.week:
-        return l10n.searchPlaceholder;
-      case SearchScope.subject:
-        return l10n.searchPlaceholder;
-    }
+    return l10n.searchPlaceholder;
   }
 
   Future<void> _performSearch(String query, {bool saveToRecent = false}) async {
@@ -89,23 +76,16 @@ class _SearchScreenState extends State<SearchScreen> {
       _saveRecentSearch(query);
     }
 
-    // Repository 인스턴스 한 번만 가져오기
-    final repo = Repo.instance;
-    final subjects = repo.getSubjects();
-
-    // 모든 과목의 모든 강의 ID 수집 및 로드
-    final allLectureIds = <String>[];
-    for (final subject in subjects) {
-      allLectureIds.addAll(subject.lectureIds);
-    }
-
-    // 강의 메타데이터 미리 로드
-    await repo.preloadLectures(allLectureIds);
+    final hive = HiveManager.instance;
+    final subjects = hive.getSubjects().map((s) => s.toSubject()).toList();
 
     // 모든 과목의 모든 강의에서 검색
     final allLectures = <Lecture>[];
     for (final subject in subjects) {
-      final lectures = repo.lecturesBySubject(subject.id);
+      final lectures = hive
+          .getLecturesBySubject(subject.id)
+          .map((l) => l.toLecture())
+          .toList();
       allLectures.addAll(lectures);
     }
 
@@ -304,7 +284,10 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     // 과목 목록을 한 번만 가져오기
-    final subjects = Repo.instance.getSubjects();
+    final subjects = HiveManager.instance
+        .getSubjects()
+        .map((s) => s.toSubject())
+        .toList();
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
