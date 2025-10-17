@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 
 /// TTS(Text-to-Speech) 설정 화면 (Figma 2-4-2. TTS)
@@ -34,46 +34,27 @@ class _TtsScreenState extends State<TtsScreen> {
     _loadSettings();
   }
 
-  /// SharedPreferences에서 저장된 TTS 설정 불러오기
+  /// HiveManager에서 저장된 TTS 설정 불러오기
   Future<void> _loadSettings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-
-      // 이전 버전과의 호환성: double로 저장된 값 제거
-      if (prefs.containsKey('tts_speed') && prefs.get('tts_speed') is double) {
-        await prefs.remove('tts_speed');
-      }
-
-      if (mounted) {
-        setState(() {
-          _gender = prefs.getString('tts_gender') ?? '남성';
-          _speed = prefs.getString('tts_speed') ?? '보통';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _gender = '남성';
-          _speed = '보통';
-          _isLoading = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _gender = HiveManager.instance.settings.ttsGender;
+        _speed = HiveManager.instance.settings.ttsSpeed;
+        _isLoading = false;
+      });
     }
   }
 
   /// 음성 성별 저장 및 예시 음성 재생
   Future<void> _saveGender(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('tts_gender', value);
+    await HiveManager.instance.updateTts(gender: value);
     setState(() => _gender = value);
     _playPreviewTTS();
   }
 
   /// TTS 음성 속도 저장 및 예시 음성 재생
   Future<void> _saveSpeed(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('tts_speed', value);
+    await HiveManager.instance.updateTts(speed: value);
     setState(() => _speed = value);
     _playPreviewTTS();
   }

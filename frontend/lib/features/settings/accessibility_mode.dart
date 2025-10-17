@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:re_view/core/accessibility_service.dart';
+import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 
 /// 접근성 설정 화면 (Figma 2-4-3. Accessibility)
@@ -27,19 +27,19 @@ class AccessibilityScreen extends StatefulWidget {
 
 class _AccessibilityScreenState extends State<AccessibilityScreen> {
   // 접근성 서비스 인스턴스
-  final _service = AccessibilityService();
+  final _manager = HiveManager.instance;
 
   @override
   void initState() {
     super.initState();
     // 접근성 설정 변경 리스너 등록 (설정 변경 시 자동 UI 업데이트)
-    _service.addListener(_onAccessibilityChanged);
+    _manager.addListener(_onAccessibilityChanged);
   }
 
   @override
   void dispose() {
     // 메모리 누수 방지를 위해 리스너 제거
-    _service.removeListener(_onAccessibilityChanged);
+    _manager.removeListener(_onAccessibilityChanged);
     super.dispose();
   }
 
@@ -73,8 +73,9 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
               contentPadding: const EdgeInsets.only(left: 24, right: 16),
               title: Text(l10n.highContrast),
               subtitle: Text(l10n.highContrastDesc),
-              value: _service.highContrast,
-              onChanged: (value) => _service.setHighContrast(value),
+              value: _manager.settings.accessibilityHighContrast,
+              onChanged: (value) =>
+                  _manager.updateAccessibility(highContrast: value),
             ),
 
             // 2. 모션 줄이기 (Reduce Motion)
@@ -83,8 +84,9 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
               contentPadding: const EdgeInsets.only(left: 24, right: 16),
               title: Text(l10n.reduceMotion),
               subtitle: Text(l10n.reduceMotionDesc),
-              value: _service.reduceMotion,
-              onChanged: (value) => _service.setReduceMotion(value),
+              value: _manager.settings.accessibilityReduceMotion,
+              onChanged: (value) =>
+                  _manager.updateAccessibility(reduceMotion: value),
             ),
 
             // 3. 자막 강조 (Emphasize Captions)
@@ -93,8 +95,9 @@ class _AccessibilityScreenState extends State<AccessibilityScreen> {
               contentPadding: const EdgeInsets.only(left: 24, right: 16),
               title: Text(l10n.emphasizeCaptions),
               subtitle: Text(l10n.emphasizeCaptionsDesc),
-              value: _service.emphasizeCaptions,
-              onChanged: (value) => _service.setEmphasizeCaptions(value),
+              value: _manager.settings.accessibilityEmphasizeCaptions,
+              onChanged: (value) =>
+                  _manager.updateAccessibility(emphasizeCaptions: value),
             ),
 
             // 안내 텍스트: 설정 즉시 적용 알림
