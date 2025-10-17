@@ -558,7 +558,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     for (int i = 0; i < _audioFiles.length; i++) {
       if (_audioFiles[i].filePath == null) {
         _showToast(
-          l10n.isKorean ? '파일을 순서대로 업로드해주세요' : 'Please upload the files in order',
+          l10n.isKorean
+              ? '파일을 순서대로 업로드해주세요'
+              : 'Please upload the files in order',
         );
         return;
       }
@@ -700,7 +702,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
-        final jobId = await requestLecture(slidePath, audioFileEntry, titleText, i);
+        final jobId = await requestLecture(
+          slidePath,
+          audioFileEntry,
+          titleText,
+          i,
+        );
         if (jobId == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
