@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/data/hive_models.dart';
 
 /// 강의 생성/편집 화면
 ///
@@ -22,7 +23,7 @@ class LectureFormScreen extends StatefulWidget {
 
 class _LectureFormScreenState extends State<LectureFormScreen> {
   // 데이터 저장소 인스턴스
-  final repo = Repo.instance;
+  final _hive = HiveManager.instance;
 
   // 텍스트 입력 컨트롤러
   final _weekController = TextEditingController();
@@ -42,6 +43,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   // 다중 오디오 파일 모드 활성화 여부 (2개 이상일 때 true)
   bool _isMultipleAudioMode = false;
+
+  // 강의 생성 중 여부 (로딩 상태)
+  bool _isCreating = false;
 
   @override
   void dispose() {
@@ -69,7 +73,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   @override
   Widget build(BuildContext context) {
     _l10n = AppLocalizations.of(context);
-    final subjects = repo.getSubjects();
+    final subjects = _hive.getSubjects();
 
     return Scaffold(
       // 상단 앱바 - 뒤로가기 버튼과 제목
@@ -649,54 +653,105 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 2. 강의 제목 입력 여부
   /// 3. 슬라이드 PDF 업로드 여부
   /// 4. 최소 1개의 오디오 파일 업로드 여부
-  void _createLecture() {
-    // 1. 강의 주차 검증
+  Future<void> _createLecture() async {
+    // 1. 검증
+    if (_selectedSubjectId == null) {
+      _showToast(l10n.isKorean ? '과목을 선택해주세요' : 'Please select a subject');
+      return;
+    }
     if (_weekController.text.trim().isEmpty) {
-      _showToast(l10n.isKorean ? '주차를 입력해주세요' : 'Please enter week');
+      _showToast(l10n.isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week');
       return;
     }
-
-    // 2. 강의 제목 검증
     if (_titleController.text.trim().isEmpty) {
-      _showToast(l10n.isKorean ? '제목을 입력해주세요' : 'Please enter title');
+      _showToast(
+        l10n.isKorean ? '강의 제목을 입력해주세요' : 'Please enter lecture title',
+      );
       return;
     }
-
-    // 3. 슬라이드 PDF 검증
     if (_slidePdfPath == null) {
       _showToast(
         l10n.isKorean ? '슬라이드 PDF를 업로드해주세요' : 'Please upload slide PDF',
       );
       return;
     }
-
-    // 4. 오디오 파일 검증 (최소 1개)
     if (_audioFiles.isEmpty || _audioFiles[0].filePath == null) {
       _showToast(
         l10n.isKorean
-            ? '최소 1개의 녹음 파일을 업로드해주세요'
+            ? '오디오 파일을 최소 1개 업로드해주세요'
             : 'Please upload at least one audio file',
       );
       return;
     }
 
-    // TODO: 백엔드 연결 시 다음 데이터 전송
-    // 전송할 데이터:
-    // - subjectId: _selectedSubjectId ?? 'uncategorized' (선택된 과목 ID 또는 미분류)
-    // - week: _weekController.text (강의 주차 정보)
-    // - title: _titleController.text (강의 제목)
-    // - slidePdf: _slidePdfPath (슬라이드 PDF 파일 경로)
-    // - audioFiles: _audioFiles (오디오 파일 리스트)
-    //   * 각 오디오 파일 정보: filePath, startPage, endPage
-    //
-    // 백엔드 처리 흐름:
-    // 1. 선택된 과목(또는 미분류)에 강의 추가
-    // 2. 강의 메타데이터를 데이터베이스에 저장
-    // 3. 파일들을 서버에 업로드
-    // 4. 플레이어에서 재생 가능하도록 데이터 연결
+    // 2. 로딩 시작
+    setState(() => _isCreating = true);
 
-    _showToast(l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created');
-    Navigator.pop(context);
+    try {
+      // 3. 백엔드로 전송 (TODO: BackendApi 구현 필요)
+      // final response = await BackendApi.instance.createLecture(
+      //   subjectId: _selectedSubjectId!,
+      //   weekLabel: _weekController.text.trim(),
+      //   title: _titleController.text.trim(),
+      //   slidePdfPath: _slidePdfPath!,
+      //   audioFiles: _audioFiles
+      //       .where((e) => e.filePath != null)
+      //       .map((e) => AudioFileData(
+      //             filePath: e.filePath!,
+      //             startPage: int.tryParse(e.startPageController.text) ?? 1,
+      //             endPage: int.tryParse(e.endPageController.text),
+      //           ))
+      //       .toList(),
+      // );
+
+      // 4. 임시: 데모 강의 생성 (백엔드 구현 전까지)
+      final demoLecture = HiveLecture(
+        id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
+        subjectId: _selectedSubjectId!,
+        weekLabel: _weekController.text.trim(),
+        title: _titleController.text.trim(),
+        durationSec: 3600, // 임시 값
+        slidesUrl: _slidePdfPath,
+        audioUrl: _audioFiles[0].filePath,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // 5. Hive에 강의 저장 ✅
+      await _hive.addLecture(demoLecture);
+
+      // 6. 과목에 강의 추가 ✅
+      final subject = _hive.getSubject(_selectedSubjectId!);
+      if (subject != null) {
+        final updatedLectureIds = [...subject.lectureIds, demoLecture.id];
+        await _hive.updateSubject(
+          _selectedSubjectId!,
+          lectureIds: updatedLectureIds,
+        );
+      }
+
+      // 7. 성공 메시지
+      if (mounted) {
+        _showToast(
+          l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
+        );
+        Navigator.pop(context, true); // true = 생성 완료
+      }
+    } catch (e) {
+      // 8. 에러 처리
+      if (mounted) {
+        _showToast(
+          l10n.isKorean
+              ? '강의 생성 실패: ${e.toString()}'
+              : 'Failed to create lecture: ${e.toString()}',
+        );
+      }
+    } finally {
+      // 9. 로딩 종료
+      if (mounted) {
+        setState(() => _isCreating = false);
+      }
+    }
   }
 }
 
