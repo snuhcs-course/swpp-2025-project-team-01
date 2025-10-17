@@ -38,6 +38,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_native_splash: ^2.4.6
   pdfx: ^2.7.0
+  path: ^1.9.0
   path_provider: ^2.1.5
   shared_preferences: ^2.5.3
   audioplayers: ^6.1.0
@@ -46,6 +47,10 @@ dependencies:
 
   hive: ^2.2.3  # 최신 버전으로 작성
   hive_flutter: ^1.1.0 # 최신 버전으로 작성
+  flutter_local_notifications: ^19.5.0
+  syncfusion_flutter_pdf: ^31.2.2
+  http: ^1.5.0
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

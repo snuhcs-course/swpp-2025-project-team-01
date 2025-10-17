@@ -1,8 +1,11 @@
+import 'dart:io';
+import 'package:archive/archive.dart' as arch;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
+import 'package:re_view/features/edit/fetch_lecture.dart';
 
 /// 강의 생성/편집 화면
 ///
@@ -557,7 +560,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     for (int i = 0; i < _audioFiles.length; i++) {
       if (_audioFiles[i].filePath == null) {
         _showToast(
-          l10n.isKorean ? '파일을 순서대로 업로드해주세요' : 'Please upload files in order',
+          l10n.isKorean ? '파일을 순서대로 업로드해주세요' : 'Please upload the files in order',
         );
         return;
       }
@@ -689,27 +692,31 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
     try {
       // 3. 백엔드로 전송 (TODO: BackendApi 구현 필요)
-      // final response = await BackendApi.instance.createLecture(
-      //   subjectId: _selectedSubjectId!,
-      //   weekLabel: _weekController.text.trim(),
-      //   title: _titleController.text.trim(),
-      //   slidePdfPath: _slidePdfPath!,
-      //   audioFiles: _audioFiles
-      //       .where((e) => e.filePath != null)
-      //       .map((e) => AudioFileData(
-      //             filePath: e.filePath!,
-      //             startPage: int.tryParse(e.startPageController.text) ?? 1,
-      //             endPage: int.tryParse(e.endPageController.text),
-      //           ))
-      //       .toList(),
-      // );
+      final subjectId = _selectedSubjectId ?? 'uncategorized';
+      final weekText = _weekController.text.trim();
+      final titleText = _titleController.text.trim();
+      final slidePath = _slidePdfPath!;
+      final effectiveAudios = _audioFiles
+          .where((e) => (e.filePath ?? '').isNotEmpty)
+          .toList();
+
+      for (int i = 1; i <= effectiveAudios.length; i++) {
+        final audioFileEntry = effectiveAudios[i - 1];
+        final jobId = await requestLecture(slidePath, audioFileEntry, i);
+        if (jobId == null) {
+          _showToast(
+            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+          );
+          return;
+        }
+      }
 
       // 4. 임시: 데모 강의 생성 (백엔드 구현 전까지)
       final demoLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
-        subjectId: _selectedSubjectId!,
-        weekLabel: _weekController.text.trim(),
-        title: _titleController.text.trim(),
+        subjectId: subjectId,
+        weekLabel: weekText,
+        title: titleText,
         durationSec: 3600, // 임시 값
         slidesUrl: _slidePdfPath,
         audioUrl: _audioFiles[0].filePath,
@@ -717,10 +724,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         updatedAt: DateTime.now(),
       );
 
-      // 5. Hive에 강의 저장 ✅
+      // 5. Hive에 강의 저장
       await _hive.addLecture(demoLecture);
 
-      // 6. 과목에 강의 추가 ✅
+      // 6. 과목에 강의 추가
       final subject = _hive.getSubject(_selectedSubjectId!);
       if (subject != null) {
         final updatedLectureIds = [...subject.lectureIds, demoLecture.id];
