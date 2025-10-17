@@ -702,17 +702,32 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
-        final jobId = await requestLecture(
-          slidePath,
-          audioFileEntry,
-          titleText,
-          i,
-        );
-        if (jobId == null) {
+        try {
+          final jobId = await requestLecture(
+            slidePath,
+            audioFileEntry,
+            titleText,
+            i,
+          );
+          if (jobId == null) {
+            _showToast(
+              l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+            );
+            return;
+          }
+
+          final zipPath = await downloadResult(jobId, titleText, i);
+          if (zipPath == null) {
+            _showToast(
+              l10n.isKorean ? '강의 다운로드에 실패했습니다.' : 'Lecture download failed.',
+            );
+            return;
+          }
+          await unzipResult(zipPath, titleText, i);
+        } catch (err) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
-          return;
         }
       }
 
