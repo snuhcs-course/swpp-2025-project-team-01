@@ -42,6 +42,11 @@ class AppLocalizations {
   String get addLecture => isKorean ? '수업 추가' : 'Add Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get editTags => isKorean ? '태그 수정' : 'Edit Tags';
+  String get noFavoriteSubjects =>
+      isKorean ? '즐겨찾기된 과목이 없습니다.' : 'There are no favorite subjects.';
+  String get noSubjectsWithSelectedTags => isKorean
+      ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
+      : 'No subjects match the selected tags.';
 
   // 설정 화면
   String get displayMode => isKorean ? '디스플레이 모드' : 'Display Mode';

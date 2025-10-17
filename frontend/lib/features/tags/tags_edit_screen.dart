@@ -206,20 +206,32 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 예: 15개 색상 테마에서 16번째 태그는 첫 번째 색상을 받습니다.
   void _assignColors() {
     final theme = TagColorTheme.getTheme(_currentTheme);
+    final newTags = <Tag>[];
+
     for (int i = 0; i < _tags.length; i++) {
       final colorIndex = i % theme.colors.length;
-      _tags[i] = Tag(
-        id: _tags[i].id,
-        name: _tags[i].name,
-        color: theme.colors[colorIndex],
-      );
+      final expectedColor = theme.colors[colorIndex];
+
+      // 이미 올바른 색상이면 객체 재사용
+      if (_tags[i].color == expectedColor) {
+        newTags.add(_tags[i]);
+      } else {
+        newTags.add(
+          Tag(id: _tags[i].id, name: _tags[i].name, color: expectedColor),
+        );
+      }
     }
+
+    _tags = newTags;
   }
+
+  bool _isThemeChanged = false;
 
   /// 선택된 테마를 모든 태그에 적용
   ///
   /// 테마 변경 시 즉시 저장하고 모든 태그의 색상을 재할당합니다.
   Future<void> _applyThemeToAllTags() async {
+    _isThemeChanged = true;
     await repo.saveTagTheme(_currentTheme);
     setState(() {
       _assignColors();
@@ -228,7 +240,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 뒤로가기 시 변경사항 저장
   Future<bool> _onWillPop() async {
-    await repo.saveTagTheme(_currentTheme);
+    if (!_isThemeChanged && _currentTheme != _originalTheme) {
+      await repo.saveTagTheme(_currentTheme);
+    }
     await repo.saveTags(_tags);
     return true;
   }

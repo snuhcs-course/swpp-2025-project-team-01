@@ -105,20 +105,19 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   Widget _buildSubjectPanel(Subject subject) {
     final lectureIds = _workingLectureIds[subject.id]!;
 
-    // 강의 ID로부터 실제 Lecture 객체를 가져옴
+    // 강의 리스트를 한 번만 가져와서 Map으로 변환
+    final allLectures = repo.lecturesBySubject(subject.id);
+    final lectureMap = {for (var lec in allLectures) lec.id: lec};
+
+    // Map에서 O(1)로 조회
     final lectures = lectureIds.map((id) {
-      return repo
-          .lecturesBySubject(subject.id)
-          .firstWhere(
-            (lecture) => lecture.id == id,
-            // 해당 ID의 강의가 없으면 임시 객체 반환
-            orElse: () => Lecture(
-              id: id,
-              subjectId: subject.id,
-              weekLabel: 'Week ?',
-              title: 'Untitled',
-              durationSec: 0,
-            ),
+      return lectureMap[id] ??
+          Lecture(
+            id: id,
+            subjectId: subject.id,
+            weekLabel: 'Week ?',
+            title: 'Untitled',
+            durationSec: 0,
           );
     }).toList();
 
