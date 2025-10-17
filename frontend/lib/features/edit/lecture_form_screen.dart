@@ -553,9 +553,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     for (int i = 0; i < _audioFiles.length; i++) {
       if (_audioFiles[i].filePath == null) {
         _showToast(
-          l10n.isKorean
-              ? '파일을 순서대로 업로드해주세요'
-              : 'Please upload files in order',
+          l10n.isKorean ? '파일을 순서대로 업로드해주세요' : 'Please upload files in order',
         );
         return;
       }
