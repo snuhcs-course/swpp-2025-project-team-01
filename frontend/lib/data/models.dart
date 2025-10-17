@@ -1,4 +1,6 @@
 // MVP용 모델 3종 (한 파일)
+import 'package:re_view/data/hive_models.dart';
+
 /// 태그 모델 클래스
 class Tag {
   const Tag({required this.id, required this.name, required this.color});
@@ -6,6 +8,11 @@ class Tag {
   final String id;
   final String name;
   final int color; // 0xFF... ARGB
+
+  /// Convert to HiveTag for storage
+  HiveTag toHiveTag() {
+    return HiveTag(id: id, name: name, color: color);
+  }
 }
 
 /// 강의 모델 클래스
@@ -67,4 +74,15 @@ class Subject {
     tagIds: tagIds ?? this.tagIds,
     lectureIds: lectureIds ?? this.lectureIds,
   );
+
+  /// Convert to HiveSubject for storage
+  HiveSubject toHiveSubject() {
+    return HiveSubject(
+      id: id,
+      title: title,
+      favorite: favorite,
+      tagIds: tagIds,
+      lectureIds: lectureIds,
+    );
+  }
 }
