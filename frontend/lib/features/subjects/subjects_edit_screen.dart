@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 과목 편집 화면 (Figma 2-2. Modifying Subjects)
 ///
@@ -28,11 +27,12 @@ class SubjectsEditScreen extends StatefulWidget {
 
 class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   // 데이터 저장소 인스턴스
-  final repo = Repo.instance;
+  final hive = HiveManager.instance;
 
   // 작업 중인 데이터 (원본 데이터를 복사하여 수정)
   final Map<String, List<String>> _workingLectureIds = {};
   final Map<String, List<String>> _workingTagIds = {};
+  final Map<String, String> _workingTitles = {};
 
   // 삭제된 과목 ID 목록
   final Set<String> _deletedSubjectIds = {};
@@ -48,17 +48,19 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 원본 데이터를 보존하면서 사용자가 편집할 수 있도록
   /// 모든 과목의 강의 ID와 태그 ID를 복사합니다.
   void _initializeWorkingData() {
-    for (final subject in repo.getSubjects()) {
+    for (final subject in hive.getSubjects()) {
       _workingLectureIds[subject.id] = List.from(subject.lectureIds);
       _workingTagIds[subject.id] = List.from(subject.tagIds);
+      _workingTitles[subject.id] = subject.title;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     // 삭제되지 않은 과목 목록만 표시
-    final subjects = repo
+    final subjects = hive
         .getSubjects()
+        .map((s) => s.toSubject())
         .where((s) => !_deletedSubjectIds.contains(s.id))
         .toList();
 
@@ -106,7 +108,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     final lectureIds = _workingLectureIds[subject.id]!;
 
     // 강의 리스트를 한 번만 가져와서 Map으로 변환
-    final allLectures = repo.lecturesBySubject(subject.id);
+    final allLectures = hive
+        .getLecturesBySubject(subject.id)
+        .map((l) => l.toLecture())
+        .toList();
     final lectureMap = {for (var lec in allLectures) lec.id: lec};
 
     // Map에서 O(1)로 조회
@@ -122,7 +127,9 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     }).toList();
 
     return _SubjectEditPanel(
+      key: ValueKey(subject.id),
       subject: subject,
+      displayTitle: _workingTitles[subject.id],
       lectures: lectures,
       // 강의 순서 재정렬 콜백
       onReorder: (oldIndex, newIndex) {
@@ -145,29 +152,32 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
   /// 변경사항 저장
   ///
-  /// 모든 편집 내용(삭제, 순서 변경, 태그 변경)을 저장하고
+  /// 모든 편집 내용(삭제, 순서 변경, 태그 변경, 제목 변경)을 저장하고
   /// 홈 화면을 새로고침한 후 이전 화면으로 돌아갑니다.
   Future<void> _saveChanges() async {
     // 1. 삭제된 과목 처리
     for (final subjectId in _deletedSubjectIds) {
-      await repo.deleteSubject(subjectId);
+      await hive.deleteSubject(subjectId);
     }
 
-    // 2. 강의 순서 및 태그 업데이트
-    for (final subject in repo.getSubjects()) {
+    // 2. 과목 제목, 강의 순서 및 태그 업데이트
+    for (final subject in hive.getSubjects()) {
       if (!_deletedSubjectIds.contains(subject.id)) {
-        await repo.updateSubjectLectures(
+        // 제목 업데이트
+        final newTitle = _workingTitles[subject.id];
+        if (newTitle != null && newTitle != subject.title) {
+          await hive.updateSubjectTitle(subject.id, newTitle);
+        }
+
+        await hive.updateSubjectLectures(
           subject.id,
           _workingLectureIds[subject.id]!,
         );
-        await repo.updateSubjectTags(subject.id, _workingTagIds[subject.id]!);
+        await hive.updateSubjectTags(subject.id, _workingTagIds[subject.id]!);
       }
     }
 
-    // 3. 홈 화면 강제 새로고침
-    repo.refresh();
-
-    // 4. 이전 화면으로 돌아가기
+    // 3. 이전 화면으로 돌아가기
     if (mounted) {
       Navigator.pop(context);
     }
@@ -180,132 +190,23 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     BuildContext context,
     Subject subject,
   ) async {
-    final nameController = TextEditingController(text: subject.title);
-    final allTags = repo.getTags();
-    final selectedTagIds = Set<String>.from(_workingTagIds[subject.id] ?? []);
-
-    final result = await showDialog<String?>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('과목 수정'),
-          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ========== 과목 이름 입력 ==========
-                const Text(
-                  '과목 이름',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    hintText: '예) 소프트웨어 개발의 원리와 실습',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ========== 태그 수정 ==========
-                const Text(
-                  '태그 수정',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: allTags.map((tag) {
-                    final isSelected = selectedTagIds.contains(tag.id);
-                    return ChoiceChip(
-                      label: Text(
-                        '#${tag.name}',
-                        style: const TextStyle(color: Colors.black),
-                      ),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setDialogState(() {
-                          if (isSelected) {
-                            selectedTagIds.remove(tag.id);
-                          } else {
-                            selectedTagIds.add(tag.id);
-                          }
-                        });
-                      },
-                      backgroundColor: Color(tag.color),
-                      selectedColor: Color(tag.color),
-                      elevation: isSelected ? 4 : 2,
-                      side: BorderSide.none,
-                      showCheckmark: true,
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 20),
-
-                // ========== 과목 삭제 버튼 (강의 삭제 버튼과 동일한 스타일) ==========
-                Center(
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.4,
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () => Navigator.pop(context, 'delete'),
-                      icon: const Icon(Icons.delete),
-                      label: Text(AppLocalizations.of(context).deleteSubject),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, null),
-              child: const Text('취소'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final newTitle = nameController.text.trim();
-                if (newTitle.isEmpty) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('과목명을 입력해주세요')));
-                  return;
-                }
-                Navigator.pop(context, 'save');
-              },
-              child: const Text('확인'),
-            ),
-          ],
-        ),
+      builder: (context) => _SubjectEditDialog(
+        subject: subject,
+        initialTagIds: _workingTagIds[subject.id] ?? [],
       ),
     );
 
-    if (!mounted) {
-      nameController.dispose();
+    if (!mounted || result == null) {
       return;
     }
 
     // ========== 다이얼로그 결과 처리 ==========
 
-    if (result == 'delete') {
+    if (result['action'] == 'delete') {
       // 삭제 확인 다이얼로그 표시
-      if (!mounted) {
-        return;
-      }
-
       final confirmDelete = await _showDeleteConfirmationDialog(
         context,
         subject,
@@ -316,21 +217,15 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
           _deletedSubjectIds.add(subject.id);
         });
       }
-    } else if (result == 'save') {
-      // 과목명 및 태그 업데이트
-      final newTitle = nameController.text.trim();
-      if (subject.title != newTitle) {
-        await repo.updateSubjectTitle(subject.id, newTitle);
-      }
+    } else if (result['action'] == 'save') {
+      // result는 새로운 과목명과 태그
       setState(() {
-        _workingTagIds[subject.id] = selectedTagIds.toList();
+        _workingTitles[subject.id] = result['title'] as String;
+        _workingTagIds[subject.id] = List<String>.from(
+          result['tagIds'] as List,
+        );
       });
     }
-
-    // 다음 프레임에서 컨트롤러 해제 (메모리 누수 방지)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      nameController.dispose();
-    });
   }
 
   /// 과목 삭제 확인 다이얼로그
@@ -452,7 +347,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 새로운 과목을 생성하고 태그를 할당할 수 있습니다.
   Future<void> _showCreateSubjectDialog(BuildContext context) async {
     final titleController = TextEditingController();
-    final allTags = repo.getTags();
+    final allTags = hive.getTags();
     final selectedTagIds = <String>{};
 
     final result = await showDialog<bool>(
@@ -542,26 +437,173 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
     // 다이얼로그 결과 처리
     if (mounted && result == true) {
-      await repo.createSubject(
+      await hive.createSubject(
         titleController.text.trim(),
         selectedTagIds.toList(),
       );
 
       // 새로 생성된 과목의 작업 복사본 초기화
-      final newSubject = repo.getSubjects().firstWhere(
+      final newSubject = hive.getSubjects().firstWhere(
         (s) => s.title == titleController.text.trim(),
       );
 
-      setState(() {
-        _workingLectureIds[newSubject.id] = [];
-        _workingTagIds[newSubject.id] = List.from(selectedTagIds);
-      });
+      if (mounted) {
+        setState(() {
+          _workingLectureIds[newSubject.id] = [];
+          _workingTagIds[newSubject.id] = List.from(selectedTagIds);
+          _workingTitles[newSubject.id] = newSubject.title;
+        });
+      }
     }
 
-    // 다음 프레임에서 컨트롤러 해제
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      titleController.dispose();
-    });
+    // 컨트롤러 해제
+    titleController.dispose();
+  }
+}
+
+/// 과목 편집 다이얼로그 위젯
+class _SubjectEditDialog extends StatefulWidget {
+  const _SubjectEditDialog({
+    required this.subject,
+    required this.initialTagIds,
+  });
+
+  final Subject subject;
+  final List<String> initialTagIds;
+
+  @override
+  State<_SubjectEditDialog> createState() => _SubjectEditDialogState();
+}
+
+class _SubjectEditDialogState extends State<_SubjectEditDialog> {
+  late TextEditingController _nameController;
+  late Set<String> _selectedTagIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.subject.title);
+    _selectedTagIds = Set<String>.from(widget.initialTagIds);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allTags = HiveManager.instance.getTags();
+
+    return AlertDialog(
+      title: const Text('과목 수정'),
+      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ========== 과목 이름 입력 ==========
+            const Text(
+              '과목 이름',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                hintText: '예) 소프트웨어 개발의 원리와 실습',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ========== 태그 수정 ==========
+            const Text(
+              '태그 수정',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: allTags.map((tag) {
+                final isSelected = _selectedTagIds.contains(tag.id);
+                return ChoiceChip(
+                  label: Text(
+                    '#${tag.name}',
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                  selected: isSelected,
+                  onSelected: (_) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedTagIds.remove(tag.id);
+                      } else {
+                        _selectedTagIds.add(tag.id);
+                      }
+                    });
+                  },
+                  backgroundColor: Color(tag.color),
+                  selectedColor: Color(tag.color),
+                  elevation: isSelected ? 4 : 2,
+                  side: BorderSide.none,
+                  showCheckmark: true,
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+
+            // ========== 과목 삭제 버튼 ==========
+            Center(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.4,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context, {'action': 'delete'});
+                  },
+                  icon: const Icon(Icons.delete),
+                  label: Text(AppLocalizations.of(context).deleteSubject),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, null),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final newTitle = _nameController.text.trim();
+            if (newTitle.isEmpty) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('과목명을 입력해주세요')));
+              return;
+            }
+            Navigator.pop(context, {
+              'action': 'save',
+              'title': newTitle,
+              'tagIds': _selectedTagIds.toList(),
+            });
+          },
+          child: const Text('확인'),
+        ),
+      ],
+    );
   }
 }
 
@@ -575,13 +617,16 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 /// - 롱프레스로 과목 편집 다이얼로그 열기
 class _SubjectEditPanel extends StatefulWidget {
   const _SubjectEditPanel({
+    super.key,
     required this.subject,
+    this.displayTitle,
     required this.lectures,
     required this.onReorder,
     required this.onLongPress,
   });
 
   final Subject subject;
+  final String? displayTitle;
   final List<Lecture> lectures;
   final void Function(int oldIndex, int newIndex) onReorder;
   final VoidCallback onLongPress;
@@ -602,18 +647,19 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
 
   /// 저장된 펼침 상태 불러오기
   Future<void> _loadExpandedState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = 'subject_expanded_${widget.subject.id}';
     setState(() {
-      expanded = prefs.getBool(key) ?? true;
+      expanded = HiveManager.instance.getSubjectExpandedState(
+        widget.subject.id,
+      );
     });
   }
 
   /// 펼침 상태 저장
   Future<void> _saveExpandedState(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = 'subject_expanded_${widget.subject.id}';
-    await prefs.setBool(key, value);
+    await HiveManager.instance.setSubjectExpandedState(
+      widget.subject.id,
+      value,
+    );
   }
 
   @override
@@ -639,7 +685,7 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
                     // 과목 이름
                     Expanded(
                       child: Text(
-                        widget.subject.title,
+                        widget.displayTitle ?? widget.subject.title,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,

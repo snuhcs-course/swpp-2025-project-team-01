@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
-import 'package:re_view/data/repository.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 태그 색상 테마
 ///
@@ -137,11 +137,10 @@ class TagsEditScreen extends StatefulWidget {
 
 class _TagsEditScreenState extends State<TagsEditScreen> {
   // 데이터 저장소
-  final repo = Repo.instance;
+  final _manager = HiveManager.instance;
 
   // 태그 목록 (작업 중인 데이터)
   late List<Tag> _tags;
-  late List<Tag> _originalTags;
 
   // 선택된 태그 인덱스
   int _selected = 0;
@@ -151,10 +150,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   // 현재 선택된 색상 테마
   String _currentTheme = '파스텔';
-  late String _originalTheme;
-
-  // 새로 생성된 태그 여부 (사용하지 않는 경우 제거 가능)
-  bool _isNewTag = false;
 
   @override
   void initState() {
@@ -172,10 +167,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   ///
   /// 저장소에서 태그 목록과 테마를 불러오고 색상을 할당합니다.
   void _loadData() {
-    _tags = List.of(repo.getTags());
-    _originalTags = List.of(_tags);
-    _currentTheme = repo.getTagTheme();
-    _originalTheme = _currentTheme;
+    // HiveTag → Tag 변환
+    _tags = _manager.getTags().map((ht) => ht.toTag()).toList();
+    _currentTheme = _manager.settings.tagColorTheme;
     _assignColors();
 
     if (_tags.isNotEmpty) {
@@ -190,7 +184,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   void _syncForm(int index) {
     setState(() {
       _selected = index;
-      _isNewTag = false;
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -225,14 +218,11 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     _tags = newTags;
   }
 
-  bool _isThemeChanged = false;
-
   /// 선택된 테마를 모든 태그에 적용
   ///
   /// 테마 변경 시 즉시 저장하고 모든 태그의 색상을 재할당합니다.
   Future<void> _applyThemeToAllTags() async {
-    _isThemeChanged = true;
-    await repo.saveTagTheme(_currentTheme);
+    await _manager.updateTagColorTheme(_currentTheme);
     setState(() {
       _assignColors();
     });
@@ -240,10 +230,10 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 뒤로가기 시 변경사항 저장
   Future<bool> _onWillPop() async {
-    if (!_isThemeChanged && _currentTheme != _originalTheme) {
-      await repo.saveTagTheme(_currentTheme);
-    }
-    await repo.saveTags(_tags);
+    await _manager.updateTagColorTheme(_currentTheme);
+    // Tag → HiveTag 변환
+    final hiveTags = _tags.map((t) => t.toHiveTag()).toList();
+    await _manager.saveTags(hiveTags);
     return true;
   }
 
@@ -252,15 +242,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) {
-          return;
-        }
-
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop(result);
+          await _onWillPop();
         }
       },
       child: Scaffold(
@@ -309,8 +293,8 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                     if (selected) {
                       setState(() {
                         _currentTheme = theme.name;
-                        _applyThemeToAllTags();
                       });
+                      _applyThemeToAllTags();
                     }
                   },
                 );
@@ -457,7 +441,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
         ),
       );
       _selected = _tags.length - 1;
-      _isNewTag = true;
     });
 
     // 입력창 초기화 (한글 입력 문제 방지를 위해 프레임 이후 실행)
@@ -493,7 +476,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
         name: newName,
         color: _tags[_selected].color,
       );
-      _isNewTag = false;
     });
   }
 
@@ -534,7 +516,10 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     // 삭제하려는 태그를 사용 중인 과목 확인
     final tagToDelete = _tags[_selected];
-    final subjects = repo.getSubjects();
+    final subjects = _manager
+        .getSubjects()
+        .map((hs) => hs.toSubject())
+        .toList();
     final usingSubjects = subjects
         .where((s) => s.tagIds.contains(tagToDelete.id))
         .toList();
@@ -555,7 +540,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     setState(() {
       _tags.removeAt(_selected);
       _assignColors();
-      _isNewTag = false;
 
       if (_tags.isEmpty) {
         return;
@@ -563,8 +547,17 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
       // 이전 태그 선택 (범위 내로 제한)
       final newIndex = (_selected - 1).clamp(0, _tags.length - 1);
-      _syncForm(newIndex);
+      _selected = newIndex;
     });
+
+    // 프레임 이후 폼 동기화
+    if (_tags.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _nameC.text = _tags[_selected].name;
+        }
+      });
+    }
   }
 
   /// 스낵바 표시 헬퍼 메서드
