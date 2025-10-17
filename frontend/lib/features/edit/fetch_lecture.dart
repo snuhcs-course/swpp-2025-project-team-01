@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show Offset;
+import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
@@ -68,9 +70,10 @@ Future<void> splitPdfRange(
 Future<String?> requestLecture(
   String slidePath,
   AudioFileEntry audioFileEntry,
+  String titleText,
   int order,
 ) async {
-  final endpoint = Uri.parse('https://review_app.com/api/synchronize/stream');
+  final endpoint = Uri.parse('http://localhost:8000/api/synchronize/stream');
   final req = http.MultipartRequest('POST', endpoint);
 
   final pdfStart = int.parse(audioFileEntry.endPageController.text);
@@ -119,7 +122,7 @@ Future<String?> requestLecture(
         final progress = data['progress'] as double;
         final message = data['message'] as String;
 
-        onProgress(progress, message);
+        onProgress(progress, message, titleText);
 
         if (data['status'] == 'completed') {
           return jobId;
@@ -131,6 +134,47 @@ Future<String?> requestLecture(
   }
 
   return jobId;
+}
+
+Future<String?> downloadResult(
+  String jobId,
+  String titleText,
+  int order,
+) async {
+  final response = await http.get(
+    Uri.parse('http://localhost:8000/api/synchronize/download/$jobId'),
+  );
+  final savePath = '${titleText}_${order}_output.zip';
+
+  if (response.statusCode == 200) {
+    final file = File(savePath);
+    await file.writeAsBytes(response.bodyBytes);
+  } else {
+    return null;
+  }
+
+  return savePath;
+}
+
+Future<void> unzipResult(String zipPath, String titleText, int order) async {
+  final bytes = File(zipPath).readAsBytesSync();
+  final archive = ZipDecoder().decodeBytes(bytes);
+  for (final file in archive) {
+    final extension = path.extension(file.name);
+    final outputDir = path.dirname(zipPath);
+    final filePath = '$outputDir/${titleText}_order$extension';
+    if (file.isFile) {
+      // Make sure the parent directory exists
+      await Directory(File(filePath).parent.path).create(recursive: true);
+      // Write the file content
+      File(filePath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(file.content as List<int>);
+    } else {
+      // It's a directory — just create it
+      await Directory(filePath).create(recursive: true);
+    }
+  }
 }
 
 // Notification configurations
@@ -162,9 +206,9 @@ Future<void> _ensureNotificationsInitialized() async {
 /// - When [progress] >= 1.0 (job done), it finalizes the notification (no progress bar).
 Future<void> onProgress(
   double progress,
-  String message, {
-  String title = 'Generating lecture',
-}) async {
+  String message,
+  String lectureTitle,
+) async {
   await _ensureNotificationsInitialized();
 
   // Normalize
@@ -188,6 +232,7 @@ Future<void> onProgress(
     indeterminate: false,
   );
 
+  final title = 'Generating Lecture: $lectureTitle';
   final details = NotificationDetails(android: androidDetails);
 
   await _notifier.show(

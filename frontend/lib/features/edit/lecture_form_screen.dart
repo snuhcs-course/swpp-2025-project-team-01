@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:archive/archive.dart' as arch;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
@@ -702,7 +700,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
-        final jobId = await requestLecture(slidePath, audioFileEntry, i);
+        final jobId = await requestLecture(slidePath, audioFileEntry, titleText, i);
         if (jobId == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
