@@ -162,7 +162,7 @@ Future<void> unzipResult(String zipPath, String titleText, int order) async {
   for (final file in archive) {
     final extension = path.extension(file.name);
     final outputDir = path.dirname(zipPath);
-    final filePath = '$outputDir/${titleText}_order$extension';
+    final filePath = '$outputDir/${titleText}_$order$extension';
     if (file.isFile) {
       // Make sure the parent directory exists
       await Directory(File(filePath).parent.path).create(recursive: true);

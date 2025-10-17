@@ -186,26 +186,30 @@ class HiveLecture {
     required this.weekLabel,
     required this.title,
     required this.durationSec,
-    this.slidesUrl,
-    this.audioUrl,
+    this.slidePath,
+    required this.audioPaths,
     this.thumbnailUrl,
-    this.transcriptUrl,
+    this.transcriptPaths,
     this.createdAt,
     this.updatedAt,
   });
 
   /// 백엔드 API 응답에서 생성
-  factory HiveLecture.fromJson(Map<String, dynamic> json) {
+  factory HiveLecture.fromJson(
+    Map<String, dynamic> json,
+    List<String?> audioPaths,
+    List<String> jsonPaths,
+  ) {
     return HiveLecture(
       id: json['id'] as String,
       subjectId: json['subject_id'] as String,
       weekLabel: json['week_label'] as String,
       title: json['title'] as String,
       durationSec: json['duration_sec'] as int,
-      slidesUrl: json['slides_url'] as String?,
-      audioUrl: json['audio_url'] as String?,
+      slidePath: json['slides_url'] as String?,
+      audioPaths: audioPaths,
       thumbnailUrl: json['thumbnail_url'] as String?,
-      transcriptUrl: json['transcript_url'] as String?,
+      transcriptPaths: jsonPaths,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -231,16 +235,16 @@ class HiveLecture {
   int durationSec;
 
   @HiveField(5)
-  String? slidesUrl; // 백엔드 파일 URL (PDF)
+  String? slidePath; // 백엔드 파일 경로 (PDF)
 
   @HiveField(6)
-  String? audioUrl; // 백엔드 파일 URL (오디오)
+  List<String?>? audioPaths; // 백엔드 파일 경로 (오디오)
 
   @HiveField(7)
   String? thumbnailUrl; // 썸네일 이미지 URL
 
   @HiveField(8)
-  String? transcriptUrl; // 자막/스크립트 JSON URL
+  List<String>? transcriptPaths; // 자막/스크립트 JSON 경로
 
   @HiveField(9)
   DateTime? createdAt;
@@ -256,10 +260,10 @@ class HiveLecture {
       'week_label': weekLabel,
       'title': title,
       'duration_sec': durationSec,
-      'slides_url': slidesUrl,
-      'audio_url': audioUrl,
+      'slides_url': slidePath,
+      'audio_url': audioPaths,
       'thumbnail_url': thumbnailUrl,
-      'transcript_url': transcriptUrl,
+      'transcript_url': transcriptPaths,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -273,7 +277,7 @@ class HiveLecture {
       weekLabel: weekLabel,
       title: title,
       durationSec: durationSec,
-      slidesPath: slidesUrl, // URL을 path로 사용
+      slidesPath: slidePath, // URL을 path로 사용
       thumbs: thumbnailUrl != null ? [thumbnailUrl!] : [],
     );
   }
@@ -284,10 +288,10 @@ class HiveLecture {
     String? weekLabel,
     String? title,
     int? durationSec,
-    String? slidesUrl,
-    String? audioUrl,
+    String? slidePath,
+    List<String?>? audioPaths,
     String? thumbnailUrl,
-    String? transcriptUrl,
+    List<String>? transcriptPaths,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -297,10 +301,10 @@ class HiveLecture {
       weekLabel: weekLabel ?? this.weekLabel,
       title: title ?? this.title,
       durationSec: durationSec ?? this.durationSec,
-      slidesUrl: slidesUrl ?? this.slidesUrl,
-      audioUrl: audioUrl ?? this.audioUrl,
+      slidePath: slidePath ?? this.slidePath,
+      audioPaths: audioPaths ?? this.audioPaths,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
-      transcriptUrl: transcriptUrl ?? this.transcriptUrl,
+      transcriptPaths: transcriptPaths ?? this.transcriptPaths,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -320,10 +324,10 @@ class HiveLecture {
         weekLabel: meta['weekLabel'] as String? ?? 'Week ?',
         title: meta['title'] as String? ?? 'Untitled',
         durationSec: meta['durationSec'] as int? ?? 0,
-        slidesUrl: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
-        audioUrl: null, // 데모는 로컬 파일 사용
+        slidePath: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
+        audioPaths: null, // 데모는 로컬 파일 사용
         thumbnailUrl: null,
-        transcriptUrl: 'assets/lectures/$lectureId/transcript.json',
+        transcriptPaths: ['assets/lectures/$lectureId/transcript.json'],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

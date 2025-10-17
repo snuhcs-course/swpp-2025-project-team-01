@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as path;
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
@@ -699,6 +702,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final effectiveAudios = _audioFiles
           .where((e) => (e.filePath ?? '').isNotEmpty)
           .toList();
+      final audioPaths = <String>[];
+      final jsonPaths = <String>[];
+      final durations = <int>[];
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
@@ -723,7 +729,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             );
             return;
           }
+
           await unzipResult(zipPath, titleText, i);
+          final outputDir = path.dirname(zipPath);
+          audioPaths.add('$outputDir/${titleText}_$i.opus');
+          final jsonPath = File('$outputDir/${titleText}_$i.json');
+          jsonPaths.add('$outputDir/${titleText}_$i.json');
+          final jsonData =
+              jsonDecode(await jsonPath.readAsString())
+                  as Map<String, Map<String, dynamic>>;
+          durations.add(jsonData['metadata']?['total_duration'] as int);
         } catch (err) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
@@ -731,26 +746,27 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         }
       }
 
-      // 4. 임시: 데모 강의 생성 (백엔드 구현 전까지)
-      final demoLecture = HiveLecture(
+      // 4. 강의 구조체 생성
+      final generatedLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,
-        durationSec: 3600, // 임시 값
-        slidesUrl: _slidePdfPath,
-        audioUrl: _audioFiles[0].filePath,
+        durationSec: durations[0], // Only support single audio cases for now
+        slidePath: _slidePdfPath,
+        audioPaths: audioPaths,
+        transcriptPaths: jsonPaths,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       // 5. Hive에 강의 저장
-      await _hive.addLecture(demoLecture);
+      await _hive.addLecture(generatedLecture);
 
       // 6. 과목에 강의 추가
       final subject = _hive.getSubject(_selectedSubjectId!);
       if (subject != null) {
-        final updatedLectureIds = [...subject.lectureIds, demoLecture.id];
+        final updatedLectureIds = [...subject.lectureIds, generatedLecture.id];
         await _hive.updateSubject(
           _selectedSubjectId!,
           lectureIds: updatedLectureIds,
