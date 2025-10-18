@@ -144,25 +144,38 @@ Future<String?> downloadResult(
   final response = await http.get(
     Uri.parse('http://localhost:8000/api/synchronize/download/$jobId'),
   );
-  final savePath = '${titleText}_${order}_output.zip';
 
   if (response.statusCode == 200) {
+    // 앱의 임시 디렉토리 가져오기 (Android/iOS 모두 쓰기 가능)
+    final directory = await getTemporaryDirectory();
+    final savePath = '${directory.path}/${titleText}_${order}_output.zip';
+
     final file = File(savePath);
     await file.writeAsBytes(response.bodyBytes);
+
+    return savePath;
   } else {
     return null;
   }
-
-  return savePath;
 }
 
 Future<void> unzipResult(String zipPath, String titleText, int order) async {
-  final bytes = File(zipPath).readAsBytesSync();
+  final zipFile = File(zipPath);
+  if (!zipFile.existsSync()) {
+    throw Exception('Zip file not found: $zipPath');
+  }
+
+  final bytes = zipFile.readAsBytesSync();
   final archive = ZipDecoder().decodeBytes(bytes);
+
+  // 앱의 영구 저장소 디렉토리 가져오기
+  final documentsDir = await getApplicationDocumentsDirectory();
+  final outputDir = documentsDir.path;
+
   for (final file in archive) {
     final extension = path.extension(file.name);
-    final outputDir = path.dirname(zipPath);
     final filePath = '$outputDir/${titleText}_$order$extension';
+
     if (file.isFile) {
       // Make sure the parent directory exists
       await Directory(File(filePath).parent.path).create(recursive: true);
@@ -174,6 +187,13 @@ Future<void> unzipResult(String zipPath, String titleText, int order) async {
       // It's a directory — just create it
       await Directory(filePath).create(recursive: true);
     }
+  }
+
+  // Unzip 완료 후 zip 파일 삭제
+  try {
+    await zipFile.delete();
+  } catch (e) {
+    // Ignore deletion errors
   }
 }
 

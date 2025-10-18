@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
@@ -732,7 +732,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           }
 
           await unzipResult(zipPath, titleText, i);
-          final outputDir = path.dirname(zipPath);
+          final documentsDir = await getApplicationDocumentsDirectory();
+          final outputDir = documentsDir.path;
           audioPaths.add('$outputDir/${titleText}_$i.opus');
           final jsonPath = File('$outputDir/${titleText}_$i.json');
           jsonPaths.add('$outputDir/${titleText}_$i.json');
