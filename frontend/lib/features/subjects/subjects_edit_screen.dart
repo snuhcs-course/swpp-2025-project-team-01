@@ -153,7 +153,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       },
       // 패널 롱프레스 시 과목 편집 다이얼로그 표시
       onLongPress: () async {
-        await _showSubjectEditDialog(context, subject);
+        await _showSubjectEditDialog(subject);
       },
     );
   }
@@ -194,10 +194,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 편집 다이얼로그 표시
   ///
   /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공합니다.
-  Future<void> _showSubjectEditDialog(
-    BuildContext context,
-    Subject subject,
-  ) async {
+  Future<void> _showSubjectEditDialog(Subject subject) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
@@ -215,10 +212,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
     if (result['action'] == 'delete') {
       // 삭제 확인 다이얼로그 표시
-      final confirmDelete = await _showDeleteConfirmationDialog(
-        context,
-        subject,
-      );
+      final confirmDelete = await _showDeleteConfirmationDialog(subject);
 
       if (confirmDelete == true && mounted) {
         setState(() {
@@ -239,10 +233,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 삭제 확인 다이얼로그
   ///
   /// 과목 삭제 시 해당 과목의 모든 강의도 함께 삭제됨을 경고합니다.
-  Future<bool?> _showDeleteConfirmationDialog(
-    BuildContext context,
-    Subject subject,
-  ) {
+  Future<bool?> _showDeleteConfirmationDialog(Subject subject) {
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
