@@ -66,7 +66,6 @@ class PdfCacheService {
             _pageImageFutures.remove(pageNumber);
           })
           .catchError((error) {
-            print('Error loading page $pageNumber: $error');
             _pageImageFutures.remove(pageNumber);
           });
     }
@@ -111,7 +110,6 @@ class PdfCacheService {
           _pageImageFutures.remove(pageNumber);
         })
         .catchError((error) {
-          print('Error loading page $pageNumber: $error');
           _pageImageFutures.remove(pageNumber);
         });
 

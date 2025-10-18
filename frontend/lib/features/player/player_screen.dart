@@ -240,47 +240,39 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   // 첫 페이지만 빠르게 렌더링 (전체 PDF 로드 전)
   Future<void> _renderFirstPageQuickly(String pdfPath) async {
-    try {
-      // 임시로 PDF 문서를 열어서 첫 페이지만 렌더링
-      final tempDocument = await PdfDocument.openAsset(pdfPath);
-      final page = await tempDocument.getPage(1);
-      final pageImage = await page.render(
-        width: page.width * 2,
-        height: page.height * 2,
-        format: PdfPageImageFormat.png,
-      );
-      await page.close();
-      await tempDocument.close();
+    // 임시로 PDF 문서를 열어서 첫 페이지만 렌더링
+    final tempDocument = await PdfDocument.openAsset(pdfPath);
+    final page = await tempDocument.getPage(1);
+    final pageImage = await page.render(
+      width: page.width * 2,
+      height: page.height * 2,
+      format: PdfPageImageFormat.png,
+    );
+    await page.close();
+    await tempDocument.close();
 
-      // 첫 페이지를 캐시 서비스에 저장
-      if (mounted && pageImage != null) {
-        _pdfCacheService.setCachedImage(1, pageImage.bytes);
-        setState(() {}); // UI 업데이트
-      }
-    } catch (e) {
-      print('Error loading first page quickly: $e');
+    // 첫 페이지를 캐시 서비스에 저장
+    if (mounted && pageImage != null) {
+      _pdfCacheService.setCachedImage(1, pageImage.bytes);
+      setState(() {}); // UI 업데이트
     }
   }
 
   // 백그라운드에서 전체 PDF 문서 로드 및 캐싱
   Future<void> _loadFullPdfDocument(String pdfPath) async {
-    try {
-      // 전체 PDF 문서 로드
-      _pdfDocument = await PdfDocument.openAsset(pdfPath);
-      _pdfCacheService.setPdfDocument(_pdfDocument);
+    // 전체 PDF 문서 로드
+    _pdfDocument = await PdfDocument.openAsset(pdfPath);
+    _pdfCacheService.setPdfDocument(_pdfDocument);
 
-      if (mounted) {
-        setState(() {
-          _pdfController = PdfController(document: Future.value(_pdfDocument!));
-        });
-      }
-
-      // 2-21번 페이지 미리 캐싱 (백그라운드)
-      final totalPages = _lectureMetadata?.slides ?? 10;
-      _pdfCacheService.preloadPageImages(2, totalPages);
-    } catch (e) {
-      print('Error loading full PDF document: $e');
+    if (mounted) {
+      setState(() {
+        _pdfController = PdfController(document: Future.value(_pdfDocument!));
+      });
     }
+
+    // 2-21번 페이지 미리 캐싱 (백그라운드)
+    final totalPages = _lectureMetadata?.slides ?? 10;
+    _pdfCacheService.preloadPageImages(2, totalPages);
   }
 
   // 슬라이드 리스트 스크롤 시 호출되는 핸들러
@@ -418,9 +410,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
             if (_pdfController != null)
               PdfView(
                 controller: _pdfController!,
-                onDocumentLoaded: (document) {
-                  print('PDF loaded: ${document.pagesCount} pages');
-                },
                 onPageChanged: (page) {
                   setState(() {
                     _currentPage = page;
@@ -677,9 +666,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 if (_pdfController != null)
                   PdfView(
                     controller: _pdfController!,
-                    onDocumentLoaded: (document) {
-                      print('PDF loaded: ${document.pagesCount} pages');
-                    },
                     onPageChanged: (page) {
                       setState(() {
                         _currentPage = page;
