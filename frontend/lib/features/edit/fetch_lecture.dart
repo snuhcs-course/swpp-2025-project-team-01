@@ -75,7 +75,7 @@ Future<String?> requestLecture(
   int order,
   bool isSingleAudio
 ) async {
-  final endpoint = Uri.parse('http://localhost:8000/api/synchronize/stream');
+  final endpoint = Uri.parse('http://34.64.191.255:8000/api/synchronize/stream');
   final req = http.MultipartRequest('POST', endpoint);
 
   final File slideFile;
@@ -151,7 +151,7 @@ Future<String?> downloadResult(
   int order,
 ) async {
   final response = await http.get(
-    Uri.parse('http://localhost:8000/api/synchronize/download/$jobId'),
+    Uri.parse('http://34.64.191.255:8000/api/synchronize/download/$jobId'),
   );
 
   if (response.statusCode == 200) {
