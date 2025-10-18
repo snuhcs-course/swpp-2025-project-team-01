@@ -5,6 +5,7 @@ import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/home_widgets.dart';
+import 'package:re_view/features/home/custom_drawer.dart';
 
 /// 메인 홈 화면
 class HomeScreen extends StatefulWidget {
@@ -64,75 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               if (reduceMotion) {
                 // 모션 줄이기: 즉시 나타나는 다이얼로그
-                showDialog(
-                  context: context,
-                  barrierColor: Colors.black54,
-                  builder: (ctx) => Align(
-                    alignment: Alignment.centerLeft,
-                    child: Material(
-                      color: Theme.of(context).canvasColor,
-                      elevation: 16,
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.75,
-                        height: double.infinity,
-                        child: SafeArea(
-                          child: ListView(
-                            padding: EdgeInsets.zero,
-                            children: [
-                              DrawerHeader(
-                                child: Align(
-                                  alignment: Alignment.bottomLeft,
-                                  child: Text(
-                                    l10n.menu,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              ListTile(
-                                title: Text(l10n.addLecture),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  Navigator.pushNamed(
-                                    context,
-                                    Routes.lectureForm,
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                title: Text(l10n.editSubjects),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  Navigator.pushNamed(
-                                    context,
-                                    Routes.subjectsEdit,
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                title: Text(l10n.editTags),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  Navigator.pushNamed(context, Routes.tagsEdit);
-                                },
-                              ),
-                              const Divider(),
-                              ListTile(
-                                title: Text(l10n.settings),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  Navigator.pushNamed(context, Routes.settings);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
+                CustomDrawer.showAsDialog(context);
               } else {
                 // 일반: Drawer 사용
                 Scaffold.of(scaffoldContext).openDrawer();
@@ -149,56 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      drawer: reduceMotion
-          ? null
-          : Drawer(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  DrawerHeader(
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Text(
-                        l10n.menu,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  ListTile(
-                    title: Text(l10n.addLecture),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, Routes.lectureForm);
-                    },
-                  ),
-                  ListTile(
-                    title: Text(l10n.editSubjects),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, Routes.subjectsEdit);
-                    },
-                  ),
-                  ListTile(
-                    title: Text(l10n.editTags),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, Routes.tagsEdit);
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    title: Text(l10n.settings),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, Routes.settings);
-                    },
-                  ),
-                ],
-              ),
-            ),
+      drawer: reduceMotion ? null : const CustomDrawer(),
       body: CustomScrollView(
         slivers: [
           // 상단 pill 두 개
