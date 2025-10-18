@@ -539,8 +539,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['m4a', 'mp3', 'wav'],
+      type: FileType.audio
     );
 
     if (result != null && result.files.single.path != null) {
@@ -702,6 +701,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final effectiveAudios = _audioFiles
           .where((e) => (e.filePath ?? '').isNotEmpty)
           .toList();
+
       final audioPaths = <String>[];
       final jsonPaths = <String>[];
       final durations = <int>[];
@@ -723,6 +723,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           }
 
           final zipPath = await downloadResult(jobId, titleText, i);
+
           if (zipPath == null) {
             _showToast(
               l10n.isKorean ? '강의 다운로드에 실패했습니다.' : 'Lecture download failed.',
