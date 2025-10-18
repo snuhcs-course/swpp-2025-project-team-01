@@ -28,47 +28,28 @@ class PdfCacheService {
     return ((pageNumber - 2) ~/ cacheChunkSize) * cacheChunkSize + 2;
   }
 
-  /// 페이지가 필요할 때 해당 청크를 미리 로딩
-  void preloadPageImagesIfNeeded(int pageNumber, int totalPages) {
-    final chunkStart = getChunkStartPage(pageNumber);
-
-    // 이미 캐싱된 청크인지 확인
-    if (_pageImageCache.containsKey(chunkStart)) {
-      return;
-    }
-
-    preloadPageImages(chunkStart, totalPages);
-  }
-
-  /// 특정 청크의 페이지들을 미리 로딩 (20개 단위)
-  void preloadPageImages(int startPage, int totalPages) {
+  /// 단일 페이지만 캐싱 (아직 캐싱되지 않은 경우에만)
+  void cacheSinglePage(int pageNumber) {
     if (_pdfDocument == null) {
       return;
     }
 
-    final endPage = (startPage + cacheChunkSize - 1).clamp(1, totalPages);
-
-    for (int pageNumber = startPage; pageNumber <= endPage; pageNumber++) {
-      // 이미 캐싱되었거나 로딩 중이면 스킵
-      if (_pageImageCache.containsKey(pageNumber) ||
-          _pageImageFutures.containsKey(pageNumber)) {
-        continue;
-      }
-
-      // Future를 생성하고 저장
-      final future = _renderPdfPage(pageNumber);
-      _pageImageFutures[pageNumber] = future;
-
-      // Future가 완료되면 캐시에 저장
-      future
-          .then((imageBytes) {
-            _pageImageCache[pageNumber] = imageBytes;
-            _pageImageFutures.remove(pageNumber);
-          })
-          .catchError((error) {
-            _pageImageFutures.remove(pageNumber);
-          });
+    // 이미 캐싱되었거나 로딩 중이면 스킵
+    if (_pageImageCache.containsKey(pageNumber) ||
+        _pageImageFutures.containsKey(pageNumber)) {
+      return;
     }
+
+    // 페이지 렌더링 시작
+    final future = _renderPdfPage(pageNumber);
+    _pageImageFutures[pageNumber] = future;
+
+    future.then((imageBytes) {
+      _pageImageCache[pageNumber] = imageBytes;
+      _pageImageFutures.remove(pageNumber);
+    }).catchError((error) {
+      _pageImageFutures.remove(pageNumber);
+    });
   }
 
   /// PDF 페이지를 렌더링하여 이미지 바이트 반환
@@ -77,15 +58,23 @@ class PdfCacheService {
       throw Exception('PDF document not loaded');
     }
 
-    final page = await _pdfDocument!.getPage(pageNumber);
-    final pageImage = await page.render(
-      width: page.width * 2,
-      height: page.height * 2,
-      format: PdfPageImageFormat.png,
-    );
-    await page.close();
+    try {
+      final page = await _pdfDocument!.getPage(pageNumber);
+      final pageImage = await page.render(
+        width: page.width * 2,
+        height: page.height * 2,
+        format: PdfPageImageFormat.png,
+      );
+      await page.close();
 
-    return pageImage!.bytes;
+      if (pageImage == null) {
+        throw Exception('Failed to render PDF page $pageNumber: pageImage is null');
+      }
+
+      return pageImage.bytes;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// 캐시된 이미지 또는 Future를 반환

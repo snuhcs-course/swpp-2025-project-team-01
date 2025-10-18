@@ -136,17 +136,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
         throw FormatException('Invalid metadata format');
       }
 
-      // 첫 페이지만 빠르게 렌더링 (전체 PDF 로드 전)
-      final pdfPath = 'assets/lectures/$lectureId/${lectureId}_slides.pdf';
-      await _renderFirstPageQuickly(pdfPath);
-
       setState(() {
         _totalTime = _transcriptData!.metadata.totalDuration;
-        _isLoading = false;
       });
 
-      // 백그라운드에서 전체 PDF 문서 로드 및 나머지 페이지 캐싱
-      _loadFullPdfDocument(pdfPath);
+      // PDF 문서 먼저 로드
+      final pdfPath = 'assets/lectures/$lectureId/${lectureId}_slides.pdf';
+      await _loadFullPdfDocument(pdfPath);
+
+      setState(() {
+        _isLoading = false;
+      });
 
       // 오디오 파일 로드 및 자동 재생
       await _audioService.loadAudio(
@@ -168,22 +168,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _setupAudioListeners() {
     // 재생 위치 변경 리스너
     _audioService.positionStream.listen((position) {
-      setState(() {
-        _currentTime = position.inMilliseconds / 1000.0;
-        _updateCurrentSentence();
-      });
+      _currentTime = position.inMilliseconds / 1000.0;
+      _updateCurrentSentence();
     });
 
     // 재생 상태 변경 리스너
     _audioService.stateStream.listen((state) {
-      setState(() {
-        _isPlaying = state == PlayerState.playing;
-      });
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+      }
     });
   }
 
   void _updateCurrentSentence() {
-    if (_transcriptData == null) {
+    if (_transcriptData == null || !mounted) {
       return;
     }
 
@@ -192,23 +192,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
       if (_currentTime >= sentence.startTime &&
           _currentTime < sentence.endTime) {
         if (_currentSentenceIndex != i) {
+          // 모든 상태 변경을 하나의 setState로 통합
+          final shouldUpdatePage = _isSynced && _currentPage != sentence.slideNumber;
+
           setState(() {
             _currentSentenceIndex = i;
+            if (shouldUpdatePage) {
+              _currentPage = sentence.slideNumber;
+            }
           });
 
-          // Sync가 활성화된 경우에만 슬라이드 자동 이동
-          if (_isSynced && _currentPage != sentence.slideNumber) {
-            setState(() {
-              _currentPage = sentence.slideNumber;
-            });
+          // setState 밖에서 실행
+          if (shouldUpdatePage) {
             _pdfController?.jumpToPage(sentence.slideNumber);
-
-            // 다음 청크 미리 로딩
-            final totalPages = _lectureMetadata?.slides ?? 0;
-            _pdfCacheService.preloadPageImagesIfNeeded(
-              sentence.slideNumber,
-              totalPages,
-            );
           }
 
           // 사용자가 스크롤 중이 아니고, 영상이 재생 중일 때만 자동으로 스크롤
@@ -238,60 +234,30 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return syncedPage - _currentPage;
   }
 
-  // 첫 페이지만 빠르게 렌더링 (전체 PDF 로드 전)
-  Future<void> _renderFirstPageQuickly(String pdfPath) async {
-    // 임시로 PDF 문서를 열어서 첫 페이지만 렌더링
-    final tempDocument = await PdfDocument.openAsset(pdfPath);
-    final page = await tempDocument.getPage(1);
-    final pageImage = await page.render(
-      width: page.width * 2,
-      height: page.height * 2,
-      format: PdfPageImageFormat.png,
-    );
-    await page.close();
-    await tempDocument.close();
-
-    // 첫 페이지를 캐시 서비스에 저장
-    if (mounted && pageImage != null) {
-      _pdfCacheService.setCachedImage(1, pageImage.bytes);
-      setState(() {}); // UI 업데이트
-    }
-  }
-
-  // 백그라운드에서 전체 PDF 문서 로드 및 캐싱
+  // 전체 PDF 문서 로드
   Future<void> _loadFullPdfDocument(String pdfPath) async {
-    // 전체 PDF 문서 로드
-    _pdfDocument = await PdfDocument.openAsset(pdfPath);
-    _pdfCacheService.setPdfDocument(_pdfDocument);
+    try {
+      // 전체 PDF 문서 로드
+      _pdfDocument = await PdfDocument.openAsset(pdfPath);
+      _pdfCacheService.setPdfDocument(_pdfDocument);
 
-    if (mounted) {
-      setState(() {
-        _pdfController = PdfController(document: Future.value(_pdfDocument!));
-      });
+      if (mounted) {
+        final controller = PdfController(
+          document: Future.value(_pdfDocument!),
+        );
+
+        setState(() {
+          _pdfController = controller;
+        });
+      }
+    } catch (e) {
+      //print('Error loading PDF document: $e');
     }
-
-    // 2-21번 페이지 미리 캐싱 (백그라운드)
-    final totalPages = _lectureMetadata?.slides ?? 10;
-    _pdfCacheService.preloadPageImages(2, totalPages);
   }
 
   // 슬라이드 리스트 스크롤 시 호출되는 핸들러
   void _handleSlidesListScroll(int visibleEndPage) {
-    final totalPages = _lectureMetadata?.slides ?? 0;
-
-    // 보이는 마지막 페이지의 청크가 캐싱되어 있는지 확인하고, 없으면 로딩
-    _pdfCacheService.preloadPageImagesIfNeeded(visibleEndPage, totalPages);
-
-    // 다음 청크도 미리 로딩 (스무스한 스크롤을 위해)
-    if (visibleEndPage < totalPages) {
-      final nextChunkStart = _pdfCacheService.getChunkStartPage(
-        visibleEndPage + 1,
-      );
-      if (nextChunkStart !=
-          _pdfCacheService.getChunkStartPage(visibleEndPage)) {
-        _pdfCacheService.preloadPageImagesIfNeeded(nextChunkStart, totalPages);
-      }
-    }
+    // 스크롤로 보이는 페이지는 캐싱하지 않음 (필요시 onPageChanged에서 처리)
   }
 
   Future<void> _scrollToCurrentSentence() async {
@@ -414,18 +380,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   setState(() {
                     _currentPage = page;
                   });
+
+                  // 현재 페이지를 캐싱 (아직 캐싱되지 않은 경우에만)
+                  _pdfCacheService.cacheSinglePage(page);
                 },
-              )
-            else if (_pdfCacheService.getCachedImageDirect(1) != null)
-              // 첫 페이지 캐시가 있으면 표시
-              Container(
-                color: Colors.black87,
-                child: Center(
-                  child: Image.memory(
-                    _pdfCacheService.getCachedImageDirect(1)!,
-                    fit: BoxFit.contain,
-                  ),
-                ),
               )
             else
               // 로딩 중
@@ -670,18 +628,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       setState(() {
                         _currentPage = page;
                       });
+
+                      // 현재 페이지를 캐싱 (아직 캐싱되지 않은 경우에만)
+                      _pdfCacheService.cacheSinglePage(page);
                     },
-                  )
-                else if (_pdfCacheService.getCachedImageDirect(1) != null)
-                  // 첫 페이지 캐시가 있으면 표시
-                  Container(
-                    color: Colors.black87,
-                    child: Center(
-                      child: Image.memory(
-                        _pdfCacheService.getCachedImageDirect(1)!,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
                   )
                 else
                   // 로딩 중
