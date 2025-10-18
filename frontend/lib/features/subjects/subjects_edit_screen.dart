@@ -346,7 +346,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 새로운 과목을 생성하고 태그를 할당할 수 있습니다.
   Future<void> _showCreateSubjectDialog(BuildContext context) async {
     final titleController = TextEditingController();
-    final allTags = hive.getTags();
+    final allTags = hive.getTags().map((t) => t.toTag()).toList();
     final selectedTagIds = <String>{};
 
     final result = await showDialog<bool>(
@@ -382,11 +382,8 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                   runSpacing: 8,
                   children: allTags.map((tag) {
                     final isSelected = selectedTagIds.contains(tag.id);
-                    return ChoiceChip(
-                      label: Text(
-                        '#${tag.name}',
-                        style: const TextStyle(color: Colors.black),
-                      ),
+                    return SelectableTagPill(
+                      tag: tag,
                       selected: isSelected,
                       onSelected: (_) {
                         setDialogState(() {
@@ -397,11 +394,6 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                           }
                         });
                       },
-                      backgroundColor: Color(tag.color),
-                      selectedColor: Color(tag.color),
-                      elevation: isSelected ? 4 : 2,
-                      side: BorderSide.none,
-                      showCheckmark: true,
                     );
                   }).toList(),
                 ),
@@ -493,7 +485,10 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final allTags = HiveManager.instance.getTags();
+    final allTags = HiveManager.instance
+        .getTags()
+        .map((t) => t.toTag())
+        .toList();
 
     return AlertDialog(
       title: const Text('과목 수정'),
@@ -533,11 +528,8 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
               runSpacing: 8,
               children: allTags.map((tag) {
                 final isSelected = _selectedTagIds.contains(tag.id);
-                return ChoiceChip(
-                  label: Text(
-                    '#${tag.name}',
-                    style: const TextStyle(color: Colors.black),
-                  ),
+                return SelectableTagPill(
+                  tag: tag,
                   selected: isSelected,
                   onSelected: (_) {
                     setState(() {
@@ -548,11 +540,6 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
                       }
                     });
                   },
-                  backgroundColor: Color(tag.color),
-                  selectedColor: Color(tag.color),
-                  elevation: isSelected ? 4 : 2,
-                  side: BorderSide.none,
-                  showCheckmark: true,
                 );
               }).toList(),
             ),

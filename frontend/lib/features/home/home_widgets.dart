@@ -183,19 +183,10 @@ class TagChips extends StatelessWidget {
       children: List.generate(tags.length, (i) {
         final Tag t = tags[i];
         final bool isSel = selected.contains(t.id);
-        final Color tagColor = Color(t.color);
-        return ChoiceChip(
-          label: Text(
-            '#${t.name}',
-            style: const TextStyle(color: Colors.black),
-          ),
+        return SelectableTagPill(
+          tag: t,
           selected: isSel,
           onSelected: (_) => onToggle(t.id),
-          backgroundColor: tagColor,
-          selectedColor: tagColor,
-          elevation: isSel ? 4 : 2,
-          side: BorderSide.none,
-          showCheckmark: true,
         );
       }),
     );

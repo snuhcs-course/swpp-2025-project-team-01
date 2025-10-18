@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/shared/widgets.dart';
 
 /// 태그 색상 테마
 ///
@@ -331,20 +332,11 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 각 태그를 칩 형태로 표시하며, 선택 시 체크마크와 그림자로 구분합니다.
   Widget _buildTagChip(int index) {
     final isSelected = _selected == index;
-    final tagColor = Color(_tags[index].color);
 
-    return ChoiceChip(
-      label: Text(
-        '#${_tags[index].name}',
-        style: const TextStyle(color: Colors.black),
-      ),
+    return SelectableTagPill(
+      tag: _tags[index],
       selected: isSelected,
       onSelected: (_) => _syncForm(index),
-      backgroundColor: tagColor,
-      selectedColor: tagColor,
-      elevation: isSelected ? 4 : 2,
-      side: BorderSide.none,
-      showCheckmark: true,
     );
   }
 

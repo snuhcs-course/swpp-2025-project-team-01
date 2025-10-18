@@ -55,6 +55,72 @@ class LoadingOverlay extends StatelessWidget {
   }
 }
 
+/// 태그를 칩 형태로 표시하는 공통 위젯 (비선택형)
+class TagPill extends StatelessWidget {
+  const TagPill({
+    super.key,
+    required this.tag,
+    this.labelPrefix = '#',
+    this.label,
+  });
+
+  final Tag tag;
+  final String? label;
+  final String labelPrefix;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = Color(tag.color);
+    return Chip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: const TextStyle(color: Colors.black),
+      ),
+      backgroundColor: color,
+      elevation: 2,
+      side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+    );
+  }
+}
+
+/// 태그 선택에 사용되는 공통 칩 위젯 (ChoiceChip 기반)
+class SelectableTagPill extends StatelessWidget {
+  const SelectableTagPill({
+    super.key,
+    required this.tag,
+    required this.selected,
+    required this.onSelected,
+    this.showCheckmark = true,
+    this.labelPrefix = '#',
+    this.label,
+  });
+
+  final Tag tag;
+  final bool selected;
+  final ValueChanged<bool> onSelected;
+  final bool showCheckmark;
+  final String? label;
+  final String labelPrefix;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = Color(tag.color);
+    return ChoiceChip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: const TextStyle(color: Colors.black),
+      ),
+      selected: selected,
+      onSelected: onSelected,
+      backgroundColor: color,
+      selectedColor: color,
+      elevation: selected ? 4 : 2,
+      side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+      showCheckmark: showCheckmark,
+    );
+  }
+}
+
 /// 과목 패널 헤더 위젯 (홈 화면 & 과목 수정 화면 공통)
 ///
 /// 검은 배경의 헤더로 과목 제목, 태그, 펼침/접기 버튼을 표시합니다.
@@ -166,15 +232,7 @@ class SubjectPanelHeader extends StatelessWidget {
                 child: Wrap(
                   spacing: 8,
                   children: tags.map((tag) {
-                    return Chip(
-                      label: Text(
-                        '#${tag.name}',
-                        style: const TextStyle(color: Colors.black),
-                      ),
-                      backgroundColor: Color(tag.color),
-                      elevation: 2,
-                      side: BorderSide.none,
-                    );
+                    return TagPill(tag: tag);
                   }).toList(),
                 ),
               ),
