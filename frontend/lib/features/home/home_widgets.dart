@@ -5,8 +5,8 @@ import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/shared/widgets.dart';
 
-const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
 const _panelRadius = 22.0;
 const _panelShadow = BoxShadow(
   color: Color(0x1A000000),
@@ -295,68 +295,16 @@ class _SubjectPanelState extends State<SubjectPanel>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 검정 헤더 (태그 + ★ + 제목 + 화살표)
-          Container(
-            decoration: BoxDecoration(
-              color: _black,
-              borderRadius: expanded
-                  ? const BorderRadius.only(
-                      topLeft: Radius.circular(_panelRadius),
-                      topRight: Radius.circular(_panelRadius),
-                    )
-                  : BorderRadius.circular(_panelRadius),
-            ),
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 제목 라인
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        widget.subject.favorite
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: h.important,
-                        size: 22,
-                      ),
-                      onPressed: widget.onToggleFavorite,
-                      tooltip: '즐겨찾기',
-                    ),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      child: Text(
-                        widget.subject.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        expanded
-                            ? Icons.keyboard_arrow_down
-                            : Icons.keyboard_arrow_up,
-                        color: Colors.white,
-                      ),
-                      onPressed: _toggleExpanded,
-                    ),
-                  ],
-                ),
-                // 태그 라인
-                if (widget.tags.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 40),
-                    child: Wrap(
-                      spacing: 8,
-                      children: _subjectTagChips(context, widget.tags),
-                    ),
-                  ),
-              ],
-            ),
+          SubjectPanelHeader(
+            title: widget.subject.title,
+            tags: widget.tags,
+            expanded: expanded,
+            onToggleExpanded: _toggleExpanded,
+            favoriteIcon: widget.subject.favorite
+                ? Icons.star
+                : Icons.star_border,
+            onToggleFavorite: widget.onToggleFavorite,
+            favoriteIconColor: h.important,
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
@@ -387,19 +335,6 @@ class _SubjectPanelState extends State<SubjectPanel>
         ],
       ),
     );
-  }
-
-  List<Widget> _subjectTagChips(BuildContext context, List<Tag> tags) {
-    return List.generate(tags.length, (i) {
-      final Tag t = tags[i];
-      final Color tagColor = Color(t.color);
-      return Chip(
-        label: Text('#${t.name}', style: const TextStyle(color: Colors.black)),
-        backgroundColor: tagColor,
-        elevation: 2,
-        side: BorderSide.none,
-      );
-    });
   }
 }
 
