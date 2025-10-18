@@ -257,7 +257,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   // 슬라이드 리스트 스크롤 시 호출되는 핸들러
   void _handleSlidesListScroll(int visibleEndPage) {
-    // 스크롤로 보이는 페이지는 캐싱하지 않음 (필요시 onPageChanged에서 처리)
+    // 스크롤 시 자동 캐싱을 하지 않음 - 보수적으로 접근
+    // FutureBuilder가 필요한 페이지만 요청하도록 함
   }
 
   Future<void> _scrollToCurrentSentence() async {
@@ -381,8 +382,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     _currentPage = page;
                   });
 
-                  // 현재 페이지를 캐싱 (아직 캐싱되지 않은 경우에만)
-                  _pdfCacheService.cacheSinglePage(page);
+                  // 페이지 변경 시 캐싱은 FutureBuilder에서 필요할 때만 수행됨
+                  // 여기서는 명시적으로 캐싱하지 않음 (보수적 접근)
                 },
               )
             else
@@ -517,6 +518,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
           setState(() {
             _currentPage = pageNumber;
           });
+          // 캐시되지 않은 페이지라면 즉시 캐싱 시작 (동시 렌더링 제한 준수)
+          if (_pdfCacheService.getCachedImageDirect(pageNumber) == null) {
+            _pdfCacheService.getCachedOrRenderPage(pageNumber);
+          }
           // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
           _seekToSlide(pageNumber);
         },
@@ -629,8 +634,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         _currentPage = page;
                       });
 
-                      // 현재 페이지를 캐싱 (아직 캐싱되지 않은 경우에만)
-                      _pdfCacheService.cacheSinglePage(page);
+                      // 페이지 변경 시 캐싱은 FutureBuilder에서 필요할 때만 수행됨
+                      // 여기서는 명시적으로 캐싱하지 않음 (보수적 접근)
                     },
                   )
                 else
@@ -881,6 +886,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 setState(() {
                   _currentPage = pageNumber;
                 });
+                // 캐시되지 않은 페이지라면 즉시 캐싱 시작 (동시 렌더링 제한 준수)
+                if (_pdfCacheService.getCachedImageDirect(pageNumber) == null) {
+                  _pdfCacheService.getCachedOrRenderPage(pageNumber);
+                }
                 // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
                 _seekToSlide(pageNumber);
               },
