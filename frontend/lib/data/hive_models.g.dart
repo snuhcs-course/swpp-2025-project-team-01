@@ -246,10 +246,10 @@ class HiveLectureAdapter extends TypeAdapter<HiveLecture> {
       weekLabel: fields[2] as String,
       title: fields[3] as String,
       durationSec: fields[4] as int,
-      slidesUrl: fields[5] as String?,
-      audioUrl: fields[6] as String?,
+      slidePath: fields[5] as String?,
+      audioPaths: (fields[6] as List?)?.cast<String?>(),
       thumbnailUrl: fields[7] as String?,
-      transcriptUrl: fields[8] as String?,
+      transcriptPaths: (fields[8] as List?)?.cast<String>(),
       createdAt: fields[9] as DateTime?,
       updatedAt: fields[10] as DateTime?,
     );
@@ -270,13 +270,13 @@ class HiveLectureAdapter extends TypeAdapter<HiveLecture> {
       ..writeByte(4)
       ..write(obj.durationSec)
       ..writeByte(5)
-      ..write(obj.slidesUrl)
+      ..write(obj.slidePath)
       ..writeByte(6)
-      ..write(obj.audioUrl)
+      ..write(obj.audioPaths)
       ..writeByte(7)
       ..write(obj.thumbnailUrl)
       ..writeByte(8)
-      ..write(obj.transcriptUrl)
+      ..write(obj.transcriptPaths)
       ..writeByte(9)
       ..write(obj.createdAt)
       ..writeByte(10)
