@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:http/http.dart' as http;
@@ -72,19 +73,27 @@ Future<String?> requestLecture(
   AudioFileEntry audioFileEntry,
   String titleText,
   int order,
+  bool isSingleAudio
 ) async {
   final endpoint = Uri.parse('http://localhost:8000/api/synchronize/stream');
   final req = http.MultipartRequest('POST', endpoint);
 
-  final pdfStart = int.parse(audioFileEntry.endPageController.text);
-  final pdfEnd = int.parse(audioFileEntry.endPageController.text);
-  splitPdfRange(slidePath, start: pdfStart, end: pdfEnd, order: order);
-  final slideFile = File(
-    slidePath.replaceFirst(
+  final File slideFile;
+
+  if (isSingleAudio) {
+    slideFile = File(slidePath);
+  } else {
+    final pdfStart = int.parse(audioFileEntry.startPageController.text);
+    final pdfEnd = int.parse(audioFileEntry.endPageController.text);
+
+    await splitPdfRange(slidePath, start: pdfStart, end: pdfEnd, order: order);
+
+    final splitSlideFilePath = slidePath.replaceFirst(
       RegExp(r'\.pdf$', caseSensitive: false),
       '_tmp$order.pdf',
-    ),
-  );
+    );
+    slideFile = File(splitSlideFilePath);
+  }
 
   req.files.add(
     await http.MultipartFile.fromPath(

@@ -714,7 +714,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             audioFileEntry,
             titleText,
             i,
+            effectiveAudios.length == 1 ? true : false
           );
+
           if (jobId == null) {
             _showToast(
               l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
