@@ -41,6 +41,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// 태그 이름의 타입을 반환 (정렬 우선순위: 숫자 > 한글 > 영어)
+  int _getNameType(String name) {
+    if (name.isEmpty) {
+      return 3;
+    }
+    final first = name[0];
+    if (RegExp(r'[0-9]').hasMatch(first)) {
+      return 0;
+    }
+    if (RegExp(r'[ㄱ-ㅎ가-힣]').hasMatch(first)) {
+      return 1;
+    }
+    if (RegExp(r'[a-zA-Z]').hasMatch(first)) {
+      return 2;
+    }
+    return 3;
+  }
+
+  /// 태그 이름 비교 함수 (숫자 > 한글 > 영어 순서)
+  int _compareTagNames(String a, String b) {
+    final aType = _getNameType(a);
+    final bType = _getNameType(b);
+    if (aType != bType) {
+      return aType.compareTo(bType);
+    }
+    return a.compareTo(b);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -159,32 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     .whereType<Tag>()
                     .toList();
                 // 태그 정렬: 숫자 > 한글 > 영어
-                int _getNameType(String name) {
-                  if (name.isEmpty) {
-                    return 3;
-                  }
-                  final first = name[0];
-                  if (RegExp(r'[0-9]').hasMatch(first)) {
-                    return 0;
-                  }
-                  if (RegExp(r'[ㄱ-ㅎ가-힣]').hasMatch(first)) {
-                    return 1;
-                  }
-                  if (RegExp(r'[a-zA-Z]').hasMatch(first)) {
-                    return 2;
-                  }
-                  return 3;
-                }
-
-                int _compareTagNames(String a, String b) {
-                  final aType = _getNameType(a);
-                  final bType = _getNameType(b);
-                  if (aType != bType) {
-                    return aType.compareTo(bType);
-                  }
-                  return a.compareTo(b);
-                }
-
                 subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));
 
                 final lectures = _manager
