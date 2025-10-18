@@ -455,9 +455,11 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     try {
-      final PdfDocument document = await PdfDocument.openAsset(
-        widget.lec.slidesPath!,
-      );
+      // assets 경로인지 파일 시스템 경로인지 확인
+      final bool isAsset = widget.lec.slidesPath!.startsWith('assets/');
+      final PdfDocument document = isAsset
+          ? await PdfDocument.openAsset(widget.lec.slidesPath!)
+          : await PdfDocument.openFile(widget.lec.slidesPath!);
       final PdfPage page = await document.getPage(1);
       // 즉시 렌더링하여 캐싱
       final PdfPageImage? image = await page.render(
