@@ -538,9 +538,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.audio
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
 
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -714,7 +712,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             audioFileEntry,
             titleText,
             i,
-            effectiveAudios.length == 1 ? true : false
+            effectiveAudios.length == 1 ? true : false,
           );
 
           if (jobId == null) {
@@ -740,8 +738,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           final jsonPath = File('$outputDir/${titleText}_$i.json');
           jsonPaths.add('$outputDir/${titleText}_$i.json');
           final jsonData =
-              jsonDecode(await jsonPath.readAsString())
-                  as Map<String, dynamic>;
+              jsonDecode(await jsonPath.readAsString()) as Map<String, dynamic>;
           final metadata = jsonData['metadata'] as Map<String, dynamic>?;
           durations.add((metadata?['total_duration'] as double).toInt());
         } catch (err) {
@@ -772,7 +769,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       if (_selectedSubjectId != null) {
         final subject = _hive.getSubject(_selectedSubjectId!);
         if (subject != null) {
-          final updatedLectureIds = [...subject.lectureIds, generatedLecture.id];
+          final updatedLectureIds = [
+            ...subject.lectureIds,
+            generatedLecture.id,
+          ];
           await _hive.updateSubject(
             _selectedSubjectId!,
             lectureIds: updatedLectureIds,

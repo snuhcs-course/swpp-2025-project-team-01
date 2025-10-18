@@ -12,6 +12,8 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
 
+const String _serverAddress = '34.64.191.255';
+
 /// Returns a new PDF (bytes) containing pages [start]..[end] (1-based, inclusive).
 Future<void> splitPdfRange(
   String inputFile, {
@@ -73,9 +75,11 @@ Future<String?> requestLecture(
   AudioFileEntry audioFileEntry,
   String titleText,
   int order,
-  bool isSingleAudio
+  bool isSingleAudio,
 ) async {
-  final endpoint = Uri.parse('http://34.64.191.255:8000/api/synchronize/stream');
+  final endpoint = Uri.parse(
+    'http://$_serverAddress:8000/api/synchronize/stream',
+  );
   final req = http.MultipartRequest('POST', endpoint);
 
   final File slideFile;
@@ -151,7 +155,7 @@ Future<String?> downloadResult(
   int order,
 ) async {
   final response = await http.get(
-    Uri.parse('http://34.64.191.255:8000/api/synchronize/download/$jobId'),
+    Uri.parse('http://$_serverAddress:8000/api/synchronize/download/$jobId'),
   );
 
   if (response.statusCode == 200) {
