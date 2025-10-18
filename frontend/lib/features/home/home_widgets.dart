@@ -13,6 +13,11 @@ const _panelShadow = BoxShadow(
   blurRadius: 10,
   offset: Offset(0, 3),
 );
+const _pillShadow = BoxShadow(
+  color: Color(0x1A000000),
+  blurRadius: 4,
+  offset: Offset(0, 2),
+);
 
 /// 빈 상태 메시지 위젯
 class EmptyStateMessage extends StatelessWidget {
@@ -40,6 +45,44 @@ class EmptyStateMessage extends StatelessWidget {
   }
 }
 
+/// 공통 Pill 버튼 위젯 (FilterPill, FavoritePill의 베이스)
+class _PillButton extends StatelessWidget {
+  const _PillButton({
+    required this.onTap,
+    required this.active,
+    required this.child,
+  });
+
+  final VoidCallback onTap;
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = active ? Colors.black87 : Colors.white;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        boxShadow: const [_pillShadow],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 필터 pill 버튼 위젯
 class FilterPill extends StatelessWidget {
   const FilterPill({
@@ -57,44 +100,23 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = active ? Colors.black87 : Colors.white;
     final Color fg = active ? Colors.white : Colors.black87;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return _PillButton(
+      onTap: onTap,
+      active: active,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
           ),
         ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: fg),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(fontWeight: FontWeight.w600, color: fg),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -116,46 +138,25 @@ class FavoritePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppHighlights h = context.highlights;
-    final Color bg = active ? Colors.black87 : Colors.white;
     final Color fg = active ? Colors.white : Colors.black87;
     final Color starColor = active ? h.important : Colors.black87;
     final IconData starIcon = active ? Icons.star : Icons.star_border;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return _PillButton(
+      onTap: onTap,
+      active: active,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(starIcon, size: 18, color: starColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
           ),
         ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(starIcon, size: 18, color: starColor),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(fontWeight: FontWeight.w600, color: fg),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
