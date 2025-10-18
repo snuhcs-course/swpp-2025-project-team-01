@@ -704,7 +704,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       final audioPaths = <String>[];
       final jsonPaths = <String>[];
-      final durations = <int>[];
+      final durations = <int>[]; //double로 바꿀 것
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
@@ -741,8 +741,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           jsonPaths.add('$outputDir/${titleText}_$i.json');
           final jsonData =
               jsonDecode(await jsonPath.readAsString())
-                  as Map<String, Map<String, dynamic>>;
-          durations.add(jsonData['metadata']?['total_duration'] as int);
+                  as Map<String, dynamic>;
+          final metadata = jsonData['metadata'] as Map<String, dynamic>?;
+          durations.add((metadata?['total_duration'] as double).toInt());
         } catch (err) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
@@ -768,13 +769,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       await _hive.addLecture(generatedLecture);
 
       // 6. 과목에 강의 추가
-      final subject = _hive.getSubject(_selectedSubjectId!);
-      if (subject != null) {
-        final updatedLectureIds = [...subject.lectureIds, generatedLecture.id];
-        await _hive.updateSubject(
-          _selectedSubjectId!,
-          lectureIds: updatedLectureIds,
-        );
+      if (_selectedSubjectId != null) {
+        final subject = _hive.getSubject(_selectedSubjectId!);
+        if (subject != null) {
+          final updatedLectureIds = [...subject.lectureIds, generatedLecture.id];
+          await _hive.updateSubject(
+            _selectedSubjectId!,
+            lectureIds: updatedLectureIds,
+          );
+        }
       }
 
       // 7. 성공 메시지
