@@ -70,11 +70,17 @@ class AudioService {
   /// 재생 중인지 확인
   bool get isPlaying => _player.state == PlayerState.playing;
 
+  /// 오디오 정지
+  Future<void> stop() {
+    return _player.stop();
+  }
+
   /// 리소스 정리
-  void dispose() {
-    _player.dispose();
-    _positionController.close();
-    _stateController.close();
+  Future<void> dispose() async {
+    await _player.stop();
+    await _player.dispose();
+    await _positionController.close();
+    await _stateController.close();
   }
 
   final AudioPlayer _player = AudioPlayer();

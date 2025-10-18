@@ -66,10 +66,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _scrollTimer?.cancel();
     _audioService.dispose();
     _pdfController?.dispose();
     _transcriptScrollController.dispose();
-    _scrollTimer?.cancel();
     super.dispose();
   }
 
