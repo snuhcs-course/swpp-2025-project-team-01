@@ -445,7 +445,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
           // 하단 타임라인 슬라이더
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: VideoTimelineSlider(
               currentTime: _currentTime,
               totalTime: _totalTime,
@@ -802,7 +802,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
           // 하단 타임라인 슬라이더
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: VideoTimelineSlider(
               currentTime: _currentTime,
               totalTime: _totalTime,
