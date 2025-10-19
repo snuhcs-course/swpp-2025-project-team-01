@@ -1,35 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
-import 'package:re_view/core/accessibility_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 /// 모션 줄이기를 지원하는 커스텀 Drawer
+///
+/// 일반 모드: Scaffold의 drawer 속성에 사용
+/// 모션 줄이기 모드: CustomDrawer.showAsDialog()를 호출하여 다이얼로그로 표시
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = AccessibilityService().reduceMotion;
-
-    if (reduceMotion) {
-      // 모션 줄이기: 애니메이션 없는 Drawer
-      return _NoAnimationDrawer();
-    } else {
-      // 일반 Drawer
-      return Drawer(child: _DrawerContent());
-    }
+    return Drawer(child: _DrawerContent());
   }
-}
 
-/// 애니메이션 없는 Drawer (모션 줄이기용)
-class _NoAnimationDrawer extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color:
-          Theme.of(context).drawerTheme.backgroundColor ??
-          Theme.of(context).canvasColor,
-      elevation: 16,
-      child: SafeArea(child: _DrawerContent()),
+  /// 모션 줄이기 모드용 다이얼로그 표시
+  static void showAsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (ctx) => Align(
+        alignment: Alignment.centerLeft,
+        child: Material(
+          color: Theme.of(context).canvasColor,
+          elevation: 16,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.75,
+            height: double.infinity,
+            child: SafeArea(child: _DrawerContent()),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -38,34 +39,35 @@ class _NoAnimationDrawer extends StatelessWidget {
 class _DrawerContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        const DrawerHeader(
-          child: Align(
-            alignment: Alignment.bottomLeft,
-            child: Text(
-              '메뉴',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16.0, 30.0, 16.0, 16.0),
+          child: Text(
+            l10n.menu,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
         ),
+        const Divider(),
         ListTile(
-          title: const Text('수업 추가'),
+          title: Text(l10n.addLecture),
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, Routes.lectureForm);
           },
         ),
         ListTile(
-          title: const Text('과목 수정'),
+          title: Text(l10n.editSubjects),
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, Routes.subjectsEdit);
           },
         ),
         ListTile(
-          title: const Text('태그 수정'),
+          title: Text(l10n.editTags),
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, Routes.tagsEdit);
@@ -73,7 +75,7 @@ class _DrawerContent extends StatelessWidget {
         ),
         const Divider(),
         ListTile(
-          title: const Text('설정'),
+          title: Text(l10n.settings),
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, Routes.settings);

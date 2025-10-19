@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/shared/widgets.dart';
+
+const _editPanelRadius = 22.0;
+const _editPanelShadow = BoxShadow(
+  color: Color(0x1A000000),
+  blurRadius: 10,
+  offset: Offset(0, 3),
+);
 
 /// 과목 편집 화면 (Figma 2-2. Modifying Subjects)
 ///
@@ -145,7 +153,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       },
       // 패널 롱프레스 시 과목 편집 다이얼로그 표시
       onLongPress: () async {
-        await _showSubjectEditDialog(context, subject);
+        await _showSubjectEditDialog(subject);
       },
     );
   }
@@ -186,10 +194,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 편집 다이얼로그 표시
   ///
   /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공합니다.
-  Future<void> _showSubjectEditDialog(
-    BuildContext context,
-    Subject subject,
-  ) async {
+  Future<void> _showSubjectEditDialog(Subject subject) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
@@ -207,10 +212,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
     if (result['action'] == 'delete') {
       // 삭제 확인 다이얼로그 표시
-      final confirmDelete = await _showDeleteConfirmationDialog(
-        context,
-        subject,
-      );
+      final confirmDelete = await _showDeleteConfirmationDialog(subject);
 
       if (confirmDelete == true && mounted) {
         setState(() {
@@ -231,10 +233,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 삭제 확인 다이얼로그
   ///
   /// 과목 삭제 시 해당 과목의 모든 강의도 함께 삭제됨을 경고합니다.
-  Future<bool?> _showDeleteConfirmationDialog(
-    BuildContext context,
-    Subject subject,
-  ) {
+  Future<bool?> _showDeleteConfirmationDialog(Subject subject) {
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
@@ -347,7 +346,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 새로운 과목을 생성하고 태그를 할당할 수 있습니다.
   Future<void> _showCreateSubjectDialog(BuildContext context) async {
     final titleController = TextEditingController();
-    final allTags = hive.getTags();
+    final allTags = hive.getTags().map((t) => t.toTag()).toList();
     final selectedTagIds = <String>{};
 
     final result = await showDialog<bool>(
@@ -383,11 +382,8 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                   runSpacing: 8,
                   children: allTags.map((tag) {
                     final isSelected = selectedTagIds.contains(tag.id);
-                    return ChoiceChip(
-                      label: Text(
-                        '#${tag.name}',
-                        style: const TextStyle(color: Colors.black),
-                      ),
+                    return SelectableTagPill(
+                      tag: tag,
                       selected: isSelected,
                       onSelected: (_) {
                         setDialogState(() {
@@ -398,11 +394,6 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                           }
                         });
                       },
-                      backgroundColor: Color(tag.color),
-                      selectedColor: Color(tag.color),
-                      elevation: isSelected ? 4 : 2,
-                      side: BorderSide.none,
-                      showCheckmark: true,
                     );
                   }).toList(),
                 ),
@@ -494,7 +485,10 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final allTags = HiveManager.instance.getTags();
+    final allTags = HiveManager.instance
+        .getTags()
+        .map((t) => t.toTag())
+        .toList();
 
     return AlertDialog(
       title: const Text('과목 수정'),
@@ -534,11 +528,8 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
               runSpacing: 8,
               children: allTags.map((tag) {
                 final isSelected = _selectedTagIds.contains(tag.id);
-                return ChoiceChip(
-                  label: Text(
-                    '#${tag.name}',
-                    style: const TextStyle(color: Colors.black),
-                  ),
+                return SelectableTagPill(
+                  tag: tag,
                   selected: isSelected,
                   onSelected: (_) {
                     setState(() {
@@ -549,11 +540,6 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
                       }
                     });
                   },
-                  backgroundColor: Color(tag.color),
-                  selectedColor: Color(tag.color),
-                  elevation: isSelected ? 4 : 2,
-                  side: BorderSide.none,
-                  showCheckmark: true,
                 );
               }).toList(),
             ),
@@ -664,61 +650,41 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // ========== 검은 헤더 (과목 이름 + 펼침 버튼) ==========
-            // Long press로 수정 다이얼로그 열기
-            GestureDetector(
-              onLongPress: widget.onLongPress,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // 과목 이름
-                    Expanded(
-                      child: Text(
-                        widget.displayTitle ?? widget.subject.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // 펼침/접기 버튼
-                    IconButton(
-                      color: Colors.white,
-                      icon: Icon(
-                        expanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                      ),
-                      onPressed: () {
-                        final newState = !expanded;
-                        setState(() => expanded = newState);
-                        _saveExpandedState(newState);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: expanded ? Colors.white : Colors.transparent,
+        borderRadius: BorderRadius.circular(_editPanelRadius),
+        boxShadow: expanded ? const [_editPanelShadow] : const [],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ========== 검은 헤더 (과목 이름 + 펼침 버튼) ==========
+          SubjectPanelHeader(
+            title: widget.displayTitle ?? widget.subject.title,
+            tags: const [], // 과목 수정 화면에서는 태그 표시 안 함
+            expanded: expanded,
+            onToggleExpanded: () {
+              final newState = !expanded;
+              setState(() => expanded = newState);
+              _saveExpandedState(newState);
+            },
+            panelRadius: _editPanelRadius,
+            collapsedRadius: BorderRadius.circular(_editPanelRadius),
+            onLongPress: widget.onLongPress,
+            titleEndPadding: 8,
+          ),
 
-            // ========== 강의 리스트 (펼쳤을 때만 표시) ==========
-            if (expanded) ...[
-              const SizedBox(height: 12),
-              ReorderableListView.builder(
+          // ========== 강의 리스트 (펼쳤을 때만 표시) ==========
+          if (expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+              child: ReorderableListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
                 itemCount: widget.lectures.length,
                 onReorder: widget.onReorder,
                 itemBuilder: (_, idx) {
@@ -737,9 +703,8 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel> {
                   );
                 },
               ),
-            ],
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

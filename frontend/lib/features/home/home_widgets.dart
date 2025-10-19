@@ -5,13 +5,18 @@ import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/shared/widgets.dart';
 
-const _black = Color(0xFF1D1D1D); // 패널 헤더 색(피그마)
 const _panelRadius = 22.0;
 const _panelShadow = BoxShadow(
   color: Color(0x1A000000),
   blurRadius: 10,
   offset: Offset(0, 3),
+);
+const _pillShadow = BoxShadow(
+  color: Color(0x1A000000),
+  blurRadius: 4,
+  offset: Offset(0, 2),
 );
 
 /// 빈 상태 메시지 위젯
@@ -40,6 +45,44 @@ class EmptyStateMessage extends StatelessWidget {
   }
 }
 
+/// 공통 Pill 버튼 위젯 (FilterPill, FavoritePill의 베이스)
+class _PillButton extends StatelessWidget {
+  const _PillButton({
+    required this.onTap,
+    required this.active,
+    required this.child,
+  });
+
+  final VoidCallback onTap;
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = active ? Colors.black87 : Colors.white;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        boxShadow: const [_pillShadow],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 필터 pill 버튼 위젯
 class FilterPill extends StatelessWidget {
   const FilterPill({
@@ -57,44 +100,23 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = active ? Colors.black87 : Colors.white;
     final Color fg = active ? Colors.white : Colors.black87;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return _PillButton(
+      onTap: onTap,
+      active: active,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
           ),
         ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: fg),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(fontWeight: FontWeight.w600, color: fg),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -116,46 +138,25 @@ class FavoritePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppHighlights h = context.highlights;
-    final Color bg = active ? Colors.black87 : Colors.white;
     final Color fg = active ? Colors.white : Colors.black87;
     final Color starColor = active ? h.important : Colors.black87;
     final IconData starIcon = active ? Icons.star : Icons.star_border;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return _PillButton(
+      onTap: onTap,
+      active: active,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(starIcon, size: 18, color: starColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
           ),
         ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(starIcon, size: 18, color: starColor),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(fontWeight: FontWeight.w600, color: fg),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -182,19 +183,10 @@ class TagChips extends StatelessWidget {
       children: List.generate(tags.length, (i) {
         final Tag t = tags[i];
         final bool isSel = selected.contains(t.id);
-        final Color tagColor = Color(t.color);
-        return ChoiceChip(
-          label: Text(
-            '#${t.name}',
-            style: const TextStyle(color: Colors.black),
-          ),
+        return SelectableTagPill(
+          tag: t,
           selected: isSel,
           onSelected: (_) => onToggle(t.id),
-          backgroundColor: tagColor,
-          selectedColor: tagColor,
-          elevation: isSel ? 4 : 2,
-          side: BorderSide.none,
-          showCheckmark: true,
         );
       }),
     );
@@ -294,68 +286,16 @@ class _SubjectPanelState extends State<SubjectPanel>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 검정 헤더 (태그 + ★ + 제목 + 화살표)
-          Container(
-            decoration: BoxDecoration(
-              color: _black,
-              borderRadius: expanded
-                  ? const BorderRadius.only(
-                      topLeft: Radius.circular(_panelRadius),
-                      topRight: Radius.circular(_panelRadius),
-                    )
-                  : BorderRadius.circular(_panelRadius),
-            ),
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 제목 라인
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        widget.subject.favorite
-                            ? Icons.star
-                            : Icons.star_border,
-                        color: h.important,
-                        size: 22,
-                      ),
-                      onPressed: widget.onToggleFavorite,
-                      tooltip: '즐겨찾기',
-                    ),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      child: Text(
-                        widget.subject.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        expanded
-                            ? Icons.keyboard_arrow_down
-                            : Icons.keyboard_arrow_up,
-                        color: Colors.white,
-                      ),
-                      onPressed: _toggleExpanded,
-                    ),
-                  ],
-                ),
-                // 태그 라인
-                if (widget.tags.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 40),
-                    child: Wrap(
-                      spacing: 8,
-                      children: _subjectTagChips(context, widget.tags),
-                    ),
-                  ),
-              ],
-            ),
+          SubjectPanelHeader(
+            title: widget.subject.title,
+            tags: widget.tags,
+            expanded: expanded,
+            onToggleExpanded: _toggleExpanded,
+            favoriteIcon: widget.subject.favorite
+                ? Icons.star
+                : Icons.star_border,
+            onToggleFavorite: widget.onToggleFavorite,
+            favoriteIconColor: h.important,
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
@@ -386,19 +326,6 @@ class _SubjectPanelState extends State<SubjectPanel>
         ],
       ),
     );
-  }
-
-  List<Widget> _subjectTagChips(BuildContext context, List<Tag> tags) {
-    return List.generate(tags.length, (i) {
-      final Tag t = tags[i];
-      final Color tagColor = Color(t.color);
-      return Chip(
-        label: Text('#${t.name}', style: const TextStyle(color: Colors.black)),
-        backgroundColor: tagColor,
-        elevation: 2,
-        side: BorderSide.none,
-      );
-    });
   }
 }
 
