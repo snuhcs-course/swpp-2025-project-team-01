@@ -43,3 +43,6 @@ inference_models/pipeline_output/
 # Keystore files
 *.jks
 *.keystore
+
+# vscode
+.vscode
