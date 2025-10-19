@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import 'dart:developer' as developer;
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -10,6 +11,8 @@ import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/core/pdf_cache_service.dart';
+import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/data/hive_models.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key, this.args});
@@ -109,13 +112,32 @@ class _PlayerScreenState extends State<PlayerScreen> {
     try {
       // lectureId 가져오기
       final map = (widget.args is Map) ? widget.args as Map : const {};
-      final lectureId = map['lectureId'] ?? 'lec_demo_001';
+      final lectureId = (map['lectureId'] as String?) ?? 'lec_demo_001';
 
-      // transcript.json 로드
-      final transcriptJson = await rootBundle.loadString(
-        'assets/lectures/$lectureId/transcript.json',
-      );
+      // HiveManager에서 HiveLecture 불러오기
+      final hiveLecture = HiveManager.instance.getLecture(lectureId);
 
+      if (hiveLecture == null) {
+        developer.log('[PLAYER] Lecture not found in Hive: $lectureId');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      developer.log('[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}');
+
+      // transcript.json 로드 (HiveLecture에서 경로 가져오기)
+      final transcriptPath = hiveLecture.transcriptPaths?.isNotEmpty == true
+          ? hiveLecture.transcriptPaths!.first
+          : 'assets/lectures/$lectureId/transcript.json';
+
+      // assets/ 경로면 rootBundle 사용, 아니면 File 사용
+      final transcriptJson = transcriptPath.startsWith('assets/')
+          ? await rootBundle.loadString(transcriptPath)
+          : await File(transcriptPath).readAsString();
+
+      developer.log('[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}');
       try {
         final transcriptJsonData =
             json.decode(transcriptJson) as Map<String, dynamic>;
@@ -128,18 +150,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
         _totalTime = _transcriptData!.metadata.totalDuration;
       });
 
-      // PDF 문서 먼저 로드
-      final pdfPath = 'assets/lectures/$lectureId/${lectureId}_slides.pdf';
+      // PDF 문서 로드 (HiveLecture에서 경로 가져오기)
+      final pdfPath = hiveLecture.slidePath ??
+          'assets/lectures/$lectureId/${lectureId}_slides.pdf';
       await _loadFullPdfDocument(pdfPath);
 
       setState(() {
         _isLoading = false;
       });
 
-      // 오디오 파일 로드 및 자동 재생
-      await _audioService.loadAudio(
-        'lectures/$lectureId/lecture_with_slides.opus',
-      );
+      // 오디오 파일 로드 및 자동 재생 (HiveLecture에서 경로 가져오기)
+      final audioPath = hiveLecture.audioPaths?.isNotEmpty == true &&
+                        hiveLecture.audioPaths!.first != null
+          ? hiveLecture.audioPaths!.first!
+          : 'assets/lectures/$lectureId/lecture_with_slides.opus';
+
+      await _audioService.loadAudio(audioPath);
 
       await _audioService.play();
 
@@ -258,8 +284,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
   // 전체 PDF 문서 로드
   Future<void> _loadFullPdfDocument(String pdfPath) async {
     try {
-      // 전체 PDF 문서 로드
-      _pdfDocument = await PdfDocument.openAsset(pdfPath);
+      // 전체 PDF 문서 로드 - assets/ 경로면 openAsset 사용, 아니면 openFile 사용
+      _pdfDocument = pdfPath.startsWith('assets/')
+          ? await PdfDocument.openAsset(pdfPath)
+          : await PdfDocument.openFile(pdfPath);
       _pdfCacheService.setPdfDocument(_pdfDocument);
 
       if (mounted) {

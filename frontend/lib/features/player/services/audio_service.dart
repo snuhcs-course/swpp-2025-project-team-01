@@ -36,10 +36,18 @@ class AudioService {
   }
 
   /// 오디오 파일 로드 및 재생 준비
-  Future<void> loadAudio(String assetPath) async {
+  /// [path]가 'assets/'로 시작하면 asset으로, '/'로 시작하면 파일로 처리
+  Future<void> loadAudio(String path) async {
     try {
-      await _player.setAsset('assets/$assetPath');
-      developer.log('[AUDIO_SERVICE] Audio loaded: $assetPath');
+      if (path.startsWith('assets/')) {
+        // 이미 'assets/'가 포함된 경로
+        await _player.setAsset(path);
+        developer.log('[AUDIO_SERVICE] Audio loaded from asset: $path');
+      } else {
+        // 상대 경로 (assets/ 추가)
+        await _player.setFilePath('$path');
+        developer.log('[AUDIO_SERVICE] Audio loaded from asset: assets/$path');
+      }
     } catch (e) {
       developer.log('[AUDIO_SERVICE] Error loading audio: $e');
       rethrow;
