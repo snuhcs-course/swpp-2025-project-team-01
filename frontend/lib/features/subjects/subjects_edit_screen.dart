@@ -345,110 +345,137 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   ///
   /// 새로운 과목을 생성하고 태그를 할당할 수 있습니다.
   Future<void> _showCreateSubjectDialog(BuildContext context) async {
-    final titleController = TextEditingController();
-    final allTags = hive.getTags().map((t) => t.toTag()).toList();
-    final selectedTagIds = <String>{};
-
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(AppLocalizations.of(context).addSubject),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 과목명 입력
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: '과목명',
-                  hintText: '예) 소프트웨어 개발의 원리와 실습',
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-
-              // 태그 선택
-              Text(
-                AppLocalizations.of(context).selectTagsOptional,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.maxFinite,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: allTags.map((tag) {
-                    final isSelected = selectedTagIds.contains(tag.id);
-                    return SelectableTagPill(
-                      tag: tag,
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setDialogState(() {
-                          if (isSelected) {
-                            selectedTagIds.remove(tag.id);
-                          } else {
-                            selectedTagIds.add(tag.id);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context).cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (titleController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context).pleaseEnterSubjectName,
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(context, true);
-              },
-              child: Text(AppLocalizations.of(context).add),
-            ),
-          ],
-        ),
+      builder: (context) => _CreateSubjectDialog(
+        allTags: hive.getTags().map((t) => t.toTag()).toList(),
       ),
     );
 
-    // 다이얼로그 결과 처리
-    if (mounted && result == true) {
-      await hive.createSubject(
-        titleController.text.trim(),
-        selectedTagIds.toList(),
-      );
-
-      // 새로 생성된 과목의 작업 복사본 초기화
-      final newSubject = hive.getSubjects().firstWhere(
-        (s) => s.title == titleController.text.trim(),
-      );
-
-      if (mounted) {
-        setState(() {
-          _workingLectureIds[newSubject.id] = [];
-          _workingTagIds[newSubject.id] = List.from(selectedTagIds);
-          _workingTitles[newSubject.id] = newSubject.title;
-        });
-      }
+    if (!mounted || result == null || result['action'] != 'create') {
+      return;
     }
 
-    // 컨트롤러 해제
-    titleController.dispose();
+    final titleText = result['title'] as String;
+    final selectedTagIds = result['tagIds'] as List<String>;
+
+    await hive.createSubject(titleText, selectedTagIds);
+
+    if (mounted) {
+      final newSubject = hive.getSubjects().firstWhere(
+        (s) => s.title == titleText,
+      );
+
+      setState(() {
+        _workingLectureIds[newSubject.id] = [];
+        _workingTagIds[newSubject.id] = List.from(selectedTagIds);
+        _workingTitles[newSubject.id] = newSubject.title;
+      });
+    }
+  }
+}
+
+/// 과목 추가 다이얼로그 위젯
+class _CreateSubjectDialog extends StatefulWidget {
+  const _CreateSubjectDialog({required this.allTags});
+
+  final List<Tag> allTags;
+
+  @override
+  State<_CreateSubjectDialog> createState() => _CreateSubjectDialogState();
+}
+
+class _CreateSubjectDialogState extends State<_CreateSubjectDialog> {
+  late TextEditingController _titleController;
+  final Set<String> _selectedTagIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(AppLocalizations.of(context).addSubject),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _titleController,
+            decoration: const InputDecoration(
+              labelText: '과목명',
+              hintText: '예) 소프트웨어 개발의 원리와 실습',
+            ),
+            autofocus: true,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            AppLocalizations.of(context).selectTagsOptional,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.maxFinite,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.allTags.map((tag) {
+                final isSelected = _selectedTagIds.contains(tag.id);
+                return SelectableTagPill(
+                  tag: tag,
+                  selected: isSelected,
+                  onSelected: (_) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedTagIds.remove(tag.id);
+                      } else {
+                        _selectedTagIds.add(tag.id);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppLocalizations.of(context).cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final text = _titleController.text.trim();
+            if (text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context).pleaseEnterSubjectName,
+                  ),
+                ),
+              );
+              return;
+            }
+            Navigator.pop(context, {
+              'action': 'create',
+              'title': text,
+              'tagIds': _selectedTagIds.toList(),
+            });
+          },
+          child: Text(AppLocalizations.of(context).add),
+        ),
+      ],
+    );
   }
 }
 
