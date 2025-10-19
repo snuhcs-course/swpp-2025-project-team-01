@@ -30,7 +30,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   // 오디오 및 데이터 관련
   final AudioService _audioService = AudioService();
-  LectureMetadata? _lectureMetadata;
   TranscriptData? _transcriptData;
   double _currentTime = 0.0;
   double _totalTime = 0.0;
@@ -111,18 +110,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
       // lectureId 가져오기
       final map = (widget.args is Map) ? widget.args as Map : const {};
       final lectureId = map['lectureId'] ?? 'lec_demo_001';
-
-      // meta.json 로드
-      final metaJson = await rootBundle.loadString(
-        'assets/lectures/$lectureId/meta.json',
-      );
-
-      try {
-        final metaData = json.decode(metaJson) as Map<String, dynamic>;
-        _lectureMetadata = LectureMetadata.fromJson(metaData);
-      } catch (e) {
-        throw FormatException('Invalid metadata format');
-      }
 
       // transcript.json 로드
       final transcriptJson = await rootBundle.loadString(
@@ -615,7 +602,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _buildPagesList() {
-    final pageCount = _lectureMetadata?.slides ?? 10;
+    final pageCount = _pdfDocument?.pagesCount ?? 10;
 
     return Container(
       height: 150,
@@ -1021,7 +1008,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           // 슬라이드 목록
           Expanded(
             child: PdfSlidesList(
-              pageCount: _lectureMetadata?.slides ?? 10,
+              pageCount: _pdfDocument?.pagesCount ?? 10,
               currentPage: _currentPage,
               itemWidth: 150,
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
