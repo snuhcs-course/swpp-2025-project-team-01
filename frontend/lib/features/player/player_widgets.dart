@@ -414,6 +414,8 @@ class PdfSlidesList extends StatefulWidget {
 
 class _PdfSlidesListState extends State<PdfSlidesList> {
   final ScrollController _scrollController = ScrollController();
+  // Future를 캐시하여 FutureBuilder가 매번 새로운 Future를 생성하지 않도록 함
+  final Map<int, Future<Uint8List>> _futureCache = {};
 
   @override
   void initState() {
@@ -483,7 +485,11 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
             child: cachedImage != null
                 ? Image.memory(cachedImage, fit: BoxFit.contain)
                 : FutureBuilder<Uint8List>(
-                    future: widget.getCachedOrRenderPage(pageNumber),
+                    // Future를 캐시하여 매번 새로운 Future가 생성되지 않도록 함
+                    future: _futureCache.putIfAbsent(
+                      pageNumber,
+                      () => widget.getCachedOrRenderPage(pageNumber),
+                    ),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done &&
                           snapshot.hasData) {
@@ -492,6 +498,40 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
                           fit: BoxFit.contain,
                         );
                       }
+
+                      // 에러 표시
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: widget.itemWidth > 160 ? 32 : 24,
+                              ),
+                              SizedBox(height: widget.itemWidth > 160 ? 8 : 4),
+                              Text(
+                                'Error',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: widget.itemWidth > 160 ? 12 : 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                'Page $pageNumber',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: widget.itemWidth > 160 ? 10 : 8,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // 로딩 중
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
