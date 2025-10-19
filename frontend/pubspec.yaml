@@ -41,7 +41,7 @@ dependencies:
   path: ^1.9.0
   path_provider: ^2.1.5
   shared_preferences: ^2.5.3
-  audioplayers: ^6.1.0
+  just_audio: ^0.9.36
   file_picker: ^8.1.6
   scroll_to_index: ^3.0.1
 
