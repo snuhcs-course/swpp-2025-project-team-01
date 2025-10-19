@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -151,7 +150,7 @@ class PdfCacheService {
           // 재귀적으로 재시도 (현재 렌더링 카운트 감소시키고 다시 큐에 추가)
           _currentRenderingCount--;
           _pageImageFutures.remove(pageNumber);
-          return await _queueRenderRequest(pageNumber);
+          return _queueRenderRequest(pageNumber);
         } else {
           // 최대 재시도 횟수 초과
           _retryCount.remove(pageNumber);
@@ -205,8 +204,8 @@ class PdfCacheService {
 
 /// 렌더링 요청 정보
 class _RenderRequest {
+  _RenderRequest(this.pageNumber, this.renderFunction);
+
   final int pageNumber;
   final Future<Uint8List> Function() renderFunction;
-
-  _RenderRequest(this.pageNumber, this.renderFunction);
 }

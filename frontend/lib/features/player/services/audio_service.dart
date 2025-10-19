@@ -46,8 +46,7 @@ class AudioService {
         await _player.setAsset(path);
         developer.log('[AUDIO_SERVICE] Audio loaded from asset: $path');
       } else {
-        // 상대 경로 (assets/ 추가)
-        await _player.setFilePath('$path');
+        await _player.setFilePath(path);
         developer.log('[AUDIO_SERVICE] Audio loaded from asset: assets/$path');
       }
     } catch (e) {

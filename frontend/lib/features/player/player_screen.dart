@@ -12,7 +12,6 @@ import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/core/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
-import 'package:re_view/data/hive_models.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key, this.args});
