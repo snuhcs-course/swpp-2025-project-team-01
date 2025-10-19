@@ -9,22 +9,31 @@ class ThemeManager extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   static const String _key = 'display_mode';
 
+  // SharedPreferences 인스턴스 캐싱
+  SharedPreferences? _prefs;
+
   ThemeMode get themeMode => _themeMode;
 
   /// 저장된 테마 모드를 불러옵니다
   Future<void> loadThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final mode = prefs.getString(_key) ?? 'system';
+    _prefs = await SharedPreferences.getInstance();
+    final mode = _prefs!.getString(_key) ?? 'system';
     _themeMode = _themeModeFromString(mode);
     notifyListeners();
   }
 
   /// 테마 모드를 변경하고 저장합니다
   Future<void> setThemeMode(String mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, mode);
+    await _ensureInitialized();
+    await _prefs!.setString(_key, mode);
     _themeMode = _themeModeFromString(mode);
     notifyListeners();
+  }
+
+  Future<void> _ensureInitialized() async {
+    if (_prefs == null) {
+      await loadThemeMode();
+    }
   }
 
   ThemeMode _themeModeFromString(String mode) {

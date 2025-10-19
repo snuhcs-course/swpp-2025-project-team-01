@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 
 /// 앱의 다국어 지원을 위한 클래스
 class AppLocalizations {
-  final Locale locale;
-
   AppLocalizations(this.locale);
+  final Locale locale;
 
   static AppLocalizations of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   // 지원하는 언어 목록
   static const List<Locale> supportedLocales = [
@@ -42,6 +42,11 @@ class AppLocalizations {
   String get addLecture => isKorean ? '수업 추가' : 'Add Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get editTags => isKorean ? '태그 수정' : 'Edit Tags';
+  String get noFavoriteSubjects =>
+      isKorean ? '즐겨찾기된 과목이 없습니다.' : 'There are no favorite subjects.';
+  String get noSubjectsWithSelectedTags => isKorean
+      ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
+      : 'No subjects match the selected tags.';
 
   // 설정 화면
   String get displayMode => isKorean ? '디스플레이 모드' : 'Display Mode';
@@ -53,12 +58,19 @@ class AppLocalizations {
 
   // 접근성
   String get highContrast => isKorean ? '고대비' : 'High Contrast';
-  String get highContrastDesc => isKorean ? '텍스트와 UI 요소의 대비를 높입니다.' : 'Increase contrast of text and UI elements.';
+  String get highContrastDesc => isKorean
+      ? '텍스트와 UI 요소의 대비를 높입니다.'
+      : 'Increase contrast of text and UI elements.';
   String get reduceMotion => isKorean ? '모션 줄이기' : 'Reduce Motion';
-  String get reduceMotionDesc => isKorean ? '애니메이션 효과를 최소화합니다.' : 'Minimize animation effects.';
+  String get reduceMotionDesc =>
+      isKorean ? '애니메이션 효과를 최소화합니다.' : 'Minimize animation effects.';
   String get emphasizeCaptions => isKorean ? '자막 강조' : 'Emphasize Captions';
-  String get emphasizeCaptionsDesc => isKorean ? '플레이어 자막을 굵게/큰 크기로 표시합니다.' : 'Display player captions in bold and larger size.';
-  String get accessibilityAppliedImmediately => isKorean ? '설정은 재생 화면에 즉시 적용됩니다.' : 'Settings are applied immediately to the player.';
+  String get emphasizeCaptionsDesc => isKorean
+      ? '플레이어 자막을 굵게/큰 크기로 표시합니다.'
+      : 'Display player captions in bold and larger size.';
+  String get accessibilityAppliedImmediately => isKorean
+      ? '설정은 재생 화면에 즉시 적용됩니다.'
+      : 'Settings are applied immediately to the player.';
 
   // 과목
   String get subject => isKorean ? '과목' : 'Subject';
@@ -72,10 +84,14 @@ class AppLocalizations {
   String get editComplete => isKorean ? '수정 완료' : 'Complete';
   String get addSubject => isKorean ? '과목 추가' : 'Add Subject';
   String get subjectName => isKorean ? '과목명' : 'Subject Name';
-  String get subjectNameHint => isKorean ? '예) 소프트웨어 개발의 원리와 실제' : 'e.g.) Principles of Software Development';
+  String get subjectNameHint => isKorean
+      ? '예) 소프트웨어 개발의 원리와 실제'
+      : 'e.g.) Principles of Software Development';
   String get selectTags => isKorean ? '태그 선택' : 'Select Tags';
-  String get selectTagsOptional => isKorean ? '태그 선택 (선택사항)' : 'Select Tags (Optional)';
-  String get pleaseEnterSubjectName => isKorean ? '과목명을 입력해주세요' : 'Please enter subject name';
+  String get selectTagsOptional =>
+      isKorean ? '태그 선택 (선택사항)' : 'Select Tags (Optional)';
+  String get pleaseEnterSubjectName =>
+      isKorean ? '과목명을 입력해주세요' : 'Please enter subject name';
 
   // 태그
   String get tag => isKorean ? '태그' : 'Tag';
@@ -85,10 +101,16 @@ class AppLocalizations {
   String get tagName => isKorean ? '이름' : 'Name';
   String get apply => isKorean ? '적용' : 'Apply';
   String get newTag => isKorean ? '새 태그' : 'New Tag';
-  String get maxTagsReached => isKorean ? '태그는 최대 15개까지 생성할 수 있습니다.' : 'You can create up to 15 tags.';
-  String get pleaseEnterTagName => isKorean ? '태그 이름을 입력해주세요.' : 'Please enter tag name.';
-  String get duplicateTagName => isKorean ? '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.' : 'This name is already in use. Please enter a different name.';
-  String tagDeleteWarning(String tagName, List<String> subjectTitles) => isKorean
+  String get deleteTag => isKorean ? '태그 삭제' : 'Delete Tag';
+  String get maxTagsReached =>
+      isKorean ? '태그는 최대 15개까지 생성할 수 있습니다.' : 'You can create up to 15 tags.';
+  String get pleaseEnterTagName =>
+      isKorean ? '태그 이름을 입력해주세요.' : 'Please enter tag name.';
+  String get duplicateTagName => isKorean
+      ? '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.'
+      : 'This name is already in use. Please enter a different name.';
+  String tagDeleteWarning(String tagName, List<String> subjectTitles) =>
+      isKorean
       ? '태그 "#$tagName"는\n다음 과목에서 사용 중입니다:\n\n${subjectTitles.join('\n')}\n\n삭제하시겠습니까?'
       : 'Tag "#$tagName" is used by:\n\n${subjectTitles.join('\n')}\n\nDo you want to delete?';
 
@@ -104,7 +126,8 @@ class AppLocalizations {
   // 검색 화면
   String get searchLecture => isKorean ? '강의 검색' : 'Search Lectures';
   String get recentSearches => isKorean ? '최근 검색' : 'Recent Searches';
-  String get noRecentSearches => isKorean ? '최근 검색 기록이 없습니다' : 'No recent searches';
+  String get noRecentSearches =>
+      isKorean ? '최근 검색 기록이 없습니다' : 'No recent searches';
   String get searchPlaceholder => isKorean ? '검색어를 입력하세요' : 'Enter search term';
   String get noSearchResults => isKorean ? '검색 결과가 없습니다' : 'No search results';
   String get searchBy => isKorean ? '검색 범위' : 'Search by';
@@ -121,17 +144,24 @@ class AppLocalizations {
 
   String getThemeName(String koreanName) {
     switch (koreanName) {
-      case '파스텔': return themePastel;
-      case '비비드': return themeVivid;
-      case '네온': return themeNeon;
-      case '소프트': return themeSoft;
-      case '어스톤': return themeEarth;
-      default: return koreanName;
+      case '파스텔':
+        return themePastel;
+      case '비비드':
+        return themeVivid;
+      case '네온':
+        return themeNeon;
+      case '소프트':
+        return themeSoft;
+      case '어스톤':
+        return themeEarth;
+      default:
+        return koreanName;
     }
   }
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override

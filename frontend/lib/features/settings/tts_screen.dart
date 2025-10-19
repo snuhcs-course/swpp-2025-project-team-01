@@ -1,23 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/localization/app_localizations.dart';
+import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
-/// Figma: 2-4-2. TTS
-/// - TTS 음성 성별 (남성/여성)
-/// - TTS 악센트 (Am/Br)
-/// - 재생 속도 (슬라이더) x0.5 ~ x2.0
-/// SharedPreference를 통한 정보 저장
+/// TTS(Text-to-Speech) 설정 화면 (Figma 2-4-2. TTS)
+///
+/// 이 화면은 텍스트 음성 변환 기능의 다양한 설정을 제공합니다.
+///
+/// 제공 옵션:
+/// - 음성 성별: 남성/여성 (선택 시 "Hello, World!" 예시 음성 재생)
+/// - TTS 음성 속도: 빠르게/보통/느리게 (선택 시 "Hello, World!" 예시 음성 재생)
+///
+/// UI 구조:
+/// - 상단: 앱바 (제목: "TTS", 닫기 버튼)
+/// - 본문: 성별 선택, TTS 음성 속도 선택
+///
+/// SharedPreferences를 통해 설정을 저장 및 관리합니다.
 class TtsScreen extends StatefulWidget {
   const TtsScreen({super.key});
+
   @override
   State<TtsScreen> createState() => _TtsScreenState();
 }
 
 class _TtsScreenState extends State<TtsScreen> {
-  String _gender = '남성';
-  String _accent = 'Am';
-  double _speed = 1.0;
-  bool _isLoading = true;
+  // TTS 설정 상태
+  String _gender = '남성'; // 음성 성별
+  String _speed = '보통'; // TTS 음성 속도 (빠르게/보통/느리게)
+  bool _isLoading = true; // 로딩 상태
 
   @override
   void initState() {
@@ -25,73 +34,72 @@ class _TtsScreenState extends State<TtsScreen> {
     _loadSettings();
   }
 
+  /// HiveManager에서 저장된 TTS 설정 불러오기
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _gender = prefs.getString('tts_gender') ?? '남성';
-      _accent = prefs.getString('tts_accent') ?? 'Am';
-      _speed = prefs.getDouble('tts_speed') ?? 1.0;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _gender = HiveManager.instance.settings.ttsGender;
+        _speed = HiveManager.instance.settings.ttsSpeed;
+        _isLoading = false;
+      });
+    }
   }
 
+  /// 음성 성별 저장 및 예시 음성 재생
   Future<void> _saveGender(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('tts_gender', value);
+    await HiveManager.instance.updateTts(gender: value);
     setState(() => _gender = value);
+    _playPreviewTTS();
   }
 
-  Future<void> _saveAccent(String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('tts_accent', value);
-    setState(() => _accent = value);
-  }
-
-  Future<void> _saveSpeed(double value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('tts_speed', value);
+  /// TTS 음성 속도 저장 및 예시 음성 재생
+  Future<void> _saveSpeed(String value) async {
+    await HiveManager.instance.updateTts(speed: value);
     setState(() => _speed = value);
+    _playPreviewTTS();
   }
 
-  // 슬라이더 값(0.0~1.0)을 실제 속도(0.5~2.0)로 변환
-  // 0.0 -> 0.5x, 0.5 -> 1.0x, 1.0 -> 2.0x
-  double _sliderToSpeed(double slider) {
-    // 0.5 근처(±0.05)는 1.0x로 스냅
-    if ((slider - 0.5).abs() < 0.05) {
-      return 1.0;
-    }
-
-    if (slider < 0.5) {
-      // 왼쪽 절반: 0.5x ~ 1.0x (선형)
-      return 0.5 + slider;
-    } else {
-      // 오른쪽 절반: 1.0x ~ 2.0x (선형)
-      return 1.0 + (slider - 0.5) * 2;
-    }
+  /// 예시 TTS 음성 재생
+  ///
+  /// 현재 설정된 성별과 속도로 "Hello, World!" 음성을 재생합니다.
+  /// TODO: 실제 TTS 엔진 연동 필요
+  void _playPreviewTTS() {
+    // TODO: TTS 엔진 연동
+    // 예시 코드:
+    // final ttsEngine = TTSEngine.instance;
+    // ttsEngine.speak(
+    //   text: "Hello, World!",
+    //   gender: _gender,
+    //   speed: _speedToRate(_speed),
+    // );
   }
 
-  // 실제 속도(0.5~2.0)를 슬라이더 값(0.0~1.0)으로 변환
-  double _speedToSlider(double speed) {
-    if (speed < 1.0) {
-      // 0.5x ~ 1.0x -> 0.0 ~ 0.5
-      return speed - 0.5;
-    } else if (speed == 1.0) {
-      return 0.5;
-    } else {
-      // 1.0x ~ 2.0x -> 0.5 ~ 1.0
-      return 0.5 + (speed - 1.0) / 2;
+  /// TTS 음성 속도를 재생 비율로 변환
+  ///
+  /// - 빠르게: 1.5 (주어진 시간 대비 꽤 빠르게 읽음)
+  /// - 보통: 1.0 (조금 빠르게 읽음)
+  /// - 느리게: 0.7 (주어진 시간을 꽉 채워 읽음)
+  static double speedToRate(String speed) {
+    switch (speed) {
+      case '빠르게':
+        return 1.5;
+      case '느리게':
+        return 0.7;
+      case '보통':
+      default:
+        return 1.0;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isKorean = AppLocalizations.of(context).isKorean;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('TTS'),
@@ -109,143 +117,59 @@ class _TtsScreenState extends State<TtsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TTS 음성 성별
-            Text(
-              AppLocalizations.of(context).isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
-            ),
+            _buildSectionTitle(isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender'),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _genderButton(AppLocalizations.of(context).isKorean ? '남성' : 'Male', _gender == '남성', context),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _genderButton(AppLocalizations.of(context).isKorean ? '여성' : 'Female', _gender == '여성', context),
-                ),
-              ],
-            ),
-
+            _buildGenderButtons(isKorean),
             const SizedBox(height: 32),
-
-            // TTS 악센트
-            Text(
-              AppLocalizations.of(context).isKorean ? 'TTS 악센트' : 'TTS Accent',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
-            ),
+            _buildSectionTitle(isKorean ? 'TTS 음성 속도' : 'TTS Voice Speed'),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _accentButton('Am', _accent == 'Am', context),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _accentButton('Br', _accent == 'Br', context),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 32),
-
-            // 재생 속도
-            Text(
-              AppLocalizations.of(context).isKorean ? '재생 속도' : 'Playback Speed',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
-            ),
-            const SizedBox(height: 24),
-
-            // 슬라이더와 속도 표시
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // 중앙 마커 (1.0x 위치)
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        child: FractionallySizedBox(
-                          widthFactor: 1.0,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: Align(
-                              alignment: Alignment.center,
-                              child: Container(
-                                width: 2,
-                                height: 20,
-                                color: const Color(0xFF999999),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // 슬라이더
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: const Color(0xFF424242),
-                          inactiveTrackColor: const Color(0xFFE0E0E0),
-                          thumbColor: const Color(0xFF424242),
-                          overlayColor: const Color(0xFF424242).withValues(alpha: 0.1),
-                          trackHeight: 4,
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                        ),
-                        child: Slider(
-                          value: _speedToSlider(_speed),
-                          min: 0.0,
-                          max: 1.0,
-                          onChanged: (sliderValue) {
-                            final speed = _sliderToSpeed(sliderValue);
-                            _saveSpeed(speed);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 60,
-                  child: Text(
-                    'x${_speed.toStringAsFixed(1)}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-
-            // 슬라이더 하단 라벨
-            Padding(
-              padding: const EdgeInsets.only(left: 12, right: 72, top: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'x${0.5.toStringAsFixed(1)}',
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF999999)),
-                  ),
-                  Text(
-                    'x${2.0.toStringAsFixed(1)}',
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF999999)),
-                  ),
-                ],
-              ),
-            ),
+            _buildSpeedRadioButtons(isKorean),
           ],
         ),
       ),
     );
   }
 
-  Widget _genderButton(String label, bool isSelected, BuildContext context) {
-    final actualValue = AppLocalizations.of(context).isKorean ? label : (label == 'Male' ? '남성' : '여성');
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
+    );
+  }
+
+  Widget _buildGenderButtons(bool isKorean) {
+    return Row(
+      children: [
+        Expanded(
+          child: _genderButton(isKorean ? '남성' : 'Male', _gender == '남성'),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _genderButton(isKorean ? '여성' : 'Female', _gender == '여성'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpeedRadioButtons(bool isKorean) {
+    return Column(
+      children: [
+        _speedRadioButton(isKorean ? '빠르게' : 'Fast', '빠르게'),
+        const SizedBox(height: 8),
+        _speedRadioButton(isKorean ? '보통' : 'Normal', '보통'),
+        const SizedBox(height: 8),
+        _speedRadioButton(isKorean ? '느리게' : 'Slow', '느리게'),
+      ],
+    );
+  }
+
+  Widget _genderButton(String label, bool isSelected) {
+    final actualValue = label == 'Male'
+        ? '남성'
+        : label == 'Female'
+        ? '여성'
+        : label;
+
     return GestureDetector(
       onTap: () => _saveGender(actualValue),
       child: Container(
@@ -271,29 +195,59 @@ class _TtsScreenState extends State<TtsScreen> {
     );
   }
 
-  Widget _accentButton(String label, bool isSelected, BuildContext context) {
+  Widget _speedRadioButton(String label, String value) {
+    final isSelected = _speed == value;
+
     return GestureDetector(
-      onTap: () => _saveAccent(label),
+      onTap: () => _saveSpeed(value),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : const Color(0xFFE0E0E0),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: const Color(0xFF424242), width: 2)
-              : null,
+          border: Border.all(color: const Color(0xFFE0E0E0)),
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? Colors.black : const Color(0xFF666666),
+        child: Row(
+          children: [
+            _buildRadioIcon(isSelected),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? Colors.black : const Color(0xFF666666),
+              ),
             ),
-          ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRadioIcon(bool isSelected) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isSelected ? const Color(0xFF424242) : const Color(0xFFBDBDBD),
+          width: 2,
+        ),
+      ),
+      child: isSelected
+          ? Center(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF424242),
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

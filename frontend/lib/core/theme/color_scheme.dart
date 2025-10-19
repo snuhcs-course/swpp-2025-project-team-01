@@ -9,17 +9,6 @@ final ColorScheme lightScheme = ColorScheme.fromSeed(
 
 /// AppHighlights holds the highlight color roles for the app.
 class AppHighlights extends ThemeExtension<AppHighlights> {
-  final Color important;
-  final Color onImportant;
-  final Color list1;
-  final Color onList1;
-  final Color list2;
-  final Color onList2;
-  final Color list3;
-  final Color onList3;
-  final Color misc;
-  final Color onMisc;
-
   const AppHighlights({
     required this.important,
     required this.onImportant,
@@ -47,6 +36,17 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
       onMisc: scheme.primary,
     );
   }
+
+  final Color important;
+  final Color onImportant;
+  final Color list1;
+  final Color onList1;
+  final Color list2;
+  final Color onList2;
+  final Color list3;
+  final Color onList3;
+  final Color misc;
+  final Color onMisc;
 
   @override
   AppHighlights copyWith({
@@ -76,11 +76,10 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
   }
 
   @override
-  AppHighlights lerp(
-    covariant ThemeExtension<AppHighlights>? other,
-    double t,
-  ) {
-    if (other is! AppHighlights) return this;
+  AppHighlights lerp(covariant ThemeExtension<AppHighlights>? other, double t) {
+    if (other is! AppHighlights) {
+      return this;
+    }
 
     return AppHighlights(
       important: Color.lerp(important, other.important, t) ?? important,
@@ -97,18 +96,15 @@ class AppHighlights extends ThemeExtension<AppHighlights> {
   }
 
   List<TagHighlight> get tagHighlights => [
-        TagHighlight(background: list1, foreground: onList1),
-        TagHighlight(background: list2, foreground: onList2),
-        TagHighlight(background: list3, foreground: onList3),
-      ];
+    TagHighlight(background: list1, foreground: onList1),
+    TagHighlight(background: list2, foreground: onList2),
+    TagHighlight(background: list3, foreground: onList3),
+  ];
 }
 
 /// 태그 하이라이트 색상을 담는 클래스
 class TagHighlight {
-  const TagHighlight({
-    required this.background,
-    required this.foreground,
-  });
+  const TagHighlight({required this.background, required this.foreground});
 
   final Color background;
   final Color foreground;

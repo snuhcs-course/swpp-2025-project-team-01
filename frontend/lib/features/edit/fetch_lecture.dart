@@ -1,0 +1,277 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' show Offset;
+import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:re_view/features/edit/lecture_form_screen.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:path/path.dart' as path;
+
+const String _serverAddress = '34.64.191.255';
+
+/// Returns a new PDF (bytes) containing pages [start]..[end] (1-based, inclusive).
+Future<void> splitPdfRange(
+  String inputFile, {
+  required int start,
+  required int end,
+  required int order,
+}) async {
+  final inputBytes = await File(inputFile).readAsBytes();
+  final src = PdfDocument(inputBytes: inputBytes);
+
+  try {
+    final pageCount = src.pages.count;
+    if (pageCount == 0) {
+      throw StateError('Source PDF has no pages.');
+    }
+
+    // normalize & clamp (1-based -> 0-based)
+    final s = (start < 1) ? 0 : start - 1;
+    final e = (end > pageCount) ? pageCount - 1 : end - 1;
+    if (s > e) {
+      throw ArgumentError('Invalid range: start ($start) > end ($end).');
+    }
+
+    final out = PdfDocument();
+    try {
+      for (int i = s; i <= e; i++) {
+        final srcPage = src.pages[i];
+
+        // Match page size in the destination
+        out.pageSettings.size = srcPage.size;
+
+        // Add a new page and draw the source page template onto it
+        final newPage = out.pages.add();
+        final template = srcPage.createTemplate();
+        final bounds = Offset(
+          newPage.getClientSize().width,
+          newPage.getClientSize().height,
+        );
+        newPage.graphics.drawPdfTemplate(template, bounds);
+      }
+
+      final List<int> bytes = await out.save();
+      final outputPath = inputFile.replaceFirst(
+        RegExp(r'\.pdf$', caseSensitive: false),
+        '_tmp$order.pdf',
+      );
+      await File(outputPath).writeAsBytes(bytes, flush: true);
+    } finally {
+      out.dispose();
+    }
+  } finally {
+    src.dispose();
+  }
+}
+
+/// Send lecture generation requests (stream)
+Future<String?> requestLecture(
+  String slidePath,
+  AudioFileEntry audioFileEntry,
+  String titleText,
+  int order,
+  bool isSingleAudio,
+) async {
+  final endpoint = Uri.parse(
+    'http://$_serverAddress:8000/api/synchronize/stream',
+  );
+  final req = http.MultipartRequest('POST', endpoint);
+
+  final File slideFile;
+
+  if (isSingleAudio) {
+    slideFile = File(slidePath);
+  } else {
+    final pdfStart = int.parse(audioFileEntry.startPageController.text);
+    final pdfEnd = int.parse(audioFileEntry.endPageController.text);
+
+    await splitPdfRange(slidePath, start: pdfStart, end: pdfEnd, order: order);
+
+    final splitSlideFilePath = slidePath.replaceFirst(
+      RegExp(r'\.pdf$', caseSensitive: false),
+      '_tmp$order.pdf',
+    );
+    slideFile = File(splitSlideFilePath);
+  }
+
+  req.files.add(
+    await http.MultipartFile.fromPath(
+      'lecture_note',
+      slideFile.path,
+      filename: path.basename(slideFile.path),
+      contentType: MediaType('application', 'pdf'),
+    ),
+  );
+
+  final audioFilePath = audioFileEntry.filePath;
+  if (audioFilePath == null) {
+    return null;
+  }
+  req.files.add(
+    await http.MultipartFile.fromPath(
+      'audio',
+      audioFilePath,
+      filename: path.basename(audioFilePath),
+      contentType: MediaType('audio', 'm4a'),
+    ),
+  );
+
+  final result = await req.send();
+
+  String? jobId;
+  await for (var chunk in result.stream.transform(utf8.decoder)) {
+    final lines = chunk.split('\n');
+    for (var line in lines) {
+      if (line.startsWith('data: ')) {
+        final jsonData = line.substring(6);
+        final data = jsonDecode(jsonData) as Map<String, dynamic>;
+
+        jobId = data['job_id'] as String;
+        final progress = data['progress'] as double;
+        final message = data['message'] as String;
+
+        onProgress(progress, message, titleText);
+
+        if (data['status'] == 'completed') {
+          return jobId;
+        } else if (data['status'] == 'failed') {
+          throw Exception('Job failed: ${data['error']}');
+        }
+      }
+    }
+  }
+
+  return jobId;
+}
+
+Future<String?> downloadResult(
+  String jobId,
+  String titleText,
+  int order,
+) async {
+  final response = await http.get(
+    Uri.parse('http://$_serverAddress:8000/api/synchronize/download/$jobId'),
+  );
+
+  if (response.statusCode == 200) {
+    // 앱의 임시 디렉토리 가져오기 (Android/iOS 모두 쓰기 가능)
+    final directory = await getTemporaryDirectory();
+    final savePath = '${directory.path}/${titleText}_${order}_output.zip';
+
+    final file = File(savePath);
+    await file.writeAsBytes(response.bodyBytes);
+
+    return savePath;
+  } else {
+    return null;
+  }
+}
+
+Future<void> unzipResult(String zipPath, String titleText, int order) async {
+  final zipFile = File(zipPath);
+  if (!zipFile.existsSync()) {
+    throw Exception('Zip file not found: $zipPath');
+  }
+
+  final bytes = zipFile.readAsBytesSync();
+  final archive = ZipDecoder().decodeBytes(bytes);
+
+  // 앱의 영구 저장소 디렉토리 가져오기
+  final documentsDir = await getApplicationDocumentsDirectory();
+  final outputDir = documentsDir.path;
+
+  for (final file in archive) {
+    final extension = path.extension(file.name);
+    final filePath = '$outputDir/${titleText}_$order$extension';
+
+    if (file.isFile) {
+      // Make sure the parent directory exists
+      await Directory(File(filePath).parent.path).create(recursive: true);
+      // Write the file content
+      File(filePath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(file.content as List<int>);
+    } else {
+      // It's a directory — just create it
+      await Directory(filePath).create(recursive: true);
+    }
+  }
+
+  // Unzip 완료 후 zip 파일 삭제
+  try {
+    await zipFile.delete();
+  } catch (e) {
+    // Ignore deletion errors
+  }
+}
+
+// Notification configurations
+const _progressChannelId = 'progress_channel';
+const _progressChannelName = 'Progress';
+const _progressChannelDesc = 'Shows task progress';
+const _progressNotificationId = 10042;
+bool _notifierInitialized = false;
+
+final FlutterLocalNotificationsPlugin _notifier =
+    FlutterLocalNotificationsPlugin();
+
+/// Ensure the notifications plugin is initialized (works in bg isolates too).
+Future<void> _ensureNotificationsInitialized() async {
+  if (_notifierInitialized) {
+    return;
+  }
+
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const initSettings = InitializationSettings(android: androidInit);
+  // Note: No callbacks required for simple local updates.
+  await _notifier.initialize(initSettings);
+
+  _notifierInitialized = true;
+}
+
+/// - First call creates the notification (progress at current value).
+/// - Later calls with the SAME ID update it in place.
+/// - When [progress] >= 1.0 (job done), it finalizes the notification (no progress bar).
+Future<void> onProgress(
+  double progress,
+  String message,
+  String lectureTitle,
+) async {
+  await _ensureNotificationsInitialized();
+
+  // Normalize
+  if (progress.isNaN || progress.isInfinite) {
+    progress = 0.0;
+  }
+  progress = progress.clamp(0.0, 1.0);
+
+  final pct = (progress * 100).round();
+  final isDone = progress >= 1.0;
+
+  final androidDetails = AndroidNotificationDetails(
+    _progressChannelId,
+    _progressChannelName,
+    channelDescription: _progressChannelDesc,
+    onlyAlertOnce: true,
+    ongoing: !isDone, // keep pinned until done
+    showProgress: !isDone, // show bar while in progress
+    maxProgress: 100,
+    progress: isDone ? 0 : pct, // ignored when showProgress=false
+    indeterminate: false,
+  );
+
+  final title = 'Generating Lecture: $lectureTitle';
+  final details = NotificationDetails(android: androidDetails);
+
+  await _notifier.show(
+    _progressNotificationId,
+    isDone ? 'Lecture generation finished' : title,
+    isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
+    details,
+  );
+}

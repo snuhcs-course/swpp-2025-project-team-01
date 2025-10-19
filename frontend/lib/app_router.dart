@@ -2,19 +2,19 @@
 import 'package:flutter/material.dart';
 
 // 화면들
-import 'features/home/home_screen.dart';
-import 'features/search/search_screen.dart';
-import 'features/edit/lecture_form_screen.dart';
-import 'features/edit/subject_tag_screen.dart';
-import 'features/player/player_screen.dart';
-import 'features/settings/display_mode_screen.dart';
-import 'features/settings/accessibility_mode.dart';
-import 'features/settings/help_screen.dart';
-import 'features/settings/language_screen.dart';
-import 'features/settings/settings_screen.dart';
-import 'features/settings/tts_screen.dart';
-import 'features/subjects/subjects_edit_screen.dart';
-import 'features/tags/tags_edit_screen.dart';
+import 'package:re_view/features/home/home_screen.dart';
+import 'package:re_view/features/search/search_screen.dart';
+import 'package:re_view/features/edit/lecture_form_screen.dart';
+import 'package:re_view/features/edit/subject_tag_screen.dart';
+import 'package:re_view/features/player/player_screen.dart';
+import 'package:re_view/features/settings/display_mode_screen.dart';
+import 'package:re_view/features/settings/accessibility_mode.dart';
+import 'package:re_view/features/settings/help_screen.dart';
+import 'package:re_view/features/settings/language_screen.dart';
+import 'package:re_view/features/settings/settings_screen.dart';
+import 'package:re_view/features/settings/tts_screen.dart';
+import 'package:re_view/features/subjects/subjects_edit_screen.dart';
+import 'package:re_view/features/tags/tags_edit_screen.dart';
 
 /// 앱의 모든 라우트 경로를 정의하는 클래스
 class Routes {
@@ -23,7 +23,7 @@ class Routes {
   static const search = '/search';
   static const lectureForm = '/lectures/new';
   static const subjectTag = '/manage';
-  static const player = '/player';        // args: { lectureId, startSlide? }
+  static const player = '/player'; // args: { lectureId, startSlide? }
   static const settings = '/settings';
 
   static const settingsDisplay = '/settings/display';
@@ -49,9 +49,9 @@ class AppRouter {
       case Routes.subjectTag:
         return MaterialPageRoute(builder: (_) => const SubjectTagScreen());
       case Routes.player:
-        return MaterialPageRoute(builder: (_) => PlayerScreen(args: s.arguments));
-      case Routes.settings:
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+        return MaterialPageRoute(
+          builder: (_) => PlayerScreen(args: s.arguments),
+        );
       case Routes.settings:
         return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case Routes.settingsDisplay:
@@ -66,11 +66,12 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const HelpScreen());
       case Routes.subjectsEdit:
         return MaterialPageRoute(builder: (_) => const SubjectsEditScreen());
-      case Routes.tagsEdit: 
+      case Routes.tagsEdit:
         return MaterialPageRoute(builder: (_) => const TagsEditScreen());
       default:
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(body: Center(child: Text('Not Found'))),
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Not Found'))),
         );
     }
   }

@@ -1,10 +1,9 @@
 // 검색 화면: 강의명 검색, 최근 검색어
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../app_router.dart';
-import '../../core/localization/app_localizations.dart';
-import '../../data/models.dart';
-import '../../data/repository.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 검색 화면
 class SearchScreen extends StatefulWidget {
@@ -36,42 +35,31 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadRecentSearches() async {
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _recentSearches = prefs.getStringList('recent_searches') ?? [];
+      _recentSearches = HiveManager.instance.getRecentSearches();
     });
   }
 
   Future<void> _saveRecentSearch(String query) async {
-    if (query.trim().isEmpty) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    _recentSearches.remove(query); // 중복 제거
-    _recentSearches.insert(0, query); // 맨 앞에 추가
-    if (_recentSearches.length > 3) {
-      _recentSearches = _recentSearches.sublist(0, 3); // 최대 3개
+    if (query.trim().isEmpty) {
+      return;
     }
-    await prefs.setStringList('recent_searches', _recentSearches);
-    setState(() {});
+    await HiveManager.instance.addRecentSearch(query);
+    setState(() {
+      _recentSearches = HiveManager.instance.getRecentSearches();
+    });
   }
 
   Future<void> _removeRecentSearch(String query) async {
-    final prefs = await SharedPreferences.getInstance();
-    _recentSearches.remove(query);
-    await prefs.setStringList('recent_searches', _recentSearches);
-    setState(() {});
+    await HiveManager.instance.removeRecentSearch(query);
+    setState(() {
+      _recentSearches = HiveManager.instance.getRecentSearches();
+    });
   }
 
   String _getHintText() {
     final l10n = AppLocalizations.of(context);
-    switch (_searchScope) {
-      case SearchScope.lecture:
-        return l10n.searchPlaceholder;
-      case SearchScope.week:
-        return l10n.searchPlaceholder;
-      case SearchScope.subject:
-        return l10n.searchPlaceholder;
-    }
+    return l10n.searchPlaceholder;
   }
 
   Future<void> _performSearch(String query, {bool saveToRecent = false}) async {
@@ -88,30 +76,25 @@ class _SearchScreenState extends State<SearchScreen> {
       _saveRecentSearch(query);
     }
 
-    // Repository 인스턴스 한 번만 가져오기
-    final repo = Repo.instance;
-    final subjects = repo.getSubjects();
-
-    // 모든 과목의 모든 강의 ID 수집 및 로드
-    final allLectureIds = <String>[];
-    for (final subject in subjects) {
-      allLectureIds.addAll(subject.lectureIds);
-    }
-
-    // 강의 메타데이터 미리 로드
-    await repo.preloadLectures(allLectureIds);
+    final hive = HiveManager.instance;
+    final subjects = hive.getSubjects().map((s) => s.toSubject()).toList();
 
     // 모든 과목의 모든 강의에서 검색
     final allLectures = <Lecture>[];
     for (final subject in subjects) {
-      final lectures = repo.lecturesBySubject(subject.id);
+      final lectures = hive
+          .getLecturesBySubject(subject.id)
+          .map((l) => l.toLecture())
+          .toList();
       allLectures.addAll(lectures);
     }
 
     // 검색 범위에 따라 필터링
     final results = allLectures.where((lec) {
       // 빈 Lecture 객체 필터링 (제대로 로드되지 않은 것)
-      if (lec.title == 'Untitled') return false;
+      if (lec.title == 'Untitled') {
+        return false;
+      }
 
       final searchQuery = query.toLowerCase();
       switch (_searchScope) {
@@ -140,10 +123,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.search),
-        backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: Text(l10n.search), backgroundColor: Colors.white),
       body: Column(
         children: [
           // 검색 바
@@ -162,9 +142,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     value: _searchScope,
                     underline: const SizedBox(),
                     items: [
-                      DropdownMenuItem(value: SearchScope.lecture, child: Text(l10n.searchByLecture)),
-                      DropdownMenuItem(value: SearchScope.week, child: Text(l10n.searchByWeek)),
-                      DropdownMenuItem(value: SearchScope.subject, child: Text(l10n.searchBySubject)),
+                      DropdownMenuItem(
+                        value: SearchScope.lecture,
+                        child: Text(l10n.searchByLecture),
+                      ),
+                      DropdownMenuItem(
+                        value: SearchScope.week,
+                        child: Text(l10n.searchByWeek),
+                      ),
+                      DropdownMenuItem(
+                        value: SearchScope.subject,
+                        child: Text(l10n.searchBySubject),
+                      ),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -206,13 +195,19 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.black87, width: 2),
+                        borderSide: const BorderSide(
+                          color: Colors.black87,
+                          width: 2,
+                        ),
                       ),
                     ),
                     onChanged: (value) {
-                      _performSearch(value); // 실시간 검색 (저장 안함) - _performSearch가 setState 호출함
+                      _performSearch(
+                        value,
+                      ); // 실시간 검색 (저장 안함) - _performSearch가 setState 호출함
                     },
-                    onSubmitted: (value) => _performSearch(value, saveToRecent: true), // 엔터 시 저장
+                    onSubmitted: (value) =>
+                        _performSearch(value, saveToRecent: true), // 엔터 시 저장
                   ),
                 ),
               ],
@@ -221,7 +216,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
           // 최근 검색어 또는 검색 결과
           Expanded(
-            child: _isSearching ? _buildSearchResults() : _buildRecentSearches(),
+            child: _isSearching
+                ? _buildSearchResults()
+                : _buildRecentSearches(),
           ),
         ],
       ),
@@ -232,7 +229,10 @@ class _SearchScreenState extends State<SearchScreen> {
     final l10n = AppLocalizations.of(context);
     if (_recentSearches.isEmpty) {
       return Center(
-        child: Text(l10n.noRecentSearches, style: const TextStyle(color: Colors.black38)),
+        child: Text(
+          l10n.noRecentSearches,
+          style: const TextStyle(color: Colors.black38),
+        ),
       );
     }
 
@@ -241,7 +241,10 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(l10n.recentSearches, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          child: Text(
+            l10n.recentSearches,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
         ),
         ListView.builder(
           shrinkWrap: true,
@@ -257,7 +260,10 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               onTap: () {
                 _searchController.text = query;
-                _performSearch(query, saveToRecent: false); // 이미 최근 검색어이므로 다시 저장 안함
+                _performSearch(
+                  query,
+                  saveToRecent: false,
+                ); // 이미 최근 검색어이므로 다시 저장 안함
               },
             );
           },
@@ -270,12 +276,18 @@ class _SearchScreenState extends State<SearchScreen> {
     final l10n = AppLocalizations.of(context);
     if (_searchResults.isEmpty) {
       return Center(
-        child: Text(l10n.noSearchResults, style: const TextStyle(color: Colors.black38)),
+        child: Text(
+          l10n.noSearchResults,
+          style: const TextStyle(color: Colors.black38),
+        ),
       );
     }
 
     // 과목 목록을 한 번만 가져오기
-    final subjects = Repo.instance.getSubjects();
+    final subjects = HiveManager.instance
+        .getSubjects()
+        .map((s) => s.toSubject())
+        .toList();
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -289,12 +301,18 @@ class _SearchScreenState extends State<SearchScreen> {
         );
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: 4,
+          ),
           title: Row(
             children: [
               Text(
                 lecture.weekLabel,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -315,7 +333,11 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           onTap: () {
-            Navigator.pushNamed(context, Routes.player, arguments: {'lectureId': lecture.id});
+            Navigator.pushNamed(
+              context,
+              Routes.player,
+              arguments: {'lectureId': lecture.id},
+            );
           },
         );
       },
