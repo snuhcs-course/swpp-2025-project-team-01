@@ -53,14 +53,18 @@ class PdfCacheService {
     final future = _renderPdfPage(pageNumber);
     _pageImageFutures[pageNumber] = future;
 
-    future.then((imageBytes) {
-      _pageImageCache[pageNumber] = imageBytes;
-      _pageImageFutures.remove(pageNumber);
-      debugPrint('✓ PDF Cache: Successfully cached page $pageNumber');
-    }).catchError((error) {
-      debugPrint('✗ PDF Cache ERROR: Failed to cache page $pageNumber - $error');
-      _pageImageFutures.remove(pageNumber);
-    });
+    future
+        .then((imageBytes) {
+          _pageImageCache[pageNumber] = imageBytes;
+          _pageImageFutures.remove(pageNumber);
+          debugPrint('✓ PDF Cache: Successfully cached page $pageNumber');
+        })
+        .catchError((error) {
+          debugPrint(
+            '✗ PDF Cache ERROR: Failed to cache page $pageNumber - $error',
+          );
+          _pageImageFutures.remove(pageNumber);
+        });
   }
 
   /// PDF 페이지를 렌더링하여 이미지 바이트 반환
@@ -79,7 +83,9 @@ class PdfCacheService {
       await page.close();
 
       if (pageImage == null) {
-        throw Exception('Failed to render PDF page $pageNumber: pageImage is null');
+        throw Exception(
+          'Failed to render PDF page $pageNumber: pageImage is null',
+        );
       }
 
       return pageImage.bytes;
@@ -117,7 +123,9 @@ class PdfCacheService {
       // 렌더링 시작
       _currentRenderingCount++;
       final retryAttempt = _retryCount[pageNumber] ?? 0;
-      debugPrint('→ PDF Cache: Starting render for page $pageNumber (attempt ${retryAttempt + 1}/${maxRetries + 1}, concurrent: $_currentRenderingCount/$maxConcurrentRenders)');
+      debugPrint(
+        '→ PDF Cache: Starting render for page $pageNumber (attempt ${retryAttempt + 1}/${maxRetries + 1}, concurrent: $_currentRenderingCount/$maxConcurrentRenders)',
+      );
 
       try {
         final imageBytes = await _renderPdfPage(pageNumber);
@@ -131,10 +139,14 @@ class PdfCacheService {
         if (currentRetry < maxRetries) {
           // 재시도 가능
           _retryCount[pageNumber] = currentRetry + 1;
-          debugPrint('⚠ PDF Cache: Failed to render page $pageNumber (attempt ${currentRetry + 1}/${maxRetries + 1}), will retry - $error');
+          debugPrint(
+            '⚠ PDF Cache: Failed to render page $pageNumber (attempt ${currentRetry + 1}/${maxRetries + 1}), will retry - $error',
+          );
 
           // 잠시 대기 후 재시도
-          await Future.delayed(Duration(milliseconds: 200 * (currentRetry + 1)));
+          await Future.delayed(
+            Duration(milliseconds: 200 * (currentRetry + 1)),
+          );
 
           // 재귀적으로 재시도 (현재 렌더링 카운트 감소시키고 다시 큐에 추가)
           _currentRenderingCount--;
@@ -143,13 +155,17 @@ class PdfCacheService {
         } else {
           // 최대 재시도 횟수 초과
           _retryCount.remove(pageNumber);
-          debugPrint('✗ PDF Cache ERROR: Failed to render page $pageNumber after ${maxRetries + 1} attempts - $error');
+          debugPrint(
+            '✗ PDF Cache ERROR: Failed to render page $pageNumber after ${maxRetries + 1} attempts - $error',
+          );
           rethrow;
         }
       } finally {
         _currentRenderingCount--;
         _pageImageFutures.remove(pageNumber);
-        debugPrint('← PDF Cache: Finished with page $pageNumber (concurrent: $_currentRenderingCount/$maxConcurrentRenders)');
+        debugPrint(
+          '← PDF Cache: Finished with page $pageNumber (concurrent: $_currentRenderingCount/$maxConcurrentRenders)',
+        );
       }
     });
 

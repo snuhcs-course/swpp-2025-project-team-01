@@ -125,7 +125,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
         return;
       }
 
-      developer.log('[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}');
+      developer.log(
+        '[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}',
+      );
 
       // transcript.json 로드 (HiveLecture에서 경로 가져오기)
       final transcriptPath = hiveLecture.transcriptPaths?.isNotEmpty == true
@@ -137,7 +139,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ? await rootBundle.loadString(transcriptPath)
           : await File(transcriptPath).readAsString();
 
-      developer.log('[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}');
+      developer.log(
+        '[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}',
+      );
       try {
         final transcriptJsonData =
             json.decode(transcriptJson) as Map<String, dynamic>;
@@ -151,7 +155,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       });
 
       // PDF 문서 로드 (HiveLecture에서 경로 가져오기)
-      final pdfPath = hiveLecture.slidePath ??
+      final pdfPath =
+          hiveLecture.slidePath ??
           'assets/lectures/$lectureId/${lectureId}_slides.pdf';
       await _loadFullPdfDocument(pdfPath);
 
@@ -160,8 +165,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       });
 
       // 오디오 파일 로드 및 자동 재생 (HiveLecture에서 경로 가져오기)
-      final audioPath = hiveLecture.audioPaths?.isNotEmpty == true &&
-                        hiveLecture.audioPaths!.first != null
+      final audioPath =
+          hiveLecture.audioPaths?.isNotEmpty == true &&
+              hiveLecture.audioPaths!.first != null
           ? hiveLecture.audioPaths!.first!
           : 'assets/lectures/$lectureId/lecture_with_slides.opus';
 
@@ -183,7 +189,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
     // 재생 위치 변경 리스너
     _audioService.positionStream.listen((position) {
       _currentTime = position.inMilliseconds / 1000.0;
-      developer.log('[AUDIO] Current position: ${_currentTime.toStringAsFixed(3)}s (${position.inMilliseconds}ms)');
+      developer.log(
+        '[AUDIO] Current position: ${_currentTime.toStringAsFixed(3)}s (${position.inMilliseconds}ms)',
+      );
       _updateCurrentSentence();
     });
 
@@ -198,19 +206,30 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   /// 단일 진입점: 문장 인덱스와 페이지를 설정하는 유일한 함수
-  void _setCurrentSentenceAndPage(int sentenceIndex, {bool forcePageUpdate = false, bool autoScroll = true, bool updateTime = false}) {
-    if (_transcriptData == null || !mounted || sentenceIndex < 0 || sentenceIndex >= _transcriptData!.timestamps.length) {
+  void _setCurrentSentenceAndPage(
+    int sentenceIndex, {
+    bool forcePageUpdate = false,
+    bool autoScroll = true,
+    bool updateTime = false,
+  }) {
+    if (_transcriptData == null ||
+        !mounted ||
+        sentenceIndex < 0 ||
+        sentenceIndex >= _transcriptData!.timestamps.length) {
       return;
     }
 
     final sentence = _transcriptData!.timestamps[sentenceIndex];
     final targetPage = sentence.slideNumber;
 
-    developer.log('[SET_SENTENCE] Called with index=$sentenceIndex, page=$targetPage, forcePageUpdate=$forcePageUpdate, updateTime=$updateTime');
+    developer.log(
+      '[SET_SENTENCE] Called with index=$sentenceIndex, page=$targetPage, forcePageUpdate=$forcePageUpdate, updateTime=$updateTime',
+    );
 
     // 상태 변경이 필요한지 확인
     final sentenceChanged = _currentSentenceIndex != sentenceIndex;
-    final shouldUpdatePage = forcePageUpdate || (_isSynced && _currentPage != targetPage);
+    final shouldUpdatePage =
+        forcePageUpdate || (_isSynced && _currentPage != targetPage);
 
     if (!sentenceChanged && !shouldUpdatePage && !updateTime) {
       developer.log('[SET_SENTENCE] No changes needed, returning');
@@ -225,7 +244,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
       if (updateTime) {
         _currentTime = sentence.startTime;
-        developer.log('[SET_SENTENCE] Force updating _currentTime to ${sentence.startTime}');
+        developer.log(
+          '[SET_SENTENCE] Force updating _currentTime to ${sentence.startTime}',
+        );
       }
     });
 
@@ -257,7 +278,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final sentence = _transcriptData!.timestamps[i];
       if (_currentTime >= sentence.startTime &&
           _currentTime < sentence.endTime + 0.2) {
-        developer.log('[UPDATE_SENTENCE] Match found: index=$i, currentTime=$_currentTime, range=[${sentence.startTime}, ${sentence.endTime}]');
+        developer.log(
+          '[UPDATE_SENTENCE] Match found: index=$i, currentTime=$_currentTime, range=[${sentence.startTime}, ${sentence.endTime}]',
+        );
         _setCurrentSentenceAndPage(i);
         return;
       }
@@ -291,9 +314,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _pdfCacheService.setPdfDocument(_pdfDocument);
 
       if (mounted) {
-        final controller = PdfController(
-          document: Future.value(_pdfDocument!),
-        );
+        final controller = PdfController(document: Future.value(_pdfDocument!));
 
         setState(() {
           _pdfController = controller;
@@ -333,22 +354,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _seekToSentence(int index) {
-    if (_transcriptData == null || index < 0 || index >= _transcriptData!.timestamps.length) {
+    if (_transcriptData == null ||
+        index < 0 ||
+        index >= _transcriptData!.timestamps.length) {
       return;
     }
     final sentence = _transcriptData!.timestamps[index];
     final targetMs = (sentence.startTime * 1000).toInt();
 
-    developer.log('[SEEK_TO_SENTENCE] index=$index, startTime=${sentence.startTime}, targetMs=$targetMs, isPlaying=$_isPlaying');
+    developer.log(
+      '[SEEK_TO_SENTENCE] index=$index, startTime=${sentence.startTime}, targetMs=$targetMs, isPlaying=$_isPlaying',
+    );
 
     // 강제 이동 시작
     setState(() {
       _isForcedMove = true;
     });
 
-    _audioService.seek(
-      Duration(milliseconds: targetMs),
-    ).then((_) async {
+    _audioService.seek(Duration(milliseconds: targetMs)).then((_) async {
       developer.log('[SEEK_TO_SENTENCE] seek completed');
 
       // seek 후 실제 위치 확인
@@ -356,14 +379,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
       if (actualPos != null) {
         final actualMs = actualPos.inMilliseconds;
         final diff = actualMs - targetMs;
-        developer.log('[SEEK_TO_SENTENCE] Actual position after seek: ${actualMs}ms (requested: ${targetMs}ms, diff: ${diff}ms)');
+        developer.log(
+          '[SEEK_TO_SENTENCE] Actual position after seek: ${actualMs}ms (requested: ${targetMs}ms, diff: ${diff}ms)',
+        );
       }
 
       if (!mounted) {
         return;
       }
 
-      _setCurrentSentenceAndPage(index, forcePageUpdate: _isSynced, autoScroll: true);
+      _setCurrentSentenceAndPage(
+        index,
+        forcePageUpdate: _isSynced,
+        autoScroll: true,
+      );
 
       // 강제 이동 완료 (충분한 시간 후 해제하여 중복 갱신 방지)
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -404,7 +433,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 _isAutoScrolling = true;
               });
 
-              _setCurrentSentenceAndPage(i, forcePageUpdate: true, autoScroll: true);
+              _setCurrentSentenceAndPage(
+                i,
+                forcePageUpdate: true,
+                autoScroll: true,
+              );
 
               // 강제 이동 완료 (충분한 시간 후 해제하여 중복 갱신 방지)
               Future.delayed(const Duration(milliseconds: 500), () {
@@ -530,34 +563,34 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 _isForcedMove = true;
               });
               final newTime = (_currentTime - 15).clamp(0, _totalTime);
-              _audioService.seek(
-                Duration(milliseconds: (newTime * 1000).toInt()),
-              ).then((_) {
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) {
-                    setState(() {
-                      _isForcedMove = false;
+              _audioService
+                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
+                  .then((_) {
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) {
+                        setState(() {
+                          _isForcedMove = false;
+                        });
+                      }
                     });
-                  }
-                });
-              });
+                  });
             },
             onSkipForward: () {
               setState(() {
                 _isForcedMove = true;
               });
               final newTime = (_currentTime + 15).clamp(0, _totalTime);
-              _audioService.seek(
-                Duration(milliseconds: (newTime * 1000).toInt()),
-              ).then((_) {
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) {
-                    setState(() {
-                      _isForcedMove = false;
+              _audioService
+                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
+                  .then((_) {
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) {
+                        setState(() {
+                          _isForcedMove = false;
+                        });
+                      }
                     });
-                  }
-                });
-              });
+                  });
             },
           ),
 
@@ -576,27 +609,27 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   _isForcedMove = true;
                 });
                 _scrollTimer?.cancel();
-                _audioService.seek(
-                  Duration(milliseconds: (value * 1000).toInt()),
-                ).then((_) {
-                  // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    if (_isAutoScrolling) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToCurrentSentence();
+                _audioService
+                    .seek(Duration(milliseconds: (value * 1000).toInt()))
+                    .then((_) {
+                      // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        if (_isAutoScrolling) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _scrollToCurrentSentence();
+                          });
+                        }
                       });
-                    }
-                  });
 
-                  // _isForcedMove 해제
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (mounted) {
-                      setState(() {
-                        _isForcedMove = false;
+                      // _isForcedMove 해제
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (mounted) {
+                          setState(() {
+                            _isForcedMove = false;
+                          });
+                        }
                       });
-                    }
-                  });
-                });
+                    });
               },
             ),
           ),
@@ -923,34 +956,34 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 _isForcedMove = true;
               });
               final newTime = (_currentTime - 15).clamp(0, _totalTime);
-              _audioService.seek(
-                Duration(milliseconds: (newTime * 1000).toInt()),
-              ).then((_) {
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) {
-                    setState(() {
-                      _isForcedMove = false;
+              _audioService
+                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
+                  .then((_) {
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) {
+                        setState(() {
+                          _isForcedMove = false;
+                        });
+                      }
                     });
-                  }
-                });
-              });
+                  });
             },
             onSkipForward: () {
               setState(() {
                 _isForcedMove = true;
               });
               final newTime = (_currentTime + 15).clamp(0, _totalTime);
-              _audioService.seek(
-                Duration(milliseconds: (newTime * 1000).toInt()),
-              ).then((_) {
-                Future.delayed(const Duration(milliseconds: 500), () {
-                  if (mounted) {
-                    setState(() {
-                      _isForcedMove = false;
+              _audioService
+                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
+                  .then((_) {
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) {
+                        setState(() {
+                          _isForcedMove = false;
+                        });
+                      }
                     });
-                  }
-                });
-              });
+                  });
             },
           ),
 
@@ -969,27 +1002,27 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   _isForcedMove = true;
                 });
                 _scrollTimer?.cancel();
-                _audioService.seek(
-                  Duration(milliseconds: (value * 1000).toInt()),
-                ).then((_) {
-                  // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    if (_isAutoScrolling) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToCurrentSentence();
+                _audioService
+                    .seek(Duration(milliseconds: (value * 1000).toInt()))
+                    .then((_) {
+                      // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        if (_isAutoScrolling) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _scrollToCurrentSentence();
+                          });
+                        }
                       });
-                    }
-                  });
 
-                  // _isForcedMove 해제
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (mounted) {
-                      setState(() {
-                        _isForcedMove = false;
+                      // _isForcedMove 해제
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (mounted) {
+                          setState(() {
+                            _isForcedMove = false;
+                          });
+                        }
                       });
-                    }
-                  });
-                });
+                    });
               },
             ),
           ),

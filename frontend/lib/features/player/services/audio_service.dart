@@ -7,7 +7,9 @@ class AudioService {
   AudioService() {
     // 재생 위치 변경 리스너
     _player.positionStream.listen((position) {
-      developer.log('[AUDIO_SERVICE] onPositionChanged: ${position.inMilliseconds}ms');
+      developer.log(
+        '[AUDIO_SERVICE] onPositionChanged: ${position.inMilliseconds}ms',
+      );
       _positionController.add(position);
     });
 
@@ -22,7 +24,7 @@ class AudioService {
   final StreamController<Duration> _positionController =
       StreamController<Duration>.broadcast();
   final StreamController<PlayerState> _stateController =
-      StreamController<PlayerState>.broadcast();  
+      StreamController<PlayerState>.broadcast();
 
   /// just_audio의 PlayerState를 커스텀 PlayerState로 변환
   PlayerState _convertToPlayerState(ja.PlayerState state) {
@@ -95,9 +97,4 @@ class AudioService {
 }
 
 /// audioplayers 호환을 위한 PlayerState enum
-enum PlayerState {
-  stopped,
-  playing,
-  paused,
-  completed,
-}
+enum PlayerState { stopped, playing, paused, completed }
