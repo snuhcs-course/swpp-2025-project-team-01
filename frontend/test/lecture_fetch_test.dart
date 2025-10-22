@@ -36,11 +36,21 @@ void main() {
         debugPrint('Progress: $progress\n');
         debugPrint('$message\n');
       }
+
       final serverAddress = '147.46.78.61';
       final port = '8080';
       final slidePath = 'assets/path/to/slide';
       final audioFileEntry = AudioFileEntry.fromPath('assets/path/to/audio');
-      final jobId = await requestLecture(slidePath, audioFileEntry, 'test', 1, true, serverAddress, port, onProgress);
+      final jobId = await requestLecture(
+        slidePath,
+        audioFileEntry,
+        'test',
+        1,
+        true,
+        serverAddress,
+        port,
+        onProgress,
+      );
       assert(jobId != null);
     });
   });
