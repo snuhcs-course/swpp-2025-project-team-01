@@ -512,7 +512,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     topLeft: const Radius.circular(8),
                     bottomLeft: const Radius.circular(8),
                     topRight: Radius.zero,
-                    bottomRight: Radius.zero
+                    bottomRight: Radius.zero,
                   ),
                 ),
                 child: Icon(
@@ -575,8 +575,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
 
           // 자막 표시 (가로 모드에서 자막 기능이 켜져 있을 때만)
-          if (!isVertical && _isCaptionEnabled)
-            _buildCaptionOverlay(),
+          if (!isVertical && _isCaptionEnabled) _buildCaptionOverlay(),
 
           // 비디오 컨트롤 오버레이
           if (_showControls && (!_isPagesExpanded || isVertical))
@@ -590,11 +589,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final screenWidth = MediaQuery.of(context).size.width;
       final pdfHeight = screenWidth * 9 / 16;
 
-      return SizedBox(
-        width: screenWidth,
-        height: pdfHeight,
-        child: content,
-      );
+      return SizedBox(width: screenWidth, height: pdfHeight, child: content);
     } else {
       // 가로 모드: content만 반환 (Stack에서 사용되므로 Expanded 사용 불가)
       return content;
@@ -606,92 +601,96 @@ class _PlayerScreenState extends State<PlayerScreen> {
       setState(() {
         _isForcedMove = true;
       });
-      final newTime = (_currentTime + 15 * (isForward ? 1 : -1)).clamp(0, _totalTime);
-      _audioService
-          .seek(Duration(milliseconds: (newTime * 1000).toInt()))
-          .then((_) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) {
-                setState(() {
-                  _isForcedMove = false;
-                });
-              }
-            });
+      final newTime = (_currentTime + 15 * (isForward ? 1 : -1)).clamp(
+        0,
+        _totalTime,
+      );
+      _audioService.seek(Duration(milliseconds: (newTime * 1000).toInt())).then(
+        (_) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              setState(() {
+                _isForcedMove = false;
+              });
+            }
           });
+        },
+      );
     }
+
     return Positioned.fill(
       child: Container(
         color: const Color(0x4D1D1D1D), // rgba(29, 29, 29, 0.3)
         child: Column(
           children: [
-          // 상단 컨트롤 바
-          TopControlBar(
-            isVertical: isVertical,
-            onBack: () => Navigator.pop(context),
-            isCaptionEnabled: _isCaptionEnabled,
-            onCaptionToggle: () =>
-                setState(() => _isCaptionEnabled = !_isCaptionEnabled),
-            isSynced: _isSynced,
-            onSyncToggle: () => setState(() => _isSynced = !_isSynced),
-            pageDifference: _getPageDifference(),
-          ),
-
-          const Spacer(),
-
-          // 중앙 재생 컨트롤
-          CenterPlayControls(
-            isPlaying: _isPlaying,
-            onPlayPause: () {
-              if (_isPlaying) {
-                _audioService.pause();
-              } else {
-                _audioService.play();
-              }
-            },
-            onSkipBackward: () => skipMove(false),
-            onSkipForward: () => skipMove(true),
-          ),
-
-          const Spacer(),
-
-          // 하단 타임라인 슬라이더
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: VideoTimelineSlider(
-              currentTime: _currentTime,
-              totalTime: _totalTime,
-              onChanged: (value) {
-                // 슬라이더를 움직일 때 사용자 스크롤 상태 해제
-                setState(() {
-                  _isAutoScrolling = true;
-                  _isForcedMove = true;
-                });
-                _scrollTimer?.cancel();
-                _audioService
-                    .seek(Duration(milliseconds: (value * 1000).toInt()))
-                    .then((_) {
-                      // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        if (_isAutoScrolling) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _scrollToCurrentSentence();
-                          });
-                        }
-                      });
-
-                      // _isForcedMove 해제
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        if (mounted) {
-                          setState(() {
-                            _isForcedMove = false;
-                          });
-                        }
-                      });
-                    });
-              },
+            // 상단 컨트롤 바
+            TopControlBar(
+              isVertical: isVertical,
+              onBack: () => Navigator.pop(context),
+              isCaptionEnabled: _isCaptionEnabled,
+              onCaptionToggle: () =>
+                  setState(() => _isCaptionEnabled = !_isCaptionEnabled),
+              isSynced: _isSynced,
+              onSyncToggle: () => setState(() => _isSynced = !_isSynced),
+              pageDifference: _getPageDifference(),
             ),
-          ),
-        ],
+
+            const Spacer(),
+
+            // 중앙 재생 컨트롤
+            CenterPlayControls(
+              isPlaying: _isPlaying,
+              onPlayPause: () {
+                if (_isPlaying) {
+                  _audioService.pause();
+                } else {
+                  _audioService.play();
+                }
+              },
+              onSkipBackward: () => skipMove(false),
+              onSkipForward: () => skipMove(true),
+            ),
+
+            const Spacer(),
+
+            // 하단 타임라인 슬라이더
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: VideoTimelineSlider(
+                currentTime: _currentTime,
+                totalTime: _totalTime,
+                onChanged: (value) {
+                  // 슬라이더를 움직일 때 사용자 스크롤 상태 해제
+                  setState(() {
+                    _isAutoScrolling = true;
+                    _isForcedMove = true;
+                  });
+                  _scrollTimer?.cancel();
+                  _audioService
+                      .seek(Duration(milliseconds: (value * 1000).toInt()))
+                      .then((_) {
+                        // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          if (_isAutoScrolling) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _scrollToCurrentSentence();
+                            });
+                          }
+                        });
+
+                        // _isForcedMove 해제
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted) {
+                            setState(() {
+                              _isForcedMove = false;
+                            });
+                          }
+                        });
+                      });
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -758,10 +757,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
               ),
             ),
             // 슬라이드 목록
-            SizedBox(
-              height: 110,
-              child: _buildPagesList(isVertical: false),
-            ),
+            SizedBox(height: 110, child: _buildPagesList(isVertical: false)),
           ],
         ),
       );
