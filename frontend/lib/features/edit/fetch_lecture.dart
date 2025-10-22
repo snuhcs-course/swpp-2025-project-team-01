@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'dart:io';
-import 'dart:ui' show Offset;
+import 'dart:math' as math;
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +11,6 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
-
-const String _serverAddress = '34.64.191.255';
 
 /// Returns a new PDF (bytes) containing pages [start]..[end] (1-based, inclusive).
 Future<void> splitPdfRange(
@@ -86,9 +83,12 @@ Future<String?> requestLecture(
   String titleText,
   int order,
   bool isSingleAudio,
+  String serverAddress,
+  String port,
+  Future<void> Function(double, String, String) onProgress,
 ) async {
   final endpoint = Uri.parse(
-    'http://$_serverAddress:8000/api/synchronize/stream',
+    'http://$serverAddress:$port/api/synchronize/stream',
   );
   final req = http.MultipartRequest('POST', endpoint);
 
@@ -163,9 +163,11 @@ Future<String?> downloadResult(
   String jobId,
   String titleText,
   int order,
+  String serverAddress,
+  String port,
 ) async {
   final response = await http.get(
-    Uri.parse('http://$_serverAddress:8000/api/synchronize/download/$jobId'),
+    Uri.parse('http://$serverAddress:$port/api/synchronize/download/$jobId'),
   );
 
   if (response.statusCode == 200) {

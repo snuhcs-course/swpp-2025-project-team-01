@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
+import 'package:re_view/features/edit/lecture_form_screen.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:test/test.dart';
 
@@ -23,6 +25,23 @@ void main() {
       await File(outputPath).delete();
       expect(generatedPages, 3);
       expect(pageSize, originalSize);
+    });
+
+    test('Requesting Lecture', () async {
+      Future<void> onProgress(
+        double progress,
+        String message,
+        String lectureTitle,
+      ) async {
+        debugPrint('Progress: $progress\n');
+        debugPrint('$message\n');
+      }
+      final serverAddress = '147.46.78.61';
+      final port = '8080';
+      final slidePath = 'assets/path/to/slide';
+      final audioFileEntry = AudioFileEntry.fromPath('assets/path/to/audio');
+      final jobId = await requestLecture(slidePath, audioFileEntry, 'test', 1, true, serverAddress, port, onProgress);
+      assert(jobId != null);
     });
   });
 }
