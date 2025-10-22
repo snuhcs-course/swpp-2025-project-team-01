@@ -111,17 +111,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
     try {
       // lectureId 가져오기
       final map = (widget.args is Map) ? widget.args as Map : const {};
-      final lectureId = (map['lectureId'] as String?) ?? 'lec_demo_001';
+      final lectureId = map['lectureId'] as String?;
 
-      // HiveManager에서 HiveLecture 불러오기
+      if (lectureId == null) {
+        throw Exception('Lecture ID is required');
+      }
+
       final hiveLecture = HiveManager.instance.getLecture(lectureId);
 
       if (hiveLecture == null) {
-        developer.log('[PLAYER] Lecture not found in Hive: $lectureId');
-        setState(() {
-          _isLoading = false;
-        });
-        return;
+        throw Exception("Can't find lecture");
       }
 
       developer.log(
