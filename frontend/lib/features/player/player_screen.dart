@@ -473,13 +473,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return Column(
       children: [
         // PDF 영역 (16:9 비율)
-        _buildPdfArea(),
+        _buildPdfArea(isVertical: true),
 
         // 페이지 펼치기 버튼
-        _buildExpandButton(),
+        _buildToggleBar(isVertical: true),
 
         // 펼쳐지는 페이지 목록
-        if (_isPagesExpanded) _buildPagesList(),
+        if (_isPagesExpanded) _buildPagesList(isVertical: true),
 
         // Transcript 영역
         Expanded(child: _buildTranscriptArea()),
@@ -487,448 +487,174 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
-  Widget _buildPdfArea() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final pdfHeight = screenWidth * 9 / 16; // 16:9 비율
-
-    return SizedBox(
-      width: screenWidth,
-      height: pdfHeight,
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _showControls = !_showControls;
-          });
-        },
-        child: Stack(
-          children: [
-            // PDF 내용 영역
-            if (_pdfController != null)
-              PdfView(
-                controller: _pdfController!,
-                onPageChanged: (page) {
-                  setState(() {
-                    _currentPage = page;
-                  });
-
-                  // 페이지 변경 시 캐싱은 FutureBuilder에서 필요할 때만 수행됨
-                  // 여기서는 명시적으로 캐싱하지 않음 (보수적 접근)
-                },
-              )
-            else
-              // 로딩 중
-              Container(
-                color: Colors.black87,
-                child: const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-              ),
-
-            // 비디오 컨트롤 오버레이
-            if (_showControls) _buildVideoControls(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVideoControls() {
-    return Container(
-      color: const Color(0x4D1D1D1D), // rgba(29, 29, 29, 0.3)
-      child: Column(
-        children: [
-          // 상단 컨트롤 바
-          TopControlBarPortrait(
-            onBack: () => Navigator.pop(context),
-            isSynced: _isSynced,
-            onSyncToggle: () => setState(() => _isSynced = !_isSynced),
-            pageDifference: _getPageDifference(),
-          ),
-
-          const Spacer(),
-
-          // 중앙 재생 컨트롤
-          CenterPlayControls(
-            isPlaying: _isPlaying,
-            onPlayPause: () {
-              if (_isPlaying) {
-                _audioService.pause();
-              } else {
-                _audioService.play();
-              }
-            },
-            onSkipBackward: () {
-              setState(() {
-                _isForcedMove = true;
-              });
-              final newTime = (_currentTime - 15).clamp(0, _totalTime);
-              _audioService
-                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
-                  .then((_) {
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted) {
-                        setState(() {
-                          _isForcedMove = false;
-                        });
-                      }
-                    });
-                  });
-            },
-            onSkipForward: () {
-              setState(() {
-                _isForcedMove = true;
-              });
-              final newTime = (_currentTime + 15).clamp(0, _totalTime);
-              _audioService
-                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
-                  .then((_) {
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted) {
-                        setState(() {
-                          _isForcedMove = false;
-                        });
-                      }
-                    });
-                  });
-            },
-          ),
-
-          const Spacer(),
-
-          // 하단 타임라인 슬라이더
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: VideoTimelineSlider(
-              currentTime: _currentTime,
-              totalTime: _totalTime,
-              onChanged: (value) {
-                // 슬라이더를 움직일 때 사용자 스크롤 상태 해제
-                setState(() {
-                  _isAutoScrolling = true;
-                  _isForcedMove = true;
-                });
-                _scrollTimer?.cancel();
-                _audioService
-                    .seek(Duration(milliseconds: (value * 1000).toInt()))
-                    .then((_) {
-                      // 약간의 딜레이 후 스크롤 (seek가 완료되고 _currentSentenceIndex가 업데이트될 때까지 대기)
-                      Future.delayed(const Duration(milliseconds: 100), () {
-                        if (_isAutoScrolling) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _scrollToCurrentSentence();
-                          });
-                        }
-                      });
-
-                      // _isForcedMove 해제
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        if (mounted) {
-                          setState(() {
-                            _isForcedMove = false;
-                          });
-                        }
-                      });
-                    });
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpandButton() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isPagesExpanded = !_isPagesExpanded;
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        height: 40,
-        color: const Color(0xFFF5F5F5),
-        child: Center(
-          child: Icon(
-            _isPagesExpanded
-                ? Icons.keyboard_arrow_up
-                : Icons.keyboard_arrow_down,
-            color: Colors.grey[700],
-            size: 28,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPagesList() {
-    final pageCount = _pdfDocument?.pagesCount ?? 10;
-
-    return Container(
-      height: 150,
-      color: const Color(0xFFEEEEEE),
-      child: PdfSlidesList(
-        pageCount: pageCount,
-        currentPage: _currentPage,
-        itemWidth: 180,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        getCachedOrRenderPage: _pdfCacheService.getCachedOrRenderPage,
-        getCachedImage: _pdfCacheService.getCachedImageDirect,
-        onPageTap: (pageNumber) {
-          _pdfController?.jumpToPage(pageNumber);
-          setState(() {
-            _currentPage = pageNumber;
-          });
-          // 캐시되지 않은 페이지라면 즉시 캐싱 시작 (동시 렌더링 제한 준수)
-          if (_pdfCacheService.getCachedImageDirect(pageNumber) == null) {
-            _pdfCacheService.getCachedOrRenderPage(pageNumber);
-          }
-          // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
-          _seekToSlide(pageNumber);
-        },
-        onScroll: _handleSlidesListScroll, // 스크롤 시 자동 캐싱
-      ),
-    );
-  }
-
-  Widget _buildTranscriptArea() {
-    if (_transcriptData == null) {
-      return Container(
-        width: double.infinity,
-        color: const Color(0xFFFAFAFA),
-        child: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFFFAFAFA),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Transcript',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[800],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ListView.builder(
-              controller: _transcriptScrollController,
-              itemCount: _transcriptData!.timestamps.length,
-              itemBuilder: (context, index) {
-                final sentence = _transcriptData!.timestamps[index];
-                final isCurrentSentence = _currentSentenceIndex == index;
-
-                return AutoScrollTag(
-                  key: ValueKey(index),
-                  controller: _transcriptScrollController,
-                  index: index,
-                  child: GestureDetector(
-                    onTap: () => _seekToSentence(index),
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        sentence.text,
-                        style: TextStyle(
-                          fontSize: isCurrentSentence ? 18 : 14,
-                          fontWeight: isCurrentSentence
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isCurrentSentence
-                              ? Colors.black
-                              : Colors.grey[600],
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHorizontalLayout() {
     final screenWidth = MediaQuery.of(context).size.width;
     final transcriptPanelWidth = screenWidth * 0.3;
 
-    return Row(
+    return Stack(
       children: [
-        // 메인 비디오 영역
-        Expanded(
-          child: GestureDetector(
-            onVerticalDragUpdate: (details) {
-              // 위로 스와이프 감지 (delta.dy < 0)
+        Row(
+          children: [
+            // 메인 비디오 영역
+            Expanded(
+              child: Stack(
+                children: [
+                  _buildPdfArea(isVertical: false),
+
+                  // 하단 슬라이드 토글 바 (펼쳐졌을 때만)
+                  if (_isPagesExpanded)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: _buildToggleBar(isVertical: false),
+                    ),
+
+                  // 슬라이드가 펼쳐졌을 때 우상단 싱크 버튼
+                  if (_isPagesExpanded)
+                    Positioned(
+                      top: 12,
+                      right: 16,
+                      child: SyncButton(
+                        isSynced: _isSynced,
+                        onPressed: () => setState(() => _isSynced = !_isSynced),
+                        pageDifference: _getPageDifference(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // 우측 Transcript 패널
+            if (_showTranscriptPanel)
+              Container(
+                width: transcriptPanelWidth,
+                color: const Color(0xFFFAFAFA),
+                child: _buildTranscriptArea(),
+              ),
+          ],
+        ),
+
+        // Transcript 토글 버튼 (우측 또는 Transcript 패널 왼쪽)
+        Positioned(
+          right: _showTranscriptPanel ? transcriptPanelWidth : 0,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _showTranscriptPanel = !_showTranscriptPanel;
+                });
+              },
+              child: Container(
+                width: 30,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: _showTranscriptPanel
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(8),
+                    bottomLeft: const Radius.circular(8),
+                    topRight: Radius.zero,
+                    bottomRight: Radius.zero
+                  ),
+                ),
+                child: Icon(
+                  _showTranscriptPanel
+                      ? Icons.chevron_right
+                      : Icons.chevron_left,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPdfArea({required bool isVertical}) {
+    final content = GestureDetector(
+      onVerticalDragUpdate: isVertical
+          ? null
+          : (details) {
+              // 가로 모드에서만 위로 스와이프 감지
               if (details.delta.dy < -5 && !_isPagesExpanded) {
                 setState(() {
                   _isPagesExpanded = true;
                 });
               }
             },
-            onTap: () {
-              setState(() {
-                if (_isPagesExpanded) {
-                  // 페이지가 펼쳐진 상태에서 클릭하면 모두 닫기
-                  _isPagesExpanded = false;
-                } else {
-                  // 컨트롤 토글
-                  _showControls = !_showControls;
-                }
-              });
-            },
-            child: Stack(
-              children: [
-                // PDF 내용 영역
-                if (_pdfController != null)
-                  PdfView(
-                    controller: _pdfController!,
-                    onPageChanged: (page) {
-                      setState(() {
-                        _currentPage = page;
-                      });
-
-                      // 페이지 변경 시 캐싱은 FutureBuilder에서 필요할 때만 수행됨
-                      // 여기서는 명시적으로 캐싱하지 않음 (보수적 접근)
-                    },
-                  )
-                else
-                  // 로딩 중
-                  Container(
-                    color: Colors.black87,
-                    child: const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  ),
-
-                // 자막 표시 (자막 기능이 켜져 있을 때만)
-                if (_isCaptionEnabled && !_showTranscriptPanel)
-                  _buildCaptionOverlay(),
-
-                // 비디오 컨트롤 오버레이
-                if (_showControls && !_isPagesExpanded)
-                  _buildHorizontalVideoControls(),
-
-                // 하단 슬라이드 토글 바
-                if (_isPagesExpanded)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: _buildHorizontalToggleBar(),
-                  ),
-
-                // 슬라이드가 펼쳐졌을 때 우상단 싱크 버튼
-                if (_isPagesExpanded)
-                  Positioned(
-                    top: 12,
-                    right: 16,
-                    child: SyncButton(
-                      isSynced: _isSynced,
-                      onPressed: () => setState(() => _isSynced = !_isSynced),
-                      pageDifference: _getPageDifference(),
-                    ),
-                  ),
-
-                // 우측 화살표 버튼 (Transcript 패널 토글)
-                if (!_showTranscriptPanel)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _showTranscriptPanel = true;
-                          });
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(8),
-                              bottomLeft: Radius.circular(8),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.chevron_left,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+      onTap: () {
+        setState(() {
+          if (_isPagesExpanded && !isVertical) {
+            // 가로 모드에서 페이지가 펼쳐진 상태에서 클릭하면 모두 닫기
+            _isPagesExpanded = false;
+          } else {
+            // 컨트롤 토글
+            _showControls = !_showControls;
+          }
+        });
+      },
+      child: Stack(
+        children: [
+          // PDF 내용 영역
+          if (_pdfController != null)
+            PdfView(
+              controller: _pdfController!,
+              onPageChanged: (page) {
+                setState(() {
+                  _currentPage = page;
+                });
+              },
+            )
+          else
+            // 로딩 중
+            Container(
+              color: Colors.black87,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
             ),
-          ),
-        ),
 
-        // 우측 Transcript 패널
-        if (_showTranscriptPanel)
-          Container(
-            width: transcriptPanelWidth,
-            color: const Color(0xFFFAFAFA),
-            child: Stack(
-              children: [
-                // Transcript 내용
-                _buildTranscriptArea(),
+          // 자막 표시 (가로 모드에서 자막 기능이 켜져 있고 transcript 패널이 닫혀있을 때만)
+          if (!isVertical && _isCaptionEnabled && !_showTranscriptPanel)
+            _buildCaptionOverlay(),
 
-                // 닫기 버튼 (좌측 화살표)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _showTranscriptPanel = false;
-                        });
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(8),
-                            bottomRight: Radius.circular(8),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
+          // 비디오 컨트롤 오버레이
+          if (_showControls && (!_isPagesExpanded || isVertical))
+            _buildVideoControls(isVertical: isVertical),
+        ],
+      ),
     );
+
+    if (isVertical) {
+      // 세로 모드: 16:9 비율로 고정된 크기
+      final screenWidth = MediaQuery.of(context).size.width;
+      final pdfHeight = screenWidth * 9 / 16;
+
+      return SizedBox(
+        width: screenWidth,
+        height: pdfHeight,
+        child: content,
+      );
+    } else {
+      // 가로 모드: Expanded로 전체 영역 채움
+      return Expanded(child: content);
+    }
   }
 
-  Widget _buildHorizontalVideoControls() {
+  Widget _buildVideoControls({required bool isVertical}) {
     return Container(
       color: const Color(0x4D1D1D1D), // rgba(29, 29, 29, 0.3)
       child: Column(
         children: [
           // 상단 컨트롤 바
-          TopControlBarLandscape(
+          TopControlBar(
+            isVertical: isVertical,
             onBack: () => Navigator.pop(context),
             isCaptionEnabled: _isCaptionEnabled,
             onCaptionToggle: () =>
@@ -1030,63 +756,174 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
-  Widget _buildHorizontalToggleBar() {
-    return Container(
-      height: 150,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.5),
-            Colors.black.withValues(alpha: 0.7),
-          ],
+  Widget _buildToggleBar({required bool isVertical}) {
+    if (isVertical) {
+      // 세로 모드: 심플한 펼치기 버튼
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            _isPagesExpanded = !_isPagesExpanded;
+          });
+        },
+        child: Container(
+          width: double.infinity,
+          height: 40,
+          color: const Color(0xFFF5F5F5),
+          child: Center(
+            child: Icon(
+              _isPagesExpanded
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+              color: Colors.grey[700],
+              size: 28,
+            ),
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          // 토글 버튼
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isPagesExpanded = false;
-              });
-            },
-            child: Container(
-              height: 40,
-              color: Colors.transparent,
-              child: Center(
-                child: Icon(
-                  Icons.keyboard_arrow_down,
-                  color: Colors.white,
-                  size: 28,
+      );
+    } else {
+      // 가로 모드: 그라데이션 배경 + 슬라이드 목록
+      return Container(
+        height: 150,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.black.withValues(alpha: 0.5),
+              Colors.black.withValues(alpha: 0.7),
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // 토글 버튼
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isPagesExpanded = false;
+                });
+              },
+              child: Container(
+                height: 40,
+                color: Colors.transparent,
+                child: const Center(
+                  child: Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
             ),
+            // 슬라이드 목록
+            Expanded(
+              child: _buildPagesList(isVertical: false),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildPagesList({required bool isVertical}) {
+    final pageCount = _pdfDocument?.pagesCount ?? 10;
+
+    final slidesList = PdfSlidesList(
+      pageCount: pageCount,
+      currentPage: _currentPage,
+      itemWidth: isVertical ? 180 : 150,
+      padding: isVertical
+          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 16)
+          : const EdgeInsets.fromLTRB(12, 8, 12, 24),
+      getCachedOrRenderPage: _pdfCacheService.getCachedOrRenderPage,
+      getCachedImage: _pdfCacheService.getCachedImageDirect,
+      onPageTap: (pageNumber) {
+        _pdfController?.jumpToPage(pageNumber);
+        setState(() {
+          _currentPage = pageNumber;
+        });
+        // 캐시되지 않은 페이지라면 즉시 캐싱 시작 (동시 렌더링 제한 준수)
+        if (_pdfCacheService.getCachedImageDirect(pageNumber) == null) {
+          _pdfCacheService.getCachedOrRenderPage(pageNumber);
+        }
+        // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
+        _seekToSlide(pageNumber);
+      },
+      onScroll: _handleSlidesListScroll,
+    );
+
+    if (isVertical) {
+      // 세로 모드: 회색 배경 컨테이너로 감싸기
+      return Container(
+        height: 150,
+        color: const Color(0xFFEEEEEE),
+        child: slidesList,
+      );
+    } else {
+      // 가로 모드: 배경 없이 반환 (부모의 그라데이션 배경 사용)
+      return slidesList;
+    }
+  }
+
+  Widget _buildTranscriptArea() {
+    if (_transcriptData == null) {
+      return Container(
+        width: double.infinity,
+        color: const Color(0xFFFAFAFA),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFFAFAFA),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Transcript',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
           ),
-          // 슬라이드 목록
+          const SizedBox(height: 12),
           Expanded(
-            child: PdfSlidesList(
-              pageCount: _pdfDocument?.pagesCount ?? 10,
-              currentPage: _currentPage,
-              itemWidth: 150,
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-              getCachedOrRenderPage: _pdfCacheService.getCachedOrRenderPage,
-              getCachedImage: _pdfCacheService.getCachedImageDirect,
-              onPageTap: (pageNumber) {
-                _pdfController?.jumpToPage(pageNumber);
-                setState(() {
-                  _currentPage = pageNumber;
-                });
-                // 캐시되지 않은 페이지라면 즉시 캐싱 시작 (동시 렌더링 제한 준수)
-                if (_pdfCacheService.getCachedImageDirect(pageNumber) == null) {
-                  _pdfCacheService.getCachedOrRenderPage(pageNumber);
-                }
-                // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
-                _seekToSlide(pageNumber);
+            child: ListView.builder(
+              controller: _transcriptScrollController,
+              itemCount: _transcriptData!.timestamps.length,
+              itemBuilder: (context, index) {
+                final sentence = _transcriptData!.timestamps[index];
+                final isCurrentSentence = _currentSentenceIndex == index;
+
+                return AutoScrollTag(
+                  key: ValueKey(index),
+                  controller: _transcriptScrollController,
+                  index: index,
+                  child: GestureDetector(
+                    onTap: () => _seekToSentence(index),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        sentence.text,
+                        style: TextStyle(
+                          fontSize: isCurrentSentence ? 18 : 14,
+                          fontWeight: isCurrentSentence
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isCurrentSentence
+                              ? Colors.black
+                              : Colors.grey[600],
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
               },
-              onScroll: _handleSlidesListScroll, // 스크롤 시 자동 캐싱
             ),
           ),
         ],
