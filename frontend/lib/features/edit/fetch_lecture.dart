@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:io';
 import 'dart:ui' show Offset;
 import 'package:archive/archive.dart';
@@ -38,21 +39,30 @@ Future<void> splitPdfRange(
     }
 
     final out = PdfDocument();
+    out.pageSettings.margins.all = 0;
     try {
       for (int i = s; i <= e; i++) {
         final srcPage = src.pages[i];
+        final template = srcPage.createTemplate();
+        final width = template.size.width;
+        final height = template.size.height;
 
         // Match page size in the destination
-        out.pageSettings.size = srcPage.size;
+        final bool portrait = width <= height;
+        out.pageSettings.orientation = portrait
+            ? PdfPageOrientation.portrait
+            : PdfPageOrientation.landscape;
+        out.pageSettings.size = portrait
+            ? Size(math.min(width, height), math.max(width, height))
+            : Size(math.max(width, height), math.min(width, height));
 
         // Add a new page and draw the source page template onto it
         final newPage = out.pages.add();
-        final template = srcPage.createTemplate();
-        final bounds = Offset(
+        final bounds = Size(
           newPage.getClientSize().width,
           newPage.getClientSize().height,
         );
-        newPage.graphics.drawPdfTemplate(template, bounds);
+        newPage.graphics.drawPdfTemplate(template, Offset.zero, bounds);
       }
 
       final List<int> bytes = await out.save();
