@@ -629,9 +629,38 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
-                onPressed: () {
-                  // TODO: 강의 삭제 로직
-                  Navigator.pop(context);
+                onPressed: () async {
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(l10n.deleteLecture),
+                      content: Text(
+                        l10n.isKorean
+                            ? '이 강의를 삭제하시겠습니까? 삭제한 강의는 복구할 수 없습니다.'
+                            : 'Are you sure you want to delete this lecture? This action is irreversible.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(l10n.cancel),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text(l10n.isKorean ? '삭제' : 'Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && context.mounted) {
+                    await HiveManager.instance.deleteLecture(widget.lecture.id);
+                    if (context.mounted) {
+                      Navigator.pop(context, true);
+                    }
+                  }
                 },
                 icon: const Icon(Icons.delete),
                 label: Text(l10n.deleteLecture),
@@ -647,8 +676,17 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
         ),
         FilledButton(
           onPressed: () async {
-            // TODO: LectureService 구현 또는 별도 로직 필요
-            // 현재 HiveManager는 강의 데이터를 관리하지 않음
+            final weekText = _weekController.text.trim();
+            final titleText = _titleController.text.trim();
+
+            if (weekText.isNotEmpty && titleText.isNotEmpty) {
+              await HiveManager.instance.updateLectureMetadata(
+                widget.lecture.id,
+                weekLabel: weekText,
+                title: titleText,
+              );
+            }
+
             if (context.mounted) {
               Navigator.pop(context, true); // true를 반환하여 새로고침 필요함을 알림
             }

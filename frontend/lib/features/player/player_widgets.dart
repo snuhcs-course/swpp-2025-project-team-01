@@ -308,44 +308,11 @@ class CenterPlayControls extends StatelessWidget {
   }
 }
 
-// 상단 컨트롤 바 (세로 모드용)
-class TopControlBarPortrait extends StatelessWidget {
-  const TopControlBarPortrait({
+// 상단 컨트롤 바
+class TopControlBar extends StatelessWidget {
+  const TopControlBar({
     super.key,
-    required this.onBack,
-    required this.isSynced,
-    required this.onSyncToggle,
-    this.pageDifference,
-  });
-
-  final VoidCallback onBack;
-  final bool isSynced;
-  final VoidCallback onSyncToggle;
-  final int? pageDifference;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          BackButton(onPressed: onBack),
-          const Spacer(),
-          SyncButton(
-            isSynced: isSynced,
-            onPressed: onSyncToggle,
-            pageDifference: pageDifference,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 상단 컨트롤 바 (가로 모드용)
-class TopControlBarLandscape extends StatelessWidget {
-  const TopControlBarLandscape({
-    super.key,
+    required this.isVertical,
     required this.onBack,
     required this.isCaptionEnabled,
     required this.onCaptionToggle,
@@ -353,6 +320,8 @@ class TopControlBarLandscape extends StatelessWidget {
     required this.onSyncToggle,
     this.pageDifference,
   });
+
+  final bool isVertical;
 
   final VoidCallback onBack;
   final bool isCaptionEnabled;
@@ -369,11 +338,13 @@ class TopControlBarLandscape extends StatelessWidget {
         children: [
           BackButton(onPressed: onBack),
           const Spacer(),
-          CaptionButton(
-            isEnabled: isCaptionEnabled,
-            onPressed: onCaptionToggle,
-          ),
-          const SizedBox(width: 8),
+          if (!isVertical) ...[
+            CaptionButton(
+              isEnabled: isCaptionEnabled,
+              onPressed: onCaptionToggle,
+            ),
+            const SizedBox(width: 8),
+          ],
           SyncButton(
             isSynced: isSynced,
             onPressed: onSyncToggle,
@@ -385,7 +356,7 @@ class TopControlBarLandscape extends StatelessWidget {
   }
 }
 
-/// PDF 슬라이드 리스트 (가로/세로 모드 공통 사용)
+/// PDF 슬라이드 리스트
 class PdfSlidesList extends StatefulWidget {
   const PdfSlidesList({
     super.key,
