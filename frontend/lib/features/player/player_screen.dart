@@ -173,10 +173,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
       await _audioService.loadAudio(audioPath);
 
       await _audioService.play();
-
-      setState(() {
-        _isPlaying = true;
-      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -187,20 +183,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _setupAudioListeners() {
     // 재생 위치 변경 리스너
     _audioService.positionStream.listen((position) {
-      _currentTime = position.inMilliseconds / 1000.0;
-      developer.log(
-        '[AUDIO] Current position: ${_currentTime.toStringAsFixed(3)}s (${position.inMilliseconds}ms)',
-      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _currentTime = position.inMilliseconds / 1000.0;
+      });
       _updateCurrentSentence();
     });
 
     // 재생 상태 변경 리스너
     _audioService.stateStream.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = state.playing;
-        });
+      if (!mounted) {
+        return;
       }
+      setState(() {
+        _isPlaying = state.playing;
+      });
     });
   }
 
@@ -670,14 +669,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
           CenterPlayControls(
             isPlaying: _isPlaying,
             onPlayPause: () {
+              developer.log('[PLAY_PAUSE] Button pressed, _isPlaying=$_isPlaying');
               if (_isPlaying) {
+                developer.log('[PLAY_PAUSE] Calling pause()');
                 _audioService.pause();
               } else {
                 developer.log('[PLAY_PAUSE] Calling play()');
                 _audioService.play();
               }
             },
-            onSkipBackward: () => SkipMove(false),
+            onSkipBackward: () => skipMove(false),
             onSkipForward: () => skipMove(true),
           ),
 
