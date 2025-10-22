@@ -636,8 +636,8 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                       title: Text(l10n.deleteLecture),
                       content: Text(
                         l10n.isKorean
-                            ? '이 강의를 삭제하시겠습니까?'
-                            : 'Are you sure you want to delete this lecture?',
+                            ? '이 강의를 삭제하시겠습니까? 삭제한 강의는 복구할 수 없습니다.'
+                            : 'Are you sure you want to delete this lecture? This action is irreversible.',
                       ),
                       actions: [
                         TextButton(
