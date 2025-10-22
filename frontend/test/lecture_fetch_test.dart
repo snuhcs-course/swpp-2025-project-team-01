@@ -23,7 +23,6 @@ void main() {
       await File(outputPath).delete();
       expect(generatedPages, 3);
       expect(pageSize, originalSize);
-
     });
   });
 }
