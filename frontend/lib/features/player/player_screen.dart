@@ -624,8 +624,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
         child: content,
       );
     } else {
-      // 가로 모드: Expanded로 전체 영역 채움
-      return Expanded(child: content);
+      // 가로 모드: content만 반환 (Stack에서 사용되므로 Expanded 사용 불가)
+      return content;
     }
   }
 
@@ -647,10 +647,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
             });
           });
     }
-    return Container(
-      color: const Color(0x4D1D1D1D), // rgba(29, 29, 29, 0.3)
-      child: Column(
-        children: [
+    return Positioned.fill(
+      child: Container(
+        color: const Color(0x4D1D1D1D), // rgba(29, 29, 29, 0.3)
+        child: Column(
+          children: [
           // 상단 컨트롤 바
           TopControlBar(
             isVertical: isVertical,
@@ -719,6 +720,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -784,7 +786,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
               ),
             ),
             // 슬라이드 목록
-            Expanded(
+            SizedBox(
+              height: 110,
               child: _buildPagesList(isVertical: false),
             ),
           ],
