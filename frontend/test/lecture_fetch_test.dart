@@ -18,8 +18,12 @@ void main() {
       );
       final inputBytes = await File(outputPath).readAsBytes();
       final splittedPdf = PdfDocument(inputBytes: inputBytes);
-      expect(splittedPdf.pages.count, 3);
-      expect(splittedPdf.pages[0].size, originalSize);
+      final generatedPages = splittedPdf.pages.count;
+      final pageSize = splittedPdf.pages[0].size;
+      await File(outputPath).delete();
+      expect(generatedPages, 3);
+      expect(pageSize, originalSize);
+
     });
   });
 }

@@ -29,8 +29,8 @@ jobs:
     - uses: actions/checkout@v3
     
     # Add necessary script executions accordingly.
-    #- name: Run backend unit tests
-    #  run: python run_backend_unit_tests.py
+    - name: Run lecture fetch unit tests
+      run: flutter test test/lecture_fetch_test.dart
 
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
@@ -57,7 +57,3 @@ jobs:
     
     - name: Analyze
       run: flutter analyze --fatal-infos --fatal-warnings
-    
-    # 나중에 추가
-    # - name: Test
-    #  run: flutter test
