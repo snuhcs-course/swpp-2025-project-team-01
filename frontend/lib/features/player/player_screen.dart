@@ -630,6 +630,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _buildVideoControls({required bool isVertical}) {
+    void SkipMove(bool isForward) {
+      setState(() {
+        _isForcedMove = true;
+      });
+      final newTime = (_currentTime + 15 * (isForward ? 1 : -1)).clamp(0, _totalTime);
+      _audioService
+          .seek(Duration(milliseconds: (newTime * 1000).toInt()))
+          .then((_) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                setState(() {
+                  _isForcedMove = false;
+                });
+              }
+            });
+          });
+    }
     return Container(
       color: const Color(0x4D1D1D1D), // rgba(29, 29, 29, 0.3)
       child: Column(
@@ -658,40 +675,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 _audioService.play();
               }
             },
-            onSkipBackward: () {
-              setState(() {
-                _isForcedMove = true;
-              });
-              final newTime = (_currentTime - 15).clamp(0, _totalTime);
-              _audioService
-                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
-                  .then((_) {
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted) {
-                        setState(() {
-                          _isForcedMove = false;
-                        });
-                      }
-                    });
-                  });
-            },
-            onSkipForward: () {
-              setState(() {
-                _isForcedMove = true;
-              });
-              final newTime = (_currentTime + 15).clamp(0, _totalTime);
-              _audioService
-                  .seek(Duration(milliseconds: (newTime * 1000).toInt()))
-                  .then((_) {
-                    Future.delayed(const Duration(milliseconds: 500), () {
-                      if (mounted) {
-                        setState(() {
-                          _isForcedMove = false;
-                        });
-                      }
-                    });
-                  });
-            },
+            onSkipBackward: () => SkipMove(false),
+            onSkipForward: () => SkipMove(true),
           ),
 
           const Spacer(),
