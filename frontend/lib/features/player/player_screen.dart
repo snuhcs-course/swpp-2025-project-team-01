@@ -4,7 +4,6 @@ import 'package:pdfx/pdfx.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
-import 'dart:developer' as developer;
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:re_view/features/player/player_widgets.dart';
@@ -123,10 +122,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
         throw Exception("Can't find lecture");
       }
 
-      developer.log(
-        '[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}',
-      );
-
       // transcript.json 로드 (HiveLecture에서 경로 가져오기)
       final transcriptPath = hiveLecture.transcriptPaths?.isNotEmpty == true
           ? hiveLecture.transcriptPaths!.first
@@ -137,9 +132,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ? await rootBundle.loadString(transcriptPath)
           : await File(transcriptPath).readAsString();
 
-      developer.log(
-        '[PLAYER] Loaded lecture from Hive: ${hiveLecture.slidePath}',
-      );
       try {
         final transcriptJsonData =
             json.decode(transcriptJson) as Map<String, dynamic>;
@@ -219,17 +211,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final sentence = _transcriptData!.timestamps[sentenceIndex];
     final targetPage = sentence.slideNumber;
 
-    developer.log(
-      '[SET_SENTENCE] Called with index=$sentenceIndex, page=$targetPage, forcePageUpdate=$forcePageUpdate, updateTime=$updateTime',
-    );
-
     // 상태 변경이 필요한지 확인
     final sentenceChanged = _currentSentenceIndex != sentenceIndex;
     final shouldUpdatePage =
         forcePageUpdate || (_isSynced && _currentPage != targetPage);
 
     if (!sentenceChanged && !shouldUpdatePage && !updateTime) {
-      developer.log('[SET_SENTENCE] No changes needed, returning');
       return; // 변경 사항 없음
     }
 
@@ -241,17 +228,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
       if (updateTime) {
         _currentTime = sentence.startTime;
-        developer.log(
-          '[SET_SENTENCE] Force updating _currentTime to ${sentence.startTime}',
-        );
       }
     });
 
     // PDF 페이지 점프
     if (shouldUpdatePage) {
-      developer.log('[SET_SENTENCE] About to jump PDF to page $targetPage');
       _pdfController?.jumpToPage(targetPage);
-      developer.log('[SET_SENTENCE] PDF jump completed');
     }
 
     // Transcript 자동 스크롤
@@ -267,7 +249,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     // 강제 이동 중이면 자동 갱신 건너뛰기
     if (_isForcedMove) {
-      developer.log('[UPDATE_SENTENCE] Skipped: _isForcedMove=true');
       return;
     }
 
@@ -275,9 +256,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final sentence = _transcriptData!.timestamps[i];
       if (_currentTime >= sentence.startTime &&
           _currentTime < sentence.endTime + 0.2) {
-        developer.log(
-          '[UPDATE_SENTENCE] Match found: index=$i, currentTime=$_currentTime, range=[${sentence.startTime}, ${sentence.endTime}]',
-        );
         _setCurrentSentenceAndPage(i);
         return;
       }
@@ -352,10 +330,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
     final sentence = _transcriptData!.timestamps[index];
     final targetMs = (sentence.startTime * 1000).toInt();
-
-    developer.log(
-      '[SEEK_TO_SENTENCE] index=$index, startTime=${sentence.startTime}, targetMs=$targetMs, isPlaying=$_isPlaying',
-    );
 
     // 강제 이동 시작
     setState(() {
@@ -668,12 +642,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
           CenterPlayControls(
             isPlaying: _isPlaying,
             onPlayPause: () {
-              developer.log('[PLAY_PAUSE] Button pressed, _isPlaying=$_isPlaying');
               if (_isPlaying) {
-                developer.log('[PLAY_PAUSE] Calling pause()');
                 _audioService.pause();
               } else {
-                developer.log('[PLAY_PAUSE] Calling play()');
                 _audioService.play();
               }
             },

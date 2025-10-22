@@ -1,5 +1,4 @@
 import 'package:just_audio/just_audio.dart' as ja;
-import 'dart:developer' as developer;
 
 /// 오디오 재생 서비스 (just_audio 사용)
 class AudioService {
@@ -12,13 +11,10 @@ class AudioService {
       if (path.startsWith('assets/')) {
         // 이미 'assets/'가 포함된 경로
         await _player.setAsset(path);
-        developer.log('[AUDIO_SERVICE] Audio loaded from asset: $path');
       } else {
         await _player.setFilePath(path);
-        developer.log('[AUDIO_SERVICE] Audio loaded from asset: assets/$path');
       }
     } catch (e) {
-      developer.log('[AUDIO_SERVICE] Error loading audio: $e');
       rethrow;
     }
   }
