@@ -6,7 +6,8 @@ import 'package:test/test.dart';
 void main() {
   group('Lecture Fetch Helpers', () {
     test('PDF Splitting', () async {
-      final inputFilePath = 'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf';
+      final inputFilePath =
+          'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf';
       final bytes = await File(inputFilePath).readAsBytes();
       final originalPdf = PdfDocument(inputBytes: bytes);
       final originalSize = originalPdf.pages[2].size;
