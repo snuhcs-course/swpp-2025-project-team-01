@@ -602,8 +602,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
               ),
             ),
 
-          // 자막 표시 (가로 모드에서 자막 기능이 켜져 있고 transcript 패널이 닫혀있을 때만)
-          if (!isVertical && _isCaptionEnabled && !_showTranscriptPanel)
+          // 자막 표시 (가로 모드에서 자막 기능이 켜져 있을 때만)
+          if (!isVertical && _isCaptionEnabled)
             _buildCaptionOverlay(),
 
           // 비디오 컨트롤 오버레이
@@ -936,7 +936,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.8),
+            color: Colors.black.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
