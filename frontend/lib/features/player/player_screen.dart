@@ -198,7 +198,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _audioService.stateStream.listen((state) {
       if (mounted) {
         setState(() {
-          _isPlaying = state == PlayerState.playing;
+          _isPlaying = state.playing;
         });
       }
     });
@@ -364,19 +364,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _isForcedMove = true;
     });
 
-    _audioService.seek(Duration(milliseconds: targetMs)).then((_) async {
-      developer.log('[SEEK_TO_SENTENCE] seek completed');
-
-      // seek 후 실제 위치 확인
-      final actualPos = await _audioService.getCurrentPosition();
-      if (actualPos != null) {
-        final actualMs = actualPos.inMilliseconds;
-        final diff = actualMs - targetMs;
-        developer.log(
-          '[SEEK_TO_SENTENCE] Actual position after seek: ${actualMs}ms (requested: ${targetMs}ms, diff: ${diff}ms)',
-        );
-      }
-
+    _audioService.seek(Duration(milliseconds: targetMs)).then((_) {
       if (!mounted) {
         return;
       }
