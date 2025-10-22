@@ -630,7 +630,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Widget _buildVideoControls({required bool isVertical}) {
-    void SkipMove(bool isForward) {
+    void skipMove(bool isForward) {
       setState(() {
         _isForcedMove = true;
       });
@@ -673,11 +673,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
               if (_isPlaying) {
                 _audioService.pause();
               } else {
+                developer.log('[PLAY_PAUSE] Calling play()');
                 _audioService.play();
               }
             },
             onSkipBackward: () => SkipMove(false),
-            onSkipForward: () => SkipMove(true),
+            onSkipForward: () => skipMove(true),
           ),
 
           const Spacer(),
