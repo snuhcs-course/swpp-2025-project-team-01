@@ -324,12 +324,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
   }
 
-  // 슬라이드 리스트 스크롤 시 호출되는 핸들러
-  void _handleSlidesListScroll(int visibleEndPage) {
-    // 스크롤 시 자동 캐싱을 하지 않음 - 보수적으로 접근
-    // FutureBuilder가 필요한 페이지만 요청하도록 함
-  }
-
   Future<void> _scrollToCurrentSentence() async {
     if (_currentSentenceIndex == null || _transcriptData == null) {
       return;
@@ -850,7 +844,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
         // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
         _seekToSlide(pageNumber);
       },
-      onScroll: _handleSlidesListScroll,
     );
 
     if (isVertical) {
