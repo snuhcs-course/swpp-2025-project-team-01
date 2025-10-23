@@ -277,12 +277,21 @@ class _SubjectPanelState extends State<SubjectPanel>
   Widget build(BuildContext context) {
     final AppHighlights h = context.highlights;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: expanded ? Colors.white : Colors.transparent,
-        borderRadius: BorderRadius.circular(_panelRadius),
-        boxShadow: expanded ? const [_panelShadow] : const [],
-      ),
+    return AnimatedBuilder(
+      animation: _expandAnimation,
+      builder: (context, child) {
+        // 애니메이션 진행 중이거나 완전히 열린 상태일 때만 배경 표시
+        final bool showBackground = _expandAnimation.value > 0;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: showBackground ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(_panelRadius),
+            boxShadow: showBackground ? const [_panelShadow] : const [],
+          ),
+          child: child,
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -300,27 +309,29 @@ class _SubjectPanelState extends State<SubjectPanel>
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
-          SizeTransition(
-            sizeFactor: _expandAnimation,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: widget.lectures
-                    .map(
-                      (lec) => SizedBox(
-                        width:
-                            (MediaQuery.of(context).size.width - 32 - 28 - 12) /
-                            2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
-                        child: LectureCard(
-                          lec: lec,
-                          onTap: widget.onOpenLecture,
-                          onUpdated: widget.onLectureUpdated,
+          ClipRect(
+            child: SizeTransition(
+              sizeFactor: _expandAnimation,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: widget.lectures
+                      .map(
+                        (lec) => SizedBox(
+                          width:
+                              (MediaQuery.of(context).size.width - 32 - 28 - 12) /
+                              2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
+                          child: LectureCard(
+                            lec: lec,
+                            onTap: widget.onOpenLecture,
+                            onUpdated: widget.onLectureUpdated,
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
+                      )
+                      .toList(),
+                ),
               ),
             ),
           ),
