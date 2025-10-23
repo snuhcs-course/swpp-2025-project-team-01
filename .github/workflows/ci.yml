@@ -35,6 +35,12 @@ jobs:
     - name: Run player unit tests
       run: flutter test test/features/player/
 
+    - name: Run search screen unit tests
+      run: flutter test test/features/search/search_screen_test.dart
+
+    - name: Run home screen unit tests
+      run: flutter test test/features/home/
+
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
     runs-on: ubuntu-latest
