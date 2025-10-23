@@ -3,7 +3,6 @@ from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
 from sse_starlette.sse import EventSourceResponse
-import sys
 from pathlib import Path
 import shutil
 import io
@@ -16,9 +15,8 @@ from typing import Callable
 from enum import Enum
 import uuid
 
-# Add inference_models directory to path
-sys.path.append(str(Path(__file__).parent.parent / "inference_models"))
-from lecture_pipeline import LecturePipeline, PipelineOutput, simple_sentence_splitter
+# Import from inference_models subdirectory
+from inference_models.lecture_pipeline import LecturePipeline, PipelineOutput, simple_sentence_splitter
 
 # Job Status Enum
 class JobStatus(str, Enum):
