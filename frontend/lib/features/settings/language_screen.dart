@@ -15,7 +15,12 @@ import 'package:re_view/data/hive_manager.dart';
 /// - 상단: 앱바 (제목: "언어 / Language")
 /// - 본문: 라디오 버튼 2개 (한국어, English)
 class LanguageScreen extends StatefulWidget {
-  const LanguageScreen({super.key});
+  const LanguageScreen({
+    super.key,
+    this.hiveManager,
+  });
+
+  final HiveManager? hiveManager;
 
   @override
   State<LanguageScreen> createState() => _LanguageScreenState();
@@ -23,12 +28,13 @@ class LanguageScreen extends StatefulWidget {
 
 class _LanguageScreenState extends State<LanguageScreen> {
   // 언어 서비스 인스턴스
-  final _manager = HiveManager.instance;
+  late final HiveManager _manager;
 
   @override
   void initState() {
     super.initState();
     // 언어 변경 리스너 등록 (언어 변경 시 자동 UI 업데이트)
+    _manager = widget.hiveManager ?? HiveManager.instance;
     _manager.addListener(_onLanguageChanged);
   }
 
