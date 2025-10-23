@@ -300,7 +300,7 @@ The `timestamps.json` file in the downloaded ZIP contains:
 {
   "metadata": {
     "total_sentences": 42,
-    "total_duration": 125.3,
+    "total_duration": 125300,
     "voice": "af_heart",
     "speed": 1.0,
     "language_code": "a",
@@ -311,17 +311,17 @@ The `timestamps.json` file in the downloaded ZIP contains:
       "sentence_id": 1,
       "text": "Welcome to this lecture on deep learning.",
       "slide_number": 1,
-      "start_time": 0.0,
-      "end_time": 3.2,
-      "duration": 3.2
+      "start_time": 0,
+      "end_time": 3200,
+      "duration": 3200
     },
     {
       "sentence_id": 2,
       "text": "Today we will discuss neural networks.",
       "slide_number": 1,
-      "start_time": 3.4,
-      "end_time": 6.8,
-      "duration": 3.4
+      "start_time": 3400,
+      "end_time": 6800,
+      "duration": 3400
     }
   ]
 }
@@ -331,7 +331,7 @@ The `timestamps.json` file in the downloaded ZIP contains:
 
 - `metadata`: Audio generation metadata
   - `total_sentences`: Number of sentences in the lecture
-  - `total_duration`: Total audio duration in seconds
+  - `total_duration`: Total audio duration in milliseconds (integer)
   - `voice`: TTS voice used
   - `speed`: Playback speed multiplier
   - `language_code`: Language code (`a` = American English)
@@ -341,9 +341,9 @@ The `timestamps.json` file in the downloaded ZIP contains:
   - `sentence_id`: Unique sentence identifier (1-indexed)
   - `text`: Sentence text content
   - `slide_number`: Corresponding slide page number (1-indexed)
-  - `start_time`: Sentence start time in seconds
-  - `end_time`: Sentence end time in seconds
-  - `duration`: Sentence duration in seconds
+  - `start_time`: Sentence start time in milliseconds (integer)
+  - `end_time`: Sentence end time in milliseconds (integer)
+  - `duration`: Sentence duration in milliseconds (integer)
 
 ---
 

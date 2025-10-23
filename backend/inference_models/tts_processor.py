@@ -127,14 +127,14 @@ class TTSProcessor:
                     # Calculate duration
                     duration = len(sentence_audio) / self.sample_rate
 
-                    # Save timestamp info
+                    # Save timestamp info (convert to milliseconds as integer)
                     timestamp_info = {
                         "sentence_id": idx + 1,
                         "text": text,
                         "slide_number": slide_number,
-                        "start_time": round(current_time, 3),
-                        "end_time": round(current_time + duration, 3),
-                        "duration": round(duration, 3)
+                        "start_time": int(round(current_time * 1000)),
+                        "end_time": int(round((current_time + duration) * 1000)),
+                        "duration": int(round(duration * 1000))
                     }
                     timestamp_data.append(timestamp_info)
 
@@ -193,7 +193,7 @@ class TTSProcessor:
         output_data = {
             "metadata": {
                 "total_sentences": len(timestamp_data),
-                "total_duration": round(current_time - self.silence_duration, 3) if timestamp_data else 0,
+                "total_duration": int(round((current_time - self.silence_duration) * 1000)) if timestamp_data else 0,
                 "voice": self.voice,
                 "speed": self.speed,
                 "language_code": self.lang_code,

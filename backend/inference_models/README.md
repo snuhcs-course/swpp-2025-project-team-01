@@ -299,7 +299,7 @@ Plain text transcription of the lecture audio.
 {
   "metadata": {
     "total_sentences": 150,
-    "total_duration": 3600.5,
+    "total_duration": 3600500,
     "voice": "af_heart",
     "speed": 1.0
   },
@@ -308,14 +308,16 @@ Plain text transcription of the lecture audio.
       "sentence_id": 1,
       "text": "Welcome to the lecture.",
       "slide_number": 1,
-      "start_time": 0.0,
-      "end_time": 2.5,
-      "duration": 2.5
+      "start_time": 0,
+      "end_time": 2500,
+      "duration": 2500
     },
     ...
   ]
 }
 ```
+
+**Note:** All time values (`total_duration`, `start_time`, `end_time`, `duration`) are in milliseconds as integers.
 
 ### Audio Files
 - **WAV** (`.wav`): Uncompressed audio, 24kHz sample rate

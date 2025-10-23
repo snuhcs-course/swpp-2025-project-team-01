@@ -27,7 +27,7 @@ class PipelineOutput:
 
     # Metadata for client
     lecture_name: str = ""
-    total_duration: float = 0.0  # seconds
+    total_duration: int = 0  # milliseconds
     total_sentences: int = 0
     audio_sample_rate: int = 24000
 
