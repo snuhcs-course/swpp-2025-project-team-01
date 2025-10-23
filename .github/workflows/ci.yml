@@ -32,6 +32,9 @@ jobs:
     - name: Run lecture fetch unit tests
       run: flutter test test/features/edit/lecture_fetch_test.dart
 
+    - name: Run player unit tests
+      run: flutter test test/features/player/
+
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
     runs-on: ubuntu-latest
