@@ -221,6 +221,7 @@ class _SubjectPanelState extends State<SubjectPanel>
   late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
+  late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
@@ -239,6 +240,10 @@ class _SubjectPanelState extends State<SubjectPanel>
       parent: _animationController,
       curve: reduceMotion ? Curves.linear : Curves.easeInOut,
     );
+    _colorAnimation = ColorTween(
+      begin: Colors.transparent,
+      end: Colors.white,
+    ).animate(_animationController);
     _animationController.value = expanded ? 1.0 : 0.0;
   }
 
@@ -276,54 +281,66 @@ class _SubjectPanelState extends State<SubjectPanel>
   Widget build(BuildContext context) {
     final AppHighlights h = context.highlights;
 
-    return Container(
+    return AnimatedContainer(
+      duration: Duration.zero,
       decoration: BoxDecoration(
-        color: expanded ? Colors.white : Colors.transparent,
         borderRadius: BorderRadius.circular(_panelRadius),
         boxShadow: expanded ? const [_panelShadow] : const [],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 검정 헤더 (태그 + ★ + 제목 + 화살표)
-          SubjectPanelHeader(
-            title: widget.subject.title,
-            tags: widget.tags,
-            expanded: expanded,
-            onToggleExpanded: _toggleExpanded,
-            favoriteIcon: widget.subject.favorite
-                ? Icons.star
-                : Icons.star_border,
-            onToggleFavorite: widget.onToggleFavorite,
-            favoriteIconColor: h.important,
-          ),
-
-          // 강의 그리드 (2열) - 애니메이션 적용
-          SizeTransition(
-            sizeFactor: _expandAnimation,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: widget.lectures
-                    .map(
-                      (lec) => SizedBox(
-                        width:
-                            (MediaQuery.of(context).size.width - 32 - 28 - 12) /
-                            2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
-                        child: LectureCard(
-                          lec: lec,
-                          onTap: widget.onOpenLecture,
-                          onUpdated: widget.onLectureUpdated,
-                        ),
-                      ),
-                    )
-                    .toList(),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_panelRadius),
+        child: AnimatedBuilder(
+          animation: _colorAnimation,
+          builder: (context, child) {
+            return Container(color: _colorAnimation.value, child: child);
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 검정 헤더 (태그 + ★ + 제목 + 화살표)
+              SubjectPanelHeader(
+                title: widget.subject.title,
+                tags: widget.tags,
+                expanded: expanded,
+                onToggleExpanded: _toggleExpanded,
+                favoriteIcon: widget.subject.favorite
+                    ? Icons.star
+                    : Icons.star_border,
+                onToggleFavorite: widget.onToggleFavorite,
+                favoriteIconColor: h.important,
               ),
-            ),
+
+              // 강의 그리드 (2열) - 애니메이션 적용
+              SizeTransition(
+                sizeFactor: _expandAnimation,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: widget.lectures
+                        .map(
+                          (lec) => SizedBox(
+                            width:
+                                (MediaQuery.of(context).size.width -
+                                    32 -
+                                    28 -
+                                    12) /
+                                2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
+                            child: LectureCard(
+                              lec: lec,
+                              onTap: widget.onOpenLecture,
+                              onUpdated: widget.onLectureUpdated,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
