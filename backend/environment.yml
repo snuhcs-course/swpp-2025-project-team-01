@@ -25,6 +25,7 @@ dependencies:
     - accelerate
     - bitsandbytes
     - safetensors
+    - vllm
     - kokoro==0.9.4
     - soundfile
     - librosa
