@@ -61,17 +61,17 @@ void main() {
     Tag(id: 'logic', name: 'logic', color: 0xFFFFF9C4),
   ];
 
-  ThemeData _buildTheme() => ThemeData.from(colorScheme: lightScheme).copyWith(
-        extensions: <ThemeExtension<dynamic>>[
-          AppHighlights.fromScheme(lightScheme),
-        ],
-      );
+  ThemeData buildTheme() => ThemeData.from(colorScheme: lightScheme).copyWith(
+    extensions: <ThemeExtension<dynamic>>[
+      AppHighlights.fromScheme(lightScheme),
+    ],
+  );
 
-  Widget _wrapWithMaterialApp(Widget child) => MaterialApp(
-        theme: _buildTheme(),
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(body: Center(child: child)),
-      );
+  Widget wrapWithMaterialApp(Widget child) => MaterialApp(
+    theme: buildTheme(),
+    debugShowCheckedModeBanner: false,
+    home: Scaffold(body: Center(child: child)),
+  );
 
   setUpAll(() async {
     testDirectory = Directory.systemTemp.createTempSync('hive_home_widgets_');
@@ -122,9 +122,11 @@ void main() {
   });
 
   group('EmptyStateMessage', () {
-    testWidgets('renders nothing when message empty', (WidgetTester tester) async {
+    testWidgets('renders nothing when message empty', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        _wrapWithMaterialApp(const EmptyStateMessage(message: '')),
+        wrapWithMaterialApp(const EmptyStateMessage(message: '')),
       );
 
       expect(
@@ -136,9 +138,13 @@ void main() {
       );
     });
 
-    testWidgets('renders provided message when not empty', (WidgetTester tester) async {
+    testWidgets('renders provided message when not empty', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        _wrapWithMaterialApp(const EmptyStateMessage(message: 'No items found')),
+        wrapWithMaterialApp(
+          const EmptyStateMessage(message: 'No items found'),
+        ),
       );
 
       expect(
@@ -152,11 +158,13 @@ void main() {
   });
 
   group('FilterPill', () {
-    testWidgets('shows label and triggers tap callback', (WidgetTester tester) async {
+    testWidgets('shows label and triggers tap callback', (
+      WidgetTester tester,
+    ) async {
       final mockOnTap = MockVoidCallback();
 
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
+        wrapWithMaterialApp(
           FilterPill(
             icon: Icons.filter_alt,
             label: 'Filter',
@@ -177,17 +185,14 @@ void main() {
   });
 
   group('FavoritePill', () {
-    testWidgets('shows filled star when active and triggers tap callback',
-        (WidgetTester tester) async {
+    testWidgets('shows filled star when active and triggers tap callback', (
+      WidgetTester tester,
+    ) async {
       final mockOnTap = MockVoidCallback();
 
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
-          FavoritePill(
-            active: true,
-            onTap: mockOnTap.call,
-            label: 'Favorites',
-          ),
+        wrapWithMaterialApp(
+          FavoritePill(active: true, onTap: mockOnTap.call, label: 'Favorites'),
         ),
       );
 
@@ -199,14 +204,12 @@ void main() {
       verify(mockOnTap()).called(1);
     });
 
-    testWidgets('shows outlined star when inactive', (WidgetTester tester) async {
+    testWidgets('shows outlined star when inactive', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
-          FavoritePill(
-            active: false,
-            onTap: () {},
-            label: 'Favorites',
-          ),
+        wrapWithMaterialApp(
+          FavoritePill(active: false, onTap: () {}, label: 'Favorites'),
         ),
       );
 
@@ -216,8 +219,9 @@ void main() {
   });
 
   group('TagChips', () {
-    testWidgets('invokes onToggle with tapped tag id',
-        (WidgetTester tester) async {
+    testWidgets('invokes onToggle with tapped tag id', (
+      WidgetTester tester,
+    ) async {
       final mockToggle = MockTagToggle();
       const tags = [
         Tag(id: 'math', name: 'math', color: 0xFFE0F7FA),
@@ -225,7 +229,7 @@ void main() {
       ];
 
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
+        wrapWithMaterialApp(
           TagChips(
             tags: tags,
             selected: const {'cs'},
@@ -242,8 +246,9 @@ void main() {
   });
 
   group('LectureCard', () {
-    testWidgets('renders placeholder thumbnail and forwards tap',
-        (WidgetTester tester) async {
+    testWidgets('renders placeholder thumbnail and forwards tap', (
+      WidgetTester tester,
+    ) async {
       final mockOnTap = MockLectureCallback();
       const lecture = Lecture(
         id: 'lec1',
@@ -255,12 +260,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
-          LectureCard(
-            lec: lecture,
-            onTap: mockOnTap.call,
-          ),
-        ),
+        wrapWithMaterialApp(LectureCard(lec: lecture, onTap: mockOnTap.call)),
       );
 
       await tester.pump(); // process initial async state
@@ -275,10 +275,11 @@ void main() {
   });
 
   group('SubjectPanel', () {
-    testWidgets('shows header and lecture cards when expanded',
-        (WidgetTester tester) async {
+    testWidgets('shows header and lecture cards when expanded', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
+        wrapWithMaterialApp(
           SubjectPanel(
             subject: subject,
             tags: tags,
@@ -296,12 +297,12 @@ void main() {
       expect(find.text('#logic'), findsOneWidget);
       expect(find.byType(LectureCard), findsNWidgets(lectures.length));
     });
-    
+
     testWidgets('respects stored collapsed state', (WidgetTester tester) async {
       HiveManager.instance.uiState.subjectExpandedStates[subject.id] = false;
 
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
+        wrapWithMaterialApp(
           SubjectPanel(
             subject: subject,
             tags: tags,
@@ -315,14 +316,14 @@ void main() {
       expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
       expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
     });
-    
+
     /*
     testWidgets('toggles expansion and persists to Hive',
         (WidgetTester tester) async {
       HiveManager.instance.settings.accessibilityReduceMotion = true;
 
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
+        wrapWithMaterialApp(
           SubjectPanel(
             subject: subject,
             tags: tags,
@@ -346,14 +347,15 @@ void main() {
     });
     */
 
-    testWidgets('invokes callbacks for favorite and lecture taps',
-        (WidgetTester tester) async {
+    testWidgets('invokes callbacks for favorite and lecture taps', (
+      WidgetTester tester,
+    ) async {
       final mockFavorite = MockVoidCallback();
       final mockOnOpenLecture = MockLectureCallback();
       final mockOnUpdated = MockVoidCallback();
 
       await tester.pumpWidget(
-        _wrapWithMaterialApp(
+        wrapWithMaterialApp(
           SubjectPanel(
             subject: subject.copyWith(favorite: false),
             tags: tags,
@@ -375,8 +377,9 @@ void main() {
       await tester.pump();
       verify(mockOnOpenLecture(firstLecture)).called(1);
 
-      final LectureCard firstCard =
-          tester.widget<LectureCard>(find.byType(LectureCard).first);
+      final LectureCard firstCard = tester.widget<LectureCard>(
+        find.byType(LectureCard).first,
+      );
       expect(firstCard.onUpdated, isNotNull);
       firstCard.onUpdated!.call();
       verify(mockOnUpdated()).called(1);
