@@ -8,11 +8,7 @@ void main() {
     testWidgets('should render correctly', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: pw.BackButton(
-              onPressed: () {},
-            ),
-          ),
+          home: Scaffold(body: pw.BackButton(onPressed: () {})),
         ),
       );
 
@@ -25,11 +21,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: pw.BackButton(
-              onPressed: () => pressed = true,
-            ),
-          ),
+          home: Scaffold(body: pw.BackButton(onPressed: () => pressed = true)),
         ),
       );
 
@@ -42,9 +34,7 @@ void main() {
     testWidgets('should have correct icon color and size', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: pw.BackButton(onPressed: () {}),
-          ),
+          home: Scaffold(body: pw.BackButton(onPressed: () {})),
         ),
       );
 
@@ -58,12 +48,7 @@ void main() {
     testWidgets('should show sync icon when synced', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: pw.SyncButton(
-              isSynced: true,
-              onPressed: () {},
-            ),
-          ),
+          home: Scaffold(body: pw.SyncButton(isSynced: true, onPressed: () {})),
         ),
       );
 
@@ -71,15 +56,13 @@ void main() {
       expect(find.byIcon(Icons.sync_disabled), findsNothing);
     });
 
-    testWidgets('should show sync_disabled icon when not synced',
-        (tester) async {
+    testWidgets('should show sync_disabled icon when not synced', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.SyncButton(
-              isSynced: false,
-              onPressed: () {},
-            ),
+            body: pw.SyncButton(isSynced: false, onPressed: () {}),
           ),
         ),
       );
@@ -127,15 +110,11 @@ void main() {
   });
 
   group('CaptionButton', () {
-    testWidgets('should show filled caption icon when enabled',
-        (tester) async {
+    testWidgets('should show filled caption icon when enabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.CaptionButton(
-              isEnabled: true,
-              onPressed: () {},
-            ),
+            body: pw.CaptionButton(isEnabled: true, onPressed: () {}),
           ),
         ),
       );
@@ -144,15 +123,13 @@ void main() {
       expect(find.byIcon(Icons.closed_caption_outlined), findsNothing);
     });
 
-    testWidgets('should show outlined caption icon when disabled',
-        (tester) async {
+    testWidgets('should show outlined caption icon when disabled', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.CaptionButton(
-              isEnabled: false,
-              onPressed: () {},
-            ),
+            body: pw.CaptionButton(isEnabled: false, onPressed: () {}),
           ),
         ),
       );
@@ -187,10 +164,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.PlayPauseButton(
-              isPlaying: true,
-              onPressed: () {},
-            ),
+            body: pw.PlayPauseButton(isPlaying: true, onPressed: () {}),
           ),
         ),
       );
@@ -203,10 +177,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.PlayPauseButton(
-              isPlaying: false,
-              onPressed: () {},
-            ),
+            body: pw.PlayPauseButton(isPlaying: false, onPressed: () {}),
           ),
         ),
       );
@@ -239,10 +210,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.PlayPauseButton(
-              isPlaying: true,
-              onPressed: () {},
-            ),
+            body: pw.PlayPauseButton(isPlaying: true, onPressed: () {}),
           ),
         ),
       );
@@ -253,15 +221,13 @@ void main() {
   });
 
   group('SkipButton', () {
-    testWidgets('should show forward icon when isForward is true',
-        (tester) async {
+    testWidgets('should show forward icon when isForward is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.SkipButton(
-              isForward: true,
-              onPressed: () {},
-            ),
+            body: pw.SkipButton(isForward: true, onPressed: () {}),
           ),
         ),
       );
@@ -270,15 +236,13 @@ void main() {
       expect(find.byIcon(Icons.arrow_back), findsNothing);
     });
 
-    testWidgets('should show back icon when isForward is false',
-        (tester) async {
+    testWidgets('should show back icon when isForward is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.SkipButton(
-              isForward: false,
-              onPressed: () {},
-            ),
+            body: pw.SkipButton(isForward: false, onPressed: () {}),
           ),
         ),
       );
@@ -291,10 +255,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.SkipButton(
-              isForward: true,
-              onPressed: () {},
-            ),
+            body: pw.SkipButton(isForward: true, onPressed: () {}),
           ),
         ),
       );
@@ -333,10 +294,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.SkipButton(
-              isForward: true,
-              onPressed: () {},
-            ),
+            body: pw.SkipButton(isForward: true, onPressed: () {}),
           ),
         ),
       );
@@ -346,8 +304,9 @@ void main() {
       await tester.pump();
 
       // Background should appear
-      final container =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final container = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.color, isNot(Colors.transparent));
 
@@ -356,8 +315,9 @@ void main() {
       await tester.pump();
 
       // Background should disappear
-      final containerAfter =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      final containerAfter = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       final decorationAfter = containerAfter.decoration as BoxDecoration;
       expect(decorationAfter.color, equals(Colors.transparent));
     });
@@ -385,8 +345,9 @@ void main() {
       expect(slider.max, equals(120.0));
     });
 
-    testWidgets('should display current time and remaining time',
-        (tester) async {
+    testWidgets('should display current time and remaining time', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -478,8 +439,9 @@ void main() {
       expect(find.byType(pw.PlayPauseButton), findsOneWidget);
     });
 
-    testWidgets('should call callbacks when buttons are pressed',
-        (tester) async {
+    testWidgets('should call callbacks when buttons are pressed', (
+      tester,
+    ) async {
       bool playPausePressed = false;
       bool skipBackPressed = false;
       bool skipForwardPressed = false;
@@ -578,8 +540,9 @@ void main() {
       expect(find.byType(pw.SyncButton), findsOneWidget);
     });
 
-    testWidgets('should call callbacks when buttons are pressed',
-        (tester) async {
+    testWidgets('should call callbacks when buttons are pressed', (
+      tester,
+    ) async {
       bool backPressed = false;
       bool captionPressed = false;
       bool syncPressed = false;
@@ -813,8 +776,9 @@ void main() {
   });
 
   group('Integration Tests', () {
-    testWidgets('TopControlBar should integrate all child widgets correctly',
-        (tester) async {
+    testWidgets('TopControlBar should integrate all child widgets correctly', (
+      tester,
+    ) async {
       bool backCalled = false;
       bool captionCalled = false;
       bool syncCalled = false;
@@ -852,8 +816,9 @@ void main() {
       expect(syncCalled, isTrue);
     });
 
-    testWidgets('CenterPlayControls should coordinate all playback controls',
-        (tester) async {
+    testWidgets('CenterPlayControls should coordinate all playback controls', (
+      tester,
+    ) async {
       bool isPlaying = false;
       int skipCount = 0;
 

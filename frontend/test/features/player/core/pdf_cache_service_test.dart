@@ -52,23 +52,26 @@ void main() {
         expect(service.getCacheSize(), equals(2));
       });
 
-      test('should evict oldest page when cache exceeds maxCacheSize', () async {
-        service.setPdfDocument(mockPdfDocument);
+      test(
+        'should evict oldest page when cache exceeds maxCacheSize',
+        () async {
+          service.setPdfDocument(mockPdfDocument);
 
-        // maxCacheSize(30)를 초과하도록 31개 페이지 캐싱
-        for (int i = 1; i <= 31; i++) {
-          service.setCachedImage(i, Uint8List.fromList([i]));
-        }
+          // maxCacheSize(30)를 초과하도록 31개 페이지 캐싱
+          for (int i = 1; i <= 31; i++) {
+            service.setCachedImage(i, Uint8List.fromList([i]));
+          }
 
-        // 캐시 크기가 maxCacheSize로 제한되어야 함
-        expect(service.getCacheSize(), equals(PdfCacheService.maxCacheSize));
+          // 캐시 크기가 maxCacheSize로 제한되어야 함
+          expect(service.getCacheSize(), equals(PdfCacheService.maxCacheSize));
 
-        // 가장 오래된 페이지(1번)는 제거되어야 함
-        expect(service.getCachedImageDirect(1), isNull);
+          // 가장 오래된 페이지(1번)는 제거되어야 함
+          expect(service.getCachedImageDirect(1), isNull);
 
-        // 가장 최근 페이지(31번)는 존재해야 함
-        expect(service.getCachedImageDirect(31), isNotNull);
-      });
+          // 가장 최근 페이지(31번)는 존재해야 함
+          expect(service.getCachedImageDirect(31), isNotNull);
+        },
+      );
 
       test('should maintain LRU order when updating cache', () async {
         service.setPdfDocument(mockPdfDocument);
@@ -149,13 +152,14 @@ void main() {
       test('getLoadingCount should return number of pending futures', () async {
         service.setPdfDocument(mockPdfDocument);
 
-        when(mockPdfDocument.getPage(any))
-            .thenAnswer((_) async => mockPdfPage);
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(mockPdfDocument.getPage(any)).thenAnswer((_) async => mockPdfPage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         // 여러 페이지를 동시에 캐싱 시작 (await 없이)
         service.cacheSinglePage(1);
@@ -199,11 +203,13 @@ void main() {
         service.setPdfDocument(mockPdfDocument);
 
         when(mockPdfDocument.getPage(1)).thenAnswer((_) async => mockPdfPage);
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         service.cacheSinglePage(1);
 
@@ -232,11 +238,13 @@ void main() {
           await Future.delayed(const Duration(milliseconds: 100));
           return mockPdfPage;
         });
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         // 첫 번째 캐싱 시작
         service.cacheSinglePage(1);
@@ -253,26 +261,30 @@ void main() {
     });
 
     group('Render and Retry', () {
-      test('getCachedOrRenderPage should return cached image immediately',
-          () async {
-        final imageBytes = Uint8List.fromList([1, 2, 3]);
-        service.setCachedImage(1, imageBytes);
+      test(
+        'getCachedOrRenderPage should return cached image immediately',
+        () async {
+          final imageBytes = Uint8List.fromList([1, 2, 3]);
+          service.setCachedImage(1, imageBytes);
 
-        final result = await service.getCachedOrRenderPage(1);
+          final result = await service.getCachedOrRenderPage(1);
 
-        expect(result, equals(imageBytes));
-        verifyNever(mockPdfDocument.getPage(any));
-      });
+          expect(result, equals(imageBytes));
+          verifyNever(mockPdfDocument.getPage(any));
+        },
+      );
 
       test('getCachedOrRenderPage should render page if not cached', () async {
         service.setPdfDocument(mockPdfDocument);
 
         when(mockPdfDocument.getPage(1)).thenAnswer((_) async => mockPdfPage);
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         final result = await service.getCachedOrRenderPage(1);
 
@@ -287,11 +299,13 @@ void main() {
           await Future.delayed(const Duration(milliseconds: 100));
           return mockPdfPage;
         });
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         // 동시에 두 번 요청
         final future1 = service.getCachedOrRenderPage(1);
@@ -317,11 +331,13 @@ void main() {
           }
           return mockPdfPage;
         });
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         final result = await service.getCachedOrRenderPage(1);
 
@@ -332,13 +348,11 @@ void main() {
       test('should fail after exceeding maxRetries', () async {
         service.setPdfDocument(mockPdfDocument);
 
-        when(mockPdfDocument.getPage(1))
-            .thenThrow(Exception('Persistent render failure'));
+        when(
+          mockPdfDocument.getPage(1),
+        ).thenThrow(Exception('Persistent render failure'));
 
-        expect(
-          () => service.getCachedOrRenderPage(1),
-          throwsException,
-        );
+        expect(() => service.getCachedOrRenderPage(1), throwsException);
       });
 
       test('should throw exception when PDF document not loaded', () async {
@@ -359,17 +373,20 @@ void main() {
 
         when(mockPdfDocument.getPage(any)).thenAnswer((_) async {
           activeRenders++;
-          maxActiveRenders =
-              activeRenders > maxActiveRenders ? activeRenders : maxActiveRenders;
+          maxActiveRenders = activeRenders > maxActiveRenders
+              ? activeRenders
+              : maxActiveRenders;
           await Future.delayed(const Duration(milliseconds: 50));
           activeRenders--;
           return mockPdfPage;
         });
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         // maxConcurrentRenders(3)보다 많은 요청
         final futures = [
@@ -396,11 +413,13 @@ void main() {
           await Future.delayed(const Duration(milliseconds: 30));
           return mockPdfPage;
         });
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => mockPdfPageImage);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => mockPdfPageImage);
 
         // 5개 페이지 렌더링 요청
         final futures = [
@@ -426,23 +445,21 @@ void main() {
         service.setPdfDocument(mockPdfDocument);
 
         when(mockPdfDocument.getPage(1)).thenAnswer((_) async => mockPdfPage);
-        when(mockPdfPage.render(
-          width: anyNamed('width'),
-          height: anyNamed('height'),
-          format: anyNamed('format'),
-        )).thenAnswer((_) async => null);
+        when(
+          mockPdfPage.render(
+            width: anyNamed('width'),
+            height: anyNamed('height'),
+            format: anyNamed('format'),
+          ),
+        ).thenAnswer((_) async => null);
 
-        expect(
-          () => service.getCachedOrRenderPage(1),
-          throwsException,
-        );
+        expect(() => service.getCachedOrRenderPage(1), throwsException);
       });
 
       test('should clean up futures on error', () async {
         service.setPdfDocument(mockPdfDocument);
 
-        when(mockPdfDocument.getPage(1))
-            .thenThrow(Exception('Render error'));
+        when(mockPdfDocument.getPage(1)).thenThrow(Exception('Render error'));
 
         try {
           await service.getCachedOrRenderPage(1);
@@ -484,7 +501,10 @@ void main() {
 
         // 캐시에 정상적으로 저장되어야 함
         expect(service.getCachedImageDirect(1), isNotNull);
-        expect(service.getCachedImageDirect(1)?.length, equals(hugeImageBytes.length));
+        expect(
+          service.getCachedImageDirect(1)?.length,
+          equals(hugeImageBytes.length),
+        );
 
         // 추가 페이지를 캐싱해도 정상 동작해야 함
         service.setCachedImage(2, Uint8List.fromList([1, 2, 3]));

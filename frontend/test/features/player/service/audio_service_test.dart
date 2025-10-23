@@ -21,8 +21,12 @@ void main() {
       stateController = StreamController<ja.PlayerState>.broadcast();
 
       // Mock stream setup
-      when(mockPlayer.positionStream).thenAnswer((_) => positionController.stream);
-      when(mockPlayer.playerStateStream).thenAnswer((_) => stateController.stream);
+      when(
+        mockPlayer.positionStream,
+      ).thenAnswer((_) => positionController.stream);
+      when(
+        mockPlayer.playerStateStream,
+      ).thenAnswer((_) => stateController.stream);
 
       audioService = AudioService(player: mockPlayer);
     });
@@ -60,7 +64,9 @@ void main() {
     group('Audio Loading', () {
       test('should call setAsset when path starts with assets/', () async {
         final assetPath = 'assets/lectures/lec_demo_001/audio.mp3';
-        when(mockPlayer.setAsset(assetPath)).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setAsset(assetPath),
+        ).thenAnswer((_) async => Duration(seconds: 100));
 
         await audioService.loadAudio(assetPath);
 
@@ -70,7 +76,9 @@ void main() {
 
       test('should call setFilePath when path starts with /', () async {
         final filePath = '/path/to/audio/file.mp3';
-        when(mockPlayer.setFilePath(filePath)).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setFilePath(filePath),
+        ).thenAnswer((_) async => Duration(seconds: 100));
 
         await audioService.loadAudio(filePath);
 
@@ -80,7 +88,9 @@ void main() {
 
       test('should call setFilePath for non-asset paths', () async {
         final relativePath = 'relative/path/to/audio.mp3';
-        when(mockPlayer.setFilePath(relativePath)).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setFilePath(relativePath),
+        ).thenAnswer((_) async => Duration(seconds: 100));
 
         await audioService.loadAudio(relativePath);
 
@@ -90,17 +100,18 @@ void main() {
 
       test('should handle empty path', () async {
         final emptyPath = '';
-        when(mockPlayer.setFilePath(emptyPath)).thenThrow(Exception('Invalid path'));
+        when(
+          mockPlayer.setFilePath(emptyPath),
+        ).thenThrow(Exception('Invalid path'));
 
-        expect(
-          () => audioService.loadAudio(emptyPath),
-          throwsA(anything),
-        );
+        expect(() => audioService.loadAudio(emptyPath), throwsA(anything));
       });
 
       test('should rethrow exception from setAsset', () async {
         final assetPath = 'assets/invalid/path.mp3';
-        when(mockPlayer.setAsset(assetPath)).thenThrow(Exception('Asset not found'));
+        when(
+          mockPlayer.setAsset(assetPath),
+        ).thenThrow(Exception('Asset not found'));
 
         expect(
           () => audioService.loadAudio(assetPath),
@@ -112,7 +123,9 @@ void main() {
 
       test('should rethrow exception from setFilePath', () async {
         final filePath = '/invalid/path.mp3';
-        when(mockPlayer.setFilePath(filePath)).thenThrow(Exception('File not found'));
+        when(
+          mockPlayer.setFilePath(filePath),
+        ).thenThrow(Exception('File not found'));
 
         expect(
           () => audioService.loadAudio(filePath),
@@ -126,7 +139,9 @@ void main() {
         final assetPath1 = 'assets/audio1.mp3';
         final assetPath2 = 'assets/audio2.mp3';
 
-        when(mockPlayer.setAsset(any)).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setAsset(any),
+        ).thenAnswer((_) async => Duration(seconds: 100));
 
         await audioService.loadAudio(assetPath1);
         await audioService.loadAudio(assetPath2);
@@ -162,34 +177,31 @@ void main() {
         verify(mockPlayer.seek(position)).called(1);
       });
 
-      test('should handle multiple seek calls with different positions', () async {
-        when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+      test(
+        'should handle multiple seek calls with different positions',
+        () async {
+          when(mockPlayer.seek(any)).thenAnswer((_) async => {});
 
-        await audioService.seek(Duration(seconds: 5));
-        await audioService.seek(Duration(seconds: 10));
-        await audioService.seek(Duration(seconds: 3));
+          await audioService.seek(Duration(seconds: 5));
+          await audioService.seek(Duration(seconds: 10));
+          await audioService.seek(Duration(seconds: 3));
 
-        verify(mockPlayer.seek(Duration(seconds: 5))).called(1);
-        verify(mockPlayer.seek(Duration(seconds: 10))).called(1);
-        verify(mockPlayer.seek(Duration(seconds: 3))).called(1);
-      });
+          verify(mockPlayer.seek(Duration(seconds: 5))).called(1);
+          verify(mockPlayer.seek(Duration(seconds: 10))).called(1);
+          verify(mockPlayer.seek(Duration(seconds: 3))).called(1);
+        },
+      );
 
       test('should rethrow exception from play()', () async {
         when(mockPlayer.play()).thenThrow(Exception('Play failed'));
 
-        expect(
-          () => audioService.play(),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => audioService.play(), throwsA(isA<Exception>()));
       });
 
       test('should rethrow exception from pause()', () async {
         when(mockPlayer.pause()).thenThrow(Exception('Pause failed'));
 
-        expect(
-          () => audioService.pause(),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => audioService.pause(), throwsA(isA<Exception>()));
       });
 
       test('should rethrow exception from seek()', () async {
@@ -230,15 +242,9 @@ void main() {
         expect(positions[1], Duration(seconds: 10));
       });
 
-      test('stateStream should emit PlayerState values', () async {        
-        final state1 = ja.PlayerState(
-          false,
-          ja.ProcessingState.idle,
-        );
-        final state2 = ja.PlayerState(
-          true,
-          ja.ProcessingState.ready,
-        );
+      test('stateStream should emit PlayerState values', () async {
+        final state1 = ja.PlayerState(false, ja.ProcessingState.idle);
+        final state2 = ja.PlayerState(true, ja.ProcessingState.ready);
 
         // Subscribe first, then add data
         final futureStates = audioService.stateStream.take(2).toList();
@@ -305,7 +311,9 @@ void main() {
         final successPath = 'assets/success.mp3';
 
         when(mockPlayer.setAsset(failPath)).thenThrow(Exception('Load failed'));
-        when(mockPlayer.setAsset(successPath)).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setAsset(successPath),
+        ).thenAnswer((_) async => Duration(seconds: 100));
 
         // First load fails
         expect(

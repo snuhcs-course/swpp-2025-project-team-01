@@ -403,11 +403,7 @@ class _SlideThumbnailImage extends StatelessWidget {
 
   Widget _placeholder() {
     return Center(
-      child: Icon(
-        Icons.image_not_supported,
-        color: Colors.grey[400],
-        size: 32,
-      ),
+      child: Icon(Icons.image_not_supported, color: Colors.grey[400], size: 32),
     );
   }
 }

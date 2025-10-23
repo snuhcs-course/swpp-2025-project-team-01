@@ -396,9 +396,7 @@ void main() {
 
     group('fromJson - Invalid Data', () {
       test('should throw when metadata is missing', () {
-        final json = {
-          'timestamps': [],
-        };
+        final json = {'timestamps': []};
 
         expect(() => TranscriptData.fromJson(json), throwsA(anything));
       });
@@ -419,10 +417,7 @@ void main() {
       });
 
       test('should throw when metadata is wrong type', () {
-        final json = {
-          'metadata': 'invalid',
-          'timestamps': [],
-        };
+        final json = {'metadata': 'invalid', 'timestamps': []};
 
         expect(() => TranscriptData.fromJson(json), throwsA(anything));
       });
