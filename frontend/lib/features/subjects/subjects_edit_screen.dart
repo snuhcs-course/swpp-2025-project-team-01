@@ -728,58 +728,57 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
         child: AnimatedBuilder(
           animation: _colorAnimation,
           builder: (context, child) {
-            return Container(
-              color: _colorAnimation.value,
-              child: child,
-            );
+            return Container(color: _colorAnimation.value, child: child);
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            // ========== 검은 헤더 (과목 이름 + 펼침 버튼) ==========
-            SubjectPanelHeader(
-              title: widget.displayTitle ?? widget.subject.title,
-              tags: const [], // 과목 수정 화면에서는 태그 표시 안 함
-              expanded: expanded,
-              onToggleExpanded: _toggleExpanded,
-              panelRadius: _editPanelRadius,
-              collapsedRadius: BorderRadius.circular(_editPanelRadius),
-              onLongPress: widget.onLongPress,
-              titleEndPadding: 8,
-            ),
+              // ========== 검은 헤더 (과목 이름 + 펼침 버튼) ==========
+              SubjectPanelHeader(
+                title: widget.displayTitle ?? widget.subject.title,
+                tags: const [], // 과목 수정 화면에서는 태그 표시 안 함
+                expanded: expanded,
+                onToggleExpanded: _toggleExpanded,
+                panelRadius: _editPanelRadius,
+                collapsedRadius: BorderRadius.circular(_editPanelRadius),
+                onLongPress: widget.onLongPress,
+                titleEndPadding: 8,
+              ),
 
-            // ========== 강의 리스트 (펼쳤을 때만 표시) ==========
-            SizeTransition(
-              sizeFactor: _expandAnimation,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
-                child: ReorderableListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: widget.lectures.length,
-                  onReorder: widget.onReorder,
-                  itemBuilder: (_, idx) {
-                    final lecture = widget.lectures[idx];
-                    return Container(
-                      key: ValueKey(lecture.id),
-                      child: ListTile(
-                        // 드래그 핸들
-                        leading: ReorderableDragStartListener(
-                          index: idx,
-                          child: const Icon(Icons.drag_handle),
+              // ========== 강의 리스트 (펼쳤을 때만 표시) ==========
+              SizeTransition(
+                sizeFactor: _expandAnimation,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+                  child: ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: widget.lectures.length,
+                    onReorder: widget.onReorder,
+                    itemBuilder: (_, idx) {
+                      final lecture = widget.lectures[idx];
+                      return Container(
+                        key: ValueKey(lecture.id),
+                        child: ListTile(
+                          // 드래그 핸들
+                          leading: ReorderableDragStartListener(
+                            index: idx,
+                            child: const Icon(Icons.drag_handle),
+                          ),
+                          // 강의 정보 (주차 • 제목)
+                          title: Text(
+                            '${lecture.weekLabel}  •  ${lecture.title}',
+                          ),
                         ),
-                        // 강의 정보 (주차 • 제목)
-                        title: Text('${lecture.weekLabel}  •  ${lecture.title}'),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
