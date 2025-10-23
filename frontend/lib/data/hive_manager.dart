@@ -514,6 +514,15 @@ class HiveManager extends ChangeNotifier {
 
   /// Hive 박스 닫기 (앱 종료 시)
   Future<void> close() async {
-    await _appBox.close();
+    if (!_isInitialized) {
+      return;
+    }
+
+    if (_appBox.isOpen) {
+      await _appBox.close();
+    }
+
+    _appData = null;
+    _isInitialized = false;
   }
 }
