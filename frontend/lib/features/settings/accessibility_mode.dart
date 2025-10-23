@@ -19,7 +19,12 @@ import 'package:re_view/core/localization/app_localizations.dart';
 /// - 본문: 스위치 리스트 타일 3개 (각 접근성 기능)
 /// - 하단: 안내 텍스트
 class AccessibilityScreen extends StatefulWidget {
-  const AccessibilityScreen({super.key});
+  const AccessibilityScreen({
+    super.key,
+    this.hiveManager, // [추가] 생성자에 추가
+  });
+
+  final HiveManager? hiveManager;
 
   @override
   State<AccessibilityScreen> createState() => _AccessibilityScreenState();
@@ -27,12 +32,13 @@ class AccessibilityScreen extends StatefulWidget {
 
 class _AccessibilityScreenState extends State<AccessibilityScreen> {
   // 접근성 서비스 인스턴스
-  final _manager = HiveManager.instance;
+  late final HiveManager _manager;
 
   @override
   void initState() {
     super.initState();
     // 접근성 설정 변경 리스너 등록 (설정 변경 시 자동 UI 업데이트)
+    _manager = widget.hiveManager ?? HiveManager.instance;
     _manager.addListener(_onAccessibilityChanged);
   }
 
