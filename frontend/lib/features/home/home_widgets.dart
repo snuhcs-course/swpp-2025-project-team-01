@@ -321,7 +321,10 @@ class _SubjectPanelState extends State<SubjectPanel>
                       .map(
                         (lec) => SizedBox(
                           width:
-                              (MediaQuery.of(context).size.width - 32 - 28 - 12) /
+                              (MediaQuery.of(context).size.width -
+                                  32 -
+                                  28 -
+                                  12) /
                               2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
                           child: LectureCard(
                             lec: lec,
