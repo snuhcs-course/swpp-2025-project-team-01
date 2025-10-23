@@ -2,6 +2,67 @@
 
 Backend API for lecture synchronization using AI inference pipeline.
 
+## Setup
+
+### Prerequisites
+
+- [Anaconda](https://www.anaconda.com/download) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+- NVIDIA GPU with CUDA support (recommended)
+- 16GB+ RAM
+- 10GB+ disk space
+
+### Installation
+
+1. **Run the setup script**:
+   ```bash
+   cd backend
+   ./setup.sh
+   # Or with custom environment name:
+   # ./setup.sh -n my-env-name
+   ```
+
+   This will:
+   - Create a conda environment named `swpp-backend` (or your custom name)
+   - Install Python 3.12, PyTorch, ML libraries (transformers, nemo_toolkit, etc.)
+   - Install FastAPI and backend dependencies
+   - Install flash-attn (optional, GPU-only)
+
+2. **Activate the environment**:
+   ```bash
+   conda activate swpp-backend
+   ```
+
+3. **Start the server**:
+   ```bash
+   python main.py
+   # Or with uvicorn directly:
+   # uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+4. **Access the API documentation**:
+   - Swagger UI: http://localhost:8000/docs
+   - ReDoc: http://localhost:8000/redoc
+
+### Project Structure
+
+```
+backend/
+├── environment.yml          # Unified conda environment (AI + Backend)
+├── setup.sh                 # Installation script
+├── main.py                  # FastAPI application
+├── test.py                  # API test script
+├── README.md
+└── inference_models/        # AI inference pipeline package
+    ├── __init__.py
+    ├── lecture_pipeline.py  # Main pipeline orchestration
+    ├── asr_processor.py     # Speech-to-text (ASR)
+    ├── slide_matching_processor.py  # Slide matching
+    ├── tts_processor.py     # Text-to-speech (TTS)
+    └── README.md
+```
+
+---
+
 ## API Endpoints
 
 ### 1. Start Synchronization Job (SSE Stream)
@@ -436,14 +497,16 @@ All error responses include a `detail` field with error message.
 
 1. **Start the server**:
    ```bash
+   conda activate swpp-backend
    cd backend
-   uvicorn main:app --reload
+   python main.py
+   # Or: uvicorn main:app --reload
    ```
 
-2. **Install test script dependencies** (for Python test script):
-   ```bash
-   pip install requests sseclient-py
-   ```
+2. **Prepare test files**:
+   - Place a lecture audio file (e.g., `lecture_recording.mp3`)
+   - Place a lecture slides PDF (e.g., `lecture_slides.pdf`)
+   - Update file paths in [test.py](test.py) if needed
 
 ### Method 1: Python Test Script (Recommended)
 
@@ -451,7 +514,7 @@ The easiest way to test all endpoints including SSE streaming:
 
 ```bash
 cd backend
-python test_api.py
+python test.py
 ```
 
 **Example output:**
