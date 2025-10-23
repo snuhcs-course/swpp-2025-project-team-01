@@ -86,10 +86,9 @@ void main() {
       of: find.text(labelText),
       matching: find.byType(ListTile),
     );
-    final radioGroup = tester.widget<RadioGroup<String>>(find.descendant(
-      of: listTile,
-      matching: find.byType(RadioGroup<String>),
-    ));
+    final radioGroup = tester.widget<RadioGroup<String>>(
+      find.descendant(of: listTile, matching: find.byType(RadioGroup<String>)),
+    );
     return radioGroup.groupValue;
   }
 
@@ -109,45 +108,48 @@ void main() {
   // 테스트 케이스 그룹 1: UI 초기 상태 검증
   // ------------------------------------------------------------------
   group('1. UI Initial State Verification (Mock Data -> UI)', () {
-    testWidgets('Verify "System Settings" is selected when theme is "system"',
-        (WidgetTester tester) async {
+    testWidgets('Verify "System Settings" is selected when theme is "system"', (
+      WidgetTester tester,
+    ) async {
       // [Given] 'system'을 반환하도록 Fake 객체 설정
       (fakeHiveManager.settings as FakeAppSettings).setFakeTheme('system');
 
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
 
       // [Then] '시스템 설정' 라디오 버튼의 groupValue가 'system'인지 확인
       expect(getRadioGroupValue(tester, '시스템 설정'), 'system');
     });
 
-    testWidgets('Verify "Light Mode" is selected when theme is "light"',
-        (WidgetTester tester) async {
+    testWidgets('Verify "Light Mode" is selected when theme is "light"', (
+      WidgetTester tester,
+    ) async {
       // [Given]
       (fakeHiveManager.settings as FakeAppSettings).setFakeTheme('light');
 
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
 
       // [Then]
       expect(getRadioGroupValue(tester, '라이트 모드'), 'light');
     });
 
-    testWidgets('Verify "Dark Mode" is selected when theme is "dark"',
-        (WidgetTester tester) async {
+    testWidgets('Verify "Dark Mode" is selected when theme is "dark"', (
+      WidgetTester tester,
+    ) async {
       // [Given]
       (fakeHiveManager.settings as FakeAppSettings).setFakeTheme('dark');
 
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
 
       // [Then]
@@ -155,15 +157,16 @@ void main() {
     });
 
     // [추가된 테스트 1-4]
-    testWidgets('Verify all localized texts are displayed correctly',
-        (WidgetTester tester) async {
+    testWidgets('Verify all localized texts are displayed correctly', (
+      WidgetTester tester,
+    ) async {
       // [Given]
       (fakeHiveManager.settings as FakeAppSettings).setFakeTheme('system');
 
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
 
       // [Then]
@@ -184,31 +187,34 @@ void main() {
       (fakeHiveManager.settings as FakeAppSettings).setFakeTheme('system');
     });
 
-    testWidgets('Tapping "Light Mode" calls updateTheme("light") exactly once',
-        (WidgetTester tester) async {
-      // [Given]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
-      await tester.pumpAndSettle();
-      fakeHiveManager.resetCallHistory(); // 호출 기록 초기화
+    testWidgets(
+      'Tapping "Light Mode" calls updateTheme("light") exactly once',
+      (WidgetTester tester) async {
+        // [Given]
+        await tester.pumpWidget(
+          createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+        );
+        await tester.pumpAndSettle();
+        fakeHiveManager.resetCallHistory(); // 호출 기록 초기화
 
-      // [When] '라이트 모드' ListTile을 탭
-      await tester.tap(find.text('라이트 모드').first);
-      await tester.pumpAndSettle(); // setState 대기
+        // [When] '라이트 모드' ListTile을 탭
+        await tester.tap(find.text('라이트 모드').first);
+        await tester.pumpAndSettle(); // setState 대기
 
-      // [Then] Fake 객체의 updateTheme('light')가 호출되었는지 확인
-      expect(fakeHiveManager.updateThemeCalled, isTrue);
-      expect(fakeHiveManager.lastThemeValue, 'light');
-    });
+        // [Then] Fake 객체의 updateTheme('light')가 호출되었는지 확인
+        expect(fakeHiveManager.updateThemeCalled, isTrue);
+        expect(fakeHiveManager.lastThemeValue, 'light');
+      },
+    );
 
     // [추가된 테스트 2-2]
-    testWidgets('Tapping "Dark Mode" calls updateTheme("dark") exactly once',
-        (WidgetTester tester) async {
+    testWidgets('Tapping "Dark Mode" calls updateTheme("dark") exactly once', (
+      WidgetTester tester,
+    ) async {
       // [Given]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       fakeHiveManager.resetCallHistory();
 
@@ -223,41 +229,44 @@ void main() {
 
     // [추가된 테스트 2-3]
     testWidgets(
-        'Tapping "System Settings" calls updateTheme("system") exactly once',
-        (WidgetTester tester) async {
-      // [Given] (다른 값에서 변경하는 것을 확인하기 위해 'light'에서 시작)
-      (fakeHiveManager.settings as FakeAppSettings).setFakeTheme('light');
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
-      await tester.pumpAndSettle();
-      fakeHiveManager.resetCallHistory();
+      'Tapping "System Settings" calls updateTheme("system") exactly once',
+      (WidgetTester tester) async {
+        // [Given] (다른 값에서 변경하는 것을 확인하기 위해 'light'에서 시작)
+        (fakeHiveManager.settings as FakeAppSettings).setFakeTheme('light');
+        await tester.pumpWidget(
+          createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+        );
+        await tester.pumpAndSettle();
+        fakeHiveManager.resetCallHistory();
 
-      // [When] '시스템 설정' ListTile을 탭
-      await tester.tap(find.text('시스템 설정').first);
-      await tester.pumpAndSettle();
+        // [When] '시스템 설정' ListTile을 탭
+        await tester.tap(find.text('시스템 설정').first);
+        await tester.pumpAndSettle();
 
-      // [Then]
-      expect(fakeHiveManager.updateThemeCalled, isTrue);
-      expect(fakeHiveManager.lastThemeValue, 'system');
-    });
+        // [Then]
+        expect(fakeHiveManager.updateThemeCalled, isTrue);
+        expect(fakeHiveManager.lastThemeValue, 'system');
+      },
+    );
 
-    testWidgets('Tapping "Light Mode" updates UI radio state (verifies setState)',
-        (WidgetTester tester) async {
-      // [Given] 'system' 모드에서 시작
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
-      await tester.pumpAndSettle();
-      expect(getRadioGroupValue(tester, '시스템 설정'), 'system');
+    testWidgets(
+      'Tapping "Light Mode" updates UI radio state (verifies setState)',
+      (WidgetTester tester) async {
+        // [Given] 'system' 모드에서 시작
+        await tester.pumpWidget(
+          createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+        );
+        await tester.pumpAndSettle();
+        expect(getRadioGroupValue(tester, '시스템 설정'), 'system');
 
-      // [When] '라이트 모드' 탭
-      await tester.tap(find.text('라이트 모드').first);
-      await tester.pumpAndSettle(); // setState() 대기
+        // [When] '라이트 모드' 탭
+        await tester.tap(find.text('라이트 모드').first);
+        await tester.pumpAndSettle(); // setState() 대기
 
-      // [Then] UI가 'light'로 변경되었는지 확인
-      expect(getRadioGroupValue(tester, '라이트 모드'), 'light');
-    });
+        // [Then] UI가 'light'로 변경되었는지 확인
+        expect(getRadioGroupValue(tester, '라이트 모드'), 'light');
+      },
+    );
   });
 
   // ------------------------------------------------------------------
@@ -273,12 +282,13 @@ void main() {
     });
 
     // [추가된 테스트 3-1]
-    testWidgets('Verify "Light Mode" preview box is light',
-        (WidgetTester tester) async {
+    testWidgets('Verify "Light Mode" preview box is light', (
+      WidgetTester tester,
+    ) async {
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
 
       // [Then]
@@ -286,12 +296,13 @@ void main() {
     });
 
     // [추가된 테스트 3-2]
-    testWidgets('Verify "Dark Mode" preview box is dark',
-        (WidgetTester tester) async {
+    testWidgets('Verify "Dark Mode" preview box is dark', (
+      WidgetTester tester,
+    ) async {
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
 
       // [Then]
@@ -299,22 +310,24 @@ void main() {
     });
 
     testWidgets(
-        'Verify "System" preview box matches the actual platform brightness',
-        (WidgetTester tester) async {
-      // [Given]
-      final brightness =
-          SchedulerBinding.instance.platformDispatcher.platformBrightness;
-      final expectedColor =
-          (brightness == Brightness.dark) ? darkColor : lightColor;
+      'Verify "System" preview box matches the actual platform brightness',
+      (WidgetTester tester) async {
+        // [Given]
+        final brightness =
+            SchedulerBinding.instance.platformDispatcher.platformBrightness;
+        final expectedColor = (brightness == Brightness.dark)
+            ? darkColor
+            : lightColor;
 
-      // [When]
-      await tester.pumpWidget(createTestableWidget(
-        DisplayModeScreen(hiveManager: fakeHiveManager),
-      ));
-      await tester.pumpAndSettle();
+        // [When]
+        await tester.pumpWidget(
+          createTestableWidget(DisplayModeScreen(hiveManager: fakeHiveManager)),
+        );
+        await tester.pumpAndSettle();
 
-      // [Then]
-      expect(getPreviewBoxColor(tester, '시스템 설정'), expectedColor);
-    });
+        // [Then]
+        expect(getPreviewBoxColor(tester, '시스템 설정'), expectedColor);
+      },
+    );
   });
 }

@@ -15,10 +15,7 @@ import 'package:re_view/data/hive_manager.dart';
 /// - 상단: 앱바 (제목: "언어 / Language")
 /// - 본문: 라디오 버튼 2개 (한국어, English)
 class LanguageScreen extends StatefulWidget {
-  const LanguageScreen({
-    super.key,
-    this.hiveManager,
-  });
+  const LanguageScreen({super.key, this.hiveManager});
 
   final HiveManager? hiveManager;
 

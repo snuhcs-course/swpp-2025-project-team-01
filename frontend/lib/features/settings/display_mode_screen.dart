@@ -19,12 +19,9 @@ import 'package:re_view/data/hive_manager.dart';
 ///
 /// HiveManager를 통해 설정을 저장 및 관리합니다.
 class DisplayModeScreen extends StatefulWidget {
-  const DisplayModeScreen({
-    super.key,
-    this.hiveManager,
-  });
+  const DisplayModeScreen({super.key, this.hiveManager});
 
-  final HiveManager? hiveManager; 
+  final HiveManager? hiveManager;
 
   @override
   State<DisplayModeScreen> createState() => _DisplayModeScreenState();

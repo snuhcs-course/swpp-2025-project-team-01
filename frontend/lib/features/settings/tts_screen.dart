@@ -16,10 +16,7 @@ import 'package:re_view/core/localization/app_localizations.dart';
 ///
 /// SharedPreferences를 통해 설정을 저장 및 관리합니다.
 class TtsScreen extends StatefulWidget {
-  const TtsScreen({
-    super.key,
-    this.hiveManager,
-  });
+  const TtsScreen({super.key, this.hiveManager});
 
   final HiveManager? hiveManager;
 

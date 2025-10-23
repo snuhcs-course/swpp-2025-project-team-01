@@ -56,7 +56,7 @@ void main() {
   // 헬퍼 함수: 펌프 후 l10n 객체를 초기화
   Future<void> pumpAndGetL10n(WidgetTester tester) async {
     await pumpSettingsScreen(tester);
-    await tester.pumpAndSettle(); 
+    await tester.pumpAndSettle();
     l10n = AppLocalizations.of(tester.element(find.byType(SettingsScreen)));
   }
 
@@ -74,8 +74,7 @@ void main() {
         );
       });
 
-      testWidgets('모든 설정 메뉴 ListTile이 l10n 텍스트와 함께 렌더링되어야 함',
-          (tester) async {
+      testWidgets('모든 설정 메뉴 ListTile이 l10n 텍스트와 함께 렌더링되어야 함', (tester) async {
         await pumpAndGetL10n(tester);
         expect(find.text(l10n.displayMode), findsOneWidget);
         expect(find.text(l10n.accessibility), findsOneWidget);
@@ -92,9 +91,9 @@ void main() {
     });
 
     group('2. User Interaction Verification (Navigation)', () {
-      
-      testWidgets("'l10n.displayMode' 탭 시 settingsDisplay 라우트로 이동해야 함",
-          (tester) async {
+      testWidgets("'l10n.displayMode' 탭 시 settingsDisplay 라우트로 이동해야 함", (
+        tester,
+      ) async {
         await pumpAndGetL10n(tester);
 
         // ⬇️ **수정**: 탭하기 전에 네비게이터 기록을 초기화합니다.
@@ -105,7 +104,9 @@ void main() {
 
         expect(fakeNavigatorObserver.pushedRouteNames.length, 1);
         expect(
-            fakeNavigatorObserver.pushedRouteNames.first, Routes.settingsDisplay);
+          fakeNavigatorObserver.pushedRouteNames.first,
+          Routes.settingsDisplay,
+        );
       });
 
       testWidgets("'TTS' 탭 시 settingsTts 라우트로 이동해야 함", (tester) async {
@@ -118,28 +119,36 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(fakeNavigatorObserver.pushedRouteNames.length, 1);
-        expect(fakeNavigatorObserver.pushedRouteNames.first, Routes.settingsTts);
+        expect(
+          fakeNavigatorObserver.pushedRouteNames.first,
+          Routes.settingsTts,
+        );
       });
 
-      testWidgets("'l10n.accessibility' 탭 시 settingsAccessibility 라우트로 이동해야 함",
-          (tester) async {
+      testWidgets(
+        "'l10n.accessibility' 탭 시 settingsAccessibility 라우트로 이동해야 함",
+        (tester) async {
+          await pumpAndGetL10n(tester);
+
+          // ⬇️ **수정**: 탭하기 전에 네비게이터 기록을 초기화합니다.
+          fakeNavigatorObserver.pushedRouteNames.clear();
+
+          await tester.tap(find.text(l10n.accessibility));
+          await tester.pumpAndSettle();
+
+          expect(fakeNavigatorObserver.pushedRouteNames.length, 1);
+          expect(
+            fakeNavigatorObserver.pushedRouteNames.first,
+            Routes.settingsAccessibility,
+          );
+        },
+      );
+
+      testWidgets("'l10n.language' 탭 시 settingsLanguage 라우트로 이동해야 함", (
+        tester,
+      ) async {
         await pumpAndGetL10n(tester);
-        
-        // ⬇️ **수정**: 탭하기 전에 네비게이터 기록을 초기화합니다.
-        fakeNavigatorObserver.pushedRouteNames.clear();
 
-        await tester.tap(find.text(l10n.accessibility));
-        await tester.pumpAndSettle();
-
-        expect(fakeNavigatorObserver.pushedRouteNames.length, 1);
-        expect(fakeNavigatorObserver.pushedRouteNames.first,
-            Routes.settingsAccessibility);
-      });
-
-      testWidgets("'l10n.language' 탭 시 settingsLanguage 라우트로 이동해야 함",
-          (tester) async {
-        await pumpAndGetL10n(tester);
-        
         // ⬇️ **수정**: 탭하기 전에 네비게이터 기록을 초기화합니다.
         fakeNavigatorObserver.pushedRouteNames.clear();
 
@@ -148,7 +157,9 @@ void main() {
 
         expect(fakeNavigatorObserver.pushedRouteNames.length, 1);
         expect(
-            fakeNavigatorObserver.pushedRouteNames.first, Routes.settingsLanguage);
+          fakeNavigatorObserver.pushedRouteNames.first,
+          Routes.settingsLanguage,
+        );
       });
 
       testWidgets("'Help' 탭 시 settingsHelp 라우트로 이동해야 함", (tester) async {
@@ -161,7 +172,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(fakeNavigatorObserver.pushedRouteNames.length, 1);
-        expect(fakeNavigatorObserver.pushedRouteNames.first, Routes.settingsHelp);
+        expect(
+          fakeNavigatorObserver.pushedRouteNames.first,
+          Routes.settingsHelp,
+        );
       });
     });
   });

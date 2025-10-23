@@ -122,21 +122,24 @@ void main() {
 
   // l10n 인스턴스를 가져오는 헬퍼. (l10n 테스트용)
   AppLocalizations getL10n(WidgetTester tester) {
-    return AppLocalizations.of(tester.element(find.byType(AccessibilityScreen)));
+    return AppLocalizations.of(
+      tester.element(find.byType(AccessibilityScreen)),
+    );
   }
 
   // ------------------------------------------------------------------
   // 테스트 케이스 그룹 1: UI 초기 상태 검증
   // ------------------------------------------------------------------
   group('1. UI Initial State Verification (Mock Data -> UI)', () {
-    testWidgets('Verify all switches are off when settings are false',
-        (WidgetTester tester) async {
+    testWidgets('Verify all switches are off when settings are false', (
+      WidgetTester tester,
+    ) async {
       // [Given] (기본값이 모두 false)
 
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
 
@@ -146,15 +149,16 @@ void main() {
       expect(getSwitchValue(tester, l10n.emphasizeCaptions), isFalse);
     });
 
-    testWidgets('Verify only High Contrast switch is on',
-        (WidgetTester tester) async {
+    testWidgets('Verify only High Contrast switch is on', (
+      WidgetTester tester,
+    ) async {
       // [Given]
       fakeHiveManager.settings.accessibilityHighContrast = true;
 
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
 
@@ -164,14 +168,15 @@ void main() {
       expect(getSwitchValue(tester, l10n.emphasizeCaptions), isFalse);
     });
 
-    testWidgets('Verify only Reduce Motion switch is on',
-        (WidgetTester tester) async {
+    testWidgets('Verify only Reduce Motion switch is on', (
+      WidgetTester tester,
+    ) async {
       // [Given]
       fakeHiveManager.settings.accessibilityReduceMotion = true;
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
       // [Then]
@@ -180,14 +185,15 @@ void main() {
       expect(getSwitchValue(tester, l10n.emphasizeCaptions), isFalse);
     });
 
-    testWidgets('Verify only Emphasize Captions switch is on',
-        (WidgetTester tester) async {
+    testWidgets('Verify only Emphasize Captions switch is on', (
+      WidgetTester tester,
+    ) async {
       // [Given]
       fakeHiveManager.settings.accessibilityEmphasizeCaptions = true;
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
       // [Then]
@@ -196,17 +202,18 @@ void main() {
       expect(getSwitchValue(tester, l10n.emphasizeCaptions), isTrue);
     });
 
-    testWidgets('Verify all switches are on when settings are true',
-        (WidgetTester tester) async {
+    testWidgets('Verify all switches are on when settings are true', (
+      WidgetTester tester,
+    ) async {
       // [Given]
       fakeHiveManager.settings.accessibilityHighContrast = true;
       fakeHiveManager.settings.accessibilityReduceMotion = true;
       fakeHiveManager.settings.accessibilityEmphasizeCaptions = true;
 
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
 
@@ -216,12 +223,13 @@ void main() {
       expect(getSwitchValue(tester, l10n.emphasizeCaptions), isTrue);
     });
 
-    testWidgets('Verify all localized texts are displayed',
-        (WidgetTester tester) async {
+    testWidgets('Verify all localized texts are displayed', (
+      WidgetTester tester,
+    ) async {
       // [When]
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
 
@@ -242,46 +250,55 @@ void main() {
   // ------------------------------------------------------------------
   group('2. User Interaction Verification (UI -> Logic)', () {
     testWidgets(
-        'Tapping "High Contrast" (off -> on) calls updateAccessibility(highContrast: true)',
-        (WidgetTester tester) async {
-      // [Given] 스위치가 꺼진 상태
-      fakeHiveManager.settings.accessibilityHighContrast = false;
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
-      await tester.pumpAndSettle();
-      final l10n = getL10n(tester);
-      fakeHiveManager.resetCallHistory();
+      'Tapping "High Contrast" (off -> on) calls updateAccessibility(highContrast: true)',
+      (WidgetTester tester) async {
+        // [Given] 스위치가 꺼진 상태
+        fakeHiveManager.settings.accessibilityHighContrast = false;
+        await tester.pumpWidget(
+          createTestableWidget(
+            AccessibilityScreen(hiveManager: fakeHiveManager),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final l10n = getL10n(tester);
+        fakeHiveManager.resetCallHistory();
 
-      // [When] '고대비' 텍스트를 탭
-      await tester.tap(find.text(l10n.highContrast));
-      await tester.pumpAndSettle();
+        // [When] '고대비' 텍스트를 탭
+        await tester.tap(find.text(l10n.highContrast));
+        await tester.pumpAndSettle();
 
-      // [Then]
-      expect(fakeHiveManager.updateAccessibilityCalled, isTrue);
-      expect(fakeHiveManager.lastAccessibilityValues['highContrast'], isTrue);
-    });
+        // [Then]
+        expect(fakeHiveManager.updateAccessibilityCalled, isTrue);
+        expect(fakeHiveManager.lastAccessibilityValues['highContrast'], isTrue);
+      },
+    );
 
     testWidgets(
-        'Tapping "High Contrast" (on -> off) calls updateAccessibility(highContrast: false)',
-        (WidgetTester tester) async {
-      // [Given] 스위치가 켜진 상태
-      fakeHiveManager.settings.accessibilityHighContrast = true;
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
-      await tester.pumpAndSettle();
-      final l10n = getL10n(tester);
-      fakeHiveManager.resetCallHistory();
+      'Tapping "High Contrast" (on -> off) calls updateAccessibility(highContrast: false)',
+      (WidgetTester tester) async {
+        // [Given] 스위치가 켜진 상태
+        fakeHiveManager.settings.accessibilityHighContrast = true;
+        await tester.pumpWidget(
+          createTestableWidget(
+            AccessibilityScreen(hiveManager: fakeHiveManager),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final l10n = getL10n(tester);
+        fakeHiveManager.resetCallHistory();
 
-      // [When] '고대비' 텍스트를 탭
-      await tester.tap(find.text(l10n.highContrast));
-      await tester.pumpAndSettle();
+        // [When] '고대비' 텍스트를 탭
+        await tester.tap(find.text(l10n.highContrast));
+        await tester.pumpAndSettle();
 
-      // [Then]
-      expect(fakeHiveManager.updateAccessibilityCalled, isTrue);
-      expect(fakeHiveManager.lastAccessibilityValues['highContrast'], isFalse);
-    });
+        // [Then]
+        expect(fakeHiveManager.updateAccessibilityCalled, isTrue);
+        expect(
+          fakeHiveManager.lastAccessibilityValues['highContrast'],
+          isFalse,
+        );
+      },
+    );
 
     // (다른 두 스위치도 동일하게 검증 가능)
   });
@@ -290,12 +307,13 @@ void main() {
   // 테스트 케이스 그룹 3: 리스너 검증
   // ------------------------------------------------------------------
   group('3. State Change Listener Verification (Logic -> UI)', () {
-    testWidgets('Verify notifyListeners() updates UI (off -> on)',
-        (WidgetTester tester) async {
+    testWidgets('Verify notifyListeners() updates UI (off -> on)', (
+      WidgetTester tester,
+    ) async {
       // [Given] 스위치가 모두 꺼진 상태
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
       expect(getSwitchValue(tester, l10n.highContrast), isFalse);
@@ -310,13 +328,14 @@ void main() {
       expect(getSwitchValue(tester, l10n.highContrast), isTrue);
     });
 
-    testWidgets('Verify notifyListeners() updates UI (on -> off)',
-        (WidgetTester tester) async {
+    testWidgets('Verify notifyListeners() updates UI (on -> off)', (
+      WidgetTester tester,
+    ) async {
       // [Given] 스위치가 모두 켜진 상태
       fakeHiveManager.settings.accessibilityHighContrast = true;
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       final l10n = getL10n(tester);
       expect(getSwitchValue(tester, l10n.highContrast), isTrue);
@@ -331,12 +350,13 @@ void main() {
       expect(getSwitchValue(tester, l10n.highContrast), isFalse);
     });
 
-    testWidgets('Verify removeListener is called on dispose',
-        (WidgetTester tester) async {
+    testWidgets('Verify removeListener is called on dispose', (
+      WidgetTester tester,
+    ) async {
       // [Given]
-      await tester.pumpWidget(createTestableWidget(
-        AccessibilityScreen(hiveManager: fakeHiveManager),
-      ));
+      await tester.pumpWidget(
+        createTestableWidget(AccessibilityScreen(hiveManager: fakeHiveManager)),
+      );
       await tester.pumpAndSettle();
       expect(fakeHiveManager.removeListenerCalled, isFalse);
 

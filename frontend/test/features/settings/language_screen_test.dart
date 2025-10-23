@@ -119,8 +119,7 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
   List<HiveSubject> getSubjects({
     bool favoritesOnly = false,
     List<String> filterTagIds = const [],
-  }) =>
-      [];
+  }) => [];
 
   @override
   HiveSubject? getSubject(String id) => null;
@@ -147,7 +146,10 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
   Future<void> updateSubjectTitle(String id, String title) async {}
 
   @override
-  Future<void> updateSubjectLectures(String id, List<String> lectureIds) async {}
+  Future<void> updateSubjectLectures(
+    String id,
+    List<String> lectureIds,
+  ) async {}
 
   @override
   Future<void> updateSubjectTags(String id, List<String> tagIds) async {}
@@ -218,9 +220,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         // 3. 생성자를 통해 FakeHiveManager 주입
-        home: LanguageScreen(
-          hiveManager: fakeHiveManager,
-        ),
+        home: LanguageScreen(hiveManager: fakeHiveManager),
       ),
     );
   }
@@ -244,15 +244,17 @@ void main() {
         // Assert
         // RadioGroup이 사용되므로 RadioGroup의 groupValue를 검사합니다.
         final koRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('한국어 / Korean'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('한국어 / Korean'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
         final enRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('English'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('English'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
 
         // 'ko'가 선택된 상태 = RadioGroup의 groupValue가 'ko'여야 함
         expect(koRadioGroup.groupValue, 'ko');
@@ -272,15 +274,17 @@ void main() {
         // Assert
         // RadioGroup이 사용되므로 RadioGroup의 groupValue를 검사합니다.
         final koRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('한국어 / Korean'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('한국어 / Korean'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
         final enRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('English'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('English'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
 
         // 'en'이 선택된 상태 = RadioGroup의 groupValue가 'en'여야 함
         expect(koRadioGroup.groupValue, 'en');
@@ -291,7 +295,7 @@ void main() {
       testWidgets("AppBar 타이틀이 '언어 / Language'로 표시되어야 함", (tester) async {
         // Act
         await pumpLanguageScreen(tester);
-        
+
         // Assert
         expect(find.byType(AppBar), findsOneWidget);
         expect(
@@ -306,8 +310,9 @@ void main() {
 
     group('2. User Interaction Verification (UI -> Fake Logic)', () {
       // [ ] Verify that tapping '한국어 / Korean' calls updateLanguage('ko').
-      testWidgets("'한국어 / Korean' 탭 시 FakeManager 상태가 'ko'로 변경되어야 함",
-          (tester) async {
+      testWidgets("'한국어 / Korean' 탭 시 FakeManager 상태가 'ko'로 변경되어야 함", (
+        tester,
+      ) async {
         // Arrange
         // 'en'으로 시작
         fakeHiveManager = FakeHiveManager(initialLanguage: 'en');
@@ -324,8 +329,9 @@ void main() {
       });
 
       // [ ] Verify that tapping 'English' calls updateLanguage('en').
-      testWidgets("'English' 탭 시 FakeManager 상태가 'en'로 변경되어야 함",
-          (tester) async {
+      testWidgets("'English' 탭 시 FakeManager 상태가 'en'로 변경되어야 함", (
+        tester,
+      ) async {
         // Arrange
         // 'ko'로 시작 (setUp 기본값)
         await pumpLanguageScreen(tester);
@@ -343,16 +349,16 @@ void main() {
 
     group('3. State Change Listener Verification (Fake Logic -> UI)', () {
       // [ ] Verify that UI updates to 'English' when listener notifies.
-      testWidgets('외부 변경("en") 시 UI가 "English"로 업데이트되어야 함',
-          (tester) async {
+      testWidgets('외부 변경("en") 시 UI가 "English"로 업데이트되어야 함', (tester) async {
         // Arrange
         // 1. 'ko' 상태로 시작
         await pumpLanguageScreen(tester);
         final initialRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('English'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('English'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
         expect(initialRadioGroup.groupValue, 'ko');
 
         // Act
@@ -363,10 +369,11 @@ void main() {
         // Assert
         // 3. UI가 'en'으로 업데이트되었는지 확인
         final updatedRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('English'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('English'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
         expect(updatedRadioGroup.groupValue, 'en');
       });
 
@@ -377,10 +384,11 @@ void main() {
         fakeHiveManager = FakeHiveManager(initialLanguage: 'en');
         await pumpLanguageScreen(tester);
         final initialRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('한국어 / Korean'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('한국어 / Korean'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
         expect(initialRadioGroup.groupValue, 'en');
 
         // Act
@@ -391,10 +399,11 @@ void main() {
         // Assert
         // 3. UI가 'ko'로 업데이트되었는지 확인
         final updatedRadioGroup = tester.widget<RadioGroup<String>>(
-            find.ancestor(
-              of: find.text('한국어 / Korean'),
-              matching: find.byType(RadioGroup<String>),
-            ));
+          find.ancestor(
+            of: find.text('한국어 / Korean'),
+            matching: find.byType(RadioGroup<String>),
+          ),
+        );
         expect(updatedRadioGroup.groupValue, 'ko');
       });
 
@@ -405,7 +414,11 @@ void main() {
         await pumpLanguageScreen(tester);
 
         // 2. ChangeNotifier의 `hasActiveListeners`를 통해 리스너가 등록되었는지 확인
-        expect(fakeHiveManager.hasActiveListeners, isTrue, reason: '초기 리스너가 등록되어야 함');
+        expect(
+          fakeHiveManager.hasActiveListeners,
+          isTrue,
+          reason: '초기 리스너가 등록되어야 함',
+        );
 
         // Act
         // 3. 위젯 트리를 변경하여 LanguageScreen을 dispose() 시킴
@@ -413,7 +426,11 @@ void main() {
 
         // Assert
         // 4. `hasActiveListeners`가 false가 되었는지 확인 (removeListener가 호출되었다는 증거)
-        expect(fakeHiveManager.hasActiveListeners, isFalse, reason: 'Dispose 후 리스너가 제거되어야 함');
+        expect(
+          fakeHiveManager.hasActiveListeners,
+          isFalse,
+          reason: 'Dispose 후 리스너가 제거되어야 함',
+        );
       });
     });
   });
