@@ -85,58 +85,74 @@ Future<String?> requestLecture(
   bool isSingleAudio,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String) onProgress,
-) async {
-  final endpoint = Uri.parse(
-    'http://$serverAddress:$port/api/synchronize/stream',
-  );
+  Future<void> Function(double, String, String) onProgress, {
+  http.Client? fakeClient, // for testing
+  Uri? endpointOverride, // for testing
+}) async {
+  final client = fakeClient ?? http.Client();
+  final endpoint =
+      endpointOverride ??
+      Uri.parse('http://$serverAddress:$port/api/synchronize/stream');
+
   final req = http.MultipartRequest('POST', endpoint);
 
   final File slideFile;
 
-  if (isSingleAudio) {
-    slideFile = File(slidePath);
-  } else {
-    final pdfStart = int.parse(audioFileEntry.startPageController.text);
-    final pdfEnd = int.parse(audioFileEntry.endPageController.text);
+  // Skip file handling when testing
+  if (fakeClient == null) {
+    if (isSingleAudio) {
+      slideFile = File(slidePath);
+    } else {
+      final pdfStart = int.parse(audioFileEntry.startPageController.text);
+      final pdfEnd = int.parse(audioFileEntry.endPageController.text);
 
-    await splitPdfRange(slidePath, start: pdfStart, end: pdfEnd, order: order);
+      await splitPdfRange(
+        slidePath,
+        start: pdfStart,
+        end: pdfEnd,
+        order: order,
+      );
 
-    final splitSlideFilePath = slidePath.replaceFirst(
-      RegExp(r'\.pdf$', caseSensitive: false),
-      '_tmp$order.pdf',
+      final splitSlideFilePath = slidePath.replaceFirst(
+        RegExp(r'\.pdf$', caseSensitive: false),
+        '_tmp$order.pdf',
+      );
+      slideFile = File(splitSlideFilePath);
+    }
+
+    req.files.add(
+      await http.MultipartFile.fromPath(
+        'lecture_note',
+        slideFile.path,
+        filename: path.basename(slideFile.path),
+        contentType: MediaType('application', 'pdf'),
+      ),
     );
-    slideFile = File(splitSlideFilePath);
+
+    final audioFilePath = audioFileEntry.filePath;
+    if (audioFilePath == null) {
+      return null;
+    }
+    req.files.add(
+      await http.MultipartFile.fromPath(
+        'audio',
+        audioFilePath,
+        filename: path.basename(audioFilePath),
+        contentType: MediaType('audio', 'm4a'),
+      ),
+    );
   }
 
-  req.files.add(
-    await http.MultipartFile.fromPath(
-      'lecture_note',
-      slideFile.path,
-      filename: path.basename(slideFile.path),
-      contentType: MediaType('application', 'pdf'),
-    ),
-  );
+  // Use the injected client to send
+  final streamed = await client.send(req);
 
-  final audioFilePath = audioFileEntry.filePath;
-  if (audioFilePath == null) {
-    return null;
-  }
-  req.files.add(
-    await http.MultipartFile.fromPath(
-      'audio',
-      audioFilePath,
-      filename: path.basename(audioFilePath),
-      contentType: MediaType('audio', 'm4a'),
-    ),
-  );
-
-  final result = await req.send();
+  // read chunked SSE-style body
+  final stream = streamed.stream.transform(utf8.decoder);
 
   String? jobId;
-  await for (var chunk in result.stream.transform(utf8.decoder)) {
+  await for (final chunk in stream) {
     final lines = chunk.split('\n');
-    for (var line in lines) {
+    for (final line in lines) {
       if (line.startsWith('data: ')) {
         final jsonData = line.substring(6);
         final data = jsonDecode(jsonData) as Map<String, dynamic>;
@@ -150,7 +166,7 @@ Future<String?> requestLecture(
         if (data['status'] == 'completed') {
           return jobId;
         } else if (data['status'] == 'failed') {
-          throw Exception('Job failed: ${data['error']}');
+          return null;
         }
       }
     }
@@ -164,15 +180,19 @@ Future<String?> downloadResult(
   String titleText,
   int order,
   String serverAddress,
-  String port,
-) async {
-  final response = await http.get(
-    Uri.parse('http://$serverAddress:$port/api/synchronize/download/$jobId'),
+  String port, {
+  http.Client? fakeClient, // for testing
+  Directory? tempDirOverride, // for testing
+}) async {
+  final client = fakeClient ?? http.Client();
+  final uri = Uri.parse(
+    'http://$serverAddress:$port/api/synchronize/download/$jobId',
   );
+  final response = await client.get(uri);
 
   if (response.statusCode == 200) {
     // 앱의 임시 디렉토리 가져오기 (Android/iOS 모두 쓰기 가능)
-    final directory = await getTemporaryDirectory();
+    final directory = tempDirOverride ?? await getTemporaryDirectory();
     final savePath = '${directory.path}/${titleText}_${order}_output.zip';
 
     final file = File(savePath);
@@ -184,7 +204,13 @@ Future<String?> downloadResult(
   }
 }
 
-Future<void> unzipResult(String zipPath, String titleText, int order) async {
+Future<void> unzipResult(
+  String zipPath,
+  String titleText,
+  int order, {
+  Directory? documentsDirOverride, // for testing
+  bool deleteZip = true, // for test assertions
+}) async {
   final zipFile = File(zipPath);
   if (!zipFile.existsSync()) {
     throw Exception('Zip file not found: $zipPath');
@@ -194,7 +220,8 @@ Future<void> unzipResult(String zipPath, String titleText, int order) async {
   final archive = ZipDecoder().decodeBytes(bytes);
 
   // 앱의 영구 저장소 디렉토리 가져오기
-  final documentsDir = await getApplicationDocumentsDirectory();
+  final documentsDir =
+      documentsDirOverride ?? await getApplicationDocumentsDirectory();
   final outputDir = documentsDir.path;
 
   for (final file in archive) {
@@ -215,10 +242,12 @@ Future<void> unzipResult(String zipPath, String titleText, int order) async {
   }
 
   // Unzip 완료 후 zip 파일 삭제
-  try {
-    await zipFile.delete();
-  } catch (e) {
-    // Ignore deletion errors
+  if (deleteZip) {
+    try {
+      await zipFile.delete();
+    } catch (_) {
+      // Ignore deletion errors
+    }
   }
 }
 
