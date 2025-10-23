@@ -1,32 +1,3 @@
-class LectureMetadata {
-  LectureMetadata({
-    required this.lectureId,
-    required this.subjectId,
-    required this.title,
-    required this.weekLabel,
-    required this.durationSec,
-    required this.slides,
-  });
-
-  factory LectureMetadata.fromJson(Map<String, dynamic> json) {
-    return LectureMetadata(
-      lectureId: json['lectureId'] as String,
-      subjectId: json['subjectId'] as String,
-      title: json['title'] as String,
-      weekLabel: json['weekLabel'] as String,
-      durationSec: json['durationSec'] as int,
-      slides: json['slides'] as int,
-    );
-  }
-
-  final String lectureId;
-  final String subjectId;
-  final String title;
-  final String weekLabel;
-  final int durationSec;
-  final int slides;
-}
-
 class TranscriptMetadata {
   TranscriptMetadata({
     required this.totalSentences,
