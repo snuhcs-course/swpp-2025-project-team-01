@@ -383,6 +383,35 @@ class PdfSlidesList extends StatefulWidget {
   State<PdfSlidesList> createState() => _PdfSlidesListState();
 }
 
+class _SlideThumbnailImage extends StatelessWidget {
+  const _SlideThumbnailImage({required this.bytes});
+
+  final Uint8List bytes;
+
+  @override
+  Widget build(BuildContext context) {
+    if (bytes.isEmpty) {
+      return _placeholder();
+    }
+
+    return Image.memory(
+      bytes,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => _placeholder(),
+    );
+  }
+
+  Widget _placeholder() {
+    return Center(
+      child: Icon(
+        Icons.image_not_supported,
+        color: Colors.grey[400],
+        size: 32,
+      ),
+    );
+  }
+}
+
 class _PdfSlidesListState extends State<PdfSlidesList> {
   final ScrollController _scrollController = ScrollController();
   // Future를 캐시하여 FutureBuilder가 매번 새로운 Future를 생성하지 않도록 함
@@ -454,7 +483,7 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
               borderRadius: BorderRadius.circular(4),
             ),
             child: cachedImage != null
-                ? Image.memory(cachedImage, fit: BoxFit.contain)
+                ? _SlideThumbnailImage(bytes: cachedImage)
                 : FutureBuilder<Uint8List>(
                     // Future를 캐시하여 매번 새로운 Future가 생성되지 않도록 함
                     future: _futureCache.putIfAbsent(
@@ -464,10 +493,7 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done &&
                           snapshot.hasData) {
-                        return Image.memory(
-                          snapshot.data!,
-                          fit: BoxFit.contain,
-                        );
+                        return _SlideThumbnailImage(bytes: snapshot.data!);
                       }
 
                       // 에러 표시
