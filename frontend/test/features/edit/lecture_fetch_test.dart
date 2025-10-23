@@ -177,16 +177,18 @@ void main() {
     }
 
     test('Unzipping Result (Success)', () async {
-      final pdfBytes  = utf8.encode('PDFDATA');
+      final pdfBytes = utf8.encode('PDFDATA');
       final jsonBytes = utf8.encode('{"hello":"world"}');
-      final zipBytes  = makeZip({
+      final zipBytes = makeZip({
         'slides/lec.pdf': pdfBytes,
         'timestamp.json': jsonBytes,
       });
 
       final tempRoot = await Directory.systemTemp.createTemp('unzip_ok_');
-      final docsDir  = Directory('${tempRoot.path}/docs')..createSync(recursive: true);
-      final zipFile  = File('${tempRoot.path}/in.zip')..writeAsBytesSync(zipBytes);
+      final docsDir = Directory('${tempRoot.path}/docs')
+        ..createSync(recursive: true);
+      final zipFile = File('${tempRoot.path}/in.zip')
+        ..writeAsBytesSync(zipBytes);
 
       // Act
       await unzipResult(
@@ -198,12 +200,12 @@ void main() {
       );
 
       // Assert: files are renamed to MyLecture_3.<ext> in docsDir
-      final outPdf  = File('${docsDir.path}/MyLecture_3.pdf');
+      final outPdf = File('${docsDir.path}/MyLecture_3.pdf');
       final outJson = File('${docsDir.path}/MyLecture_3.json');
 
-      expect(outPdf.existsSync(),  isTrue);
+      expect(outPdf.existsSync(), isTrue);
       expect(outJson.existsSync(), isTrue);
-      expect(await outPdf.readAsBytes(),  pdfBytes);
+      expect(await outPdf.readAsBytes(), pdfBytes);
       expect(await outJson.readAsBytes(), jsonBytes);
 
       // Zip deleted

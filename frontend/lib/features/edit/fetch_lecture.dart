@@ -220,7 +220,8 @@ Future<void> unzipResult(
   final archive = ZipDecoder().decodeBytes(bytes);
 
   // 앱의 영구 저장소 디렉토리 가져오기
-  final documentsDir = documentsDirOverride ?? await getApplicationDocumentsDirectory();
+  final documentsDir =
+      documentsDirOverride ?? await getApplicationDocumentsDirectory();
   final outputDir = documentsDir.path;
 
   for (final file in archive) {
