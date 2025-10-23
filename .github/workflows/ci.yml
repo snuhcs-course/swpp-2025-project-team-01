@@ -30,7 +30,7 @@ jobs:
     
     # Add necessary script executions accordingly.
     - name: Run lecture fetch unit tests
-      run: flutter test test/lecture_fetch_test.dart
+      run: flutter test test/features/edit/lecture_fetch_test.dart
 
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
