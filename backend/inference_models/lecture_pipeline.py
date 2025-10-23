@@ -10,9 +10,9 @@ from typing import Callable, Any
 from datetime import datetime
 from dataclasses import dataclass, asdict
 
-from asr_processor import ASRProcessor
-from slide_matching_processor import SlideMatchingProcessor
-from tts_processor import TTSProcessor
+from .asr_processor import ASRProcessor
+from .slide_matching_processor import SlideMatchingProcessor
+from .tts_processor import TTSProcessor
 
 
 @dataclass
