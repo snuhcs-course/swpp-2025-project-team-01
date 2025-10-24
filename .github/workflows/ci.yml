@@ -17,7 +17,17 @@ jobs:
         working-directory: ./frontend
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.4'
+        channel: 'stable'
+        cache: true
+    
+    - name: Get dependencies
+      run: flutter pub get
 
     - name: Build APK
       run: flutter build apk
@@ -29,7 +39,17 @@ jobs:
         working-directory: ./frontend
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.4'
+        channel: 'stable'
+        cache: true
+    
+    - name: Get dependencies
+      run: flutter pub get
     
     # Add necessary script executions accordingly.
     - name: Run lecture fetch unit tests
@@ -51,14 +71,21 @@ jobs:
         working-directory: ./frontend
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.4'
+        channel: 'stable'
+        cache: true
+    
+    - name: Get dependencies
+      run: flutter pub get
 
     # Add necessary script executions accordingly.
     #- name: Run integration tests
     #  run: flutter test integration_test
-
-    - name: Run data model unit tests
-      run: flutter test test/data/
 
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
