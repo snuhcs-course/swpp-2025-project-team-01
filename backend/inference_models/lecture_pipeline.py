@@ -84,7 +84,6 @@ class LecturePipeline:
 
         # Translation settings
         translation_model: str = "tencent/Hunyuan-MT-7B",
-        translation_batch_size: int = 32,
         translation_tensor_parallel_size: int = 1,
         enable_translation: bool = True,
 
@@ -118,7 +117,6 @@ class LecturePipeline:
             context_weight: weight for context similarity contribution
             context_update_rate: Update rate for EMA
             translation_model: Translation model name
-            translation_batch_size: Translation batch size
             translation_tensor_parallel_size: Number of GPUs for translation tensor parallelism
             enable_translation: Enable English-to-Korean translation
             tts_voice: TTS voice style
@@ -167,7 +165,6 @@ class LecturePipeline:
                 device = device,
                 tensor_parallel_size = translation_tensor_parallel_size
             )
-            self.translation_batch_size = translation_batch_size
         else:
             self.translator = None
             print("\nTranslation disabled - Korean translations will not be generated")
@@ -336,7 +333,6 @@ class LecturePipeline:
 
             matching_results = self.translator.translate_matching_results(
                 matching_results = matching_results,
-                batch_size = self.translation_batch_size,
                 progress_callback = translation_progress_callback
             )
 

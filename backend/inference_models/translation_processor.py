@@ -103,12 +103,11 @@ class TranslationProcessor:
     def translate_batch(
         self,
         texts: list[str],
-        batch_size: int = 32,
         temperature: float = 0.7,
         top_p: float = 0.6,
         top_k: int = 20,
         repetition_penalty: float = 1.05,
-        max_tokens: int = 512,
+        max_tokens: int = 2048,
         progress_callback: Callable[[float, str], None] | None = None
     ) -> list[str]:
         """
@@ -116,7 +115,6 @@ class TranslationProcessor:
 
         Args:
             texts: List of English texts to translate
-            batch_size: Batch size for processing (vLLM handles internally)
             temperature: Sampling temperature (default 0.7 as recommended)
             top_p: Nucleus sampling parameter (default 0.6 as recommended)
             top_k: Top-k sampling parameter (default 20 as recommended)
@@ -187,7 +185,6 @@ class TranslationProcessor:
     def translate_matching_results(
         self,
         matching_results: list[dict],
-        batch_size: int = 32,
         progress_callback: Callable[[float, str], None] | None = None
     ) -> list[dict]:
         """
@@ -195,7 +192,6 @@ class TranslationProcessor:
 
         Args:
             matching_results: Results from SlideMatchingProcessor
-            batch_size: Batch size for processing
             progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
@@ -214,7 +210,6 @@ class TranslationProcessor:
         # Translate all texts
         korean_translations = self.translate_batch(
             texts = english_texts,
-            batch_size = batch_size,
             progress_callback = progress_callback
         )
 
@@ -246,8 +241,7 @@ if __name__ == "__main__":
 
     # Translate
     translated_results = processor.translate_matching_results(
-        matching_results = matching_results,
-        batch_size = 32
+        matching_results = matching_results
     )
 
     # Print results

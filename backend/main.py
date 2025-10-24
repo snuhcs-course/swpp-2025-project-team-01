@@ -140,7 +140,6 @@ def get_pipeline() -> LecturePipeline:
 
             # Translation settings
             translation_model = "tencent/Hunyuan-MT-7B",
-            translation_batch_size = 32,
             translation_tensor_parallel_size = 1,
             enable_translation = True,
 
