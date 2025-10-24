@@ -26,34 +26,19 @@ import 'package:pdfx/src/renderer/interfaces/page.dart' as _i2;
 // ignore_for_file: subtype_of_sealed_class
 
 class _FakePdfPage_0 extends _i1.SmartFake implements _i2.PdfPage {
-  _FakePdfPage_0(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakePdfPage_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
 }
 
 class _FakePdfDocument_1 extends _i1.SmartFake implements _i3.PdfDocument {
-  _FakePdfDocument_1(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakePdfDocument_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
 }
 
 class _FakePdfPageTexture_2 extends _i1.SmartFake
     implements _i2.PdfPageTexture {
-  _FakePdfPageTexture_2(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
+  _FakePdfPageTexture_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
 }
 
 /// A class which mocks [PdfDocument].
@@ -65,53 +50,48 @@ class MockPdfDocument extends _i1.Mock implements _i3.PdfDocument {
   }
 
   @override
-  String get sourceName => (super.noSuchMethod(
-        Invocation.getter(#sourceName),
-        returnValue: _i4.dummyValue<String>(
-          this,
-          Invocation.getter(#sourceName),
-        ),
-      ) as String);
+  String get sourceName =>
+      (super.noSuchMethod(
+            Invocation.getter(#sourceName),
+            returnValue: _i4.dummyValue<String>(
+              this,
+              Invocation.getter(#sourceName),
+            ),
+          )
+          as String);
 
   @override
-  String get id => (super.noSuchMethod(
-        Invocation.getter(#id),
-        returnValue: _i4.dummyValue<String>(
-          this,
-          Invocation.getter(#id),
-        ),
-      ) as String);
+  String get id =>
+      (super.noSuchMethod(
+            Invocation.getter(#id),
+            returnValue: _i4.dummyValue<String>(this, Invocation.getter(#id)),
+          )
+          as String);
 
   @override
-  int get pagesCount => (super.noSuchMethod(
-        Invocation.getter(#pagesCount),
-        returnValue: 0,
-      ) as int);
+  int get pagesCount =>
+      (super.noSuchMethod(Invocation.getter(#pagesCount), returnValue: 0)
+          as int);
 
   @override
-  bool get isClosed => (super.noSuchMethod(
-        Invocation.getter(#isClosed),
-        returnValue: false,
-      ) as bool);
+  bool get isClosed =>
+      (super.noSuchMethod(Invocation.getter(#isClosed), returnValue: false)
+          as bool);
 
   @override
   set isClosed(bool? _isClosed) => super.noSuchMethod(
-        Invocation.setter(
-          #isClosed,
-          _isClosed,
-        ),
-        returnValueForMissingStub: null,
-      );
+    Invocation.setter(#isClosed, _isClosed),
+    returnValueForMissingStub: null,
+  );
 
   @override
-  _i5.Future<void> close() => (super.noSuchMethod(
-        Invocation.method(
-          #close,
-          [],
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
+  _i5.Future<void> close() =>
+      (super.noSuchMethod(
+            Invocation.method(#close, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
   _i5.Future<_i2.PdfPage> getPage(
@@ -119,20 +99,23 @@ class MockPdfDocument extends _i1.Mock implements _i3.PdfDocument {
     bool? autoCloseAndroid = false,
   }) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #getPage,
-          [pageNumber],
-          {#autoCloseAndroid: autoCloseAndroid},
-        ),
-        returnValue: _i5.Future<_i2.PdfPage>.value(_FakePdfPage_0(
-          this,
-          Invocation.method(
-            #getPage,
-            [pageNumber],
-            {#autoCloseAndroid: autoCloseAndroid},
-          ),
-        )),
-      ) as _i5.Future<_i2.PdfPage>);
+            Invocation.method(
+              #getPage,
+              [pageNumber],
+              {#autoCloseAndroid: autoCloseAndroid},
+            ),
+            returnValue: _i5.Future<_i2.PdfPage>.value(
+              _FakePdfPage_0(
+                this,
+                Invocation.method(
+                  #getPage,
+                  [pageNumber],
+                  {#autoCloseAndroid: autoCloseAndroid},
+                ),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.PdfPage>);
 }
 
 /// A class which mocks [PdfPage].
@@ -144,52 +127,46 @@ class MockPdfPage extends _i1.Mock implements _i2.PdfPage {
   }
 
   @override
-  _i3.PdfDocument get document => (super.noSuchMethod(
-        Invocation.getter(#document),
-        returnValue: _FakePdfDocument_1(
-          this,
-          Invocation.getter(#document),
-        ),
-      ) as _i3.PdfDocument);
+  _i3.PdfDocument get document =>
+      (super.noSuchMethod(
+            Invocation.getter(#document),
+            returnValue: _FakePdfDocument_1(this, Invocation.getter(#document)),
+          )
+          as _i3.PdfDocument);
 
   @override
-  int get pageNumber => (super.noSuchMethod(
-        Invocation.getter(#pageNumber),
-        returnValue: 0,
-      ) as int);
+  int get pageNumber =>
+      (super.noSuchMethod(Invocation.getter(#pageNumber), returnValue: 0)
+          as int);
 
   @override
-  double get width => (super.noSuchMethod(
-        Invocation.getter(#width),
-        returnValue: 0.0,
-      ) as double);
+  double get width =>
+      (super.noSuchMethod(Invocation.getter(#width), returnValue: 0.0)
+          as double);
 
   @override
-  double get height => (super.noSuchMethod(
-        Invocation.getter(#height),
-        returnValue: 0.0,
-      ) as double);
+  double get height =>
+      (super.noSuchMethod(Invocation.getter(#height), returnValue: 0.0)
+          as double);
 
   @override
-  bool get autoCloseAndroid => (super.noSuchMethod(
-        Invocation.getter(#autoCloseAndroid),
-        returnValue: false,
-      ) as bool);
+  bool get autoCloseAndroid =>
+      (super.noSuchMethod(
+            Invocation.getter(#autoCloseAndroid),
+            returnValue: false,
+          )
+          as bool);
 
   @override
-  bool get isClosed => (super.noSuchMethod(
-        Invocation.getter(#isClosed),
-        returnValue: false,
-      ) as bool);
+  bool get isClosed =>
+      (super.noSuchMethod(Invocation.getter(#isClosed), returnValue: false)
+          as bool);
 
   @override
   set isClosed(bool? _isClosed) => super.noSuchMethod(
-        Invocation.setter(
-          #isClosed,
-          _isClosed,
-        ),
-        returnValueForMissingStub: null,
-      );
+    Invocation.setter(#isClosed, _isClosed),
+    returnValueForMissingStub: null,
+  );
 
   @override
   _i5.Future<_i2.PdfPageImage?> render({
@@ -203,47 +180,41 @@ class MockPdfPage extends _i1.Mock implements _i2.PdfPage {
     bool? removeTempFile = true,
   }) =>
       (super.noSuchMethod(
-        Invocation.method(
-          #render,
-          [],
-          {
-            #width: width,
-            #height: height,
-            #format: format,
-            #backgroundColor: backgroundColor,
-            #cropRect: cropRect,
-            #quality: quality,
-            #forPrint: forPrint,
-            #removeTempFile: removeTempFile,
-          },
-        ),
-        returnValue: _i5.Future<_i2.PdfPageImage?>.value(),
-      ) as _i5.Future<_i2.PdfPageImage?>);
+            Invocation.method(#render, [], {
+              #width: width,
+              #height: height,
+              #format: format,
+              #backgroundColor: backgroundColor,
+              #cropRect: cropRect,
+              #quality: quality,
+              #forPrint: forPrint,
+              #removeTempFile: removeTempFile,
+            }),
+            returnValue: _i5.Future<_i2.PdfPageImage?>.value(),
+          )
+          as _i5.Future<_i2.PdfPageImage?>);
 
   @override
-  _i5.Future<_i2.PdfPageTexture> createTexture() => (super.noSuchMethod(
-        Invocation.method(
-          #createTexture,
-          [],
-        ),
-        returnValue: _i5.Future<_i2.PdfPageTexture>.value(_FakePdfPageTexture_2(
-          this,
-          Invocation.method(
-            #createTexture,
-            [],
-          ),
-        )),
-      ) as _i5.Future<_i2.PdfPageTexture>);
+  _i5.Future<_i2.PdfPageTexture> createTexture() =>
+      (super.noSuchMethod(
+            Invocation.method(#createTexture, []),
+            returnValue: _i5.Future<_i2.PdfPageTexture>.value(
+              _FakePdfPageTexture_2(
+                this,
+                Invocation.method(#createTexture, []),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.PdfPageTexture>);
 
   @override
-  _i5.Future<void> close() => (super.noSuchMethod(
-        Invocation.method(
-          #close,
-          [],
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
+  _i5.Future<void> close() =>
+      (super.noSuchMethod(
+            Invocation.method(#close, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 }
 
 /// A class which mocks [PdfPageImage].
@@ -255,26 +226,27 @@ class MockPdfPageImage extends _i1.Mock implements _i2.PdfPageImage {
   }
 
   @override
-  int get pageNumber => (super.noSuchMethod(
-        Invocation.getter(#pageNumber),
-        returnValue: 0,
-      ) as int);
+  int get pageNumber =>
+      (super.noSuchMethod(Invocation.getter(#pageNumber), returnValue: 0)
+          as int);
 
   @override
-  _i7.Uint8List get bytes => (super.noSuchMethod(
-        Invocation.getter(#bytes),
-        returnValue: _i7.Uint8List(0),
-      ) as _i7.Uint8List);
+  _i7.Uint8List get bytes =>
+      (super.noSuchMethod(
+            Invocation.getter(#bytes),
+            returnValue: _i7.Uint8List(0),
+          )
+          as _i7.Uint8List);
 
   @override
-  _i2.PdfPageImageFormat get format => (super.noSuchMethod(
-        Invocation.getter(#format),
-        returnValue: _i2.PdfPageImageFormat.jpeg,
-      ) as _i2.PdfPageImageFormat);
+  _i2.PdfPageImageFormat get format =>
+      (super.noSuchMethod(
+            Invocation.getter(#format),
+            returnValue: _i2.PdfPageImageFormat.jpeg,
+          )
+          as _i2.PdfPageImageFormat);
 
   @override
-  int get quality => (super.noSuchMethod(
-        Invocation.getter(#quality),
-        returnValue: 0,
-      ) as int);
+  int get quality =>
+      (super.noSuchMethod(Invocation.getter(#quality), returnValue: 0) as int);
 }

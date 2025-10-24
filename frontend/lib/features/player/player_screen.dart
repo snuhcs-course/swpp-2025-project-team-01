@@ -140,7 +140,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
 
       // transcript.json 로드 (HiveLecture에서 경로 가져오기)
-      final transcriptPath = hiveLecture.jsonPath ?? 'assets/lectures/$lectureId/transcript.json';
+      final transcriptPath =
+          hiveLecture.jsonPath ?? 'assets/lectures/$lectureId/transcript.json';
 
       // assets/ 경로면 rootBundle 사용, 아니면 File 사용
       final transcriptJson = transcriptPath.startsWith('assets/')
@@ -170,7 +171,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       });
 
       // 오디오 파일 로드 및 자동 재생 (HiveLecture에서 경로 가져오기)
-      final audioPath = hiveLecture.audioPath ?? 'assets/lectures/$lectureId/lecture_with_slides.opus';
+      final audioPath =
+          hiveLecture.audioPath ??
+          'assets/lectures/$lectureId/lecture_with_slides.opus';
 
       await _audioService.loadAudio(audioPath);
 
