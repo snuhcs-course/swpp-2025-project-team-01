@@ -84,6 +84,7 @@ class PlayerController extends ChangeNotifier {
   // ========== 내부 상태 ==========
 
   bool _isForcedMove = false; // seek 등으로 강제 이동 중인지 표시
+  bool _isSeeking = false; // seek 작업 진행 중인지 표시
   Timer? _scrollTimer;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<dynamic>? _stateSubscription;
@@ -227,11 +228,25 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> seek(double seconds) async {
+    // 이미 seek 작업이 진행 중이면 무시
+    if (_isSeeking) {
+      return;
+    }
+
+    _isSeeking = true;
     _isForcedMove = true;
     isAutoScrolling.value = true;
     _scrollTimer?.cancel();
 
-    await _audioService.seek(Duration(milliseconds: (seconds * 1000).toInt()));
+    try {
+      await _audioService.seek(Duration(milliseconds: (seconds * 1000).toInt()));
+    } catch (e) {
+      // seek 작업 실패 시 무시
+      _isSeeking = false;
+      return;
+    } finally {
+      _isSeeking = false;
+    }
 
     // 약간의 딜레이 후 스크롤
     Future.delayed(const Duration(milliseconds: 100), () {
