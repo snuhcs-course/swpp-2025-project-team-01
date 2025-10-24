@@ -290,6 +290,14 @@ Future<String?> concatenateAudioFiles(
     return null;
   }
 
+  try {
+    for (final audioPath in audioPaths) {
+      await File(audioPath).delete();
+    }
+  } catch (_) {
+    // Ignore deletion errors
+  }
+
   return audioOutputPath;
 }
 
@@ -429,6 +437,14 @@ Future<String?> concatenateJsonFiles(
     final outFile = File(jsonOutputPath);
     await outFile.create(recursive: true);
     await outFile.writeAsString(encoder.convert(output));
+
+    try {
+      for (final jsonPath in jsonPaths) {
+        await File(jsonPath).delete();
+      }
+    } catch (_) {
+      // Ignore deletion errors
+    }
 
     return jsonOutputPath;
   } catch (e) {
