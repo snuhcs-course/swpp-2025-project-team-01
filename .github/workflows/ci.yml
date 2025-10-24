@@ -21,9 +21,12 @@ jobs:
     #   override: true
     #   components: rustfmt, clippy
 
-  test:
+  frontend-unit-test:
     needs: build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     
     steps:
     - uses: actions/checkout@v3
@@ -40,9 +43,24 @@ jobs:
 
     - name: Run home screen unit tests
       run: flutter test test/features/home/
+    
+  frontend-integration-test:
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    # Add necessary script executions accordingly.
+    #- name: Run integration tests
+    #  run: flutter test integration_test
 
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
