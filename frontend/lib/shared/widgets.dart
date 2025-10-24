@@ -444,43 +444,67 @@ class _CompletedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minHeight: 120),
       decoration: const BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/loading_complete.png'),
+          image: AssetImage('assets/images/loading_background.png'),
           fit: BoxFit.cover,
-          opacity: 0.35,
+          opacity: 0.15,
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle, size: 44, color: scheme.primary),
-          const SizedBox(height: 8),
-          Text(
-            '생성이 완료되었습니다!',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: scheme.primary,
+          _CharacterBlock(),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '강의 생성 완료!',
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFF7FAB0),
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: LectureLoadingService.instance.hideLoading,
+                      child: const Padding(
+                        padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.grey,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '강의 생성이 완료되었습니다.\n결과를 확인해보세요.',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade300,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () {
-              LectureLoadingService.instance.hideLoading();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: scheme.onPrimary,
-              backgroundColor: scheme.primary.withValues(alpha: 0.2),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-            ),
-            child: const Text('닫기'),
           ),
         ],
       ),
