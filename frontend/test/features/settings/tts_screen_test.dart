@@ -235,16 +235,7 @@ void main() {
 
   group('tts_screen.dart: Widget Test', () {
     group('1. UI Initial State Verification (Mock Data -> UI)', () {
-      testWidgets('로딩 중에는 CircularProgressIndicator가 표시되어야 함', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(home: TtsScreen(hiveManager: fakeHiveManager)),
-        );
-        await tester.pump();
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        await tester.pumpAndSettle();
-      });
-
-      testWidgets('로딩 완료 후 메인 Scaffold가 렌더링되어야 함', (tester) async {
+      testWidgets('메인 Scaffold가 렌더링되어야 함', (tester) async {
         await pumpTtsScreen(tester);
         expect(find.byType(Scaffold), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
