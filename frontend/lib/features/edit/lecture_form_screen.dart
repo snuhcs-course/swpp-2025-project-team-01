@@ -3,13 +3,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
+import 'package:http/http.dart' as http;
 
-const String _serverAddress = '34.64.191.255';
-const String _port = '8000';
+const String _serverAddress = '147.46.78.61';
+const String _port = '8001';
 
 /// 강의 생성/편집 화면
 ///
@@ -54,8 +57,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 강의 생성 중 여부 (로딩 상태)
   bool _isCreating = false;
 
+  // HTTP 클라이언트 (취소를 위해)
+  http.Client? _httpClient;
+  bool _closeClientOnDispose = true;
+
   @override
   void dispose() {
+    // HTTP 클라이언트 정리
+    if (_closeClientOnDispose) {
+      _httpClient?.close();
+    }
+
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
     _titleController.dispose();
@@ -93,52 +105,56 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       ),
       backgroundColor: Colors.white,
 
-      // 스크롤 가능한 메인 콘텐츠
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ========== 과목 선택 섹션 ==========
-            _buildSectionTitle(l10n.isKorean ? '과목 선택' : 'Select Subject'),
-            const SizedBox(height: 8),
-            _buildSubjectDropdown(l10n, subjects),
-            const SizedBox(height: 20),
+      // 스크롤 가능한 메인 콘텐츠 + 로딩 바
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ========== 과목 선택 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '과목 선택' : 'Select Subject'),
+                const SizedBox(height: 8),
+                _buildSubjectDropdown(l10n, subjects),
+                const SizedBox(height: 20),
 
-            // ========== 강의 주차 입력 섹션 ==========
-            _buildSectionTitle(l10n.isKorean ? '강의 주차' : 'Lecture Week'),
-            const SizedBox(height: 8),
-            _buildWeekTextField(),
-            const SizedBox(height: 20),
+                // ========== 강의 주차 입력 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '강의 주차' : 'Lecture Week'),
+                const SizedBox(height: 8),
+                _buildWeekTextField(),
+                const SizedBox(height: 20),
 
-            // ========== 강의 제목 입력 섹션 ==========
-            _buildSectionTitle(l10n.isKorean ? '강의 제목' : 'Lecture Title'),
-            const SizedBox(height: 8),
-            _buildTitleTextField(),
-            const SizedBox(height: 20),
+                // ========== 강의 제목 입력 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '강의 제목' : 'Lecture Title'),
+                const SizedBox(height: 8),
+                _buildTitleTextField(),
+                const SizedBox(height: 20),
 
-            // ========== 강의 슬라이드 업로드 섹션 ==========
-            _buildSectionTitle(
-              l10n.isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)',
+                // ========== 강의 슬라이드 업로드 섹션 ==========
+                _buildSectionTitle(
+                  l10n.isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)',
+                ),
+                const SizedBox(height: 8),
+                _buildFileUploadButton(
+                  icon: Icons.attach_file,
+                  label: _slidePdfPath != null
+                      ? _getFileName(_slidePdfPath!)
+                      : (l10n.isKorean ? '...' : '...'),
+                  onTap: _pickSlidePdf,
+                ),
+                const SizedBox(height: 20),
+
+                // ========== 강의 녹음 파일 업로드 섹션 ==========
+                _buildAudioFilesHeader(l10n),
+                const SizedBox(height: 8),
+                _buildAudioFilesList(),
+
+                const SizedBox(height: 40),
+              ],
             ),
-            const SizedBox(height: 8),
-            _buildFileUploadButton(
-              icon: Icons.attach_file,
-              label: _slidePdfPath != null
-                  ? _getFileName(_slidePdfPath!)
-                  : (l10n.isKorean ? '...' : '...'),
-              onTap: _pickSlidePdf,
-            ),
-            const SizedBox(height: 20),
-
-            // ========== 강의 녹음 파일 업로드 섹션 ==========
-            _buildAudioFilesHeader(l10n),
-            const SizedBox(height: 8),
-            _buildAudioFilesList(),
-
-            const SizedBox(height: 40),
-          ],
-        ),
+          ),
+        ],
       ),
 
       // 하단 고정 생성 버튼
@@ -271,7 +287,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       children: [
         Expanded(
           child: _buildSectionTitle(
-            l10n.isKorean ? '강의 녹음 파일 (.m4a)' : 'Lecture Audio (.m4a)',
+            l10n.isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio',
           ),
         ),
         // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
@@ -489,15 +505,24 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            onPressed: _createLecture,
-            child: Text(
-              l10n.isKorean ? '생성하기' : 'Create',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            onPressed: _isCreating ? null : _createLecture,
+            child: _isCreating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                    ),
+                  )
+                : Text(
+                    l10n.isKorean ? '생성하기' : 'Create',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -518,6 +543,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 토스트 메시지 표시
   void _showToast(String message) {
+    if (!mounted) {
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
@@ -541,7 +569,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'flac'],
+    );
 
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -692,16 +723,43 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
     // 2. 로딩 시작
     setState(() => _isCreating = true);
+    final titleText = _titleController.text.trim();
+
+    // HTTP 클라이언트 생성
+    _httpClient = http.Client();
+
+    // 로딩 서비스 시작 및 취소 콜백 등록
+    LectureLoadingService.instance.startLoading(titleText);
+    LectureLoadingService.instance.setOnCancel(() {
+      _httpClient?.close();
+      _closeClientOnDispose = true;
+      if (mounted) {
+        setState(() => _isCreating = false);
+        _showToast(
+          l10n.isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled',
+        );
+      }
+    });
 
     try {
       // 3. 백엔드로 전송 (TODO: BackendApi 구현 필요)
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
-      final titleText = _titleController.text.trim();
       final slidePath = _slidePdfPath!;
       final effectiveAudios = _audioFiles
           .where((e) => (e.filePath ?? '').isNotEmpty)
           .toList();
+
+      // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
+      if (mounted) {
+        _closeClientOnDispose = false;
+        final navigator = Navigator.of(context);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          navigator.popUntil(
+            (route) => route.settings.name == Routes.home || route.isFirst,
+          );
+        });
+      }
 
       final audioPaths = <String>[];
       final jsonPaths = <String>[];
@@ -710,6 +768,18 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
         try {
+          debugPrint(
+            '🚀 Starting lecture request $i/${effectiveAudios.length}',
+          );
+          debugPrint('📤 Server: $_serverAddress:$_port');
+          debugPrint('📄 Slide: $slidePath');
+          debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
+          debugPrint('📊 isSingleAudio: ${effectiveAudios.length == 1}');
+          debugPrint(
+            '📝 Start page: "${audioFileEntry.startPageController.text}"',
+          );
+          debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
+
           final jobId = await requestLecture(
             slidePath,
             audioFileEntry,
@@ -719,12 +789,20 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             _serverAddress,
             _port,
             onProgress,
+            clientToClose: _httpClient,
           );
 
+          debugPrint('✅ Request completed with jobId: $jobId');
+
           if (jobId == null) {
-            _showToast(
-              l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-            );
+            LectureLoadingService.instance.hideLoading();
+
+            // 취소된 경우가 아닐 때만 실패 메시지 표시
+            if (!LectureLoadingService.instance.isCancelled && mounted) {
+              _showToast(
+                l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+              );
+            }
             return;
           }
 
@@ -737,6 +815,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           );
 
           if (zipPath == null) {
+            LectureLoadingService.instance.hideLoading();
             _showToast(
               l10n.isKorean ? '강의 다운로드에 실패했습니다.' : 'Lecture download failed.',
             );
@@ -748,25 +827,38 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           final outputDir = documentsDir.path;
           audioPaths.add('$outputDir/${titleText}_$i.opus');
           final jsonPath = File('$outputDir/${titleText}_$i.json');
-          jsonPaths.add('$outputDir/${titleText}_$i.json');
-          final jsonData =
-              jsonDecode(await jsonPath.readAsString()) as Map<String, dynamic>;
-          final metadata = jsonData['metadata'] as Map<String, dynamic>?;
-          durations.add((metadata?['total_duration'] as double).toInt());
+          jsonPaths.add(jsonPath.path);
+
+          try {
+            final jsonData =
+                jsonDecode(await jsonPath.readAsString())
+                    as Map<String, dynamic>;
+            final metadata = jsonData['metadata'] as Map<String, dynamic>?;
+            final durationValue = metadata?['total_duration'];
+            if (durationValue is num) {
+              durations.add(durationValue.round());
+            } else {
+              durations.add(0);
+            }
+          } catch (_) {
+            durations.add(0);
+          }
         } catch (err) {
+          LectureLoadingService.instance.hideLoading();
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
+          rethrow;
         }
       }
 
-      // 4. 강의 구조체 생성
+      // 4. 강의 구조체 생성 (첫 오디오 기준 메타데이터, 추후 다중지원)
       final generatedLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,
-        durationSec: durations[0], // Only support single audio cases for now
+        durationSec: durations.isNotEmpty ? durations.first : 0,
         slidePath: _slidePdfPath,
         audioPaths: audioPaths,
         transcriptPaths: jsonPaths,
@@ -793,14 +885,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // 7. 성공 메시지
-      if (mounted) {
-        _showToast(
-          l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
-        );
-        Navigator.pop(context, true); // true = 생성 완료
-      }
+      _showToast(
+        l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
+      );
     } catch (e) {
       // 8. 에러 처리
+      LectureLoadingService.instance.hideLoading();
       if (mounted) {
         _showToast(
           l10n.isKorean
@@ -809,7 +899,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
       }
     } finally {
-      // 9. 로딩 종료
+      // 9. 로딩 종료 및 클라이언트 정리
+      _httpClient?.close();
+      _httpClient = null;
+      _closeClientOnDispose = true;
+
       if (mounted) {
         setState(() => _isCreating = false);
       }
