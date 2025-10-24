@@ -4,6 +4,7 @@ import 'package:pdfx/pdfx.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
 
@@ -207,9 +208,9 @@ class SubjectPanel extends StatefulWidget {
 
   final Subject subject;
   final List<Tag> tags;
-  final List<Lecture> lectures;
+  final List<HiveLecture> lectures;
   final VoidCallback onToggleFavorite;
-  final ValueChanged<Lecture> onOpenLecture;
+  final ValueChanged<HiveLecture> onOpenLecture;
   final VoidCallback? onLectureUpdated;
 
   @override
@@ -276,12 +277,21 @@ class _SubjectPanelState extends State<SubjectPanel>
   Widget build(BuildContext context) {
     final AppHighlights h = context.highlights;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: expanded ? Colors.white : Colors.transparent,
-        borderRadius: BorderRadius.circular(_panelRadius),
-        boxShadow: expanded ? const [_panelShadow] : const [],
-      ),
+    return AnimatedBuilder(
+      animation: _expandAnimation,
+      builder: (context, child) {
+        // 애니메이션 진행 중이거나 완전히 열린 상태일 때만 배경 표시
+        final bool showBackground = _expandAnimation.value > 0;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: showBackground ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(_panelRadius),
+            boxShadow: showBackground ? const [_panelShadow] : const [],
+          ),
+          child: child,
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -299,27 +309,32 @@ class _SubjectPanelState extends State<SubjectPanel>
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
-          SizeTransition(
-            sizeFactor: _expandAnimation,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: widget.lectures
-                    .map(
-                      (lec) => SizedBox(
-                        width:
-                            (MediaQuery.of(context).size.width - 32 - 28 - 12) /
-                            2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
-                        child: LectureCard(
-                          lec: lec,
-                          onTap: widget.onOpenLecture,
-                          onUpdated: widget.onLectureUpdated,
+          ClipRect(
+            child: SizeTransition(
+              sizeFactor: _expandAnimation,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: widget.lectures
+                      .map(
+                        (lec) => SizedBox(
+                          width:
+                              (MediaQuery.of(context).size.width -
+                                  32 -
+                                  28 -
+                                  12) /
+                              2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
+                          child: LectureCard(
+                            lec: lec,
+                            onTap: widget.onOpenLecture,
+                            onUpdated: widget.onLectureUpdated,
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
+                      )
+                      .toList(),
+                ),
               ),
             ),
           ),
@@ -338,8 +353,8 @@ class LectureCard extends StatefulWidget {
     this.onUpdated,
   });
 
-  final Lecture lec;
-  final ValueChanged<Lecture> onTap;
+  final HiveLecture lec;
+  final ValueChanged<HiveLecture> onTap;
   final VoidCallback? onUpdated;
 
   @override
@@ -363,7 +378,7 @@ class _LectureCardState extends State<LectureCard> {
   void didUpdateWidget(LectureCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 강의 내용이 변경되면 PDF 다시 로드
-    if (oldWidget.lec.slidesPath != widget.lec.slidesPath) {
+    if (oldWidget.lec.slidePath != widget.lec.slidePath) {
       _pdfPage?.close();
       _pdfDocument?.close();
       _pdfDocument = null;
@@ -376,17 +391,17 @@ class _LectureCardState extends State<LectureCard> {
   }
 
   Future<void> _loadPdf() async {
-    if (widget.lec.slidesPath == null) {
+    if (widget.lec.slidePath == null) {
       setState(() => _isLoading = false);
       return;
     }
 
     try {
       // assets 경로인지 파일 시스템 경로인지 확인
-      final bool isAsset = widget.lec.slidesPath!.startsWith('assets/');
+      final bool isAsset = widget.lec.slidePath!.startsWith('assets/');
       final PdfDocument document = isAsset
-          ? await PdfDocument.openAsset(widget.lec.slidesPath!)
-          : await PdfDocument.openFile(widget.lec.slidesPath!);
+          ? await PdfDocument.openAsset(widget.lec.slidePath!)
+          : await PdfDocument.openFile(widget.lec.slidePath!);
       final PdfPage page = await document.getPage(1);
       // 즉시 렌더링하여 캐싱
       final PdfPageImage? image = await page.render(
@@ -530,7 +545,7 @@ class _LectureCardState extends State<LectureCard> {
 /// 강의 상세정보 편집 다이얼로그
 class _LectureDetailDialog extends StatefulWidget {
   const _LectureDetailDialog({required this.lecture});
-  final Lecture lecture;
+  final HiveLecture lecture;
 
   @override
   State<_LectureDetailDialog> createState() => _LectureDetailDialogState();
