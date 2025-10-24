@@ -379,7 +379,13 @@ class PlayerController extends ChangeNotifier {
       return;
     }
 
-    // 해당 슬라이드 번호가 처음 나오는 transcript 찾기
+    // sync가 꺼져있으면 슬라이드만 이동
+    if (!isSynced.value) {
+      jumpToPage(slideNumber);
+      return;
+    }
+
+    // sync가 켜져있으면 해당 슬라이드 번호가 처음 나오는 transcript 찾아서 이동
     for (int i = 0; i < transcriptData!.timestamps.length; i++) {
       final sentence = transcriptData!.timestamps[i];
       if (sentence.slideNumber == slideNumber) {
