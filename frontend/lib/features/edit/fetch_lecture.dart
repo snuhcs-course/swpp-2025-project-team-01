@@ -271,10 +271,11 @@ Future<List<String>?> unzipResult(
 /// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.
 Future<String?> concatenateAudioFiles(
   List<String> audioPaths,
-  String titleText,
-) async {
+  String titleText, {
+  Directory? dirOverride, // for testing
+}) async {
   final audioFileList = audioPaths.map((p) => "file '$p'").join('\n');
-  final documentsDir = await getApplicationDocumentsDirectory();
+  final documentsDir = dirOverride ?? await getApplicationDocumentsDirectory();
   final outputDir = documentsDir.path;
   final listFile = '$outputDir/tmp_audio_list.txt';
   final audioOutputPath = '$outputDir/$titleText.opus';
@@ -304,8 +305,9 @@ Future<String?> concatenateAudioFiles(
 /// Concatenate multiple JSONs into a single continuous JSON.
 Future<String?> concatenateJsonFiles(
   List<String> jsonPaths,
-  String titleText,
-) async {
+  String titleText, {
+  Directory? documentsDirOverride, // for testing
+}) async {
   const gapBetweenFiles = 5000;
 
   try {
@@ -313,7 +315,7 @@ Future<String?> concatenateJsonFiles(
       return null;
     }
 
-    final documentsDir = await getApplicationDocumentsDirectory();
+    final documentsDir = documentsDirOverride ?? await getApplicationDocumentsDirectory();
     final outputDir = documentsDir.path;
     final jsonOutputPath = '$outputDir/$titleText.json';
 
@@ -450,7 +452,7 @@ Future<String?> concatenateJsonFiles(
 
     return jsonOutputPath;
   } catch (e) {
-    return null;
+    rethrow;
   }
 }
 
