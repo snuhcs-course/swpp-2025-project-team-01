@@ -13,9 +13,20 @@ import 'package:re_view/features/player/core/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
 
 class PlayerScreen extends StatefulWidget {
-  const PlayerScreen({super.key, this.args});
+  const PlayerScreen({
+    super.key,
+    this.args,
+    AudioService? audioService,
+    PdfCacheService? pdfCacheService,
+    HiveManager? hiveManager,
+  })  : _audioService = audioService,
+        _pdfCacheService = pdfCacheService,
+        _hiveManager = hiveManager;
 
   final Object? args;
+  final AudioService? _audioService;
+  final PdfCacheService? _pdfCacheService;
+  final HiveManager? _hiveManager;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -30,7 +41,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _showTranscriptPanel = false; // 가로 모드에서 우측 패널 표시 여부
 
   // 오디오 및 데이터 관련
-  final AudioService _audioService = AudioService();
+  late final AudioService _audioService;
+  late final HiveManager _hiveManager;
   TranscriptData? _transcriptData;
   double _currentTime = 0.0;
   double _totalTime = 0.0;
@@ -42,7 +54,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   int _currentPage = 1;
 
   // PDF 페이지 이미지 캐싱 서비스
-  final PdfCacheService _pdfCacheService = PdfCacheService();
+  late final PdfCacheService _pdfCacheService;
 
   // Transcript 스크롤 관련
   late AutoScrollController _transcriptScrollController;
@@ -55,6 +67,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void initState() {
     super.initState();
+    // 의존성 주입: 테스트에서 주입하거나, 프로덕션에서는 기본 인스턴스 사용
+    _audioService = widget._audioService ?? AudioService();
+    _pdfCacheService = widget._pdfCacheService ?? PdfCacheService();
+    _hiveManager = widget._hiveManager ?? HiveManager.instance;
+
     _transcriptScrollController = AutoScrollController(
       viewportBoundaryGetter: () =>
           Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).size.height / 2),
@@ -116,7 +133,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         throw Exception('Lecture ID is required');
       }
 
-      final hiveLecture = HiveManager.instance.getLecture(lectureId);
+      final hiveLecture = _hiveManager.getLecture(lectureId);
 
       if (hiveLecture == null) {
         throw Exception("Can't find lecture");
