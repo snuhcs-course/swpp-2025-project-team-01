@@ -1,3 +1,5 @@
+// ignore_for_file: unrelated_type_equality_checks
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 // ignore: implementation_imports
@@ -234,6 +236,88 @@ void main() {
       expect(result.transcriptPaths, ['tran.json']);
       expect(result.createdAt, DateTime.utc(2024, 2, 1));
       expect(result.updatedAt, DateTime.utc(2024, 2, 2));
+    });
+  });
+
+  group('Cross-model testing', () {
+    test('distinguishable by == operator', () {
+      final dataAdapter1 = AppDataAdapter();
+      final dataAdapter2 = AppDataAdapter();
+      final settingsAdapter1 = AppSettingsAdapter();
+      final settingsAdapter2 = AppSettingsAdapter();
+      final uistateAdapter1 = UiStateAdapter();
+      final uistateAdapter2 = UiStateAdapter();
+      final subjectAdapter1 = HiveSubjectAdapter();
+      final subjectAdapter2 = HiveSubjectAdapter();
+      final tagAdapter1 = HiveTagAdapter();
+      final tagAdapter2 = HiveTagAdapter();
+      final lectureAdapter1 = HiveLectureAdapter();
+      final lectureAdapter2 = HiveLectureAdapter();
+
+      // Same-type equality
+      expect(dataAdapter1 == dataAdapter2, isTrue);
+      expect(settingsAdapter1 == settingsAdapter2, isTrue);
+      expect(uistateAdapter1 == uistateAdapter2, isTrue);
+      expect(subjectAdapter1 == subjectAdapter2, isTrue);
+      expect(tagAdapter1 == tagAdapter2, isTrue);
+      expect(lectureAdapter1 == lectureAdapter2, isTrue);
+
+      // Cross-type inequality
+      expect(dataAdapter1 == settingsAdapter1, isFalse);
+      expect(dataAdapter1 == uistateAdapter1, isFalse);
+      expect(dataAdapter1 == subjectAdapter1, isFalse);
+      expect(dataAdapter1 == tagAdapter1, isFalse);
+      expect(dataAdapter1 == lectureAdapter1, isFalse);
+      expect(settingsAdapter1 == uistateAdapter1, isFalse);
+      expect(settingsAdapter1 == subjectAdapter1, isFalse);
+      expect(settingsAdapter1 == tagAdapter1, isFalse);
+      expect(settingsAdapter1 == lectureAdapter1, isFalse);
+      expect(uistateAdapter1 == subjectAdapter1, isFalse);
+      expect(uistateAdapter1 == tagAdapter1, isFalse);
+      expect(uistateAdapter1 == lectureAdapter1, isFalse);
+      expect(subjectAdapter1 == tagAdapter1, isFalse);
+      expect(subjectAdapter1 == lectureAdapter1, isFalse);
+      expect(tagAdapter1 == lectureAdapter1, isFalse);
+});
+
+    test('distinguishable by type hashCode', () {
+      final dataAdapter1 = AppDataAdapter();
+      final dataAdapter2 = AppDataAdapter();
+      final settingsAdapter1 = AppSettingsAdapter();
+      final settingsAdapter2 = AppSettingsAdapter();
+      final uistateAdapter1 = UiStateAdapter();
+      final uistateAdapter2 = UiStateAdapter();
+      final subjectAdapter1 = HiveSubjectAdapter();
+      final subjectAdapter2 = HiveSubjectAdapter();
+      final tagAdapter1 = HiveTagAdapter();
+      final tagAdapter2 = HiveTagAdapter();
+      final lectureAdapter1 = HiveLectureAdapter();
+      final lectureAdapter2 = HiveLectureAdapter();
+
+      // Same-type hashCode equality
+      expect(dataAdapter1.hashCode == dataAdapter2.hashCode, isTrue);
+      expect(settingsAdapter1.hashCode == settingsAdapter2.hashCode, isTrue);
+      expect(uistateAdapter1.hashCode == uistateAdapter2.hashCode, isTrue);
+      expect(subjectAdapter1.hashCode == subjectAdapter2.hashCode, isTrue);
+      expect(tagAdapter1.hashCode == tagAdapter2.hashCode, isTrue);
+      expect(lectureAdapter1.hashCode == lectureAdapter2.hashCode, isTrue);
+
+      // Cross-type hashCode inequality
+      expect(dataAdapter1.hashCode == settingsAdapter1.hashCode, isFalse);
+      expect(dataAdapter1.hashCode == uistateAdapter1.hashCode, isFalse);
+      expect(dataAdapter1.hashCode == subjectAdapter1.hashCode, isFalse);
+      expect(dataAdapter1.hashCode == tagAdapter1.hashCode, isFalse);
+      expect(dataAdapter1.hashCode == lectureAdapter1.hashCode, isFalse);
+      expect(settingsAdapter1.hashCode == uistateAdapter1.hashCode, isFalse);
+      expect(settingsAdapter1.hashCode == subjectAdapter1.hashCode, isFalse);
+      expect(settingsAdapter1.hashCode == tagAdapter1.hashCode, isFalse);
+      expect(settingsAdapter1.hashCode == lectureAdapter1.hashCode, isFalse);
+      expect(uistateAdapter1.hashCode == subjectAdapter1.hashCode, isFalse);
+      expect(uistateAdapter1.hashCode == tagAdapter1.hashCode, isFalse);
+      expect(uistateAdapter1.hashCode == lectureAdapter1.hashCode, isFalse);
+      expect(subjectAdapter1.hashCode == tagAdapter1.hashCode, isFalse);
+      expect(subjectAdapter1.hashCode == lectureAdapter1.hashCode, isFalse);
+      expect(tagAdapter1.hashCode == lectureAdapter1.hashCode, isFalse);
     });
   });
 }
