@@ -8,21 +8,21 @@ on:
 
 jobs:
   build:
+    # Build only on pushes to main or PRs whose base is main
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+            (github.event_name == 'pull_request' && github.base_ref == 'main') }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
     - uses: actions/checkout@v3
 
-    # Add build requirements accordingly.
-    #- name: Install Rust
-    #  uses: actions-rs/toolchain@v1
-    #  with:
-    #   toolchain: stable
-    #   override: true
-    #   components: rustfmt, clippy
+    - name: Build APK
+      run: flutter build apk
 
   frontend-unit-test:
-    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -45,7 +45,6 @@ jobs:
       run: flutter test test/features/home/
     
   frontend-integration-test:
-    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,7 +59,6 @@ jobs:
 
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
-    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
