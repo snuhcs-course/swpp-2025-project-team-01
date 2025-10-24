@@ -29,6 +29,8 @@ void main() {
         slidesPath: 'slides/lec1.pdf',
       );
 
+      final copy = lecture.copyWith();
+
       final updated = lecture.copyWith(
         weekLabel: 'Week 2',
         title: 'Advanced Topics',
@@ -41,6 +43,8 @@ void main() {
       expect(updated.durationSec, 3600);
       expect(updated.thumbs, ['thumb.png']);
       expect(updated.slidesPath, 'slides/lec1.pdf');
+      expect(identical(copy.weekLabel, lecture.weekLabel), isTrue);
+      expect(identical(copy.title, lecture.title), isTrue);
       expect(identical(updated, lecture), isFalse);
     });
   });
@@ -55,6 +59,8 @@ void main() {
         lectureIds: ['lec1'],
       );
 
+      final copy = subject.copyWith();
+
       final updated = subject.copyWith(
         title: 'Advanced Algorithms',
         favorite: true,
@@ -66,6 +72,10 @@ void main() {
       expect(updated.favorite, isTrue);
       expect(updated.tagIds, ['t1', 't2']);
       expect(updated.lectureIds, ['lec1']);
+      expect(identical(copy.title, subject.title), isTrue);
+      expect(identical(copy.favorite, subject.favorite), isTrue);
+      expect(identical(copy.tagIds, subject.tagIds), isTrue);
+      expect(identical(updated, subject), isFalse);
     });
 
     test('toHiveSubject converts to persistence model', () {
