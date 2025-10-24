@@ -3,6 +3,6 @@
     "subjectId": "s2",
     "title": "거주 가능 구역과 바이오마커",
     "weekLabel": "Week 2-1",
-    "durationSec": 4200,
+    "duration": 4200000,
     "slides": 15
   }

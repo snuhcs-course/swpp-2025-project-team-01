@@ -130,7 +130,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
             subjectId: subject.id,
             weekLabel: 'Week ?',
             title: 'Untitled',
-            durationSec: 0,
+            duration: 0,
           );
     }).toList();
 

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
@@ -789,24 +788,24 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         duration = metadata['total_duration'] as int;
       }
 
-      // 4. 강의 구조체 생성
+      // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,
-        durationSec: duration,
+        duration: duration,
         slidePath: _slidePdfPath,
-        audioPaths: audioPaths,
-        transcriptPaths: jsonPaths,
+        audioPath: audioPath,
+        jsonPath: jsonPath,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      // 5. Hive에 강의 저장
+      // 6. Hive에 강의 저장
       await _hive.addLecture(generatedLecture);
 
-      // 6. 과목에 강의 추가
+      // 7. 과목에 강의 추가
       if (_selectedSubjectId != null) {
         final subject = _hive.getSubject(_selectedSubjectId!);
         if (subject != null) {
@@ -821,7 +820,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         }
       }
 
-      // 7. 성공 메시지
+      // 8. 성공 메시지
       if (mounted) {
         _showToast(
           l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
@@ -829,7 +828,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         Navigator.pop(context, true); // true = 생성 완료
       }
     } catch (e) {
-      // 8. 에러 처리
+      // 9. 에러 처리
       if (mounted) {
         _showToast(
           l10n.isKorean
@@ -838,7 +837,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
       }
     } finally {
-      // 9. 로딩 종료
+      // 10. 로딩 종료
       if (mounted) {
         setState(() => _isCreating = false);
       }
