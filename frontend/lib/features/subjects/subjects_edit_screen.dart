@@ -345,110 +345,137 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   ///
   /// 새로운 과목을 생성하고 태그를 할당할 수 있습니다.
   Future<void> _showCreateSubjectDialog(BuildContext context) async {
-    final titleController = TextEditingController();
-    final allTags = hive.getTags().map((t) => t.toTag()).toList();
-    final selectedTagIds = <String>{};
-
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(AppLocalizations.of(context).addSubject),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 과목명 입력
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: '과목명',
-                  hintText: '예) 소프트웨어 개발의 원리와 실습',
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-
-              // 태그 선택
-              Text(
-                AppLocalizations.of(context).selectTagsOptional,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.maxFinite,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: allTags.map((tag) {
-                    final isSelected = selectedTagIds.contains(tag.id);
-                    return SelectableTagPill(
-                      tag: tag,
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setDialogState(() {
-                          if (isSelected) {
-                            selectedTagIds.remove(tag.id);
-                          } else {
-                            selectedTagIds.add(tag.id);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context).cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (titleController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        AppLocalizations.of(context).pleaseEnterSubjectName,
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(context, true);
-              },
-              child: Text(AppLocalizations.of(context).add),
-            ),
-          ],
-        ),
+      builder: (context) => _CreateSubjectDialog(
+        allTags: hive.getTags().map((t) => t.toTag()).toList(),
       ),
     );
 
-    // 다이얼로그 결과 처리
-    if (mounted && result == true) {
-      await hive.createSubject(
-        titleController.text.trim(),
-        selectedTagIds.toList(),
-      );
-
-      // 새로 생성된 과목의 작업 복사본 초기화
-      final newSubject = hive.getSubjects().firstWhere(
-        (s) => s.title == titleController.text.trim(),
-      );
-
-      if (mounted) {
-        setState(() {
-          _workingLectureIds[newSubject.id] = [];
-          _workingTagIds[newSubject.id] = List.from(selectedTagIds);
-          _workingTitles[newSubject.id] = newSubject.title;
-        });
-      }
+    if (!mounted || result == null || result['action'] != 'create') {
+      return;
     }
 
-    // 컨트롤러 해제
-    titleController.dispose();
+    final titleText = result['title'] as String;
+    final selectedTagIds = result['tagIds'] as List<String>;
+
+    await hive.createSubject(titleText, selectedTagIds);
+
+    if (mounted) {
+      final newSubject = hive.getSubjects().firstWhere(
+        (s) => s.title == titleText,
+      );
+
+      setState(() {
+        _workingLectureIds[newSubject.id] = [];
+        _workingTagIds[newSubject.id] = List.from(selectedTagIds);
+        _workingTitles[newSubject.id] = newSubject.title;
+      });
+    }
+  }
+}
+
+/// 과목 추가 다이얼로그 위젯
+class _CreateSubjectDialog extends StatefulWidget {
+  const _CreateSubjectDialog({required this.allTags});
+
+  final List<Tag> allTags;
+
+  @override
+  State<_CreateSubjectDialog> createState() => _CreateSubjectDialogState();
+}
+
+class _CreateSubjectDialogState extends State<_CreateSubjectDialog> {
+  late TextEditingController _titleController;
+  final Set<String> _selectedTagIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(AppLocalizations.of(context).addSubject),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _titleController,
+            decoration: const InputDecoration(
+              labelText: '과목명',
+              hintText: '예) 소프트웨어 개발의 원리와 실습',
+            ),
+            autofocus: true,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            AppLocalizations.of(context).selectTagsOptional,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.maxFinite,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.allTags.map((tag) {
+                final isSelected = _selectedTagIds.contains(tag.id);
+                return SelectableTagPill(
+                  tag: tag,
+                  selected: isSelected,
+                  onSelected: (_) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedTagIds.remove(tag.id);
+                      } else {
+                        _selectedTagIds.add(tag.id);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppLocalizations.of(context).cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final text = _titleController.text.trim();
+            if (text.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context).pleaseEnterSubjectName,
+                  ),
+                ),
+              );
+              return;
+            }
+            Navigator.pop(context, {
+              'action': 'create',
+              'title': text,
+              'tagIds': _selectedTagIds.toList(),
+            });
+          },
+          child: Text(AppLocalizations.of(context).add),
+        ),
+      ],
+    );
   }
 }
 
@@ -621,90 +648,137 @@ class _SubjectEditPanel extends StatefulWidget {
   State<_SubjectEditPanel> createState() => _SubjectEditPanelState();
 }
 
-class _SubjectEditPanelState extends State<_SubjectEditPanel> {
+class _SubjectEditPanelState extends State<_SubjectEditPanel>
+    with SingleTickerProviderStateMixin {
   // 패널 펼침 상태 (기본값: true)
   bool expanded = true;
+  late AnimationController _animationController;
+  late Animation<double> _expandAnimation;
+  late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
     super.initState();
-    _loadExpandedState();
-  }
+    // 저장된 펼침 상태 로드
+    expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
 
-  /// 저장된 펼침 상태 불러오기
-  Future<void> _loadExpandedState() async {
-    setState(() {
-      expanded = HiveManager.instance.getSubjectExpandedState(
-        widget.subject.id,
-      );
-    });
-  }
+    // reduce motion 설정 확인
+    final reduceMotion =
+        HiveManager.instance.settings.accessibilityReduceMotion;
+    final Duration duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
 
-  /// 펼침 상태 저장
-  Future<void> _saveExpandedState(bool value) async {
-    await HiveManager.instance.setSubjectExpandedState(
-      widget.subject.id,
-      value,
+    // AnimationController 생성
+    _animationController = AnimationController(duration: duration, vsync: this);
+    _expandAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: reduceMotion ? Curves.linear : Curves.easeInOut,
     );
+    _colorAnimation = ColorTween(
+      begin: Colors.transparent,
+      end: Colors.white,
+    ).animate(_animationController);
+
+    // 초기 상태 설정
+    _animationController.value = expanded ? 1.0 : 0.0;
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  /// 펼침/접기 토글
+  void _toggleExpanded() {
+    final bool reduceMotion =
+        HiveManager.instance.settings.accessibilityReduceMotion;
+
+    setState(() {
+      expanded = !expanded;
+    });
+
+    // Hive에 상태 저장
+    HiveManager.instance.setSubjectExpandedState(widget.subject.id, expanded);
+
+    if (reduceMotion) {
+      // 모션 줄이기가 활성화되면 즉시 전환
+      _animationController.value = expanded ? 1.0 : 0.0;
+    } else {
+      // 일반 애니메이션
+      if (expanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
+      duration: Duration.zero,
       decoration: BoxDecoration(
-        color: expanded ? Colors.white : Colors.transparent,
         borderRadius: BorderRadius.circular(_editPanelRadius),
         boxShadow: expanded ? const [_editPanelShadow] : const [],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ========== 검은 헤더 (과목 이름 + 펼침 버튼) ==========
-          SubjectPanelHeader(
-            title: widget.displayTitle ?? widget.subject.title,
-            tags: const [], // 과목 수정 화면에서는 태그 표시 안 함
-            expanded: expanded,
-            onToggleExpanded: () {
-              final newState = !expanded;
-              setState(() => expanded = newState);
-              _saveExpandedState(newState);
-            },
-            panelRadius: _editPanelRadius,
-            collapsedRadius: BorderRadius.circular(_editPanelRadius),
-            onLongPress: widget.onLongPress,
-            titleEndPadding: 8,
-          ),
-
-          // ========== 강의 리스트 (펼쳤을 때만 표시) ==========
-          if (expanded)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
-              child: ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                itemCount: widget.lectures.length,
-                onReorder: widget.onReorder,
-                itemBuilder: (_, idx) {
-                  final lecture = widget.lectures[idx];
-                  return Container(
-                    key: ValueKey(lecture.id),
-                    child: ListTile(
-                      // 드래그 핸들
-                      leading: ReorderableDragStartListener(
-                        index: idx,
-                        child: const Icon(Icons.drag_handle),
-                      ),
-                      // 강의 정보 (주차 • 제목)
-                      title: Text('${lecture.weekLabel}  •  ${lecture.title}'),
-                    ),
-                  );
-                },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_editPanelRadius),
+        child: AnimatedBuilder(
+          animation: _colorAnimation,
+          builder: (context, child) {
+            return Container(color: _colorAnimation.value, child: child);
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ========== 검은 헤더 (과목 이름 + 펼침 버튼) ==========
+              SubjectPanelHeader(
+                title: widget.displayTitle ?? widget.subject.title,
+                tags: const [], // 과목 수정 화면에서는 태그 표시 안 함
+                expanded: expanded,
+                onToggleExpanded: _toggleExpanded,
+                panelRadius: _editPanelRadius,
+                collapsedRadius: BorderRadius.circular(_editPanelRadius),
+                onLongPress: widget.onLongPress,
+                titleEndPadding: 8,
               ),
-            ),
-        ],
+
+              // ========== 강의 리스트 (펼쳤을 때만 표시) ==========
+              SizeTransition(
+                sizeFactor: _expandAnimation,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+                  child: ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: widget.lectures.length,
+                    onReorder: widget.onReorder,
+                    itemBuilder: (_, idx) {
+                      final lecture = widget.lectures[idx];
+                      return Container(
+                        key: ValueKey(lecture.id),
+                        child: ListTile(
+                          // 드래그 핸들
+                          leading: ReorderableDragStartListener(
+                            index: idx,
+                            child: const Icon(Icons.drag_handle),
+                          ),
+                          // 강의 정보 (주차 • 제목)
+                          title: Text(
+                            '${lecture.weekLabel}  •  ${lecture.title}',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

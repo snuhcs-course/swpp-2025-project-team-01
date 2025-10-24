@@ -222,6 +222,7 @@ class _SubjectPanelState extends State<SubjectPanel>
   late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
+  late Animation<Color?> _colorAnimation;
 
   @override
   void initState() {
@@ -240,6 +241,10 @@ class _SubjectPanelState extends State<SubjectPanel>
       parent: _animationController,
       curve: reduceMotion ? Curves.linear : Curves.easeInOut,
     );
+    _colorAnimation = ColorTween(
+      begin: Colors.transparent,
+      end: Colors.white,
+    ).animate(_animationController);
     _animationController.value = expanded ? 1.0 : 0.0;
   }
 
@@ -336,9 +341,9 @@ class _SubjectPanelState extends State<SubjectPanel>
                       .toList(),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
