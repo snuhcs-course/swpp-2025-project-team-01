@@ -73,7 +73,6 @@ class TranslationProcessor:
     def unload_model(self):
         """Unload model to free memory."""
         if self.model is not None:
-            # vLLM models need to be destroyed properly
             del self.model
             self.model = None
 
@@ -170,12 +169,8 @@ class TranslationProcessor:
                     translation_progress = 80.0 + (idx + 1) / len(texts) * 20.0
                     progress_callback(translation_progress, f"Processed {idx + 1}/{len(texts)} translations")
 
-        # Show GPU memory usage
-        if torch.cuda.is_available():
-            allocated = torch.cuda.memory_allocated() / 1024**3
-            max_allocated = torch.cuda.max_memory_allocated() / 1024**3
-            print(f"\nGPU memory usage: {allocated:.2f} GB")
-            print(f"Peak GPU memory usage: {max_allocated:.2f} GB")
+        # Note: GPU memory usage is shown in vLLM's INFO logs
+        # torch.cuda.memory_allocated() shows 0 because vLLM uses separate processes
 
         if progress_callback:
             progress_callback(100.0, "Translation completed")
