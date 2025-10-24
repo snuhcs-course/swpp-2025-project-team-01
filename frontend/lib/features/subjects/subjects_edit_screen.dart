@@ -519,10 +519,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final allTags = widget.hive
-        .getTags()
-        .map((t) => t.toTag())
-        .toList();
+    final allTags = widget.hive.getTags().map((t) => t.toTag()).toList();
 
     return AlertDialog(
       title: const Text('과목 수정'),
@@ -669,11 +666,10 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
   void initState() {
     super.initState();
     // 저장된 펼침 상태 로드
-    expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
+    expanded = widget.hive.getSubjectExpandedState(widget.subject.id);
 
     // reduce motion 설정 확인
-    final reduceMotion =
-        HiveManager.instance.settings.accessibilityReduceMotion;
+    final reduceMotion = widget.hive.settings.accessibilityReduceMotion;
     final Duration duration = reduceMotion
         ? Duration.zero
         : const Duration(milliseconds: 200);
@@ -701,15 +697,14 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
 
   /// 펼침/접기 토글
   void _toggleExpanded() {
-    final bool reduceMotion =
-        HiveManager.instance.settings.accessibilityReduceMotion;
+    final bool reduceMotion = widget.hive.settings.accessibilityReduceMotion;
 
     setState(() {
       expanded = !expanded;
     });
 
     // Hive에 상태 저장
-    HiveManager.instance.setSubjectExpandedState(widget.subject.id, expanded);
+    widget.hive.setSubjectExpandedState(widget.subject.id, expanded);
 
     if (reduceMotion) {
       // 모션 줄이기가 활성화되면 즉시 전환
