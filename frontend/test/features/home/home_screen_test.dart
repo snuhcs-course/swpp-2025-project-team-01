@@ -120,15 +120,15 @@ void main() {
     required String subjectId,
     String weekLabel = 'Week 1',
     String title = 'Lecture',
-    int durationSec = 3600,
+    int duration = 3600,
   }) {
     return HiveLecture(
       id: id,
       subjectId: subjectId,
       weekLabel: weekLabel,
       title: title,
-      durationSec: durationSec,
-      audioPaths: const [],
+      duration: duration,
+      audioPath: null,
     );
   }
 
