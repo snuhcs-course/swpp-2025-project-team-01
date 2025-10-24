@@ -24,8 +24,8 @@ class TranslationProcessor:
         model_name: str = "tencent/Hunyuan-MT-7B",
         device: str = "cuda",
         tensor_parallel_size: int = 1,
-        max_model_len: int = 2048,
-        gpu_memory_utilization: float = 0.85
+        max_model_len: int = 1024,
+        gpu_memory_utilization: float = 0.35
     ):
         """
         Initialize translation processor.
@@ -58,17 +58,14 @@ class TranslationProcessor:
         print(f"Loading translation model: {self.model_name}")
         print("This may take a few minutes...")
 
-        if torch.cuda.is_available():
-            torch.cuda.reset_peak_memory_stats()
-
         # Initialize vLLM with Hunyuan-MT-7B
         self.model = LLM(
             model = self.model_name,
             tensor_parallel_size = self.tensor_parallel_size,
             max_model_len = self.max_model_len,
             gpu_memory_utilization = self.gpu_memory_utilization,
-            trust_remote_code = True,
             dtype = "bfloat16" if torch.cuda.is_bf16_supported() else "float16",
+            trust_remote_code = True
         )
 
         print("Translation model loaded successfully")
