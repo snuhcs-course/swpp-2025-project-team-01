@@ -6,7 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:re_view/features/player/player_screen.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
-import 'package:re_view/features/player/core/pdf_cache_service.dart';
+import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:pdfx/pdfx.dart';

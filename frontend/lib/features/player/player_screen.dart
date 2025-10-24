@@ -9,7 +9,7 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
-import 'package:re_view/features/player/core/pdf_cache_service.dart';
+import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
 
 class PlayerScreen extends StatefulWidget {
