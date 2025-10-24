@@ -16,13 +16,34 @@ import 'package:re_view/core/localization/app_localizations.dart';
 ///
 /// SharedPreferences를 통해 설정을 저장 및 관리합니다.
 class TtsScreen extends StatefulWidget {
-  const TtsScreen({super.key});
+  const TtsScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
 
   @override
   State<TtsScreen> createState() => _TtsScreenState();
+
+  /// TTS 음성 속도를 재생 비율로 변환
+  ///
+  /// - 빠르게: 1.5 (주어진 시간 대비 꽤 빠르게 읽음)
+  /// - 보통: 1.0 (조금 빠르게 읽음)
+  /// - 느리게: 0.7 (주어진 시간을 꽉 채워 읽음)
+  static double speedToRate(String speed) {
+    switch (speed) {
+      case '빠르게':
+        return 1.5;
+      case '느리게':
+        return 0.7;
+      case '보통':
+      default:
+        return 1.0;
+    }
+  }
 }
 
 class _TtsScreenState extends State<TtsScreen> {
+  late final HiveManager _hiveManager;
+
   // TTS 설정 상태
   String _gender = '남성'; // 음성 성별
   String _speed = '보통'; // TTS 음성 속도 (빠르게/보통/느리게)
@@ -31,6 +52,7 @@ class _TtsScreenState extends State<TtsScreen> {
   @override
   void initState() {
     super.initState();
+    _hiveManager = widget.hiveManager ?? HiveManager.instance;
     _loadSettings();
   }
 
@@ -38,8 +60,8 @@ class _TtsScreenState extends State<TtsScreen> {
   Future<void> _loadSettings() async {
     if (mounted) {
       setState(() {
-        _gender = HiveManager.instance.settings.ttsGender;
-        _speed = HiveManager.instance.settings.ttsSpeed;
+        _gender = _hiveManager.settings.ttsGender;
+        _speed = _hiveManager.settings.ttsSpeed;
         _isLoading = false;
       });
     }
@@ -47,14 +69,14 @@ class _TtsScreenState extends State<TtsScreen> {
 
   /// 음성 성별 저장 및 예시 음성 재생
   Future<void> _saveGender(String value) async {
-    await HiveManager.instance.updateTts(gender: value);
+    await _hiveManager.updateTts(gender: value);
     setState(() => _gender = value);
     _playPreviewTTS();
   }
 
   /// TTS 음성 속도 저장 및 예시 음성 재생
   Future<void> _saveSpeed(String value) async {
-    await HiveManager.instance.updateTts(speed: value);
+    await _hiveManager.updateTts(speed: value);
     setState(() => _speed = value);
     _playPreviewTTS();
   }
@@ -72,23 +94,6 @@ class _TtsScreenState extends State<TtsScreen> {
     //   gender: _gender,
     //   speed: _speedToRate(_speed),
     // );
-  }
-
-  /// TTS 음성 속도를 재생 비율로 변환
-  ///
-  /// - 빠르게: 1.5 (주어진 시간 대비 꽤 빠르게 읽음)
-  /// - 보통: 1.0 (조금 빠르게 읽음)
-  /// - 느리게: 0.7 (주어진 시간을 꽉 채워 읽음)
-  static double speedToRate(String speed) {
-    switch (speed) {
-      case '빠르게':
-        return 1.5;
-      case '느리게':
-        return 0.7;
-      case '보통':
-      default:
-        return 1.0;
-    }
   }
 
   @override
