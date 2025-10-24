@@ -142,9 +142,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        wrapWithMaterialApp(
-          const EmptyStateMessage(message: 'No items found'),
-        ),
+        wrapWithMaterialApp(const EmptyStateMessage(message: 'No items found')),
       );
 
       expect(

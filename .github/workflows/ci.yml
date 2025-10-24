@@ -57,6 +57,9 @@ jobs:
     #- name: Run integration tests
     #  run: flutter test integration_test
 
+    - name: Run data model unit tests
+      run: flutter test test/data/
+
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
     runs-on: ubuntu-latest
