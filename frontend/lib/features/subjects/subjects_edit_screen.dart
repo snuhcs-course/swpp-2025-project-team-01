@@ -27,7 +27,9 @@ const _editPanelShadow = BoxShadow(
 /// - 본문: 과목별 펼침 패널 (검은 헤더 + 강의 리스트)
 /// - 하단: 고정 버튼 ([수정 완료] [취소])
 class SubjectsEditScreen extends StatefulWidget {
-  const SubjectsEditScreen({super.key});
+  const SubjectsEditScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
 
   @override
   State<SubjectsEditScreen> createState() => _SubjectsEditScreenState();
@@ -35,7 +37,7 @@ class SubjectsEditScreen extends StatefulWidget {
 
 class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   // 데이터 저장소 인스턴스
-  final hive = HiveManager.instance;
+  late final HiveManager hive;
 
   // 작업 중인 데이터 (원본 데이터를 복사하여 수정)
   final Map<String, List<String>> _workingLectureIds = {};
@@ -48,6 +50,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   @override
   void initState() {
     super.initState();
+    hive = widget.hiveManager ?? HiveManager.instance;
     _initializeWorkingData();
   }
 
@@ -136,6 +139,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
     return _SubjectEditPanel(
       key: ValueKey(subject.id),
+      hive: hive,
       subject: subject,
       displayTitle: _workingTitles[subject.id],
       lectures: lectures,
@@ -199,6 +203,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => _SubjectEditDialog(
+        hive: hive,
         subject: subject,
         initialTagIds: _workingTagIds[subject.id] ?? [],
       ),
@@ -482,10 +487,12 @@ class _CreateSubjectDialogState extends State<_CreateSubjectDialog> {
 /// 과목 편집 다이얼로그 위젯
 class _SubjectEditDialog extends StatefulWidget {
   const _SubjectEditDialog({
+    required this.hive,
     required this.subject,
     required this.initialTagIds,
   });
 
+  final HiveManager hive;
   final Subject subject;
   final List<String> initialTagIds;
 
@@ -512,7 +519,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final allTags = HiveManager.instance
+    final allTags = widget.hive
         .getTags()
         .map((t) => t.toTag())
         .toList();
@@ -631,6 +638,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 class _SubjectEditPanel extends StatefulWidget {
   const _SubjectEditPanel({
     super.key,
+    required this.hive,
     required this.subject,
     this.displayTitle,
     required this.lectures,
@@ -638,6 +646,7 @@ class _SubjectEditPanel extends StatefulWidget {
     required this.onLongPress,
   });
 
+  final HiveManager hive;
   final Subject subject;
   final String? displayTitle;
   final List<Lecture> lectures;

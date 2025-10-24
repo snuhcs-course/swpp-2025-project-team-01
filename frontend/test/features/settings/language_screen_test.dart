@@ -208,9 +208,7 @@ void main() {
   // 테스트 위젯을 펌핑하는 헬퍼 함수 (Fake 주입)
   Future<void> pumpLanguageScreen(WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: LanguageScreen(hiveManager: fakeHiveManager),
-      ),
+      MaterialApp(home: LanguageScreen(hiveManager: fakeHiveManager)),
     );
   }
 

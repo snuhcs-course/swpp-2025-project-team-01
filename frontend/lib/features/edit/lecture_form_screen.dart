@@ -22,7 +22,9 @@ const String _port = '8000';
 /// - 강의 녹음 파일(들) 업로드 (단일 또는 다중)
 /// - 다중 오디오 파일 모드에서 각 파일별 페이지 범위 설정
 class LectureFormScreen extends StatefulWidget {
-  const LectureFormScreen({super.key});
+  const LectureFormScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
 
   @override
   State<LectureFormScreen> createState() => _LectureFormScreenState();
@@ -30,7 +32,7 @@ class LectureFormScreen extends StatefulWidget {
 
 class _LectureFormScreenState extends State<LectureFormScreen> {
   // 데이터 저장소 인스턴스
-  final _hive = HiveManager.instance;
+  late final HiveManager _hive;
 
   // 텍스트 입력 컨트롤러
   final _weekController = TextEditingController();
@@ -53,6 +55,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   // 강의 생성 중 여부 (로딩 상태)
   bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hive = widget.hiveManager ?? HiveManager.instance;
+  }
 
   @override
   void dispose() {

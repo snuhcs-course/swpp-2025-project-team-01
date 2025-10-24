@@ -278,7 +278,7 @@ void main() {
       expect(subjectAdapter1 == tagAdapter1, isFalse);
       expect(subjectAdapter1 == lectureAdapter1, isFalse);
       expect(tagAdapter1 == lectureAdapter1, isFalse);
-});
+    });
 
     test('distinguishable by type hashCode', () {
       final dataAdapter1 = AppDataAdapter();

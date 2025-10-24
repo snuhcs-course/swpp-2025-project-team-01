@@ -130,7 +130,9 @@ class TagColorTheme {
 /// - 태그 이름 편집 폼 (이름 입력 + 적용/취소)
 /// - 태그 삭제 버튼
 class TagsEditScreen extends StatefulWidget {
-  const TagsEditScreen({super.key});
+  const TagsEditScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
 
   @override
   State<TagsEditScreen> createState() => _TagsEditScreenState();
@@ -138,7 +140,7 @@ class TagsEditScreen extends StatefulWidget {
 
 class _TagsEditScreenState extends State<TagsEditScreen> {
   // 데이터 저장소
-  final _manager = HiveManager.instance;
+  late final HiveManager _manager;
 
   // 태그 목록 (작업 중인 데이터)
   late List<Tag> _tags;
@@ -155,6 +157,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   @override
   void initState() {
     super.initState();
+    _manager = widget.hiveManager ?? HiveManager.instance;
     _loadData();
   }
 
