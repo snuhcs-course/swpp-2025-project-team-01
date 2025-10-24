@@ -99,7 +99,7 @@ class PlayerController extends ChangeNotifier {
     String audioPath,
   ) async {
     this.transcriptData = transcriptData;
-    totalTime = transcriptData.metadata.totalDuration;
+    totalTime = transcriptData.metadata.totalDuration.toDouble() / 1000;
 
     // Transcript 스크롤 컨트롤러 초기화
     final screenHeight = MediaQuery.of(context).size.height;
@@ -367,12 +367,11 @@ class PlayerController extends ChangeNotifier {
     }
 
     final sentence = transcriptData!.timestamps[index];
-    final targetMs = (sentence.startTime * 1000).toInt();
 
     _isForcedMove = true;
     isAutoScrolling.value = true;
 
-    await _audioService.seek(Duration(milliseconds: targetMs));
+    await _audioService.seek(Duration(milliseconds: sentence.startTime));
 
     _setCurrentSentenceAndPage(
       index,
@@ -407,7 +406,7 @@ class PlayerController extends ChangeNotifier {
         _isForcedMove = true;
 
         await _audioService.seek(
-          Duration(milliseconds: ((sentence.startTime) * 1000).toInt()),
+          Duration(milliseconds: sentence.startTime),
         );
 
         _scrollTimer?.cancel();
