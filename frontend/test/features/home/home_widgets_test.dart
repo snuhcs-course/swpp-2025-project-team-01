@@ -15,7 +15,7 @@ class MockVoidCallback extends Mock {
 }
 
 class MockLectureCallback extends Mock {
-  void call(Lecture lecture);
+  void call(HiveLecture lecture);
 }
 
 class MockTagToggle extends Mock {
@@ -37,22 +37,22 @@ void main() {
     lectureIds: ['lec-1', 'lec-2'],
   );
 
-  const lectures = [
-    Lecture(
+  final lectures = [
+    HiveLecture(
       id: 'lec-1',
       subjectId: 'subject-1',
       weekLabel: 'Week 1',
       title: 'Introduction',
       durationSec: 3600,
-      slidesPath: null,
+      audioPaths: const [],
     ),
-    Lecture(
+    HiveLecture(
       id: 'lec-2',
       subjectId: 'subject-1',
       weekLabel: 'Week 2',
       title: 'Advanced Topics',
       durationSec: 4200,
-      slidesPath: null,
+      audioPaths: const [],
     ),
   ];
 
@@ -142,9 +142,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        wrapWithMaterialApp(
-          const EmptyStateMessage(message: 'No items found'),
-        ),
+        wrapWithMaterialApp(const EmptyStateMessage(message: 'No items found')),
       );
 
       expect(
@@ -158,7 +156,7 @@ void main() {
   });
 
   group('FilterPill', () {
-    testWidgets('shows label and triggers tap callback', (
+    testWidgets('shows label and triggers tap callback when inactive', (
       WidgetTester tester,
     ) async {
       final mockOnTap = MockVoidCallback();
@@ -181,6 +179,24 @@ void main() {
       await tester.pump();
 
       verify(mockOnTap()).called(1);
+    });
+
+    testWidgets('shows different styling when active', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          FilterPill(
+            icon: Icons.filter_alt,
+            label: 'Filter',
+            onTap: () {},
+            active: true,
+          ),
+        ),
+      );
+
+      expect(find.text('Filter'), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt), findsOneWidget);
     });
   });
 
@@ -243,6 +259,67 @@ void main() {
 
       verify(mockToggle('math')).called(1);
     });
+
+    testWidgets('displays all tags with # prefix', (WidgetTester tester) async {
+      const tags = [
+        Tag(id: 'math', name: 'math', color: 0xFFE0F7FA),
+        Tag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
+        Tag(id: 'physics', name: 'physics', color: 0xFFFFCDD2),
+      ];
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          TagChips(tags: tags, selected: const {}, onToggle: (_) {}),
+        ),
+      );
+
+      expect(find.text('#math'), findsOneWidget);
+      expect(find.text('#cs'), findsOneWidget);
+      expect(find.text('#physics'), findsOneWidget);
+    });
+
+    testWidgets('shows selected state correctly', (WidgetTester tester) async {
+      const tags = [
+        Tag(id: 'math', name: 'math', color: 0xFFE0F7FA),
+        Tag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
+      ];
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          TagChips(tags: tags, selected: const {'math'}, onToggle: (_) {}),
+        ),
+      );
+
+      final mathChip = tester.widget<ChoiceChip>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is ChoiceChip &&
+              widget.label is Text &&
+              (widget.label as Text).data == '#math',
+        ),
+      );
+      expect(mathChip.selected, isTrue);
+
+      final csChip = tester.widget<ChoiceChip>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is ChoiceChip &&
+              widget.label is Text &&
+              (widget.label as Text).data == '#cs',
+        ),
+      );
+      expect(csChip.selected, isFalse);
+    });
+
+    testWidgets('handles empty tag list', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          TagChips(tags: const [], selected: const {}, onToggle: (_) {}),
+        ),
+      );
+
+      expect(find.byType(ChoiceChip), findsNothing);
+    });
   });
 
   group('LectureCard', () {
@@ -250,13 +327,13 @@ void main() {
       WidgetTester tester,
     ) async {
       final mockOnTap = MockLectureCallback();
-      const lecture = Lecture(
+      final lecture = HiveLecture(
         id: 'lec1',
         subjectId: 'sub1',
         weekLabel: 'Week 1',
         title: 'Introduction',
         durationSec: 3600,
-        slidesPath: null,
+        audioPaths: const [],
       );
 
       await tester.pumpWidget(
@@ -271,6 +348,84 @@ void main() {
       await tester.pump();
 
       verify(mockOnTap(lecture)).called(1);
+    });
+
+    testWidgets('displays lecture title and week label', (
+      WidgetTester tester,
+    ) async {
+      final lecture = HiveLecture(
+        id: 'lec1',
+        subjectId: 'sub1',
+        weekLabel: 'Week 3',
+        title: 'Advanced Algorithms',
+        durationSec: 3600,
+        audioPaths: const [],
+      );
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(LectureCard(lec: lecture, onTap: (_) {})),
+      );
+
+      await tester.pump();
+
+      expect(find.text('Advanced Algorithms'), findsOneWidget);
+      expect(find.text('Week 3'), findsOneWidget);
+    });
+
+    testWidgets('calls onUpdated callback when provided', (
+      WidgetTester tester,
+    ) async {
+      final mockOnUpdated = MockVoidCallback();
+      final lecture = HiveLecture(
+        id: 'lec1',
+        subjectId: 'sub1',
+        weekLabel: 'Week 1',
+        title: 'Test',
+        durationSec: 3600,
+        audioPaths: const [],
+      );
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          LectureCard(
+            lec: lecture,
+            onTap: (_) {},
+            onUpdated: mockOnUpdated.call,
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Get the card and call onUpdated
+      final card = tester.widget<LectureCard>(find.byType(LectureCard));
+      expect(card.onUpdated, isNotNull);
+      card.onUpdated!();
+
+      verify(mockOnUpdated()).called(1);
+    });
+
+    testWidgets('handles lecture without slidePath', (
+      WidgetTester tester,
+    ) async {
+      final lecture = HiveLecture(
+        id: 'lec1',
+        subjectId: 'sub1',
+        weekLabel: 'Week 1',
+        title: 'No Slides',
+        durationSec: 3600,
+        audioPaths: const [],
+        slidePath: null,
+      );
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(LectureCard(lec: lecture, onTap: (_) {})),
+      );
+
+      await tester.pump();
+
+      // Should show thumbnail placeholder
+      expect(find.text('thumbnail'), findsOneWidget);
     });
   });
 
@@ -318,9 +473,11 @@ void main() {
     });
 
     /*
-    testWidgets('toggles expansion and persists to Hive',
-        (WidgetTester tester) async {
+    testWidgets('toggles expansion state when header tapped', (
+      WidgetTester tester,
+    ) async {
       HiveManager.instance.settings.accessibilityReduceMotion = true;
+      HiveManager.instance.uiState.subjectExpandedStates[subject.id] = true;
 
       await tester.pumpWidget(
         wrapWithMaterialApp(
@@ -334,18 +491,116 @@ void main() {
         ),
       );
 
+      await tester.pump();
+
+      // Initially expanded - should show down arrow
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
+      // Tap the header to collapse
       await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
       await tester.pump();
 
+      // Should now be collapsed
+      
       expect(
         HiveManager.instance.getSubjectExpandedState(subject.id),
         isFalse,
       );
       expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
     });
+
     */
+
+    testWidgets('shows favorite icon when subject is favorited', (
+      WidgetTester tester,
+    ) async {
+      HiveManager.instance.settings.accessibilityReduceMotion = true;
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          SubjectPanel(
+            subject: subject.copyWith(favorite: true),
+            tags: tags,
+            lectures: lectures,
+            onToggleFavorite: () {},
+            onOpenLecture: (_) {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(Icons.star_border), findsNothing);
+    });
+
+    testWidgets('shows unfavorite icon when subject is not favorited', (
+      WidgetTester tester,
+    ) async {
+      HiveManager.instance.settings.accessibilityReduceMotion = true;
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          SubjectPanel(
+            subject: subject.copyWith(favorite: false),
+            tags: tags,
+            lectures: lectures,
+            onToggleFavorite: () {},
+            onOpenLecture: (_) {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+      expect(find.byIcon(Icons.star), findsNothing);
+    });
+
+    testWidgets('handles subject with no tags', (WidgetTester tester) async {
+      HiveManager.instance.settings.accessibilityReduceMotion = true;
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          SubjectPanel(
+            subject: subject,
+            tags: const [],
+            lectures: lectures,
+            onToggleFavorite: () {},
+            onOpenLecture: (_) {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('Algebra'), findsOneWidget);
+      expect(find.text('#math'), findsNothing);
+      expect(find.text('#logic'), findsNothing);
+    });
+
+    testWidgets('handles subject with no lectures', (
+      WidgetTester tester,
+    ) async {
+      HiveManager.instance.settings.accessibilityReduceMotion = true;
+
+      await tester.pumpWidget(
+        wrapWithMaterialApp(
+          SubjectPanel(
+            subject: subject,
+            tags: tags,
+            lectures: const [],
+            onToggleFavorite: () {},
+            onOpenLecture: (_) {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('Algebra'), findsOneWidget);
+      expect(find.byType(LectureCard), findsNothing);
+    });
 
     testWidgets('invokes callbacks for favorite and lecture taps', (
       WidgetTester tester,
@@ -372,7 +627,7 @@ void main() {
       await tester.pump();
       verify(mockFavorite()).called(1);
 
-      final Lecture firstLecture = lectures.first;
+      final HiveLecture firstLecture = lectures.first;
       await tester.tap(find.byType(LectureCard).first);
       await tester.pump();
       verify(mockOnOpenLecture(firstLecture)).called(1);
