@@ -2,7 +2,9 @@ import 'package:just_audio/just_audio.dart' as ja;
 
 /// 오디오 재생 서비스 (just_audio 사용)
 class AudioService {
-  final ja.AudioPlayer _player = ja.AudioPlayer();
+  AudioService({ja.AudioPlayer? player}) : _player = player ?? ja.AudioPlayer();
+
+  final ja.AudioPlayer _player;
 
   /// 오디오 파일 로드 및 재생 준비
   /// [path]가 'assets/'로 시작하면 asset으로, '/'로 시작하면 파일로 처리

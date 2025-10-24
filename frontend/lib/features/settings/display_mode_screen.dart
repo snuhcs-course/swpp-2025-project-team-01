@@ -19,7 +19,9 @@ import 'package:re_view/data/hive_manager.dart';
 ///
 /// HiveManager를 통해 설정을 저장 및 관리합니다.
 class DisplayModeScreen extends StatefulWidget {
-  const DisplayModeScreen({super.key});
+  const DisplayModeScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
 
   @override
   State<DisplayModeScreen> createState() => _DisplayModeScreenState();
@@ -27,18 +29,20 @@ class DisplayModeScreen extends StatefulWidget {
 
 class _DisplayModeScreenState extends State<DisplayModeScreen> {
   // 현재 선택된 모드 (system | light | dark)
+  late final HiveManager _hive;
   String _mode = 'system';
 
   @override
   void initState() {
     super.initState();
+    _hive = widget.hiveManager ?? HiveManager.instance;
     _loadMode();
   }
 
   /// HiveManager에서 저장된 디스플레이 모드 불러오기
   void _loadMode() {
     setState(() {
-      _mode = HiveManager.instance.settings.theme;
+      _mode = _hive.settings.theme;
     });
   }
 
@@ -48,7 +52,7 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
   ///
   /// [mode]: 'light', 'dark', 또는 'system'
   Future<void> _changeMode(String mode) async {
-    await HiveManager.instance.updateTheme(mode);
+    await _hive.updateTheme(mode);
     setState(() {
       _mode = mode;
     });
@@ -75,33 +79,35 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
       appBar: AppBar(title: Text(l10n.displayMode)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // 디스플레이 모드 선택 라디오 버튼
-            _rowOption(l10n.lightMode, 'light'),
-            _rowOption(l10n.darkMode, 'dark'),
-            _rowOption(l10n.systemSettings, 'system'),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // 디스플레이 모드 선택 라디오 버튼
+              _rowOption(l10n.lightMode, 'light'),
+              _rowOption(l10n.darkMode, 'dark'),
+              _rowOption(l10n.systemSettings, 'system'),
 
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
 
-            // 미니 프리뷰: 각 모드의 시각적 표현
-            Row(
-              children: [
-                _previewBox(dark: false, label: l10n.lightMode),
-                const SizedBox(width: 8),
-                _previewBox(dark: true, label: l10n.darkMode),
-                const SizedBox(width: 8),
-                _previewBox(
-                  dark: _isSystemDarkMode(),
-                  label: l10n.systemSettings,
-                ),
-              ],
-            ),
-          ],
+              // 미니 프리뷰: 각 모드의 시각적 표현
+              Row(
+                children: [
+                  _previewBox(dark: false, label: l10n.lightMode),
+                  const SizedBox(width: 8),
+                  _previewBox(dark: true, label: l10n.darkMode),
+                  const SizedBox(width: 8),
+                  _previewBox(
+                    dark: _isSystemDarkMode(),
+                    label: l10n.systemSettings,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
