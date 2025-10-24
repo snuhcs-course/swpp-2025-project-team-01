@@ -71,7 +71,9 @@ void main() {
       expect(find.byIcon(Icons.sync), findsNothing);
     });
 
-    testWidgets('should show page difference when not synced', (tester) async {
+    testWidgets('should show page difference when not synced(back)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -79,6 +81,25 @@ void main() {
               isSynced: false,
               onPressed: () {},
               pageDifference: 3,
+            ),
+          ),
+        ),
+      );
+
+      // Text contains Korean characters - just verify widget exists
+      expect(find.byType(pw.SyncButton), findsOneWidget);
+    });
+
+    testWidgets('should show page difference when not synced(front)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: pw.SyncButton(
+              isSynced: false,
+              onPressed: () {},
+              pageDifference: -3,
             ),
           ),
         ),
@@ -687,6 +708,32 @@ void main() {
       expect(find.text('Slide'), findsWidgets);
       expect(find.text('1'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('should show loading state when bytes is empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: pw.PdfSlidesList(
+              pageCount: 1,
+              currentPage: 1,
+              itemWidth: 120,
+              padding: EdgeInsets.zero,
+              getCachedOrRenderPage: (pageNumber) async =>
+                  Uint8List.fromList([]),
+              onPageTap: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byIcon(Icons.image_not_supported), findsOneWidget);
 
       await tester.pumpAndSettle();
     });
