@@ -47,6 +47,10 @@ class PlayerController extends ChangeNotifier {
   double totalTime = 0.0;
   AutoScrollController? transcriptScrollController;
 
+  // PDF 뷰와 Transcript의 상태를 유지하기 위한 GlobalKey
+  final GlobalKey pdfViewKey = GlobalKey();
+  final GlobalKey transcriptAreaKey = GlobalKey();
+
   PdfCacheService get pdfCacheService => _pdfCacheService;
   int get pageCount => pdfDocument?.pagesCount ?? 0;
 

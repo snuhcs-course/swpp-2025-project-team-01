@@ -43,6 +43,7 @@ class VerticalPlayerLayout extends StatelessWidget {
 
             Expanded(
               child: TranscriptArea(
+                key: controller.transcriptAreaKey,
                 controller: controller,
               ),
             ),
@@ -127,6 +128,7 @@ class HorizontalPlayerLayout extends StatelessWidget {
                     width: transcriptPanelWidth,
                     color: const Color(0xFFFAFAFA),
                     child: TranscriptArea(
+                      key: controller.transcriptAreaKey,
                       controller: controller,
                     ),
                   ),
@@ -203,6 +205,7 @@ class PdfArea extends StatelessWidget {
               // PDF 내용
               if (controller.pdfController != null)
                 PdfView(
+                  key: controller.pdfViewKey,
                   controller: controller.pdfController!,
                   onPageChanged: controller.onPdfPageChanged,
                 )
