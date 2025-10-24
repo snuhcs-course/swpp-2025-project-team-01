@@ -24,6 +24,7 @@ class JobStatus(str, Enum):
     UPLOADING = "uploading"
     PROCESSING_ASR = "processing_asr"
     PROCESSING_MATCHING = "processing_matching"
+    PROCESSING_TRANSLATION = "processing_translation"
     PROCESSING_TTS = "processing_tts"
     CREATING_OUTPUT = "creating_output"
     COMPLETED = "completed"
@@ -137,6 +138,11 @@ def get_pipeline() -> LecturePipeline:
             context_weight = 0.05,
             context_update_rate = 0.25,
 
+            # Translation settings
+            translation_model = "tencent/Hunyuan-MT-7B",
+            translation_tensor_parallel_size = 1,
+            enable_translation = True,
+
             # TTS settings
             tts_voice = 'af_heart',
             tts_speed = 1.0,
@@ -173,6 +179,7 @@ async def run_pipeline_in_executor(
             status_map = {
                 "processing_asr": JobStatus.PROCESSING_ASR,
                 "processing_matching": JobStatus.PROCESSING_MATCHING,
+                "processing_translation": JobStatus.PROCESSING_TRANSLATION,
                 "processing_tts": JobStatus.PROCESSING_TTS
             }
             status = status_map.get(stage, JobStatus.PROCESSING_ASR)
