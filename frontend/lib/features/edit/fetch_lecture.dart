@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
+import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:re_view/features/edit/lecture_form_screen.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+
+import 'package:re_view/features/edit/lecture_form_screen.dart';
 
 /// Returns a new PDF (bytes) containing pages [start]..[end] (1-based, inclusive).
 Future<void> splitPdfRange(
@@ -204,7 +207,7 @@ Future<String?> downloadResult(
   }
 }
 
-Future<void> unzipResult(
+Future<List<String>?> unzipResult(
   String zipPath,
   String titleText,
   int order, {
@@ -216,6 +219,7 @@ Future<void> unzipResult(
     throw Exception('Zip file not found: $zipPath');
   }
 
+  final resultPaths = <String>['opus', 'json'];
   final bytes = zipFile.readAsBytesSync();
   final archive = ZipDecoder().decodeBytes(bytes);
 
@@ -235,6 +239,12 @@ Future<void> unzipResult(
       File(filePath)
         ..createSync(recursive: true)
         ..writeAsBytesSync(file.content as List<int>);
+
+      if (extension == '.opus') {
+        resultPaths[0] = filePath;
+      } else {
+        resultPaths[1] = filePath;
+      }
     } else {
       // It's a directory — just create it
       await Directory(filePath).create(recursive: true);
@@ -248,6 +258,181 @@ Future<void> unzipResult(
     } catch (_) {
       // Ignore deletion errors
     }
+  }
+
+  // Invalid response
+  if (resultPaths.length != 2) {
+    return null;
+  }
+
+  return resultPaths;
+}
+
+/// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.
+Future<String?> concatenateAudioFiles(
+  List<String> audioPaths,
+  String titleText,
+) async {
+  final audioFileList = audioPaths.map((p) => "file '$p'").join('\n');
+  final documentsDir = await getApplicationDocumentsDirectory();
+  final outputDir = documentsDir.path;
+  final listFile = '$outputDir/tmp_audio_list.txt';
+  final audioOutputPath = '$outputDir/$titleText.opus';
+
+  // Concatenate the audio files
+  try {
+    await File(listFile).writeAsString(audioFileList);
+    await FFmpegKit.execute(
+      '-f concat -safe 0 -i $listFile -c copy $audioOutputPath',
+    );
+    await File(listFile).delete();
+  } catch (_) {
+    return null;
+  }
+
+  return audioOutputPath;
+}
+
+/// Concatenate multiple JSONs into a single continuous JSON.
+Future<String?> concatenateJsonFiles(
+  List<String> jsonPaths,
+  String titleText,
+) async {
+  const gapBetweenFiles = 5000;
+
+  try {
+    if (jsonPaths.length <= 1) {
+      return null;
+    }
+
+    final documentsDir = await getApplicationDocumentsDirectory();
+    final outputDir = documentsDir.path;
+    final jsonOutputPath = '$outputDir/$titleText.json';
+
+    final List<Map<String, dynamic>> mergedTimestamps = [];
+    int runningSentenceId = 1;
+    int timeOffset = 0;
+
+    int totalSentences = 0;
+    int totalDuration = 0;
+
+    // Metadata
+    String? voice;
+    double? speed;
+    String? languageCode;
+    int? sampleRate;
+
+    for (int i = 0; i < jsonPaths.length; i++) {
+      final jsonFile = File(jsonPaths[i]);
+      if (!jsonFile.existsSync()) {
+        throw Exception('Input JSON not found: ${jsonPaths[i]}');
+      }
+
+      final data =
+          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
+
+      // Validate/collect metadata
+      final meta = data['metadata'] as Map<String, dynamic>;
+      final fileTotalSentences = meta['total_sentences'] as int;
+      final fileTotalDuration = meta['total_duration'] as int;
+      final fileVoice = meta['voice'] as String?;
+      final fileSpeed = meta['speed'] as double?;
+      final fileLanguage = meta['language_code'] as String?;
+      final fileSampleRate = meta['sample_rate'] as int?;
+
+      if (i == 0) {
+        voice = fileVoice;
+        speed = fileSpeed;
+        languageCode = fileLanguage;
+        sampleRate = fileSampleRate;
+      } else {
+        // Metadata consistency check
+        if (voice != null && fileVoice != null && voice != fileVoice) {
+          throw Exception(
+            'Metadata mismatch: voice "$fileVoice" != "$voice" in ${jsonPaths[i]}',
+          );
+        }
+        if (speed != null &&
+            fileSpeed != null &&
+            (speed - fileSpeed).abs() > 1e-9) {
+          throw Exception(
+            'Metadata mismatch: speed $fileSpeed != $speed in ${jsonPaths[i]}',
+          );
+        }
+        if (languageCode != null &&
+            fileLanguage != null &&
+            languageCode != fileLanguage) {
+          throw Exception(
+            'Metadata mismatch: language_code "$fileLanguage" != "$languageCode" in ${jsonPaths[i]}',
+          );
+        }
+        if (sampleRate != null &&
+            fileSampleRate != null &&
+            sampleRate != fileSampleRate) {
+          throw Exception(
+            'Metadata mismatch: sample_rate $fileSampleRate != $sampleRate in ${jsonPaths[i]}',
+          );
+        }
+      }
+
+      final tsList = (data['timestamps'] as List).cast<Map<String, dynamic>>();
+      if (tsList.isEmpty) {
+        continue;
+      }
+
+      // Update totals
+      totalSentences += fileTotalSentences;
+      totalDuration += fileTotalDuration;
+
+      // Determine how much time to offset this file by: append after current last end
+      final currentTimelineEnd = mergedTimestamps.isEmpty
+          ? 0
+          : mergedTimestamps.last['end_time'] as int;
+      timeOffset = i == 0 ? 0 : currentTimelineEnd + gapBetweenFiles;
+
+      // Integrate timestamps with renumbering and offsets
+      for (final ts in tsList) {
+        final text = ts['text'] as String? ?? '';
+        final slideNumber = (ts['slide_number'] as num?)?.toInt() ?? 0;
+        final startTime = (ts['start_time'] as num?)?.toInt() ?? 0;
+        final endTime = (ts['end_time'] as num?)?.toInt() ?? startTime;
+        final duration =
+            (ts['duration'] as num?)?.toInt() ?? (endTime - startTime);
+
+        mergedTimestamps.add({
+          'sentence_id': runningSentenceId++,
+          'text': text,
+          'slide_number': slideNumber,
+          'start_time': startTime + timeOffset,
+          'end_time': endTime + timeOffset,
+          'duration': duration,
+        });
+      }
+    }
+
+    totalDuration += (jsonPaths.length - 1) * gapBetweenFiles;
+
+    final output = <String, dynamic>{
+      'metadata': {
+        'total_sentences': totalSentences,
+        'total_duration': totalDuration,
+        'voice': voice,
+        'speed': speed,
+        'language_code': languageCode,
+        'sample_rate': sampleRate,
+      },
+      'timestamps': mergedTimestamps,
+    };
+
+    // Write final JSON
+    final encoder = const JsonEncoder.withIndent('  ');
+    final outFile = File(jsonOutputPath);
+    await outFile.create(recursive: true);
+    await outFile.writeAsString(encoder.convert(output));
+
+    return jsonOutputPath;
+  } catch (e) {
+    return null;
   }
 }
 
