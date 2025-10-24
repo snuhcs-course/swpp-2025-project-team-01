@@ -13,13 +13,41 @@ import 'package:re_view/data/hive_models.dart';
 // ------------------------------------------------------------------
 
 /// AppSettings를 흉내내는 가짜 클래스
-class FakeAppSettings extends AppSettings {
+class FakeAppSettings implements AppSettings {
+  FakeAppSettings({
+    this.language = 'ko',
+    this.theme = 'system',
+    this.accessibilityHighContrast = false,
+    this.accessibilityReduceMotion = false,
+    this.accessibilityEmphasizeCaptions = false,
+    this.ttsGender = '남성',
+    this.ttsSpeed = '보통',
+    this.tagColorTheme = '파스텔',
+  });
+
   @override
-  bool accessibilityHighContrast = false;
+  String theme;
+
   @override
-  bool accessibilityReduceMotion = false;
+  String language;
+
   @override
-  bool accessibilityEmphasizeCaptions = false;
+  bool accessibilityHighContrast;
+
+  @override
+  bool accessibilityReduceMotion;
+
+  @override
+  bool accessibilityEmphasizeCaptions;
+
+  @override
+  String ttsGender;
+
+  @override
+  String ttsSpeed;
+
+  @override
+  String tagColorTheme;
 }
 
 /// HiveManager를 흉내내는 가짜 클래스
