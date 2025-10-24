@@ -401,6 +401,7 @@ Future<String?> concatenateJsonFiles(
       // Integrate timestamps with renumbering and offsets
       for (final ts in tsList) {
         final text = ts['text'] as String? ?? '';
+        final textKor = ts['text_kor'] as String? ?? '';
         final slideNumber = (ts['slide_number'] as num?)?.toInt() ?? 0;
         final startTime = (ts['start_time'] as num?)?.toInt() ?? 0;
         final endTime = (ts['end_time'] as num?)?.toInt() ?? startTime;
@@ -410,6 +411,7 @@ Future<String?> concatenateJsonFiles(
         mergedTimestamps.add({
           'sentence_id': runningSentenceId++,
           'text': text,
+          'text_kor': textKor,
           'slide_number': slideNumber,
           'start_time': startTime + timeOffset,
           'end_time': endTime + timeOffset,
