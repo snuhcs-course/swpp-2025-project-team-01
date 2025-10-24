@@ -406,7 +406,11 @@ void main() {
     });
 
     test('returns null if only one file', () async {
-      final result = await concatenateJsonFiles([tmp1], outputTitle);
+      final result = await concatenateJsonFiles(
+        [tmp1],
+        outputTitle,
+        dirOverride: tempDir,
+      );
       expect(result, isNull);
     });
 
@@ -414,7 +418,7 @@ void main() {
       final result = await concatenateJsonFiles(
         [tmp1, tmp2],
         outputTitle,
-        documentsDirOverride: tempDir,
+        dirOverride: tempDir,
       );
       expect(result, isNotNull);
 
@@ -437,7 +441,7 @@ void main() {
     });
 
     test('throws error when metadata mismatch', () async {
-      final bad = {
+      final badVoice = {
         'metadata': {
           'total_sentences': 1,
           'total_duration': 1000,
@@ -458,21 +462,122 @@ void main() {
           },
         ],
       };
-      final tmpBad = '${tempDir.path}/bad.json';
-      await File(tmpBad).writeAsString(jsonEncode(bad));
+      final tmpBadVoice = '${tempDir.path}/badvoice.json';
+      await File(tmpBadVoice).writeAsString(jsonEncode(badVoice));
+
+      final badSpeed = {
+        'metadata': {
+          'total_sentences': 1,
+          'total_duration': 1000,
+          'voice': 'af_heart',
+          'speed': 1.5,
+          'language_code': 'a',
+          'sample_rate': 24000,
+        },
+        'timestamps': [
+          {
+            'sentence_id': 1,
+            'text': 'Different speed',
+            'text_kor': '다른 속도',
+            'slide_number': 1,
+            'start_time': 0,
+            'end_time': 1000,
+            'duration': 1000,
+          },
+        ],
+      };
+      final tmpBadSpeed = '${tempDir.path}/badspeed.json';
+      await File(tmpBadSpeed).writeAsString(jsonEncode(badSpeed));
+
+      final badLanguage = {
+        'metadata': {
+          'total_sentences': 1,
+          'total_duration': 1000,
+          'voice': 'af_heart',
+          'speed': 1.0,
+          'language_code': 'b',
+          'sample_rate': 24000,
+        },
+        'timestamps': [
+          {
+            'sentence_id': 1,
+            'text': 'Different language',
+            'text_kor': '다른 언어',
+            'slide_number': 1,
+            'start_time': 0,
+            'end_time': 1000,
+            'duration': 1000,
+          },
+        ],
+      };
+      final tmpBadLanguage = '${tempDir.path}/badlanguage.json';
+      await File(tmpBadLanguage).writeAsString(jsonEncode(badLanguage));
+
+      final badSampleRate = {
+        'metadata': {
+          'total_sentences': 1,
+          'total_duration': 1000,
+          'voice': 'af_heart',
+          'speed': 1.0,
+          'language_code': 'a',
+          'sample_rate': 12000,
+        },
+        'timestamps': [
+          {
+            'sentence_id': 1,
+            'text': 'Different sample rate',
+            'text_kor': '다른 샘플링 속도',
+            'slide_number': 1,
+            'start_time': 0,
+            'end_time': 1000,
+            'duration': 1000,
+          },
+        ],
+      };
+      final tmpBadSampleRate = '${tempDir.path}/badsamplerate.json';
+      await File(tmpBadSampleRate).writeAsString(jsonEncode(badSampleRate));
 
       await expectLater(
-        () async => concatenateJsonFiles([tmp1, tmpBad], outputTitle),
+        () async => concatenateJsonFiles(
+          [tmp1, tmpBadVoice],
+          outputTitle,
+          dirOverride: tempDir,
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        () async => concatenateJsonFiles(
+          [tmp1, tmpBadSpeed],
+          outputTitle,
+          dirOverride: tempDir,
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        () async => concatenateJsonFiles(
+          [tmp1, tmpBadLanguage],
+          outputTitle,
+          dirOverride: tempDir,
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        () async => concatenateJsonFiles(
+          [tmp1, tmpBadSampleRate],
+          outputTitle,
+          dirOverride: tempDir,
+        ),
         throwsA(anything),
       );
     });
 
     test('throws when input file missing', () async {
       await expectLater(
-        () async => concatenateJsonFiles([
-          tmp1,
-          '${tempDir.path}/noexist.json',
-        ], outputTitle),
+        () async => concatenateJsonFiles(
+          [tmp1, '${tempDir.path}/noexist.json'],
+          outputTitle,
+          dirOverride: tempDir,
+        ),
         throwsA(anything),
       );
     });

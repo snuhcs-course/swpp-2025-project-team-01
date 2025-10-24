@@ -306,7 +306,7 @@ Future<String?> concatenateAudioFiles(
 Future<String?> concatenateJsonFiles(
   List<String> jsonPaths,
   String titleText, {
-  Directory? documentsDirOverride, // for testing
+  Directory? dirOverride, // for testing
 }) async {
   const gapBetweenFiles = 5000;
 
@@ -316,7 +316,7 @@ Future<String?> concatenateJsonFiles(
     }
 
     final documentsDir =
-        documentsDirOverride ?? await getApplicationDocumentsDirectory();
+        dirOverride ?? await getApplicationDocumentsDirectory();
     final outputDir = documentsDir.path;
     final jsonOutputPath = '$outputDir/$titleText.json';
 
