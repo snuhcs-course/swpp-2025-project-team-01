@@ -315,7 +315,8 @@ Future<String?> concatenateJsonFiles(
       return null;
     }
 
-    final documentsDir = documentsDirOverride ?? await getApplicationDocumentsDirectory();
+    final documentsDir =
+        documentsDirOverride ?? await getApplicationDocumentsDirectory();
     final outputDir = documentsDir.path;
     final jsonOutputPath = '$outputDir/$titleText.json';
 

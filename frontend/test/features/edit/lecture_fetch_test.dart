@@ -21,7 +21,7 @@ class FakeStreamingClient extends http.BaseClient {
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   group('Split PDF', () {
     test('Success', () async {
       final inputFilePath =
@@ -39,7 +39,7 @@ void main() {
       final generatedPages = splittedPdf.pages.count;
       final pageSize = splittedPdf.pages[0].size;
       await File(outputPath).delete();
-      
+
       expect(generatedPages, 3);
       expect(pageSize, originalSize);
     });
@@ -82,9 +82,7 @@ void main() {
       final slide = await tempFile('slides.pdf', [1, 2, 3]);
       final audio = await tempFile('audio.m4a', [4, 5, 6]);
 
-      final audioEntry = AudioFileEntry.fromPath(
-        audio.path,
-      );
+      final audioEntry = AudioFileEntry.fromPath(audio.path);
 
       final progressEvents = <Map<String, dynamic>>[];
 
@@ -117,12 +115,12 @@ void main() {
 
     test('Fail on endpoint', () async {
       // Minimal fake inputs
-      final slide = File('assets/lectures/lec_demo_002/lec_demo_002_slides.pdf');
+      final slide = File(
+        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+      );
       final audio = await tempFile('audio.m4a', [4, 5, 6]);
 
-      final audioEntry = AudioFileEntry.fromPath(
-        audio.path,
-      );
+      final audioEntry = AudioFileEntry.fromPath(audio.path);
       audioEntry.startPageController.text = '1';
       audioEntry.endPageController.text = '5';
 
@@ -133,28 +131,38 @@ void main() {
       }
 
       // Act: call with injected client + endpointOverride so we don’t depend on host/port
-      await expectLater(() async => requestLecture(
-        slide.path,
-        audioEntry,
-        'My Lecture',
-        0,
-        true,
-        '127.0.0.1',
-        '8080',
-        onProgress,
-        endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
-      ), throwsA(anything));
-      await expectLater(() async => requestLecture(
-        slide.path,
-        audioEntry,
-        'My Lecture',
-        0,
-        false,
-        '127.0.0.1',
-        '8080',
-        onProgress,
-        endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
-      ), throwsA(anything));
+      await expectLater(
+        () async => requestLecture(
+          slide.path,
+          audioEntry,
+          'My Lecture',
+          0,
+          true,
+          '127.0.0.1',
+          '8080',
+          onProgress,
+          endpointOverride: Uri.parse(
+            'http://local.test/api/synchronize/stream',
+          ),
+        ),
+        throwsA(anything),
+      );
+      await expectLater(
+        () async => requestLecture(
+          slide.path,
+          audioEntry,
+          'My Lecture',
+          0,
+          false,
+          '127.0.0.1',
+          '8080',
+          onProgress,
+          endpointOverride: Uri.parse(
+            'http://local.test/api/synchronize/stream',
+          ),
+        ),
+        throwsA(anything),
+      );
     });
   });
 
@@ -293,17 +301,29 @@ void main() {
     });
 
     test('returns null if FFmpeg fails', () async {
-      final result = await concatenateAudioFiles([audio1, 'missing.opus'], title, dirOverride: tempDir);
+      final result = await concatenateAudioFiles(
+        [audio1, 'missing.opus'],
+        title,
+        dirOverride: tempDir,
+      );
       expect(result, isNull);
     });
 
     test('returns non-null path when valid inputs exist', () async {
-      final result = await concatenateAudioFiles([audio1, audio2], title, dirOverride: tempDir);
+      final result = await concatenateAudioFiles(
+        [audio1, audio2],
+        title,
+        dirOverride: tempDir,
+      );
       expect(result, anyOf(isNull, isA<String>()));
     });
 
     test('handles empty input list gracefully', () async {
-      final result = await concatenateAudioFiles([], title, dirOverride: tempDir);
+      final result = await concatenateAudioFiles(
+        [],
+        title,
+        dirOverride: tempDir,
+      );
       expect(result, anyOf(isNull, isA<String>()));
     });
   });
@@ -326,7 +346,7 @@ void main() {
           'voice': 'af_heart',
           'speed': 1.0,
           'language_code': 'a',
-          'sample_rate': 24000
+          'sample_rate': 24000,
         },
         'timestamps': [
           {
@@ -336,7 +356,7 @@ void main() {
             'slide_number': 1,
             'start_time': 0,
             'end_time': 2000,
-            'duration': 2000
+            'duration': 2000,
           },
           {
             'sentence_id': 2,
@@ -345,9 +365,9 @@ void main() {
             'slide_number': 1,
             'start_time': 2000,
             'end_time': 4000,
-            'duration': 2000
-          }
-        ]
+            'duration': 2000,
+          },
+        ],
       };
 
       final json2 = {
@@ -357,7 +377,7 @@ void main() {
           'voice': 'af_heart',
           'speed': 1.0,
           'language_code': 'a',
-          'sample_rate': 24000
+          'sample_rate': 24000,
         },
         'timestamps': [
           {
@@ -367,9 +387,9 @@ void main() {
             'slide_number': 2,
             'start_time': 0,
             'end_time': 3000,
-            'duration': 3000
-          }
-        ]
+            'duration': 3000,
+          },
+        ],
       };
 
       tmp1 = '${tempDir.path}/file1.json';
@@ -391,10 +411,16 @@ void main() {
     });
 
     test('merges JSON files correctly', () async {
-      final result = await concatenateJsonFiles([tmp1, tmp2], outputTitle, documentsDirOverride: tempDir);
+      final result = await concatenateJsonFiles(
+        [tmp1, tmp2],
+        outputTitle,
+        documentsDirOverride: tempDir,
+      );
       expect(result, isNotNull);
 
-      final merged = jsonDecode(await File(result!).readAsString()) as Map<String, dynamic>;
+      final merged =
+          jsonDecode(await File(result!).readAsString())
+              as Map<String, dynamic>;
       final metadata = merged['metadata'] as Map<String, dynamic>;
       final timestamps = merged['timestamps'] as List;
 
@@ -404,7 +430,10 @@ void main() {
 
       expect((timestamps.first as Map<String, dynamic>)['sentence_id'], 1);
       expect((timestamps.last as Map<String, dynamic>)['sentence_id'], 3);
-      expect((timestamps.last as Map<String, dynamic>)['text'], contains('Goodbye'));
+      expect(
+        (timestamps.last as Map<String, dynamic>)['text'],
+        contains('Goodbye'),
+      );
     });
 
     test('throws error when metadata mismatch', () async {
@@ -415,7 +444,7 @@ void main() {
           'voice': 'different_voice',
           'speed': 1.0,
           'language_code': 'a',
-          'sample_rate': 24000
+          'sample_rate': 24000,
         },
         'timestamps': [
           {
@@ -425,9 +454,9 @@ void main() {
             'slide_number': 1,
             'start_time': 0,
             'end_time': 1000,
-            'duration': 1000
-          }
-        ]
+            'duration': 1000,
+          },
+        ],
       };
       final tmpBad = '${tempDir.path}/bad.json';
       await File(tmpBad).writeAsString(jsonEncode(bad));
@@ -440,10 +469,10 @@ void main() {
 
     test('throws when input file missing', () async {
       await expectLater(
-        () async => concatenateJsonFiles(
-          [tmp1, '${tempDir.path}/noexist.json'],
-          outputTitle,
-        ),
+        () async => concatenateJsonFiles([
+          tmp1,
+          '${tempDir.path}/noexist.json',
+        ], outputTitle),
         throwsA(anything),
       );
     });
