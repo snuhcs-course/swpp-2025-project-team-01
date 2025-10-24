@@ -19,9 +19,9 @@ class PlayerScreen extends StatefulWidget {
     AudioService? audioService,
     PdfCacheService? pdfCacheService,
     HiveManager? hiveManager,
-  })  : _audioService = audioService,
-        _pdfCacheService = pdfCacheService,
-        _hiveManager = hiveManager;
+  }) : _audioService = audioService,
+       _pdfCacheService = pdfCacheService,
+       _hiveManager = hiveManager;
 
   final Object? args;
   final AudioService? _audioService;

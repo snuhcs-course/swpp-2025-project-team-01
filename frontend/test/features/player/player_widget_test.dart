@@ -71,7 +71,9 @@ void main() {
       expect(find.byIcon(Icons.sync), findsNothing);
     });
 
-    testWidgets('should show page difference when not synced(back)', (tester) async {
+    testWidgets('should show page difference when not synced(back)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -88,7 +90,9 @@ void main() {
       expect(find.byType(pw.SyncButton), findsOneWidget);
     });
 
-    testWidgets('should show page difference when not synced(front)', (tester) async {
+    testWidgets('should show page difference when not synced(front)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -708,7 +712,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('should show loading state when bytes is empty', (tester) async {
+    testWidgets('should show loading state when bytes is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -718,7 +724,7 @@ void main() {
               itemWidth: 120,
               padding: EdgeInsets.zero,
               getCachedOrRenderPage: (pageNumber) async =>
-                Uint8List.fromList([]),
+                  Uint8List.fromList([]),
               onPageTap: (_) {},
             ),
           ),

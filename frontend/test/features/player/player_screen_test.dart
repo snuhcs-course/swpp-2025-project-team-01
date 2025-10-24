@@ -12,12 +12,7 @@ import 'package:re_view/data/hive_models.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:just_audio/just_audio.dart';
 
-@GenerateMocks([
-  AudioService,
-  PdfCacheService,
-  PdfDocument,
-  HiveManager,
-])
+@GenerateMocks([AudioService, PdfCacheService, PdfDocument, HiveManager])
 import 'player_screen_test.mocks.dart';
 
 void main() {
@@ -52,10 +47,12 @@ void main() {
       positionController = StreamController<Duration>.broadcast();
       stateController = StreamController<PlayerState>.broadcast();
 
-      when(mockAudioService.positionStream)
-          .thenAnswer((_) => positionController.stream);
-      when(mockAudioService.stateStream)
-          .thenAnswer((_) => stateController.stream);
+      when(
+        mockAudioService.positionStream,
+      ).thenAnswer((_) => positionController.stream);
+      when(
+        mockAudioService.stateStream,
+      ).thenAnswer((_) => stateController.stream);
       when(mockAudioService.loadAudio(any)).thenAnswer((_) async {});
       when(mockAudioService.play()).thenAnswer((_) async {});
       when(mockAudioService.pause()).thenAnswer((_) async {});
@@ -64,8 +61,9 @@ void main() {
 
       when(mockPdfCacheService.setPdfDocument(any)).thenReturn(null);
       when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
-      when(mockPdfCacheService.getCachedOrRenderPage(any))
-          .thenAnswer((_) async => Uint8List(0));
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
 
       when(mockHiveManager.getLecture(any)).thenReturn(createMockHiveLecture());
     });
@@ -92,8 +90,9 @@ void main() {
       expect(find.byType(PlayerScreen), findsOneWidget);
     });
 
-    testWidgets('should call dispose on audioService when disposed',
-        (tester) async {
+    testWidgets('should call dispose on audioService when disposed', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayerScreen(
@@ -145,10 +144,12 @@ void main() {
       positionController = StreamController<Duration>.broadcast();
       stateController = StreamController<PlayerState>.broadcast();
 
-      when(mockAudioService.positionStream)
-          .thenAnswer((_) => positionController.stream);
-      when(mockAudioService.stateStream)
-          .thenAnswer((_) => stateController.stream);
+      when(
+        mockAudioService.positionStream,
+      ).thenAnswer((_) => positionController.stream);
+      when(
+        mockAudioService.stateStream,
+      ).thenAnswer((_) => stateController.stream);
       when(mockAudioService.loadAudio(any)).thenAnswer((_) async {});
       when(mockAudioService.play()).thenAnswer((_) async {});
       when(mockAudioService.pause()).thenAnswer((_) async {});
@@ -157,8 +158,9 @@ void main() {
 
       when(mockPdfCacheService.setPdfDocument(any)).thenReturn(null);
       when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
-      when(mockPdfCacheService.getCachedOrRenderPage(any))
-          .thenAnswer((_) async => Uint8List(0));
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
 
       when(mockHiveManager.getLecture(any)).thenReturn(createMockHiveLecture());
     });
@@ -168,8 +170,9 @@ void main() {
       stateController.close();
     });
 
-    testWidgets('should update currentTime when position changes',
-        (tester) async {
+    testWidgets('should update currentTime when position changes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayerScreen(
@@ -189,8 +192,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('should call updateCurrentSentence on position update',
-        (tester) async {
+    testWidgets('should call updateCurrentSentence on position update', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayerScreen(
@@ -210,8 +214,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('should not crash when position stream emits after unmount',
-        (tester) async {
+    testWidgets('should not crash when position stream emits after unmount', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayerScreen(
@@ -248,10 +253,12 @@ void main() {
       positionController = StreamController<Duration>.broadcast();
       stateController = StreamController<PlayerState>.broadcast();
 
-      when(mockAudioService.positionStream)
-          .thenAnswer((_) => positionController.stream);
-      when(mockAudioService.stateStream)
-          .thenAnswer((_) => stateController.stream);
+      when(
+        mockAudioService.positionStream,
+      ).thenAnswer((_) => positionController.stream);
+      when(
+        mockAudioService.stateStream,
+      ).thenAnswer((_) => stateController.stream);
       when(mockAudioService.loadAudio(any)).thenAnswer((_) async {});
       when(mockAudioService.play()).thenAnswer((_) async {});
       when(mockAudioService.pause()).thenAnswer((_) async {});
@@ -260,8 +267,9 @@ void main() {
 
       when(mockPdfCacheService.setPdfDocument(any)).thenReturn(null);
       when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
-      when(mockPdfCacheService.getCachedOrRenderPage(any))
-          .thenAnswer((_) async => Uint8List(0));
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
 
       when(mockHiveManager.getLecture(any)).thenReturn(createMockHiveLecture());
     });
@@ -271,8 +279,7 @@ void main() {
       stateController.close();
     });
 
-    testWidgets('should update isPlaying to true when playing',
-        (tester) async {
+    testWidgets('should update isPlaying to true when playing', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayerScreen(
@@ -292,8 +299,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('should update isPlaying to false when paused',
-        (tester) async {
+    testWidgets('should update isPlaying to false when paused', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayerScreen(
@@ -313,8 +319,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('should not crash when state stream emits after unmount',
-        (tester) async {
+    testWidgets('should not crash when state stream emits after unmount', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: PlayerScreen(
@@ -351,10 +358,12 @@ void main() {
       positionController = StreamController<Duration>.broadcast();
       stateController = StreamController<PlayerState>.broadcast();
 
-      when(mockAudioService.positionStream)
-          .thenAnswer((_) => positionController.stream);
-      when(mockAudioService.stateStream)
-          .thenAnswer((_) => stateController.stream);
+      when(
+        mockAudioService.positionStream,
+      ).thenAnswer((_) => positionController.stream);
+      when(
+        mockAudioService.stateStream,
+      ).thenAnswer((_) => stateController.stream);
       when(mockAudioService.loadAudio(any)).thenAnswer((_) async {});
       when(mockAudioService.play()).thenAnswer((_) async {});
       when(mockAudioService.pause()).thenAnswer((_) async {});
@@ -363,8 +372,9 @@ void main() {
 
       when(mockPdfCacheService.setPdfDocument(any)).thenReturn(null);
       when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
-      when(mockPdfCacheService.getCachedOrRenderPage(any))
-          .thenAnswer((_) async => Uint8List(0));
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
     });
 
     tearDown(() {
@@ -428,22 +438,27 @@ void main() {
       const lectureId = 'test-lecture';
       final defaultPath = 'assets/lectures/$lectureId/${lectureId}_slides.pdf';
       expect(
-          defaultPath, equals('assets/lectures/test-lecture/test-lecture_slides.pdf'));
+        defaultPath,
+        equals('assets/lectures/test-lecture/test-lecture_slides.pdf'),
+      );
     });
 
     test('should build default audio path correctly', () {
       const lectureId = 'test-lecture';
-      final defaultPath =
-          'assets/lectures/$lectureId/lecture_with_slides.opus';
-      expect(defaultPath,
-          equals('assets/lectures/test-lecture/lecture_with_slides.opus'));
+      final defaultPath = 'assets/lectures/$lectureId/lecture_with_slides.opus';
+      expect(
+        defaultPath,
+        equals('assets/lectures/test-lecture/lecture_with_slides.opus'),
+      );
     });
 
     test('should build default transcript path correctly', () {
       const lectureId = 'test-lecture';
       final defaultPath = 'assets/lectures/$lectureId/transcript.json';
       expect(
-          defaultPath, equals('assets/lectures/test-lecture/transcript.json'));
+        defaultPath,
+        equals('assets/lectures/test-lecture/transcript.json'),
+      );
     });
   });
 }
