@@ -94,9 +94,8 @@ class TranslationProcessor:
             Chat messages in list format
         """
         # Hunyuan-MT-7B uses chat message format
-        # Note: No system prompt is used (as recommended in example_usage.py)
         messages = [
-            {"role": "user", "content": f"Translate the following English text to Korean, without additional explanation.\n\n{text}"}
+            {"role": "user", "content": f"Translate the following segment into Korean, without additional explanation.\n\n{text}"}
         ]
         return messages
 
@@ -136,13 +135,14 @@ class TranslationProcessor:
         # Build chat prompts for all texts
         chat_prompts = [self._build_translation_prompt(text) for text in texts]
 
-        # Set up sampling parameters (using recommended parameters from example_usage.py)
+        # Set up sampling parameters (using recommended parameters)
         sampling_params = SamplingParams(
             temperature = temperature,
             top_p = top_p,
             top_k = top_k,
             repetition_penalty = repetition_penalty,
             max_tokens = max_tokens,
+            stop_token_ids = [127960]
         )
 
         if progress_callback:
