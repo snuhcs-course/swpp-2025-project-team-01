@@ -86,6 +86,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
+    - assets/images/loading_background.png
+    - assets/images/loading_complete.png
+    - assets/images/loading_character.png
     - assets/lectures/lec_demo_001/
     - assets/lectures/lec_demo_002/
     - assets/lectures/lec_demo_003/
