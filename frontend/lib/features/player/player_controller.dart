@@ -13,8 +13,8 @@ class PlayerController extends ChangeNotifier {
   PlayerController({
     required AudioService audioService,
     required PdfCacheService pdfCacheService,
-  })  : _audioService = audioService,
-        _pdfCacheService = pdfCacheService;
+  }) : _audioService = audioService,
+       _pdfCacheService = pdfCacheService;
 
   final AudioService _audioService;
   final PdfCacheService _pdfCacheService;
@@ -67,7 +67,7 @@ class PlayerController extends ChangeNotifier {
   /// 페이지 차이 (syncedPage - currentPage)
   int? get pageDifference {
     final syncedPage = syncedPageNumber;
-    if (syncedPage == null) { 
+    if (syncedPage == null) {
       return null;
     }
     return syncedPage - currentPage.value;
@@ -104,8 +104,7 @@ class PlayerController extends ChangeNotifier {
     // Transcript 스크롤 컨트롤러 초기화
     final screenHeight = MediaQuery.of(context).size.height;
     transcriptScrollController = AutoScrollController(
-      viewportBoundaryGetter: () =>
-          Rect.fromLTRB(0, 0, 0, screenHeight / 2),
+      viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, screenHeight / 2),
       axis: Axis.vertical,
     );
 
@@ -239,7 +238,9 @@ class PlayerController extends ChangeNotifier {
     _scrollTimer?.cancel();
 
     try {
-      await _audioService.seek(Duration(milliseconds: (seconds * 1000).toInt()));
+      await _audioService.seek(
+        Duration(milliseconds: (seconds * 1000).toInt()),
+      );
     } catch (e) {
       // seek 작업 실패 시 무시
       _isSeeking = false;
@@ -405,18 +406,12 @@ class PlayerController extends ChangeNotifier {
       if (sentence.slideNumber == slideNumber) {
         _isForcedMove = true;
 
-        await _audioService.seek(
-          Duration(milliseconds: sentence.startTime),
-        );
+        await _audioService.seek(Duration(milliseconds: sentence.startTime));
 
         _scrollTimer?.cancel();
         isAutoScrolling.value = true;
 
-        _setCurrentSentenceAndPage(
-          i,
-          forcePageUpdate: true,
-          autoScroll: true,
-        );
+        _setCurrentSentenceAndPage(i, forcePageUpdate: true, autoScroll: true);
 
         // 강제 이동 완료
         Future.delayed(const Duration(milliseconds: 500), () {

@@ -17,9 +17,9 @@ class PlayerScreen extends StatefulWidget {
     AudioService? audioService,
     PdfCacheService? pdfCacheService,
     HiveManager? hiveManager,
-  })  : _audioService = audioService,
-        _pdfCacheService = pdfCacheService,
-        _hiveManager = hiveManager;
+  }) : _audioService = audioService,
+       _pdfCacheService = pdfCacheService,
+       _hiveManager = hiveManager;
 
   final Object? args;
   final AudioService? _audioService;
@@ -126,10 +126,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
 
       // 5. PDF 및 오디오 경로 설정
-      final pdfPath = hiveLecture.slidePath ??
+      final pdfPath =
+          hiveLecture.slidePath ??
           'assets/lectures/$lectureId/${lectureId}_slides.pdf';
 
-      final audioPath = hiveLecture.audioPaths?.isNotEmpty == true &&
+      final audioPath =
+          hiveLecture.audioPaths?.isNotEmpty == true &&
               hiveLecture.audioPaths!.first != null
           ? hiveLecture.audioPaths!.first!
           : 'assets/lectures/$lectureId/lecture_with_slides.opus';

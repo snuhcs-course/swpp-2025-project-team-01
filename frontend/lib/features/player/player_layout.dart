@@ -24,11 +24,7 @@ class VerticalPlayerLayout extends StatelessWidget {
       builder: (context, isPagesExpanded, _) {
         return Column(
           children: [
-            PdfArea(
-              isVertical: true,
-              controller: controller,
-              onBack: onBack,
-            ),
+            PdfArea(isVertical: true, controller: controller, onBack: onBack),
 
             VerticalToggleBar(
               isPagesExpanded: isPagesExpanded,
@@ -36,10 +32,7 @@ class VerticalPlayerLayout extends StatelessWidget {
             ),
 
             if (isPagesExpanded)
-              PagesListWidget(
-                isVertical: true,
-                controller: controller,
-              ),
+              PagesListWidget(isVertical: true, controller: controller),
 
             Expanded(
               child: TranscriptArea(
@@ -236,8 +229,7 @@ class PdfArea extends StatelessWidget {
                   return ValueListenableBuilder<bool>(
                     valueListenable: controller.isPagesExpanded,
                     builder: (context, isPagesExpanded, _) {
-                      if (!showControls ||
-                          (isPagesExpanded && !isVertical)) {
+                      if (!showControls || (isPagesExpanded && !isVertical)) {
                         return const SizedBox.shrink();
                       }
                       return VideoControlsOverlay(
@@ -256,7 +248,11 @@ class PdfArea extends StatelessWidget {
         if (isVertical) {
           final screenWidth = MediaQuery.of(context).size.width;
           final pdfHeight = screenWidth * 9 / 16;
-          return SizedBox(width: screenWidth, height: pdfHeight, child: content);
+          return SizedBox(
+            width: screenWidth,
+            height: pdfHeight,
+            child: content,
+          );
         } else {
           return content;
         }
@@ -448,7 +444,8 @@ class PagesListWidget extends StatelessWidget {
           padding: isVertical
               ? const EdgeInsets.symmetric(horizontal: 12, vertical: 16)
               : const EdgeInsets.fromLTRB(12, 8, 12, 24),
-          getCachedOrRenderPage: controller.pdfCacheService.getCachedOrRenderPage,
+          getCachedOrRenderPage:
+              controller.pdfCacheService.getCachedOrRenderPage,
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
           onPageTap: (pageNumber) {
             controller.jumpToPage(pageNumber);
@@ -478,10 +475,7 @@ class PagesListWidget extends StatelessWidget {
 // ========== Transcript Area ==========
 
 class TranscriptArea extends StatelessWidget {
-  const TranscriptArea({
-    super.key,
-    required this.controller,
-  });
+  const TranscriptArea({super.key, required this.controller});
 
   final PlayerController controller;
 
@@ -519,7 +513,8 @@ class TranscriptArea extends StatelessWidget {
                   controller: controller.transcriptScrollController,
                   itemCount: controller.transcriptData!.timestamps.length,
                   itemBuilder: (context, index) {
-                    final sentence = controller.transcriptData!.timestamps[index];
+                    final sentence =
+                        controller.transcriptData!.timestamps[index];
                     final isCurrentSentence = currentSentenceIndex == index;
 
                     return AutoScrollTag(
@@ -560,10 +555,7 @@ class TranscriptArea extends StatelessWidget {
 // ========== Caption Overlay ==========
 
 class CaptionOverlay extends StatelessWidget {
-  const CaptionOverlay({
-    super.key,
-    required this.controller,
-  });
+  const CaptionOverlay({super.key, required this.controller});
 
   final PlayerController controller;
 
@@ -590,7 +582,10 @@ class CaptionOverlay extends StatelessWidget {
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.8,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(4),
