@@ -485,11 +485,7 @@ class _CompletedView extends StatelessWidget {
                       onTap: LectureLoadingService.instance.hideLoading,
                       child: const Padding(
                         padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
-                        child: Icon(
-                          Icons.close,
-                          color: Colors.grey,
-                          size: 22,
-                        ),
+                        child: Icon(Icons.close, color: Colors.grey, size: 22),
                       ),
                     ),
                   ],

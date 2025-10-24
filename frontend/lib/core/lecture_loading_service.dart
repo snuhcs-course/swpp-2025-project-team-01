@@ -1,9 +1,12 @@
 // 렉처 생성 로딩 상태를 전역으로 관리하는 서비스
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
-  LectureLoadingService._();
+  LectureLoadingService._() {
+    _restoreState();
+  }
   static final LectureLoadingService instance = LectureLoadingService._();
 
   bool _isLoading = false;
@@ -51,6 +54,7 @@ class LectureLoadingService extends ChangeNotifier {
     _isCollapsed = false;
     _bubbleOnRight = true;
     notifyListeners();
+    _saveState();
   }
 
   /// 진행도 업데이트
@@ -62,6 +66,7 @@ class LectureLoadingService extends ChangeNotifier {
     _progress = progress.clamp(0.0, 1.0);
     _message = message;
     notifyListeners();
+    _saveState();
   }
 
   /// 로딩 완료 (완료 화면을 잠시 표시하기 위해 isLoading은 유지)
@@ -73,6 +78,7 @@ class LectureLoadingService extends ChangeNotifier {
     _progress = 1.0;
     _message = 'Completed!';
     notifyListeners();
+    _saveState();
   }
 
   /// 로딩 숨김 (즉시)
@@ -86,6 +92,7 @@ class LectureLoadingService extends ChangeNotifier {
     _isCollapsed = false;
     _bubbleOnRight = true;
     notifyListeners();
+    _clearState();
   }
 
   /// 에러 발생 시
@@ -118,6 +125,7 @@ class LectureLoadingService extends ChangeNotifier {
     _isCollapsed = true;
     _bubbleOnRight = alignRight;
     notifyListeners();
+    _saveState();
   }
 
   /// 축소된 버블을 다시 확장
@@ -130,5 +138,64 @@ class LectureLoadingService extends ChangeNotifier {
     }
     _isCollapsed = false;
     notifyListeners();
+    _saveState();
+  }
+
+  // SharedPreferences keys
+  static const _keyIsLoading = 'lecture_loading_is_loading';
+  static const _keyProgress = 'lecture_loading_progress';
+  static const _keyMessage = 'lecture_loading_message';
+  static const _keyLectureTitle = 'lecture_loading_lecture_title';
+  static const _keyIsCollapsed = 'lecture_loading_is_collapsed';
+  static const _keyBubbleOnRight = 'lecture_loading_bubble_on_right';
+
+  /// 상태를 SharedPreferences에 저장
+  Future<void> _saveState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyIsLoading, _isLoading);
+      await prefs.setDouble(_keyProgress, _progress);
+      await prefs.setString(_keyMessage, _message);
+      await prefs.setString(_keyLectureTitle, _lectureTitle);
+      await prefs.setBool(_keyIsCollapsed, _isCollapsed);
+      await prefs.setBool(_keyBubbleOnRight, _bubbleOnRight);
+    } catch (e) {
+      debugPrint('Failed to save loading state: $e');
+    }
+  }
+
+  /// 상태를 SharedPreferences에서 복원
+  Future<void> _restoreState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isLoading = prefs.getBool(_keyIsLoading) ?? false;
+      _progress = prefs.getDouble(_keyProgress) ?? 0.0;
+      _message = prefs.getString(_keyMessage) ?? '';
+      _lectureTitle = prefs.getString(_keyLectureTitle) ?? '';
+      _isCollapsed = prefs.getBool(_keyIsCollapsed) ?? false;
+      _bubbleOnRight = prefs.getBool(_keyBubbleOnRight) ?? true;
+
+      // 복원 후 UI 업데이트
+      if (_isLoading) {
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Failed to restore loading state: $e');
+    }
+  }
+
+  /// 상태를 완전히 삭제 (로딩 종료 시)
+  Future<void> _clearState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keyIsLoading);
+      await prefs.remove(_keyProgress);
+      await prefs.remove(_keyMessage);
+      await prefs.remove(_keyLectureTitle);
+      await prefs.remove(_keyIsCollapsed);
+      await prefs.remove(_keyBubbleOnRight);
+    } catch (e) {
+      debugPrint('Failed to clear loading state: $e');
+    }
   }
 }

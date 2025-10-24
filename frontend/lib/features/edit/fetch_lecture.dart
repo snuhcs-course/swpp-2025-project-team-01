@@ -372,25 +372,61 @@ Future<void> onProgress(
   final pct = (progress * 100).round();
   final isDone = progress >= 1.0;
 
-  final androidDetails = AndroidNotificationDetails(
-    _progressChannelId,
-    _progressChannelName,
-    channelDescription: _progressChannelDesc,
-    onlyAlertOnce: true,
-    ongoing: !isDone, // keep pinned until done
-    showProgress: !isDone, // show bar while in progress
-    maxProgress: 100,
-    progress: isDone ? 0 : pct, // ignored when showProgress=false
-    indeterminate: false,
-  );
+  // Check if app is in background
+  final isAppInBackground = _isAppInBackground();
 
-  final title = 'Generating Lecture: $lectureTitle';
-  final details = NotificationDetails(android: androidDetails);
+  // Show notification only if:
+  // 1. In progress (always show progress), OR
+  // 2. Completed AND app is in background
+  final shouldShowNotification = !isDone || isAppInBackground;
 
-  await _notifier.show(
-    _progressNotificationId,
-    isDone ? 'Lecture generation finished' : title,
-    isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
-    details,
-  );
+  if (shouldShowNotification) {
+    final androidDetails = AndroidNotificationDetails(
+      _progressChannelId,
+      _progressChannelName,
+      channelDescription: _progressChannelDesc,
+      onlyAlertOnce: !isDone, // Alert when completed
+      ongoing: !isDone, // keep pinned until done
+      showProgress: !isDone, // show bar while in progress
+      maxProgress: 100,
+      progress: isDone ? 0 : pct, // ignored when showProgress=false
+      indeterminate: false,
+      importance: isDone ? Importance.high : Importance.low,
+      priority: isDone ? Priority.high : Priority.low,
+    );
+
+    final title = 'Generating Lecture: $lectureTitle';
+    final details = NotificationDetails(android: androidDetails);
+
+    await _notifier.show(
+      _progressNotificationId,
+      isDone ? 'Lecture generation finished' : title,
+      isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
+      details,
+    );
+  } else {
+    // App is in foreground and completed - just dismiss the notification
+    await _notifier.cancel(_progressNotificationId);
+  }
+}
+
+/// Check if the app is currently in background
+bool _isAppInBackground() {
+  try {
+    // WidgetsBinding is available in UI isolate
+    final lifecycleState = WidgetsBinding.instance.lifecycleState;
+
+    // If lifecycleState is null, assume app is active (foreground)
+    if (lifecycleState == null) {
+      return false;
+    }
+
+    // App is in background if lifecycle state is paused, inactive, or detached
+    return lifecycleState == AppLifecycleState.paused ||
+        lifecycleState == AppLifecycleState.inactive ||
+        lifecycleState == AppLifecycleState.detached;
+  } catch (e) {
+    // If we can't determine lifecycle state, assume foreground (safer default)
+    return false;
+  }
 }
