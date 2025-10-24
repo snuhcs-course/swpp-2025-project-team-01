@@ -3,10 +3,15 @@ Translation Processor Module
 English-to-Korean translation using Tencent Hunyuan-MT-7B with vLLM
 """
 
+import os
 import torch
 import gc
 from typing import Callable
 from vllm import LLM, SamplingParams
+
+# Set multiprocessing start method before any CUDA operations
+# This prevents the WARNING about overriding VLLM_WORKER_MULTIPROC_METHOD
+os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
 
 
 class TranslationProcessor:
