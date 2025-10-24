@@ -216,6 +216,13 @@ class PlayerController extends ChangeNotifier {
       await _audioService.pause();
     } else {
       await _audioService.play();
+
+      // 재생 시작 시 현재 위치로 스크롤하여 tracking 시작
+      if (isAutoScrolling.value && currentSentenceIndex.value != null) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          scrollToCurrentSentence(forceScroll: true);
+        });
+      }
     }
   }
 
@@ -315,7 +322,7 @@ class PlayerController extends ChangeNotifier {
     }
   }
 
-  Future<void> scrollToCurrentSentence() async {
+  Future<void> scrollToCurrentSentence({bool forceScroll = false}) async {
     if (currentSentenceIndex.value == null || transcriptData == null) {
       return;
     }
@@ -324,8 +331,8 @@ class PlayerController extends ChangeNotifier {
       return;
     }
 
-    // 영상이 재생 중이 아니면 스크롤하지 않음
-    if (!isPlaying.value) {
+    // 강제 스크롤이 아닐 때만 재생 상태를 체크
+    if (!forceScroll && !isPlaying.value) {
       return;
     }
 
@@ -348,14 +355,18 @@ class PlayerController extends ChangeNotifier {
     final targetMs = (sentence.startTime * 1000).toInt();
 
     _isForcedMove = true;
+    isAutoScrolling.value = true;
 
     await _audioService.seek(Duration(milliseconds: targetMs));
 
     _setCurrentSentenceAndPage(
       index,
       forcePageUpdate: isSynced.value,
-      autoScroll: true,
+      autoScroll: false, // 직접 스크롤을 호출할 것이므로 false
     );
+
+    // 정지 상태에서도 스크롤이 되도록 강제 스크롤 호출
+    await scrollToCurrentSentence(forceScroll: true);
 
     // 강제 이동 완료
     Future.delayed(const Duration(milliseconds: 500), () {
