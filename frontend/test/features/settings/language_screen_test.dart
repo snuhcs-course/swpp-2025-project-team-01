@@ -1,17 +1,14 @@
-// test/screens/settings/language_screen_test.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-// !! 'hive_models.dart'를 임포트해야 AppSettings를 인식할 수 있습니다 !!
+import 'package:hive_flutter/hive_flutter.dart';
+
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/settings/language_screen.dart'; // 수정된 LanguageScreen 임포트
 
 // --- Fakes ---
-// (test/fakes/fake_hive_manager.dart 파일로 분리하는 것을 권장합니다)
 
 /// AppSettings 인터페이스를 구현하는 Fake 클래스
-/// 'hive_models.dart'의 AppSettings를 구현(implements)합니다.
 class FakeAppSettings implements AppSettings {
   FakeAppSettings({
     this.language = 'ko', // 기본값 'ko'
@@ -50,10 +47,6 @@ class FakeAppSettings implements AppSettings {
 }
 
 /// HiveManager 인터페이스를 구현하는 Fake 클래스
-/// 'hive_manager.dart'의 HiveManager를 구현(implements)합니다.
-///
-/// with ChangeNotifier를 사용하여 리스너 기능을 실제처럼 구현합니다.
-/// HiveManager의 모든 public 멤버를 @override 해야 오류가 발생하지 않습니다.
 class FakeHiveManager with ChangeNotifier implements HiveManager {
   FakeHiveManager({String initialLanguage = 'ko'}) {
     _fakeSettings = FakeAppSettings(language: initialLanguage);
@@ -98,6 +91,9 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
 
   @override
   Future<void> init() async {}
+
+  @override
+  Future<void> initForTesting(Box<AppData> box) async {}
 
   @override
   Future<void> updateTheme(String theme) async {}
@@ -361,8 +357,6 @@ void main() {
         );
         expect(initialRadioGroup.groupValue, 'ko');
 
-        // Act
-        // 2. Fake 객체의 "실제 메서드"를 호출 (이 메서드가 notifyListeners()를 호출)
         await fakeHiveManager.updateLanguage('en');
         await tester.pump(); // setState() 호출로 인한 리빌드
 
