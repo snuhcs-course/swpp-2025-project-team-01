@@ -41,6 +41,9 @@ jobs:
     - name: Run home screen unit tests
       run: flutter test test/features/home/
 
+    - name: Run data model unit tests
+      run: flutter test test/data/
+
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
     runs-on: ubuntu-latest
