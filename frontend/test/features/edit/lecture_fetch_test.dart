@@ -107,9 +107,9 @@ void main() {
       // Assert: jobId and progress ordering
       expect(jobId, 'abc123');
       expect(progressEvents.length, 3);
-      expect(progressEvents[0]['p'], 10);
-      expect(progressEvents[1]['p'], 45);
-      expect(progressEvents[2]['p'], 100);
+      expect(progressEvents[0]['p'], 0.1);
+      expect(progressEvents[1]['p'], 0.45);
+      expect(progressEvents[2]['p'], 1.0);
       expect(progressEvents[2]['msg'], 'Done');
     });
 

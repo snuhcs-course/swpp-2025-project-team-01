@@ -14,10 +14,6 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
-
-import 'package:re_view/features/edit/lecture_form_screen.dart';
 
 /// Returns a new PDF (bytes) containing pages [start]..[end] (1-based, inclusive).
 Future<void> splitPdfRange(
