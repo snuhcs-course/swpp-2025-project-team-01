@@ -621,44 +621,49 @@ class CaptionOverlay extends StatelessWidget {
     return ValueListenableBuilder<int?>(
       valueListenable: controller.currentSentenceIndex,
       builder: (context, _, __) {
-        final captionText = controller.captionText;
-
-        if (captionText.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
         return ValueListenableBuilder<bool>(
-          valueListenable: controller.showControls,
-          builder: (context, showControls, _) {
-            return Positioned(
-              left: 0,
-              right: 0,
-              bottom: showControls ? 80 : 20,
-              child: Center(
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.8,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    captionText,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      height: 1.4,
+          valueListenable: controller.isKoreanLanguage,
+          builder: (context, __, ___) {
+            final captionText = controller.captionText;
+
+            if (captionText.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return ValueListenableBuilder<bool>(
+              valueListenable: controller.showControls,
+              builder: (context, showControls, _) {
+                return Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: showControls ? 80 : 20,
+                  child: Center(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.8,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        captionText,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             );
           },
         );
