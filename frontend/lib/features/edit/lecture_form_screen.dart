@@ -869,7 +869,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       String? audioPath;
       String? jsonPath;
       int? duration;
-      
+
       if (effectiveAudios.length > 1) {
         audioPath = await concatenateAudioFiles(audioPaths, titleText);
         jsonPath = await concatenateJsonFiles(jsonPaths, titleText);
