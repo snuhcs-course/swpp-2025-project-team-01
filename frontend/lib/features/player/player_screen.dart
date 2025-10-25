@@ -99,10 +99,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
         return;
       }
 
-      // 3. transcript.json 로드
-      final transcriptPath = hiveLecture.transcriptPaths?.isNotEmpty == true
-          ? hiveLecture.transcriptPaths!.first
-          : 'assets/lectures/$lectureId/transcript.json';
+      // transcript.json 로드 (HiveLecture에서 경로 가져오기)
+      final transcriptPath =
+          hiveLecture.jsonPath ?? 'assets/lectures/$lectureId/transcript.json';
 
       String? transcriptJson;
       try {
@@ -131,10 +130,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
           'assets/lectures/$lectureId/${lectureId}_slides.pdf';
 
       final audioPath =
-          hiveLecture.audioPaths?.isNotEmpty == true &&
-              hiveLecture.audioPaths!.first != null
-          ? hiveLecture.audioPaths!.first!
-          : 'assets/lectures/$lectureId/lecture_with_slides.opus';
+          hiveLecture.audioPath ??
+          'assets/lectures/$lectureId/lecture_with_slides.opus';
 
       // 6. Controller 초기화
       if (!mounted) {

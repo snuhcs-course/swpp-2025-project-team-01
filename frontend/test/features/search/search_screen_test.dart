@@ -92,27 +92,27 @@ void main() {
       subjectId: 'subject_cs_test',
       weekLabel: 'Week 1',
       title: 'Introduction to Algorithms',
-      durationSec: 3600,
+      duration: 3600,
       slidePath: 'path/to/slides1.pdf',
-      audioPaths: ['path/to/audio1.mp3'],
+      audioPath: 'path/to/audio1.mp3',
     );
     final lec2 = HiveLecture(
       id: 'lec2',
       subjectId: 'subject_cs_test',
       weekLabel: 'Week 2',
       title: 'Data Structures',
-      durationSec: 3600,
+      duration: 3600,
       slidePath: 'path/to/slides2.pdf',
-      audioPaths: ['path/to/audio2.mp3'],
+      audioPath: 'path/to/audio2.mp3',
     );
     final lec3 = HiveLecture(
       id: 'lec3',
       subjectId: 'subject_math_test',
       weekLabel: 'Week 1',
       title: 'Linear Algebra Basics',
-      durationSec: 3600,
+      duration: 3600,
       slidePath: 'path/to/slides3.pdf',
-      audioPaths: ['path/to/audio3.mp3'],
+      audioPath: 'path/to/audio3.mp3',
     );
 
     // Update app data
