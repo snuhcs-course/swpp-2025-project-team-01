@@ -30,6 +30,7 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<bool> isPlaying = ValueNotifier(false);
   final ValueNotifier<bool> isSynced = ValueNotifier(true);
   final ValueNotifier<bool> isCaptionEnabled = ValueNotifier(false);
+  final ValueNotifier<bool> isKoreanLanguage = ValueNotifier(false);
 
   /// 재생 위치 및 페이지
   final ValueNotifier<double> currentTime = ValueNotifier(0.0);
@@ -78,7 +79,19 @@ class PlayerController extends ChangeNotifier {
     if (currentSentenceIndex.value == null || transcriptData == null) {
       return '';
     }
-    return transcriptData!.timestamps[currentSentenceIndex.value!].text;
+    final sentence = transcriptData!.timestamps[currentSentenceIndex.value!];
+    if (isKoreanLanguage.value && sentence.textKor != null) {
+      return sentence.textKor!;
+    }
+    return sentence.text;
+  }
+
+  /// 한국어 transcript가 있는지 확인
+  bool get hasKoreanTranscript {
+    if (transcriptData == null || transcriptData!.timestamps.isEmpty) {
+      return false;
+    }
+    return transcriptData!.timestamps.any((sentence) => sentence.textKor != null);
   }
 
   // ========== 내부 상태 ==========
@@ -192,6 +205,12 @@ class PlayerController extends ChangeNotifier {
     showTranscriptPanel.value = !showTranscriptPanel.value;
   }
 
+  void toggleTranscriptLanguage() {
+    if (hasKoreanTranscript) {
+      isKoreanLanguage.value = !isKoreanLanguage.value;
+    }
+  }
+
   void handlePdfTap(bool isVertical) {
     if (isPagesExpanded.value && !isVertical) {
       // 가로 모드에서 페이지가 펼쳐진 상태에서 클릭하면 모두 닫기
@@ -292,8 +311,8 @@ class PlayerController extends ChangeNotifier {
 
     for (int i = 0; i < transcriptData!.timestamps.length; i++) {
       final sentence = transcriptData!.timestamps[i];
-      if (currentTime.value >= sentence.startTime &&
-          currentTime.value < sentence.endTime + 0.2) {
+      if (currentTime.value * 1000 >= sentence.startTime &&
+          currentTime.value * 1000 < sentence.endTime + 0.2) {
         _setCurrentSentenceAndPage(i);
         return;
       }
@@ -433,6 +452,7 @@ class PlayerController extends ChangeNotifier {
     isPlaying.dispose();
     isSynced.dispose();
     isCaptionEnabled.dispose();
+    isKoreanLanguage.dispose();
     currentTime.dispose();
     currentPage.dispose();
     currentSentenceIndex.dispose();
