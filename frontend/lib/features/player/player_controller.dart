@@ -1,0 +1,451 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:pdfx/pdfx.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
+
+import 'package:re_view/features/player/models/lecture_data.dart';
+import 'package:re_view/features/player/services/audio_service.dart';
+import 'package:re_view/features/player/services/pdf_cache_service.dart';
+
+/// PlayerController: 플레이어의 모든 상태와 로직을 관리
+/// ValueNotifier를 사용하여 각 상태 변경시 필요한 위젯만 rebuild
+class PlayerController extends ChangeNotifier {
+  PlayerController({
+    required AudioService audioService,
+    required PdfCacheService pdfCacheService,
+  }) : _audioService = audioService,
+       _pdfCacheService = pdfCacheService;
+
+  final AudioService _audioService;
+  final PdfCacheService _pdfCacheService;
+
+  // ========== ValueNotifier로 관리되는 상태들 (자주 변경됨) ==========
+
+  /// UI 제어 상태
+  final ValueNotifier<bool> showControls = ValueNotifier(false);
+  final ValueNotifier<bool> isPagesExpanded = ValueNotifier(false);
+  final ValueNotifier<bool> showTranscriptPanel = ValueNotifier(false);
+
+  /// 재생 상태
+  final ValueNotifier<bool> isPlaying = ValueNotifier(false);
+  final ValueNotifier<bool> isSynced = ValueNotifier(true);
+  final ValueNotifier<bool> isCaptionEnabled = ValueNotifier(false);
+
+  /// 재생 위치 및 페이지
+  final ValueNotifier<double> currentTime = ValueNotifier(0.0);
+  final ValueNotifier<int> currentPage = ValueNotifier(1);
+  final ValueNotifier<int?> currentSentenceIndex = ValueNotifier(null);
+
+  /// 스크롤 제어
+  final ValueNotifier<bool> isAutoScrolling = ValueNotifier(true);
+
+  // ========== 불변 또는 거의 변하지 않는 데이터 ==========
+
+  PdfController? pdfController;
+  PdfDocument? pdfDocument;
+  TranscriptData? transcriptData;
+  double totalTime = 0.0;
+  AutoScrollController? transcriptScrollController;
+
+  // PDF 뷰와 Transcript의 상태를 유지하기 위한 GlobalKey
+  final GlobalKey pdfViewKey = GlobalKey();
+  final GlobalKey transcriptAreaKey = GlobalKey();
+
+  PdfCacheService get pdfCacheService => _pdfCacheService;
+  int get pageCount => pdfDocument?.pagesCount ?? 0;
+
+  // ========== 계산된 값 ==========
+
+  /// Sync되었을 때의 페이지 번호 (현재 오디오 시간 기준)
+  int? get syncedPageNumber {
+    if (transcriptData == null || currentSentenceIndex.value == null) {
+      return null;
+    }
+    return transcriptData!.timestamps[currentSentenceIndex.value!].slideNumber;
+  }
+
+  /// 페이지 차이 (syncedPage - currentPage)
+  int? get pageDifference {
+    final syncedPage = syncedPageNumber;
+    if (syncedPage == null) {
+      return null;
+    }
+    return syncedPage - currentPage.value;
+  }
+
+  /// 현재 자막 텍스트
+  String get captionText {
+    if (currentSentenceIndex.value == null || transcriptData == null) {
+      return '';
+    }
+    return transcriptData!.timestamps[currentSentenceIndex.value!].text;
+  }
+
+  // ========== 내부 상태 ==========
+
+  bool _isForcedMove = false; // seek 등으로 강제 이동 중인지 표시
+  bool _isSeeking = false; // seek 작업 진행 중인지 표시
+  Timer? _scrollTimer;
+  StreamSubscription<Duration>? _positionSubscription;
+  StreamSubscription<dynamic>? _stateSubscription;
+
+  // ========== 초기화 메서드 ==========
+
+  Future<void> initialize(
+    BuildContext context,
+    String lectureId,
+    TranscriptData transcriptData,
+    String pdfPath,
+    String audioPath,
+  ) async {
+    this.transcriptData = transcriptData;
+    totalTime = transcriptData.metadata.totalDuration.toDouble() / 1000;
+
+    // Transcript 스크롤 컨트롤러 초기화
+    final screenHeight = MediaQuery.of(context).size.height;
+    transcriptScrollController = AutoScrollController(
+      viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, screenHeight / 2),
+      axis: Axis.vertical,
+    );
+
+    // PDF 문서 로드
+    await _loadPdfDocument(pdfPath);
+
+    // 오디오 리스너 설정
+    _setupAudioListeners();
+
+    // 스크롤 리스너 설정
+    _setupScrollListener();
+
+    // 오디오 로드 및 재생
+    await _audioService.loadAudio(audioPath);
+
+    _audioService.play(); // await 제거 - fire-and-forget
+  }
+
+  Future<void> _loadPdfDocument(String pdfPath) async {
+    pdfDocument = pdfPath.startsWith('assets/')
+        ? await PdfDocument.openAsset(pdfPath)
+        : await PdfDocument.openFile(pdfPath);
+
+    _pdfCacheService.setPdfDocument(pdfDocument);
+
+    pdfController = PdfController(document: Future.value(pdfDocument!));
+  }
+
+  void _setupAudioListeners() {
+    // 재생 위치 변경 리스너
+    _positionSubscription = _audioService.positionStream.listen((position) {
+      currentTime.value = position.inMilliseconds / 1000.0;
+      _updateCurrentSentence();
+    });
+
+    // 재생 상태 변경 리스너
+    _stateSubscription = _audioService.stateStream.listen((state) {
+      isPlaying.value = state.playing;
+    });
+  }
+
+  void _setupScrollListener() {
+    transcriptScrollController?.addListener(() {
+      // 사용자가 스크롤 중임을 표시 (자동 스크롤 비활성화)
+      if (isAutoScrolling.value) {
+        isAutoScrolling.value = false;
+      }
+
+      // 기존 타이머 취소
+      _scrollTimer?.cancel();
+
+      // 1초 후에 자동 스크롤 재개
+      _scrollTimer = Timer(const Duration(milliseconds: 1000), () {
+        if (!isAutoScrolling.value) {
+          isAutoScrolling.value = true;
+        }
+
+        // 영상이 재생 중일 때만 스크롤
+        if (isPlaying.value) {
+          scrollToCurrentSentence();
+        }
+      });
+    });
+  }
+
+  // ========== UI 제어 메서드 ==========
+
+  void toggleControls() {
+    showControls.value = !showControls.value;
+  }
+
+  void togglePages() {
+    isPagesExpanded.value = !isPagesExpanded.value;
+  }
+
+  void toggleSync() {
+    isSynced.value = !isSynced.value;
+  }
+
+  void toggleCaption() {
+    isCaptionEnabled.value = !isCaptionEnabled.value;
+  }
+
+  void toggleTranscriptPanel() {
+    showTranscriptPanel.value = !showTranscriptPanel.value;
+  }
+
+  void handlePdfTap(bool isVertical) {
+    if (isPagesExpanded.value && !isVertical) {
+      // 가로 모드에서 페이지가 펼쳐진 상태에서 클릭하면 모두 닫기
+      isPagesExpanded.value = false;
+    } else {
+      // 컨트롤 토글
+      toggleControls();
+    }
+  }
+
+  void handleVerticalDrag(DragUpdateDetails details) {
+    // 가로 모드에서만 위로 스와이프 감지
+    if (details.delta.dy < -5 && !isPagesExpanded.value) {
+      isPagesExpanded.value = true;
+    }
+  }
+
+  // ========== 재생 제어 메서드 ==========
+
+  Future<void> playPause() async {
+    if (isPlaying.value) {
+      await _audioService.pause();
+    } else {
+      await _audioService.play();
+
+      // 재생 시작 시 현재 위치로 스크롤하여 tracking 시작
+      if (isAutoScrolling.value && currentSentenceIndex.value != null) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          scrollToCurrentSentence(forceScroll: true);
+        });
+      }
+    }
+  }
+
+  Future<void> seek(double seconds) async {
+    // 이미 seek 작업이 진행 중이면 무시
+    if (_isSeeking) {
+      return;
+    }
+
+    _isSeeking = true;
+    _isForcedMove = true;
+    isAutoScrolling.value = true;
+    _scrollTimer?.cancel();
+
+    try {
+      await _audioService.seek(
+        Duration(milliseconds: (seconds * 1000).toInt()),
+      );
+    } catch (e) {
+      // seek 작업 실패 시 무시
+      _isSeeking = false;
+      return;
+    } finally {
+      _isSeeking = false;
+    }
+
+    // 약간의 딜레이 후 스크롤
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (isAutoScrolling.value) {
+        scrollToCurrentSentence();
+      }
+    });
+
+    // _isForcedMove 해제
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _isForcedMove = false;
+    });
+  }
+
+  Future<void> skipBackward() async {
+    final newTime = (currentTime.value - 15).clamp(0, totalTime).toDouble();
+    await seek(newTime);
+  }
+
+  Future<void> skipForward() async {
+    final newTime = (currentTime.value + 15).clamp(0, totalTime).toDouble();
+    await seek(newTime);
+  }
+
+  // ========== 페이지 제어 메서드 ==========
+
+  void jumpToPage(int page) {
+    pdfController?.jumpToPage(page);
+    currentPage.value = page;
+  }
+
+  void onPdfPageChanged(int page) {
+    currentPage.value = page;
+  }
+
+  // ========== Transcript 제어 메서드 ==========
+
+  void _updateCurrentSentence() {
+    if (transcriptData == null || _isForcedMove) {
+      return;
+    }
+
+    for (int i = 0; i < transcriptData!.timestamps.length; i++) {
+      final sentence = transcriptData!.timestamps[i];
+      if (currentTime.value >= sentence.startTime &&
+          currentTime.value < sentence.endTime + 0.2) {
+        _setCurrentSentenceAndPage(i);
+        return;
+      }
+    }
+  }
+
+  void _setCurrentSentenceAndPage(
+    int sentenceIndex, {
+    bool forcePageUpdate = false,
+    bool autoScroll = true,
+  }) {
+    if (transcriptData == null ||
+        sentenceIndex < 0 ||
+        sentenceIndex >= transcriptData!.timestamps.length) {
+      return;
+    }
+
+    final sentence = transcriptData!.timestamps[sentenceIndex];
+    final targetPage = sentence.slideNumber;
+
+    // 상태 변경이 필요한지 확인
+    final sentenceChanged = currentSentenceIndex.value != sentenceIndex;
+    final shouldUpdatePage =
+        forcePageUpdate || (isSynced.value && currentPage.value != targetPage);
+
+    if (!sentenceChanged && !shouldUpdatePage) {
+      return; // 변경 사항 없음
+    }
+
+    // 상태 업데이트
+    if (sentenceChanged) {
+      currentSentenceIndex.value = sentenceIndex;
+    }
+    if (shouldUpdatePage) {
+      currentPage.value = targetPage;
+      pdfController?.jumpToPage(targetPage.toInt());
+    }
+
+    // Transcript 자동 스크롤
+    if (autoScroll && isAutoScrolling.value && isPlaying.value) {
+      scrollToCurrentSentence();
+    }
+  }
+
+  Future<void> scrollToCurrentSentence({bool forceScroll = false}) async {
+    if (currentSentenceIndex.value == null || transcriptData == null) {
+      return;
+    }
+
+    if (transcriptScrollController?.hasClients != true) {
+      return;
+    }
+
+    // 강제 스크롤이 아닐 때만 재생 상태를 체크
+    if (!forceScroll && !isPlaying.value) {
+      return;
+    }
+
+    // AutoScrollController를 사용하여 자동 스크롤
+    await transcriptScrollController!.scrollToIndex(
+      currentSentenceIndex.value!,
+      preferPosition: AutoScrollPosition.middle,
+      duration: const Duration(milliseconds: 150),
+    );
+  }
+
+  Future<void> seekToSentence(int index) async {
+    if (transcriptData == null ||
+        index < 0 ||
+        index >= transcriptData!.timestamps.length) {
+      return;
+    }
+
+    final sentence = transcriptData!.timestamps[index];
+
+    _isForcedMove = true;
+    isAutoScrolling.value = true;
+
+    await _audioService.seek(Duration(milliseconds: sentence.startTime));
+
+    _setCurrentSentenceAndPage(
+      index,
+      forcePageUpdate: isSynced.value,
+      autoScroll: false, // 직접 스크롤을 호출할 것이므로 false
+    );
+
+    // 정지 상태에서도 스크롤이 되도록 강제 스크롤 호출
+    await scrollToCurrentSentence(forceScroll: true);
+
+    // 강제 이동 완료
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _isForcedMove = false;
+    });
+  }
+
+  Future<void> seekToSlide(int slideNumber) async {
+    if (transcriptData == null) {
+      return;
+    }
+
+    // sync가 꺼져있으면 슬라이드만 이동
+    if (!isSynced.value) {
+      jumpToPage(slideNumber);
+      return;
+    }
+
+    // sync가 켜져있으면 해당 슬라이드 번호가 처음 나오는 transcript 찾아서 이동
+    for (int i = 0; i < transcriptData!.timestamps.length; i++) {
+      final sentence = transcriptData!.timestamps[i];
+      if (sentence.slideNumber == slideNumber) {
+        _isForcedMove = true;
+
+        await _audioService.seek(Duration(milliseconds: sentence.startTime));
+
+        _scrollTimer?.cancel();
+        isAutoScrolling.value = true;
+
+        _setCurrentSentenceAndPage(i, forcePageUpdate: true, autoScroll: true);
+
+        // 강제 이동 완료
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _isForcedMove = false;
+        });
+
+        return;
+      }
+    }
+  }
+
+  // ========== Dispose ==========
+
+  @override
+  void dispose() {
+    showControls.dispose();
+    isPagesExpanded.dispose();
+    showTranscriptPanel.dispose();
+    isPlaying.dispose();
+    isSynced.dispose();
+    isCaptionEnabled.dispose();
+    currentTime.dispose();
+    currentPage.dispose();
+    currentSentenceIndex.dispose();
+    isAutoScrolling.dispose();
+
+    _scrollTimer?.cancel();
+    _positionSubscription?.cancel();
+    _stateSubscription?.cancel();
+
+    _audioService.dispose();
+    pdfController?.dispose();
+    transcriptScrollController?.dispose();
+
+    super.dispose();
+  }
+}

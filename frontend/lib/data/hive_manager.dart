@@ -42,6 +42,17 @@ class HiveManager extends ChangeNotifier {
 
   // ========== 초기화 ==========
 
+  /// Test-only initialization method
+  /// Initializes HiveManager with an already-opened box (for testing without path_provider)
+  /// Can be called multiple times to reload data
+  @visibleForTesting
+  Future<void> initForTesting(Box<AppData> box) async {
+    _appBox = box;
+    _appData = box.get('main');
+    _isInitialized = true;
+    notifyListeners();
+  }
+
   /// Hive 초기화 및 데이터 로드
   /// main.dart에서 앱 시작 시 한 번만 호출
   Future<void> init() async {
@@ -503,6 +514,15 @@ class HiveManager extends ChangeNotifier {
 
   /// Hive 박스 닫기 (앱 종료 시)
   Future<void> close() async {
-    await _appBox.close();
+    if (!_isInitialized) {
+      return;
+    }
+
+    if (_appBox.isOpen) {
+      await _appBox.close();
+    }
+
+    _appData = null;
+    _isInitialized = false;
   }
 }

@@ -8,6 +8,9 @@ import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
 
+const String _serverAddress = '34.64.191.255';
+const String _port = '8000';
+
 /// 강의 생성/편집 화면
 ///
 /// 이 화면은 사용자가 새로운 강의를 생성하거나 기존 강의를 편집할 수 있도록 합니다.
@@ -713,6 +716,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             titleText,
             i,
             effectiveAudios.length == 1 ? true : false,
+            _serverAddress,
+            _port,
+            onProgress,
           );
 
           if (jobId == null) {
@@ -722,7 +728,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             return;
           }
 
-          final zipPath = await downloadResult(jobId, titleText, i);
+          final zipPath = await downloadResult(
+            jobId,
+            titleText,
+            i,
+            _serverAddress,
+            _port,
+          );
 
           if (zipPath == null) {
             _showToast(
@@ -812,6 +824,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 /// - 시작 페이지 번호 (다중 파일 모드)
 /// - 끝 페이지 번호 (다중 파일 모드)
 class AudioFileEntry {
+  AudioFileEntry();
+  AudioFileEntry.fromPath(this.filePath);
+
   /// 선택된 오디오 파일 경로
   String? filePath;
 
