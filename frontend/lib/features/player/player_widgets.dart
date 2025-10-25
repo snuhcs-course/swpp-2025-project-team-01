@@ -91,6 +91,46 @@ class SyncButton extends StatelessWidget {
   }
 }
 
+// 재생 속도 버튼
+class SpeedButton extends StatefulWidget {
+  const SpeedButton({
+    super.key,
+    required this.onSpeedChanged,
+  });
+
+  final ValueChanged<double> onSpeedChanged;
+
+  @override
+  State<SpeedButton> createState() => _SpeedButtonState();
+}
+
+class _SpeedButtonState extends State<SpeedButton> {
+  static const _speeds = [0.7, 1.0, 1.5, 2.0];
+  int _currentIndex = 1; // 기본값 1.0x
+
+  void _toggleSpeed() {
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % _speeds.length;
+    });
+    widget.onSpeedChanged(_speeds[_currentIndex]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: _toggleSpeed,
+      icon: Text(
+        '${_speeds[_currentIndex]}x',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
 // 자막 버튼
 class CaptionButton extends StatelessWidget {
   const CaptionButton({
@@ -316,6 +356,7 @@ class TopControlBar extends StatelessWidget {
     required this.onBack,
     required this.isCaptionEnabled,
     required this.onCaptionToggle,
+    required this.onSpeedChanged,
     required this.isSynced,
     required this.onSyncToggle,
     this.pageDifference,
@@ -326,6 +367,7 @@ class TopControlBar extends StatelessWidget {
   final VoidCallback onBack;
   final bool isCaptionEnabled;
   final VoidCallback onCaptionToggle;
+  final ValueChanged<double> onSpeedChanged;
   final bool isSynced;
   final VoidCallback onSyncToggle;
   final int? pageDifference;
@@ -345,6 +387,10 @@ class TopControlBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
+          SpeedButton(
+            onSpeedChanged: onSpeedChanged,
+          ),
+          const SizedBox(width: 8),
           SyncButton(
             isSynced: isSynced,
             onPressed: onSyncToggle,

@@ -291,6 +291,10 @@ class PlayerController extends ChangeNotifier {
     await seek(newTime);
   }
 
+  Future<void> setPlaybackSpeed(double speed) async {
+    await _audioService.setSpeed(speed);
+  }
+
   // ========== 페이지 제어 메서드 ==========
 
   void jumpToPage(int page) {

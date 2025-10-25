@@ -293,6 +293,7 @@ class VideoControlsOverlay extends StatelessWidget {
                       onBack: onBack,
                       isCaptionEnabled: isCaptionEnabled,
                       onCaptionToggle: controller.toggleCaption,
+                      onSpeedChanged: controller.setPlaybackSpeed,
                       isSynced: isSynced,
                       onSyncToggle: controller.toggleSync,
                       pageDifference: controller.pageDifference,
