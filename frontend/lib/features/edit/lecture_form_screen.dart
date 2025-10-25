@@ -762,6 +762,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       String? audioPath;
       String? jsonPath;
       int? duration;
+      
       if (effectiveAudios.length > 1) {
         audioPath = await concatenateAudioFiles(audioPaths, titleText);
         jsonPath = await concatenateJsonFiles(jsonPaths, titleText);
@@ -771,22 +772,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           );
           return;
         }
-
-        final jsonFile = File(jsonPath);
-        final jsonData =
-            jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
-        final metadata = jsonData['metadata'] as Map<String, dynamic>;
-        duration = metadata['total_duration'] as int;
       } else {
-        final jsonFile = File(jsonPaths[0]);
-        final jsonData =
-            jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
-        final metadata = jsonData['metadata'] as Map<String, dynamic>;
-
         audioPath = audioPaths[0];
         jsonPath = jsonPaths[0];
-        duration = metadata['total_duration'] as int;
       }
+
+      final jsonFile = File(jsonPath);
+      final jsonData =
+          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
+      final metadata = jsonData['metadata'] as Map<String, dynamic>;
+      duration = metadata['total_duration'] as int;
 
       // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(
