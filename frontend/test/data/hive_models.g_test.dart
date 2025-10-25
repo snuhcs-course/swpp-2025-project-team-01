@@ -102,11 +102,11 @@ void main() {
             subjectId: 's1',
             weekLabel: 'Week 1',
             title: 'Lecture',
-            durationSec: 100,
+            duration: 100,
             slidePath: 'slides/lec1.pdf',
-            audioPaths: const <String?>['audio.mp3'],
+            audioPath: 'audio.mp3',
             thumbnailUrl: 'thumb.png',
-            transcriptPaths: const ['transcript.json'],
+            jsonPath: 'timestamps.json',
             createdAt: DateTime.utc(2024, 1, 1),
             updatedAt: DateTime.utc(2024, 1, 2),
           ),
@@ -220,20 +220,20 @@ void main() {
         subjectId: 'subject',
         weekLabel: 'Week 5',
         title: 'Advanced Topics',
-        durationSec: 3600,
+        duration: 3600,
         slidePath: null,
-        audioPaths: const <String?>[null, 'audio_2.mp3'],
+        audioPath: 'audio.mp3',
         thumbnailUrl: null,
-        transcriptPaths: const ['tran.json'],
+        jsonPath: 'timestamps.json',
         createdAt: DateTime.utc(2024, 2, 1),
         updatedAt: DateTime.utc(2024, 2, 2),
       );
 
       final result = _roundTrip(bundle, bundle.hiveLecture, lecture);
       expect(result.id, 'lec');
-      expect(result.audioPaths, [null, 'audio_2.mp3']);
+      expect(result.audioPath, 'audio.mp3');
       expect(result.thumbnailUrl, isNull);
-      expect(result.transcriptPaths, ['tran.json']);
+      expect(result.jsonPath, 'timestamps.json');
       expect(result.createdAt, DateTime.utc(2024, 2, 1));
       expect(result.updatedAt, DateTime.utc(2024, 2, 2));
     });

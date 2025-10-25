@@ -38,8 +38,8 @@ void main() {
           subjectId: 'id',
           weekLabel: 'Week 1',
           title: 'Lecture',
-          durationSec: 60,
-          audioPaths: const [],
+          duration: 60,
+          audioPath: null,
         ),
       };
       final state = UiState(
@@ -170,83 +170,24 @@ void main() {
   });
 
   group('HiveLecture', () {
-    test('fromJson parses API payload', () {
-      final json = <String, dynamic>{
-        'id': 'lec1',
-        'subject_id': 'sub1',
-        'week_label': 'Week 1',
-        'title': 'Intro',
-        'duration_sec': 120,
-        'slides_url': '/slides.pdf',
-        'thumbnail_url': 'https://example.com/thumb.png',
-        'transcript_url': ['transcript.json'],
-        'created_at': '2024-01-02T12:34:56Z',
-        'updated_at': '2024-01-03T12:34:56Z',
-      };
-      final lecture = HiveLecture.fromJson(
-        json,
-        const ['audio.mp3'],
-        const ['transcript.json'],
-      );
-
-      expect(lecture.id, 'lec1');
-      expect(lecture.subjectId, 'sub1');
-      expect(lecture.weekLabel, 'Week 1');
-      expect(lecture.title, 'Intro');
-      expect(lecture.durationSec, 120);
-      expect(lecture.slidePath, '/slides.pdf');
-      expect(lecture.audioPaths, ['audio.mp3']);
-      expect(lecture.thumbnailUrl, 'https://example.com/thumb.png');
-      expect(lecture.transcriptPaths, ['transcript.json']);
-      expect(lecture.createdAt, DateTime.parse('2024-01-02T12:34:56Z'));
-      expect(lecture.updatedAt, DateTime.parse('2024-01-03T12:34:56Z'));
-    });
-
-    test('toJson produces payload for backend', () {
-      final base = HiveLecture(
-        id: 'lec1',
-        subjectId: 'sub1',
-        weekLabel: 'Week 1',
-        title: 'Intro',
-        durationSec: 120,
-        slidePath: '/slides.pdf',
-        audioPaths: const ['audio.mp3'],
-        thumbnailUrl: 'https://example.com/thumb.png',
-        transcriptPaths: const ['transcript.json'],
-        createdAt: DateTime.utc(2024, 1, 2, 12, 34, 56),
-        updatedAt: DateTime.utc(2024, 1, 3, 12, 34, 56),
-      );
-
-      final json = base.toJson();
-      expect(json['id'], 'lec1');
-      expect(json['subject_id'], 'sub1');
-      expect(json['duration_sec'], 120);
-      expect(json['slides_url'], '/slides.pdf');
-      expect(json['audio_url'], ['audio.mp3']);
-      expect(json['thumbnail_url'], 'https://example.com/thumb.png');
-      expect(json['transcript_url'], ['transcript.json']);
-      expect(json['created_at'], '2024-01-02T12:34:56.000Z');
-      expect(json['updated_at'], '2024-01-03T12:34:56.000Z');
-    });
-
     test('copyWith overrides single field', () {
       final base = HiveLecture(
         id: 'lec1',
         subjectId: 'sub1',
         weekLabel: 'Week 1',
         title: 'Intro',
-        durationSec: 120,
+        duration: 120,
         slidePath: '/slides.pdf',
-        audioPaths: const ['audio.mp3'],
+        audioPath: 'audio.mp3',
         thumbnailUrl: 'thumb',
-        transcriptPaths: const ['transcript.json'],
+        jsonPath: 'timestamps.json',
         createdAt: DateTime.utc(2024, 1, 1),
         updatedAt: DateTime.utc(2024, 1, 2),
       );
 
-      final copy = base.copyWith(title: 'Updated', durationSec: 240);
+      final copy = base.copyWith(title: 'Updated', duration: 240);
       expect(copy.title, 'Updated');
-      expect(copy.durationSec, 240);
+      expect(copy.duration, 240);
       expect(copy.subjectId, 'sub1');
       expect(copy.slidePath, '/slides.pdf');
     });
@@ -257,11 +198,11 @@ void main() {
         subjectId: 'sub1',
         weekLabel: 'Week 1',
         title: 'Intro',
-        durationSec: 120,
+        duration: 120,
         slidePath: '/slides.pdf',
-        audioPaths: const ['audio.mp3'],
+        audioPath: 'audio.mp3',
         thumbnailUrl: 'https://example.com/thumb.png',
-        transcriptPaths: const ['transcript.json'],
+        jsonPath: 'timestamps.json',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -271,7 +212,7 @@ void main() {
       expect(lecture.id, 'lec1');
       expect(lecture.weekLabel, 'Week 1');
       expect(lecture.title, 'Intro');
-      expect(lecture.durationSec, 120);
+      expect(lecture.duration, 120);
       expect(lecture.slidesPath, '/slides.pdf');
       expect(lecture.thumbs, ['https://example.com/thumb.png']);
     });
@@ -310,7 +251,7 @@ void main() {
         'subjectId': 'subject',
         'weekLabel': 'Week 3',
         'title': 'Asset Title',
-        'durationSec': 321,
+        'duration': 321,
       });
       assets['assets/lectures/demo/transcript.json'] = jsonEncode({
         'lines': [],
@@ -323,11 +264,9 @@ void main() {
       expect(lecture?.subjectId, 'subject');
       expect(lecture?.weekLabel, 'Week 3');
       expect(lecture?.title, 'Asset Title');
-      expect(lecture?.durationSec, 321);
+      expect(lecture?.duration, 321);
       expect(lecture?.slidePath, 'assets/lectures/demo/demo_slides.pdf');
-      expect(lecture?.transcriptPaths, [
-        'assets/lectures/demo/transcript.json',
-      ]);
+      expect(lecture?.jsonPath, 'assets/lectures/demo/transcript.json');
       expect(lecture?.createdAt, isNotNull);
       expect(lecture?.updatedAt, isNotNull);
     });
@@ -351,7 +290,7 @@ void main() {
       expect(lecture?.subjectId, '');
       expect(lecture?.weekLabel, 'Week ?');
       expect(lecture?.title, 'Untitled');
-      expect(lecture?.durationSec, 0);
+      expect(lecture?.duration, 0);
     });
   });
 }

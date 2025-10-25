@@ -28,9 +28,9 @@ HiveLecture buildLecture({
   required String subjectId,
   required String weekLabel,
   required String title,
-  int durationSec = 3600,
-  List<String?>? audioPaths,
-  List<String>? transcriptPaths,
+  int duration = 3600,
+  String? audioPath,
+  String? jsonPath,
   DateTime? createdAt,
   DateTime? updatedAt,
 }) {
@@ -39,11 +39,11 @@ HiveLecture buildLecture({
     subjectId: subjectId,
     weekLabel: weekLabel,
     title: title,
-    durationSec: durationSec,
+    duration: duration,
     slidePath: 'slides/$id.pdf',
-    audioPaths: audioPaths ?? <String?>[],
+    audioPath: audioPath,
     thumbnailUrl: 'https://example.com/$id.png',
-    transcriptPaths: transcriptPaths ?? <String>[],
+    jsonPath: jsonPath,
     createdAt: createdAt ?? DateTime(2024, 01, 01),
     updatedAt: updatedAt ?? DateTime(2024, 01, 01, 12),
   );
@@ -286,11 +286,11 @@ void main() {
           subjectId: 's2',
           weekLabel: 'Week 2',
           title: 'Transactions',
-          durationSec: 2700,
+          duration: 2700,
           slidePath: null,
-          audioPaths: null,
+          audioPath: null,
           thumbnailUrl: null,
-          transcriptPaths: null,
+          jsonPath: null,
           createdAt: DateTime(2024, 02, 01),
           updatedAt: DateTime(2024, 02, 01),
         );
@@ -365,7 +365,7 @@ void main() {
           'subjectId': 'subject_asset',
           'weekLabel': 'Week 0',
           'title': 'Asset Lecture',
-          'durationSec': 1234,
+          'duration': 1234,
         }),
         'assets/lectures/lecture_asset/transcript.json': jsonEncode({
           'items': [],
@@ -440,7 +440,7 @@ void main() {
 
       final lecture = manager.getLecture('lecture_asset');
       expect(lecture?.title, 'Asset Lecture');
-      expect(lecture?.durationSec, 1234);
+      expect(lecture?.duration, 1234);
       expect(
         lecture?.slidePath,
         'assets/lectures/lecture_asset/lecture_asset_slides.pdf',

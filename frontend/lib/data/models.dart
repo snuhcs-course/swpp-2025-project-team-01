@@ -22,7 +22,7 @@ class Lecture {
     required this.subjectId,
     required this.weekLabel,
     required this.title,
-    required this.durationSec,
+    required this.duration,
     this.thumbs = const [],
     this.slidesPath,
   });
@@ -31,7 +31,7 @@ class Lecture {
   final String subjectId;
   final String weekLabel;
   final String title;
-  final int durationSec;
+  final int duration;
   final List<String> thumbs; // 이미지 경로/URL
   final String? slidesPath; // PDF 슬라이드 경로
 
@@ -40,7 +40,7 @@ class Lecture {
     subjectId: subjectId,
     weekLabel: weekLabel ?? this.weekLabel,
     title: title ?? this.title,
-    durationSec: durationSec,
+    duration: duration,
     thumbs: thumbs,
     slidesPath: slidesPath,
   );

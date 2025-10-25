@@ -24,7 +24,7 @@ void main() {
         subjectId: 'subject1',
         weekLabel: 'Week 1',
         title: 'Introduction',
-        durationSec: 3600,
+        duration: 3600,
         thumbs: ['thumb.png'],
         slidesPath: 'slides/lec1.pdf',
       );
@@ -40,7 +40,7 @@ void main() {
       expect(updated.subjectId, 'subject1');
       expect(updated.weekLabel, 'Week 2');
       expect(updated.title, 'Advanced Topics');
-      expect(updated.durationSec, 3600);
+      expect(updated.duration, 3600);
       expect(updated.thumbs, ['thumb.png']);
       expect(updated.slidesPath, 'slides/lec1.pdf');
       expect(identical(copy.weekLabel, lecture.weekLabel), isTrue);
