@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
