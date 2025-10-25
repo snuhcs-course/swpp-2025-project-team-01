@@ -93,10 +93,7 @@ class SyncButton extends StatelessWidget {
 
 // 재생 속도 버튼
 class SpeedButton extends StatefulWidget {
-  const SpeedButton({
-    super.key,
-    required this.onSpeedChanged,
-  });
+  const SpeedButton({super.key, required this.onSpeedChanged});
 
   final ValueChanged<double> onSpeedChanged;
 
@@ -387,9 +384,7 @@ class TopControlBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
-          SpeedButton(
-            onSpeedChanged: onSpeedChanged,
-          ),
+          SpeedButton(onSpeedChanged: onSpeedChanged),
           const SizedBox(width: 8),
           SyncButton(
             isSynced: isSynced,

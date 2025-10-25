@@ -91,7 +91,9 @@ class PlayerController extends ChangeNotifier {
     if (transcriptData == null || transcriptData!.timestamps.isEmpty) {
       return false;
     }
-    return transcriptData!.timestamps.any((sentence) => sentence.textKor != null);
+    return transcriptData!.timestamps.any(
+      (sentence) => sentence.textKor != null,
+    );
   }
 
   // ========== 내부 상태 ==========

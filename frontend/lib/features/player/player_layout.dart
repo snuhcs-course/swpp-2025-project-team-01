@@ -490,10 +490,7 @@ class TranslationButton extends StatelessWidget {
           onTap: hasKorean ? controller.toggleTranscriptLanguage : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 4,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: hasKorean
                   ? (isKorean ? Colors.blue[600] : Colors.grey[400])
@@ -568,7 +565,8 @@ class TranscriptArea extends StatelessWidget {
                         final sentence =
                             controller.transcriptData!.timestamps[index];
                         final isCurrentSentence = currentSentenceIndex == index;
-                        final displayText = (isKorean && sentence.textKor != null)
+                        final displayText =
+                            (isKorean && sentence.textKor != null)
                             ? sentence.textKor!
                             : sentence.text;
 
