@@ -6,7 +6,7 @@ import FlutterMacOS
 import Foundation
 
 import audio_session
-import ffmpeg_kit_flutter_full
+import ffmpeg_kit_flutter_new
 import file_picker
 import flutter_local_notifications
 import just_audio
