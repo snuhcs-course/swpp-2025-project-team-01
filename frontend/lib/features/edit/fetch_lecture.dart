@@ -372,12 +372,9 @@ Future<void> onProgress(
   final pct = (progress * 100).round();
   final isDone = progress >= 1.0;
 
-  // Check if app is in background
+  // Always show notification during progress to keep background task alive
+  // Only skip notification if completed and app is in foreground
   final isAppInBackground = _isAppInBackground();
-
-  // Show notification only if:
-  // 1. In progress (always show progress), OR
-  // 2. Completed AND app is in background
   final shouldShowNotification = !isDone || isAppInBackground;
 
   if (shouldShowNotification) {
@@ -386,13 +383,18 @@ Future<void> onProgress(
       _progressChannelName,
       channelDescription: _progressChannelDesc,
       onlyAlertOnce: !isDone, // Alert when completed
-      ongoing: !isDone, // keep pinned until done
-      showProgress: !isDone, // show bar while in progress
+      ongoing: !isDone, // Keep notification pinned during progress
+      showProgress: !isDone, // Show progress bar while in progress
       maxProgress: 100,
-      progress: isDone ? 0 : pct, // ignored when showProgress=false
+      progress: isDone ? 0 : pct,
       indeterminate: false,
-      importance: isDone ? Importance.high : Importance.low,
-      priority: isDone ? Priority.high : Priority.low,
+      importance:
+          Importance.high, // Always high to prevent background termination
+      priority: Priority.high, // Always high to keep task alive
+      autoCancel: isDone, // Auto-dismiss when completed and tapped
+      enableVibration: isDone, // Only vibrate on completion
+      playSound: isDone, // Only sound on completion
+      category: AndroidNotificationCategory.progress,
     );
 
     final title = 'Generating Lecture: $lectureTitle';
@@ -405,7 +407,7 @@ Future<void> onProgress(
       details,
     );
   } else {
-    // App is in foreground and completed - just dismiss the notification
+    // App is in foreground and completed - dismiss notification
     await _notifier.cancel(_progressNotificationId);
   }
 }

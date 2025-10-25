@@ -10,6 +10,7 @@ import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_background/flutter_background.dart';
 
 const String _serverAddress = '147.46.78.61';
 const String _port = '8001';
@@ -725,6 +726,27 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     setState(() => _isCreating = true);
     final titleText = _titleController.text.trim();
 
+    // Enable background execution
+    final androidConfig = FlutterBackgroundAndroidConfig(
+      notificationTitle: 'Generating Lecture',
+      notificationText: 'Processing: $titleText',
+      notificationImportance: AndroidNotificationImportance.high,
+      enableWifiLock: true,
+    );
+
+    bool backgroundEnabled = false;
+    try {
+      backgroundEnabled = await FlutterBackground.initialize(
+        androidConfig: androidConfig,
+      );
+      if (backgroundEnabled) {
+        await FlutterBackground.enableBackgroundExecution();
+      }
+    } catch (e) {
+      debugPrint('Failed to enable background execution: $e');
+      // Continue anyway - app will still work in foreground
+    }
+
     // HTTP 클라이언트 생성
     _httpClient = http.Client();
 
@@ -738,6 +760,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         _showToast(
           l10n.isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled',
         );
+      }
+      // Disable background execution when cancelled
+      if (backgroundEnabled) {
+        FlutterBackground.disableBackgroundExecution();
       }
     });
 
@@ -903,6 +929,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       _httpClient?.close();
       _httpClient = null;
       _closeClientOnDispose = true;
+
+      // Disable background execution when task completes
+      if (backgroundEnabled) {
+        try {
+          await FlutterBackground.disableBackgroundExecution();
+        } catch (e) {
+          debugPrint('Failed to disable background execution: $e');
+        }
+      }
 
       if (mounted) {
         setState(() => _isCreating = false);
