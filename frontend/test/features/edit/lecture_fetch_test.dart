@@ -163,6 +163,12 @@ void main() {
         ),
         throwsA(anything),
       );
+
+      try {
+        File('assets/lectures/lec_demo_002/lec_demo_002_slides_tmp0.pdf').delete();
+      } catch (_) {
+        // Ignore deletion errors
+      }
     });
   });
 
