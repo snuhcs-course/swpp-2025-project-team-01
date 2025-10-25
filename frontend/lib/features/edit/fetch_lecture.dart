@@ -332,8 +332,30 @@ Future<void> _ensureNotificationsInitialized() async {
 
   const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
   const initSettings = InitializationSettings(android: androidInit);
-  // Note: No callbacks required for simple local updates.
   await _notifier.initialize(initSettings);
+
+  // Request notification permission for Android 13+ (API 33+)
+  final androidImplementation = _notifier
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  if (androidImplementation != null) {
+    await androidImplementation.requestNotificationsPermission();
+
+    // Create notification channel for Android 8.0+
+    const androidChannel = AndroidNotificationChannel(
+      _progressChannelId,
+      _progressChannelName,
+      description: _progressChannelDesc,
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
+    );
+
+    await androidImplementation.createNotificationChannel(androidChannel);
+  }
 
   _notifierInitialized = true;
 }
