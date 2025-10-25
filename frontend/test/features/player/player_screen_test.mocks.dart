@@ -14,7 +14,7 @@ import 'package:mockito/src/dummies.dart' as _i9;
 import 'package:pdfx/pdfx.dart' as _i2;
 import 'package:re_view/data/hive_manager.dart' as _i10;
 import 'package:re_view/data/hive_models.dart' as _i3;
-import 'package:re_view/features/player/core/pdf_cache_service.dart' as _i7;
+import 'package:re_view/features/player/services/pdf_cache_service.dart' as _i7;
 import 'package:re_view/features/player/services/audio_service.dart' as _i4;
 
 // ignore_for_file: type=lint

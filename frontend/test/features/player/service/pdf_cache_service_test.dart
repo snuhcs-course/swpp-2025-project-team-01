@@ -4,7 +4,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:pdfx/pdfx.dart';
 
-import 'package:re_view/features/player/core/pdf_cache_service.dart';
+import 'package:re_view/features/player/services/pdf_cache_service.dart';
 
 import 'pdf_cache_service_test.mocks.dart';
 
