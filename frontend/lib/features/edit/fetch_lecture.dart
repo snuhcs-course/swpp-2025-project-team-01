@@ -7,13 +7,13 @@ import 'package:archive/archive_io.dart';
 import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/features/edit/lecture_form_screen.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
-
-import 'package:re_view/features/edit/lecture_form_screen.dart';
 
 /// Returns a new PDF (bytes) containing pages [start]..[end] (1-based, inclusive).
 Future<void> splitPdfRange(
@@ -23,10 +23,12 @@ Future<void> splitPdfRange(
   required int order,
 }) async {
   final inputBytes = await File(inputFile).readAsBytes();
+
   final src = PdfDocument(inputBytes: inputBytes);
 
   try {
     final pageCount = src.pages.count;
+
     if (pageCount == 0) {
       throw StateError('Source PDF has no pages.');
     }
@@ -42,6 +44,9 @@ Future<void> splitPdfRange(
     out.pageSettings.margins.all = 0;
     try {
       for (int i = s; i <= e; i++) {
+        if (i >= pageCount) {
+          throw RangeError('Page index $i out of range (pageCount=$pageCount)');
+        }
         final srcPage = src.pages[i];
         final template = srcPage.createTemplate();
         final width = template.size.width;
@@ -91,8 +96,20 @@ Future<String?> requestLecture(
   Future<void> Function(double, String, String) onProgress, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
+  http.Client? clientToClose, // client that can be closed externally
 }) async {
-  final client = fakeClient ?? http.Client();
+  final http.Client client;
+  final bool shouldCloseClient;
+  if (fakeClient != null) {
+    client = fakeClient;
+    shouldCloseClient = false;
+  } else if (clientToClose != null) {
+    client = clientToClose;
+    shouldCloseClient = false;
+  } else {
+    client = http.Client();
+    shouldCloseClient = true;
+  }
   final endpoint =
       endpointOverride ??
       Uri.parse('http://$serverAddress:$port/api/synchronize/stream');
@@ -106,8 +123,19 @@ Future<String?> requestLecture(
     if (isSingleAudio) {
       slideFile = File(slidePath);
     } else {
-      final pdfStart = int.parse(audioFileEntry.startPageController.text);
-      final pdfEnd = int.parse(audioFileEntry.endPageController.text);
+      // 다중 오디오 모드: 페이지 범위 파싱
+      final startText = audioFileEntry.startPageController.text.trim();
+      final endText = audioFileEntry.endPageController.text.trim();
+
+      if (startText.isEmpty || endText.isEmpty) {
+        throw ArgumentError(
+          'Page range required for multiple audio files. '
+          'Start: "$startText", End: "$endText"',
+        );
+      }
+
+      final pdfStart = int.parse(startText);
+      final pdfEnd = int.parse(endText);
 
       await splitPdfRange(
         slidePath,
@@ -147,31 +175,59 @@ Future<String?> requestLecture(
   }
 
   // Use the injected client to send
-  final streamed = await client.send(req);
+  final streamed = await client
+      .send(req)
+      .timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception(
+            'Server connection timeout - Please check if server is running',
+          );
+        },
+      );
 
   // read chunked SSE-style body
   final stream = streamed.stream.transform(utf8.decoder);
 
   String? jobId;
-  await for (final chunk in stream) {
-    final lines = chunk.split('\n');
-    for (final line in lines) {
-      if (line.startsWith('data: ')) {
-        final jsonData = line.substring(6);
-        final data = jsonDecode(jsonData) as Map<String, dynamic>;
+  try {
+    await for (final chunk in stream) {
+      // 취소 확인
+      if (LectureLoadingService.instance.isCancelled) {
+        return null;
+      }
 
-        jobId = data['job_id'] as String;
-        final progress = data['progress'] as double;
-        final message = data['message'] as String;
+      final lines = chunk.split('\n');
+      for (final line in lines) {
+        if (line.startsWith('data: ')) {
+          final jsonData = line.substring(6);
+          final data = jsonDecode(jsonData) as Map<String, dynamic>;
 
-        onProgress(progress, message, titleText);
+          jobId = data['job_id'] as String;
 
-        if (data['status'] == 'completed') {
-          return jobId;
-        } else if (data['status'] == 'failed') {
-          return null;
+          // 서버가 0-100 범위로 보낼 수 있으므로 변환
+          final rawProgress = data['progress'];
+          final progress = rawProgress is int
+              ? (rawProgress / 100.0)
+              : (rawProgress as double) > 1.0
+              ? rawProgress / 100.0
+              : rawProgress;
+
+          final message = data['message'] as String;
+
+          await onProgress(progress, message, titleText);
+
+          if (data['status'] == 'completed') {
+            return jobId;
+          } else if (data['status'] == 'failed') {
+            return null;
+          }
         }
       }
+    }
+  } finally {
+    if (shouldCloseClient) {
+      client.close();
     }
   }
 
@@ -188,22 +244,28 @@ Future<String?> downloadResult(
   Directory? tempDirOverride, // for testing
 }) async {
   final client = fakeClient ?? http.Client();
-  final uri = Uri.parse(
-    'http://$serverAddress:$port/api/synchronize/download/$jobId',
-  );
-  final response = await client.get(uri);
+  try {
+    final uri = Uri.parse(
+      'http://$serverAddress:$port/api/synchronize/download/$jobId',
+    );
+    final response = await client.get(uri);
 
-  if (response.statusCode == 200) {
-    // 앱의 임시 디렉토리 가져오기 (Android/iOS 모두 쓰기 가능)
-    final directory = tempDirOverride ?? await getTemporaryDirectory();
-    final savePath = '${directory.path}/${titleText}_${order}_output.zip';
+    if (response.statusCode == 200) {
+      // 앱의 임시 디렉토리 가져오기 (Android/iOS 모두 쓰기 가능)
+      final directory = tempDirOverride ?? await getTemporaryDirectory();
+      final savePath = '${directory.path}/${titleText}_${order}_output.zip';
 
-    final file = File(savePath);
-    await file.writeAsBytes(response.bodyBytes);
+      final file = File(savePath);
+      await file.writeAsBytes(response.bodyBytes);
 
-    return savePath;
-  } else {
-    return null;
+      return savePath;
+    } else {
+      return null;
+    }
+  } finally {
+    if (fakeClient == null) {
+      client.close();
+    }
   }
 }
 
@@ -475,8 +537,30 @@ Future<void> _ensureNotificationsInitialized() async {
 
   const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
   const initSettings = InitializationSettings(android: androidInit);
-  // Note: No callbacks required for simple local updates.
   await _notifier.initialize(initSettings);
+
+  // Request notification permission for Android 13+ (API 33+)
+  final androidImplementation = _notifier
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+
+  if (androidImplementation != null) {
+    await androidImplementation.requestNotificationsPermission();
+
+    // Create notification channel for Android 8.0+
+    const androidChannel = AndroidNotificationChannel(
+      _progressChannelId,
+      _progressChannelName,
+      description: _progressChannelDesc,
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
+    );
+
+    await androidImplementation.createNotificationChannel(androidChannel);
+  }
 
   _notifierInitialized = true;
 }
@@ -497,28 +581,81 @@ Future<void> onProgress(
   }
   progress = progress.clamp(0.0, 1.0);
 
+  // Update loading service for bottom loading bar UI
+  final loadingService = LectureLoadingService.instance;
+  if (!loadingService.isLoading && progress > 0) {
+    // First progress update - start loading
+    loadingService.startLoading(lectureTitle);
+  }
+
+  if (progress >= 1.0) {
+    // Completed
+    loadingService.completeLoading();
+  } else {
+    // In progress
+    loadingService.updateProgress(progress, message);
+  }
+
   final pct = (progress * 100).round();
   final isDone = progress >= 1.0;
 
-  final androidDetails = AndroidNotificationDetails(
-    _progressChannelId,
-    _progressChannelName,
-    channelDescription: _progressChannelDesc,
-    onlyAlertOnce: true,
-    ongoing: !isDone, // keep pinned until done
-    showProgress: !isDone, // show bar while in progress
-    maxProgress: 100,
-    progress: isDone ? 0 : pct, // ignored when showProgress=false
-    indeterminate: false,
-  );
+  // Always show notification during progress to keep background task alive
+  // Only skip notification if completed and app is in foreground
+  final isAppInBackground = _isAppInBackground();
+  final shouldShowNotification = !isDone || isAppInBackground;
 
-  final title = 'Generating Lecture: $lectureTitle';
-  final details = NotificationDetails(android: androidDetails);
+  if (shouldShowNotification) {
+    final androidDetails = AndroidNotificationDetails(
+      _progressChannelId,
+      _progressChannelName,
+      channelDescription: _progressChannelDesc,
+      onlyAlertOnce: !isDone, // Alert when completed
+      ongoing: !isDone, // Keep notification pinned during progress
+      showProgress: !isDone, // Show progress bar while in progress
+      maxProgress: 100,
+      progress: isDone ? 0 : pct,
+      indeterminate: false,
+      importance:
+          Importance.high, // Always high to prevent background termination
+      priority: Priority.high, // Always high to keep task alive
+      autoCancel: isDone, // Auto-dismiss when completed and tapped
+      enableVibration: isDone, // Only vibrate on completion
+      playSound: isDone, // Only sound on completion
+      category: AndroidNotificationCategory.progress,
+    );
 
-  await _notifier.show(
-    _progressNotificationId,
-    isDone ? 'Lecture generation finished' : title,
-    isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
-    details,
-  );
+    final title = 'Generating Lecture: $lectureTitle';
+    final details = NotificationDetails(android: androidDetails);
+
+    await _notifier.show(
+      _progressNotificationId,
+      isDone ? 'Lecture generation finished' : title,
+      isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
+      details,
+    );
+  } else {
+    // App is in foreground and completed - dismiss notification
+    await _notifier.cancel(_progressNotificationId);
+  }
+}
+
+/// Check if the app is currently in background
+bool _isAppInBackground() {
+  try {
+    // WidgetsBinding is available in UI isolate
+    final lifecycleState = WidgetsBinding.instance.lifecycleState;
+
+    // If lifecycleState is null, assume app is active (foreground)
+    if (lifecycleState == null) {
+      return false;
+    }
+
+    // App is in background if lifecycle state is paused, inactive, or detached
+    return lifecycleState == AppLifecycleState.paused ||
+        lifecycleState == AppLifecycleState.inactive ||
+        lifecycleState == AppLifecycleState.detached;
+  } catch (e) {
+    // If we can't determine lifecycle state, assume foreground (safer default)
+    return false;
+  }
 }

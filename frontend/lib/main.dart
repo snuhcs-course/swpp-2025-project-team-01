@@ -5,6 +5,7 @@ import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/app_theme.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/shared/widgets.dart';
 
 /// 앱 진입점 - HiveManager 초기화 후 앱 실행
 void main() async {
@@ -134,13 +135,17 @@ class _ReViewAppState extends State<ReViewApp> {
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         // 모션 줄이기가 활성화되면 스크롤 물리 효과 제거
+        Widget wrappedChild = child!;
+
         if (reduceMotion) {
-          return ScrollConfiguration(
+          wrappedChild = ScrollConfiguration(
             behavior: const _NoBouncingScrollBehavior(),
-            child: child!,
+            child: wrappedChild,
           );
         }
-        return child!;
+
+        // 모든 화면 위에 로딩 바 오버레이 추가
+        return Stack(children: [wrappedChild, const LectureLoadingBar()]);
       },
     );
   }

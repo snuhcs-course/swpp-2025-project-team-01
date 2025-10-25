@@ -115,6 +115,7 @@ void main() {
     return HiveTag(id: id, name: name, color: color);
   }
 
+  // ignore: unused_element
   HiveLecture makeLecture({
     required String id,
     required String subjectId,
