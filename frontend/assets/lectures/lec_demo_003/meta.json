@@ -3,6 +3,6 @@
     "subjectId": "s1",
     "title": "Software Processes",
     "weekLabel": "Week 2-1",
-    "durationSec": 4200,
+    "duration": 4200000,
     "slides": 15
   }

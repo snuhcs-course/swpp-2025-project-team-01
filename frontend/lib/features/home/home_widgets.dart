@@ -631,7 +631,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                   ),
                 ),
                 Text(
-                  _formatDuration(widget.lecture.durationSec),
+                  _formatDuration(widget.lecture.duration),
                   style: const TextStyle(fontSize: 16),
                 ),
               ],

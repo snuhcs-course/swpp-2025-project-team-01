@@ -768,7 +768,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     });
 
     try {
-      // 3. 백엔드로 전송 (TODO: BackendApi 구현 필요)
+      // 3. 백엔드로 전송
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
       final slidePath = _slidePdfPath!;
@@ -789,7 +789,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       final audioPaths = <String>[];
       final jsonPaths = <String>[];
-      final durations = <int>[]; //double로 바꿀 것
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
@@ -848,54 +847,67 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             return;
           }
 
-          await unzipResult(zipPath, titleText, i);
-          final documentsDir = await getApplicationDocumentsDirectory();
-          final outputDir = documentsDir.path;
-          audioPaths.add('$outputDir/${titleText}_$i.opus');
-          final jsonPath = File('$outputDir/${titleText}_$i.json');
-          jsonPaths.add(jsonPath.path);
-
-          try {
-            final jsonData =
-                jsonDecode(await jsonPath.readAsString())
-                    as Map<String, dynamic>;
-            final metadata = jsonData['metadata'] as Map<String, dynamic>?;
-            final durationValue = metadata?['total_duration'];
-            if (durationValue is num) {
-              durations.add(durationValue.round());
-            } else {
-              durations.add(0);
-            }
-          } catch (_) {
-            durations.add(0);
+          final filePaths = await unzipResult(zipPath, titleText, i);
+          if (filePaths == null) {
+            _showToast(
+              l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+            );
+            return;
           }
+          audioPaths.add(filePaths[0]);
+          jsonPaths.add(filePaths[1]);
         } catch (err) {
           LectureLoadingService.instance.hideLoading();
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
-          rethrow;
+          return;
         }
       }
 
-      // 4. 강의 구조체 생성 (첫 오디오 기준 메타데이터, 추후 다중지원)
+      // 4. 음성 파일이 여러 개일 경우 통합 처리
+      String? audioPath;
+      String? jsonPath;
+      int? duration;
+      
+      if (effectiveAudios.length > 1) {
+        audioPath = await concatenateAudioFiles(audioPaths, titleText);
+        jsonPath = await concatenateJsonFiles(jsonPaths, titleText);
+        if (audioPath == null || jsonPath == null) {
+          _showToast(
+            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+          );
+          return;
+        }
+      } else {
+        audioPath = audioPaths[0];
+        jsonPath = jsonPaths[0];
+      }
+
+      final jsonFile = File(jsonPath);
+      final jsonData =
+          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
+      final metadata = jsonData['metadata'] as Map<String, dynamic>;
+      duration = metadata['total_duration'] as int;
+
+      // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,
-        durationSec: durations.isNotEmpty ? durations.first : 0,
+        duration: duration,
         slidePath: _slidePdfPath,
-        audioPaths: audioPaths,
-        transcriptPaths: jsonPaths,
+        audioPath: audioPath,
+        jsonPath: jsonPath,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      // 5. Hive에 강의 저장
+      // 6. Hive에 강의 저장
       await _hive.addLecture(generatedLecture);
 
-      // 6. 과목에 강의 추가
+      // 7. 과목에 강의 추가
       if (_selectedSubjectId != null) {
         final subject = _hive.getSubject(_selectedSubjectId!);
         if (subject != null) {
