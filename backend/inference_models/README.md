@@ -4,10 +4,11 @@ An integrated AI pipeline that reconstructs lectures from audio recordings and P
 
 ## Features
 
-- **Automatic Speech Recognition**: Transcribe lecture audio using NVIDIA Parakeet TDT 0.6B model
+- **Automatic Speech Recognition**: Transcribe lecture audio using NVIDIA Parakeet TDT 0.6B model with segment-level timestamps
 - **Intelligent Slide Matching**: Align transcript to PDF slides using multimodal vision-text embeddings
 - **English-to-Korean Translation**: Translate transcripts using Tencent Hunyuan-MT-7B with vLLM
 - **Text-to-Speech Synthesis**: Generate reconstructed audio with precise slide timing using Kokoro TTS
+- **Original Audio Timestamps**: Preserve timing information from original lecture audio for each sentence
 - **Memory-Efficient Design**: Automatic model loading/unloading between stages for optimal GPU usage
 - **Flexible Architecture**: Use the complete pipeline or individual processors independently
 
@@ -250,16 +251,18 @@ The system consists of four independent processors orchestrated by `LecturePipel
 - **Features**:
   - Automatic audio chunking for long files (>5 minutes)
   - Batch processing to optimize GPU memory
-- **Output**: Full transcript text
+  - Segment-level timestamp extraction (auto-split by punctuation)
+- **Output**: Full transcript text + segment timestamps with original audio timing
 
 ### 2. Slide Matching Stage (Text → Slides)
 - **Model**: NVIDIA NeMo Retriever ColEmbedder (3B multimodal)
 - **Features**:
+  - Uses ASR segments directly as sentences (punctuation-based split)
   - Vision-text embedding alignment
   - Dynamic programming for temporal coherence
   - Configurable jump penalties (forward/backward)
   - Optional exponential scaling and confidence boosting
-- **Output**: Sentence-to-slide alignment with confidence scores
+- **Output**: Sentence-to-slide alignment with confidence scores + original audio timestamps
 
 ### 3. Translation Stage (English → Korean)
 - **Model**: Tencent Hunyuan-MT-7B via vLLM
@@ -350,18 +353,24 @@ Plain text transcription of the lecture audio.
     "text": "Welcome to the lecture.",
     "text_kor": "강의에 오신 것을 환영합니다.",
     "matched_page": 1,
-    "confidence_score": 0.95
+    "confidence_score": 0.95,
+    "original_start_time": 0.12,
+    "original_end_time": 3.45
   },
   {
     "text": "Today we discuss AI.",
     "text_kor": "오늘 우리는 AI에 대해 논의합니다.",
     "matched_page": 2,
-    "confidence_score": 0.92
+    "confidence_score": 0.92,
+    "original_start_time": 3.68,
+    "original_end_time": 6.92
   }
 ]
 ```
 
-**Note:** `text_kor` field is added when translation is enabled.
+**Notes:**
+- `text_kor` field is added when translation is enabled
+- `original_start_time` and `original_end_time` are in seconds (float), extracted from ASR segment timestamps
 
 ### Timestamps File (`.json`)
 ```json
@@ -380,7 +389,9 @@ Plain text transcription of the lecture audio.
       "slide_number": 1,
       "start_time": 0,
       "end_time": 2500,
-      "duration": 2500
+      "duration": 2500,
+      "original_start_time": 120,
+      "original_end_time": 3450
     },
     ...
   ]
@@ -388,8 +399,9 @@ Plain text transcription of the lecture audio.
 ```
 
 **Notes:**
-- All time values (`total_duration`, `start_time`, `end_time`, `duration`) are in milliseconds as integers.
-- `text_kor` field contains Korean translation (added when translation is enabled).
+- All time values for **reconstructed audio** (`total_duration`, `start_time`, `end_time`, `duration`) are in milliseconds as integers
+- `original_start_time` and `original_end_time` are timestamps from the **original lecture audio** in milliseconds (integer)
+- `text_kor` field contains Korean translation (added when translation is enabled)
 
 ### Audio Files
 - **WAV** (`.wav`): Uncompressed audio, 24kHz sample rate
