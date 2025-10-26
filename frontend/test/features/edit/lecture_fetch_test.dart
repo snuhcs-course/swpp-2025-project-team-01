@@ -416,6 +416,7 @@ void main() {
     test('returns null if only one file', () async {
       final result = await concatenateJsonFiles(
         [tmp1],
+        [1],
         outputTitle,
         dirOverride: tempDir,
       );
@@ -425,6 +426,7 @@ void main() {
     test('merges JSON files correctly', () async {
       final result = await concatenateJsonFiles(
         [tmp1, tmp2],
+        [1, 2],
         outputTitle,
         dirOverride: tempDir,
       );
@@ -548,6 +550,7 @@ void main() {
       await expectLater(
         () async => concatenateJsonFiles(
           [tmp1, tmpBadVoice],
+          [1, 2],
           outputTitle,
           dirOverride: tempDir,
         ),
@@ -556,6 +559,7 @@ void main() {
       await expectLater(
         () async => concatenateJsonFiles(
           [tmp1, tmpBadSpeed],
+          [1, 2],
           outputTitle,
           dirOverride: tempDir,
         ),
@@ -564,6 +568,7 @@ void main() {
       await expectLater(
         () async => concatenateJsonFiles(
           [tmp1, tmpBadLanguage],
+          [1, 2],
           outputTitle,
           dirOverride: tempDir,
         ),
@@ -572,6 +577,7 @@ void main() {
       await expectLater(
         () async => concatenateJsonFiles(
           [tmp1, tmpBadSampleRate],
+          [1, 2],
           outputTitle,
           dirOverride: tempDir,
         ),
@@ -583,6 +589,7 @@ void main() {
       await expectLater(
         () async => concatenateJsonFiles(
           [tmp1, '${tempDir.path}/noexist.json'],
+          [1, 2],
           outputTitle,
           dirOverride: tempDir,
         ),

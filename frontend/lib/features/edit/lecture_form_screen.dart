@@ -788,6 +788,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       final audioPaths = <String>[];
       final jsonPaths = <String>[];
+      final pdfStarts = <int>[];
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
@@ -855,6 +856,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           }
           audioPaths.add(filePaths[0]);
           jsonPaths.add(filePaths[1]);
+
+          // Add PDF ranges
+          final startText = audioFileEntry.startPageController.text.trim();
+          final pdfStart = int.parse(startText);
+          pdfStarts.add(pdfStart);
         } catch (err) {
           LectureLoadingService.instance.hideLoading();
           _showToast(
@@ -871,7 +877,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       if (effectiveAudios.length > 1) {
         audioPath = await concatenateAudioFiles(audioPaths, titleText);
-        jsonPath = await concatenateJsonFiles(jsonPaths, titleText);
+        jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
         if (audioPath == null || jsonPath == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
