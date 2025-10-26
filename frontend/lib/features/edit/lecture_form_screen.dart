@@ -858,9 +858,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           jsonPaths.add(filePaths[1]);
 
           // Add PDF ranges
-          final startText = audioFileEntry.startPageController.text.trim();
-          final pdfStart = int.parse(startText);
-          pdfStarts.add(pdfStart);
+          if (effectiveAudios.length >= 2) {
+            final startText = audioFileEntry.startPageController.text.trim();
+            final pdfStart = int.parse(startText);
+            pdfStarts.add(pdfStart);
+          }
         } catch (err) {
           LectureLoadingService.instance.hideLoading();
           _showToast(
