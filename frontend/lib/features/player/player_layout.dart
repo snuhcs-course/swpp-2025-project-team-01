@@ -293,6 +293,7 @@ class VideoControlsOverlay extends StatelessWidget {
                       onBack: onBack,
                       isCaptionEnabled: isCaptionEnabled,
                       onCaptionToggle: controller.toggleCaption,
+                      onSpeedChanged: controller.setPlaybackSpeed,
                       isSynced: isSynced,
                       onSyncToggle: controller.toggleSync,
                       pageDifference: controller.pageDifference,
@@ -472,6 +473,45 @@ class PagesListWidget extends StatelessWidget {
   }
 }
 
+// ========== Translation Button ==========
+
+class TranslationButton extends StatelessWidget {
+  const TranslationButton({super.key, required this.controller});
+
+  final PlayerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: controller.isKoreanLanguage,
+      builder: (context, isKorean, _) {
+        final hasKorean = controller.hasKoreanTranscript;
+        return GestureDetector(
+          onTap: hasKorean ? controller.toggleTranscriptLanguage : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: hasKorean
+                  ? (isKorean ? Colors.blue[600] : Colors.grey[400])
+                  : Colors.grey[300],
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              isKorean ? 'KOR' : 'ENG',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: hasKorean ? Colors.white : Colors.grey[500],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 // ========== Transcript Area ==========
 
 class TranscriptArea extends StatelessWidget {
@@ -496,50 +536,65 @@ class TranscriptArea extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Transcript',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[800],
-            ),
+          Row(
+            children: [
+              Text(
+                'Transcript',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(width: 8),
+              TranslationButton(controller: controller),
+            ],
           ),
           const SizedBox(height: 12),
           Expanded(
             child: ValueListenableBuilder<int?>(
               valueListenable: controller.currentSentenceIndex,
               builder: (context, currentSentenceIndex, _) {
-                return ListView.builder(
-                  controller: controller.transcriptScrollController,
-                  itemCount: controller.transcriptData!.timestamps.length,
-                  itemBuilder: (context, index) {
-                    final sentence =
-                        controller.transcriptData!.timestamps[index];
-                    final isCurrentSentence = currentSentenceIndex == index;
+                return ValueListenableBuilder<bool>(
+                  valueListenable: controller.isKoreanLanguage,
+                  builder: (context, isKorean, _) {
+                    return ListView.builder(
+                      controller: controller.transcriptScrollController,
+                      itemCount: controller.transcriptData!.timestamps.length,
+                      itemBuilder: (context, index) {
+                        final sentence =
+                            controller.transcriptData!.timestamps[index];
+                        final isCurrentSentence = currentSentenceIndex == index;
+                        final displayText =
+                            (isKorean && sentence.textKor != null)
+                            ? sentence.textKor!
+                            : sentence.text;
 
-                    return AutoScrollTag(
-                      key: ValueKey(index),
-                      controller: controller.transcriptScrollController!,
-                      index: index,
-                      child: GestureDetector(
-                        onTap: () => controller.seekToSentence(index),
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            sentence.text,
-                            style: TextStyle(
-                              fontSize: isCurrentSentence ? 18 : 14,
-                              fontWeight: isCurrentSentence
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isCurrentSentence
-                                  ? Colors.black
-                                  : Colors.grey[600],
-                              height: 1.6,
+                        return AutoScrollTag(
+                          key: ValueKey(index),
+                          controller: controller.transcriptScrollController!,
+                          index: index,
+                          child: GestureDetector(
+                            onTap: () => controller.seekToSentence(index),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                displayText,
+                                style: TextStyle(
+                                  fontSize: isCurrentSentence ? 18 : 14,
+                                  fontWeight: isCurrentSentence
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isCurrentSentence
+                                      ? Colors.black
+                                      : Colors.grey[600],
+                                  height: 1.6,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 );
@@ -564,44 +619,49 @@ class CaptionOverlay extends StatelessWidget {
     return ValueListenableBuilder<int?>(
       valueListenable: controller.currentSentenceIndex,
       builder: (context, _, __) {
-        final captionText = controller.captionText;
-
-        if (captionText.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
         return ValueListenableBuilder<bool>(
-          valueListenable: controller.showControls,
-          builder: (context, showControls, _) {
-            return Positioned(
-              left: 0,
-              right: 0,
-              bottom: showControls ? 80 : 20,
-              child: Center(
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.8,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    captionText,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      height: 1.4,
+          valueListenable: controller.isKoreanLanguage,
+          builder: (context, __, ___) {
+            final captionText = controller.captionText;
+
+            if (captionText.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return ValueListenableBuilder<bool>(
+              valueListenable: controller.showControls,
+              builder: (context, showControls, _) {
+                return Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: showControls ? 80 : 20,
+                  child: Center(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.8,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        captionText,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             );
           },
         );

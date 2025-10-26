@@ -31,6 +31,7 @@ class TranscriptSentence {
   TranscriptSentence({
     required this.sentenceId,
     required this.text,
+    this.textKor,
     required this.slideNumber,
     required this.startTime,
     required this.endTime,
@@ -41,6 +42,7 @@ class TranscriptSentence {
     return TranscriptSentence(
       sentenceId: json['sentence_id'] as int,
       text: json['text'] as String,
+      textKor: json['text_kor'] as String?,
       slideNumber: json['slide_number'] as int,
       startTime: json['start_time'] as int,
       endTime: json['end_time'] as int,
@@ -50,6 +52,7 @@ class TranscriptSentence {
 
   final int sentenceId;
   final String text;
+  final String? textKor;
   final int slideNumber;
   final int startTime;
   final int endTime;
