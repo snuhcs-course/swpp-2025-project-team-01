@@ -3,6 +3,6 @@
     "subjectId": "s1",
     "title": "Week 1-1: Course Overview",
     "weekLabel": "Week 1-1",
-    "durationSec": 3600,
+    "duration": 3600000,
     "slides": 10
   }

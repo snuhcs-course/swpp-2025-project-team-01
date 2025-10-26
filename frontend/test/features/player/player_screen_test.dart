@@ -6,7 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:re_view/features/player/player_screen.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
-import 'package:re_view/features/player/core/pdf_cache_service.dart';
+import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:pdfx/pdfx.dart';
@@ -23,11 +23,11 @@ void main() {
       id: 'test-lecture',
       subjectId: 'test',
       weekLabel: 'hello',
-      durationSec: 100,
+      duration: 100,
       title: 'Test Lecture',
       slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
-      audioPaths: ['assets/lectures/lec_demo_001/lecture_with_slides.opus'],
-      transcriptPaths: ['assets/lectures/lec_demo_001/transcript.json'],
+      audioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+      jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
       createdAt: DateTime.now(),
     );
   }

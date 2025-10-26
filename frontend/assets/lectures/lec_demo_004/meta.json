@@ -3,6 +3,6 @@
     "subjectId": "s2",
     "title": "외계 생명체 탐사 기술",
     "weekLabel": "Week 1-2",
-    "durationSec": 4200,
+    "duration": 4200000,
     "slides": 15
   }

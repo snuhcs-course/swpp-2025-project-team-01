@@ -30,6 +30,9 @@ class AudioService {
   /// 특정 위치로 이동
   Future<void> seek(Duration position) => _player.seek(position);
 
+  /// 재생 속도 변경
+  Future<void> setSpeed(double speed) => _player.setSpeed(speed);
+
   /// 리소스 정리
   Future<void> dispose() => _player.dispose();
 
