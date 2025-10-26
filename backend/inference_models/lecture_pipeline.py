@@ -250,9 +250,11 @@ class LecturePipeline:
         )
 
         transcript = asr_result['transcript']
+        segment_timestamps = asr_result.get('segment_timestamps', [])
         results['asr'] = asr_result
 
         print(f"\n✓ ASR Complete: {len(transcript)} characters")
+        print(f"✓ Segment timestamps extracted: {len(segment_timestamps)} segments")
 
         if progress_callback:
             progress_callback("processing_asr", 40.0, "ASR processing completed")
@@ -270,10 +272,15 @@ class LecturePipeline:
         if progress_callback:
             progress_callback("processing_matching", 40.0, "Starting slide matching...")
 
-        # Split transcript into sentences if splitter provided
-        if sentence_splitter is not None:
+        # Use ASR segments directly as sentences (already split by punctuation)
+        # Extract segment texts for matching
+        if segment_timestamps:
+            sentences = [seg['text'] for seg in segment_timestamps]
+            print(f"Using {len(sentences)} ASR segments for matching")
+        elif sentence_splitter is not None:
+            # Fallback: use sentence splitter if no segments available
             sentences = sentence_splitter(transcript)
-            print(f"Split transcript into {len(sentences)} sentences")
+            print(f"Fallback: Split transcript into {len(sentences)} sentences")
         else:
             # Use full transcript as single query
             sentences = None
@@ -292,6 +299,15 @@ class LecturePipeline:
             sentences = sentences,
             progress_callback = matching_progress_callback
         )
+
+        # Add original audio timestamps directly from segments (1:1 correspondence)
+        if segment_timestamps and len(segment_timestamps) == len(matching_results):
+            for i, result in enumerate(matching_results):
+                result['original_start_time'] = segment_timestamps[i]['start']
+                result['original_end_time'] = segment_timestamps[i]['end']
+            print(f"✓ Added original audio timestamps to {len(matching_results)} results")
+        else:
+            print(f"Warning: Segment count mismatch - segments: {len(segment_timestamps)}, results: {len(matching_results)}")
 
         results['matching'] = {
             'num_matches': len(matching_results),
