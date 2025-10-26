@@ -141,6 +141,12 @@ class TTSProcessor:
                     if 'text_kor' in sentence_info:
                         timestamp_info['text_kor'] = sentence_info['text_kor']
 
+                    # Add original audio timestamps if available (in milliseconds)
+                    if 'original_start_time' in sentence_info:
+                        timestamp_info['original_start_time'] = int(round(sentence_info['original_start_time'] * 1000))
+                    if 'original_end_time' in sentence_info:
+                        timestamp_info['original_end_time'] = int(round(sentence_info['original_end_time'] * 1000))
+
                     timestamp_data.append(timestamp_info)
 
                     # Accumulate audio
