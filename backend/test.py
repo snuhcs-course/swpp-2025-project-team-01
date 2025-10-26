@@ -12,7 +12,7 @@ from pathlib import Path
 import sseclient
 
 # Configuration
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:8080" # 8080 for port forwarding
 TEST_AUDIO = Path(__file__).parent / "test_lecture" / "lecture_recording.mp3"
 TEST_PDF = Path(__file__).parent / "test_lecture" / "lecture_slides.pdf"
 OUTPUT_FILE = Path(__file__).parent / "test_output.zip"
