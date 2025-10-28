@@ -23,7 +23,10 @@ Backend API for lecture synchronization using AI inference pipeline.
 
    This will:
    - Create a conda environment named `swpp-backend` (or your custom name)
-   - Install Python 3.12, PyTorch, ML libraries (transformers, nemo_toolkit, etc.)
+   - Install Python 3.12, PyTorch with CUDA 12.9
+   - Install NeMo Toolkit (ASR), Kokoro TTS
+   - Install vLLM for translation inference
+   - Install transformers and ML libraries
    - Install FastAPI and backend dependencies
    - Install flash-attn (optional, GPU-only)
 
@@ -36,18 +39,17 @@ Backend API for lecture synchronization using AI inference pipeline.
    ```bash
    python main.py
    # Or with uvicorn directly:
-   # uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   # uvicorn main:app --reload --host 0.0.0.0 --port 8080
    ```
 
 4. **Access the API documentation**:
-   - Swagger UI: http://localhost:8000/docs
-   - ReDoc: http://localhost:8000/redoc
+   - Swagger UI: http://localhost:8080/docs
+   - ReDoc: http://localhost:8080/redoc
 
 ### Project Structure
 
 ```
 backend/
-├── environment.yml          # Unified conda environment (AI + Backend)
 ├── setup.sh                 # Installation script
 ├── main.py                  # FastAPI application
 ├── test.py                  # API test script
@@ -57,6 +59,7 @@ backend/
     ├── lecture_pipeline.py  # Main pipeline orchestration
     ├── asr_processor.py     # Speech-to-text (ASR)
     ├── slide_matching_processor.py  # Slide matching
+    ├── translation_processor.py  # English-to-Korean translation
     ├── tts_processor.py     # Text-to-speech (TTS)
     └── README.md
 ```
@@ -119,7 +122,8 @@ Server-Sent Events (SSE) stream with JSON data.
 - `uploading` - Files uploaded, waiting for processing
 - `processing_asr` - ASR (speech-to-text) in progress (10-40%)
 - `processing_matching` - Slide matching in progress (40-70%)
-- `processing_tts` - TTS (text-to-speech) generation in progress (70-95%)
+- `processing_translation` - English-to-Korean translation in progress (70-80%)
+- `processing_tts` - TTS (text-to-speech) generation in progress (80-95%)
 - `creating_output` - Creating final output ZIP file (95-100%)
 - `completed` - Job completed successfully
 - `failed` - Job failed with error
@@ -139,7 +143,7 @@ Future<String?> synchronizeLecture(
   File pdfFile,
   Function(double progress, String message) onProgress,
 ) async {
-  final uri = Uri.parse('http://localhost:8000/api/synchronize/stream');
+  final uri = Uri.parse('http://localhost:8080/api/synchronize/stream');
 
   final request = http.MultipartRequest('POST', uri);
   request.files.add(await http.MultipartFile.fromPath(
@@ -218,7 +222,7 @@ Query the current status of a synchronization job.
 ```dart
 Future<Map<String, dynamic>> checkJobStatus(String jobId) async {
   final response = await http.get(
-    Uri.parse('http://localhost:8000/api/synchronize/status/$jobId'),
+    Uri.parse('http://localhost:8080/api/synchronize/status/$jobId'),
   );
 
   if (response.statusCode == 200) {
@@ -270,7 +274,7 @@ Download the result ZIP file for a completed synchronization job.
 ```dart
 Future<void> downloadResult(String jobId, String savePath) async {
   final response = await http.get(
-    Uri.parse('http://localhost:8000/api/synchronize/download/$jobId'),
+    Uri.parse('http://localhost:8080/api/synchronize/download/$jobId'),
   );
 
   if (response.statusCode == 200) {
@@ -310,18 +314,24 @@ The `timestamps.json` file in the downloaded ZIP contains:
     {
       "sentence_id": 1,
       "text": "Welcome to this lecture on deep learning.",
+      "text_kor": "딥러닝에 관한 이 강의에 오신 것을 환영합니다.",
       "slide_number": 1,
       "start_time": 0,
       "end_time": 3200,
-      "duration": 3200
+      "duration": 3200,
+      "original_start_time": 120,
+      "original_end_time": 4500
     },
     {
       "sentence_id": 2,
       "text": "Today we will discuss neural networks.",
+      "text_kor": "오늘 우리는 신경망에 대해 논의할 것입니다.",
       "slide_number": 1,
       "start_time": 3400,
       "end_time": 6800,
-      "duration": 3400
+      "duration": 3400,
+      "original_start_time": 4600,
+      "original_end_time": 8200
     }
   ]
 }
@@ -339,11 +349,14 @@ The `timestamps.json` file in the downloaded ZIP contains:
 
 - `timestamps`: Array of sentence timing information
   - `sentence_id`: Unique sentence identifier (1-indexed)
-  - `text`: Sentence text content
+  - `text`: Sentence text content (English)
+  - `text_kor`: Korean translation of the sentence (added by translation processor)
   - `slide_number`: Corresponding slide page number (1-indexed)
-  - `start_time`: Sentence start time in milliseconds (integer)
-  - `end_time`: Sentence end time in milliseconds (integer)
-  - `duration`: Sentence duration in milliseconds (integer)
+  - `start_time`: Sentence start time in reconstructed audio in milliseconds (integer)
+  - `end_time`: Sentence end time in reconstructed audio in milliseconds (integer)
+  - `duration`: Sentence duration in reconstructed audio in milliseconds (integer)
+  - `original_start_time`: Sentence start time in original lecture audio in milliseconds (integer)
+  - `original_end_time`: Sentence end time in original lecture audio in milliseconds (integer)
 
 ---
 
@@ -436,7 +449,7 @@ class LectureSyncService {
 
 // Usage example
 void main() async {
-  final service = LectureSyncService('http://localhost:8000');
+  final service = LectureSyncService('http://localhost:8080');
 
   try {
     // Start sync with progress tracking
@@ -537,7 +550,8 @@ Re:view Backend API Test Suite
 [ 10.0%] processing_asr         | Processing ASR (chunk 1/2)...
 [ 45.0%] processing_asr         | Processing ASR (chunk 2/2)...
 [ 55.0%] processing_matching    | Matching slides to transcript...
-[ 75.0%] processing_tts         | Generating audio (sentence 45/120)...
+[ 75.0%] processing_translation | Translating to Korean (sentence 60/120)...
+[ 85.0%] processing_tts         | Generating audio (sentence 90/120)...
 [ 95.0%] creating_output        | Creating download package...
 ------------------------------------------------------------
 ✅ Processing completed successfully!

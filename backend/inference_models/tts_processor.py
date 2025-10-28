@@ -136,6 +136,17 @@ class TTSProcessor:
                         "end_time": int(round((current_time + duration) * 1000)),
                         "duration": int(round(duration * 1000))
                     }
+
+                    # Add Korean translation if available
+                    if 'text_kor' in sentence_info:
+                        timestamp_info['text_kor'] = sentence_info['text_kor']
+
+                    # Add original audio timestamps if available (in milliseconds)
+                    if 'original_start_time' in sentence_info:
+                        timestamp_info['original_start_time'] = int(round(sentence_info['original_start_time'] * 1000))
+                    if 'original_end_time' in sentence_info:
+                        timestamp_info['original_end_time'] = int(round(sentence_info['original_end_time'] * 1000))
+
                     timestamp_data.append(timestamp_info)
 
                     # Accumulate audio
@@ -291,10 +302,16 @@ class TTSProcessor:
         # Convert matching results to sentence format
         sentences = []
         for result in matching_results:
-            sentences.append({
+            sentence_info = {
                 'text': result['text'],
                 'slide_number': result['matched_page']
-            })
+            }
+
+            # Include Korean translation if available
+            if 'text_kor' in result:
+                sentence_info['text_kor'] = result['text_kor']
+
+            sentences.append(sentence_info)
 
         return self.generate_audio(
             sentences = sentences,

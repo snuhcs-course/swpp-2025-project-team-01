@@ -4,9 +4,11 @@ An integrated AI pipeline that reconstructs lectures from audio recordings and P
 
 ## Features
 
-- **Automatic Speech Recognition**: Transcribe lecture audio using NVIDIA Parakeet TDT 0.6B model
+- **Automatic Speech Recognition**: Transcribe lecture audio using NVIDIA Parakeet TDT 0.6B model with segment-level timestamps
 - **Intelligent Slide Matching**: Align transcript to PDF slides using multimodal vision-text embeddings
+- **English-to-Korean Translation**: Translate transcripts using Tencent Hunyuan-MT-7B with vLLM
 - **Text-to-Speech Synthesis**: Generate reconstructed audio with precise slide timing using Kokoro TTS
+- **Original Audio Timestamps**: Preserve timing information from original lecture audio for each sentence
 - **Memory-Efficient Design**: Automatic model loading/unloading between stages for optimal GPU usage
 - **Flexible Architecture**: Use the complete pipeline or individual processors independently
 
@@ -42,6 +44,7 @@ conda activate swpp-ai
 The setup script installs:
 - PyTorch 2.8.0 with CUDA 12.9
 - Transformers, NeMo Toolkit (ASR)
+- vLLM 0.10.2 (for translation inference)
 - Kokoro TTS
 - Flash Attention 2 (optional, GPU required)
 
@@ -96,6 +99,11 @@ pipeline = LecturePipeline(
     use_context_similarity=True,  # Enable context-aware scoring via EMA (default: True)
     context_weight=0.05,      # Weight for context similarity contribution (default: 0.05)
     context_update_rate=0.25,  # Update rate for EMA (default: 0.25)
+
+    # Translation settings
+    translation_model='tencent/Hunyuan-MT-7B',  # Translation model name
+    translation_tensor_parallel_size=1,  # Number of GPUs for tensor parallelism
+    enable_translation=True,  # Enable English-to-Korean translation (default: True)
 
     # TTS settings
     tts_voice='af_heart',     # Voice style (af_heart, af_bella, af_sarah, am_adam, am_michael)
@@ -163,6 +171,47 @@ matches = matcher.match_transcript_to_slides(
 matcher.unload_model()
 ```
 
+#### Translation Only
+
+```python
+from translation_processor import TranslationProcessor
+
+translator = TranslationProcessor(
+    model_name='tencent/Hunyuan-MT-7B',
+    device='cuda',
+    tensor_parallel_size=1,
+    max_model_len=1024,
+    gpu_memory_utilization=0.35
+)
+translator.load_model()
+
+# Translate matching results
+matching_results = [
+    {
+        'text': 'Welcome to the lecture.',
+        'matched_page': 1,
+        'confidence_score': 0.95
+    },
+    {
+        'text': 'Today we discuss AI.',
+        'matched_page': 2,
+        'confidence_score': 0.92
+    }
+]
+
+# Add Korean translations
+translated_results = translator.translate_matching_results(
+    matching_results=matching_results
+)
+
+# Each result now has 'text_kor' field
+for result in translated_results:
+    print(f"EN: {result['text']}")
+    print(f"KO: {result['text_kor']}")
+
+translator.unload_model()
+```
+
 #### TTS Only
 
 ```python
@@ -195,32 +244,43 @@ tts.unload_model()
 
 ## Pipeline Architecture
 
-The system consists of three independent processors orchestrated by `LecturePipeline`:
+The system consists of four independent processors orchestrated by `LecturePipeline`:
 
 ### 1. ASR Stage (Speech → Text)
 - **Model**: NVIDIA Parakeet TDT 0.6B via NeMo Toolkit
 - **Features**:
   - Automatic audio chunking for long files (>5 minutes)
   - Batch processing to optimize GPU memory
-- **Output**: Full transcript text
+  - Segment-level timestamp extraction (auto-split by punctuation)
+- **Output**: Full transcript text + segment timestamps with original audio timing
 
 ### 2. Slide Matching Stage (Text → Slides)
 - **Model**: NVIDIA NeMo Retriever ColEmbedder (3B multimodal)
 - **Features**:
+  - Uses ASR segments directly as sentences (punctuation-based split)
   - Vision-text embedding alignment
   - Dynamic programming for temporal coherence
   - Configurable jump penalties (forward/backward)
   - Optional exponential scaling and confidence boosting
-- **Output**: Sentence-to-slide alignment with confidence scores
+- **Output**: Sentence-to-slide alignment with confidence scores + original audio timestamps
 
-### 3. TTS Stage (Text + Slides → Audio)
+### 3. Translation Stage (English → Korean)
+- **Model**: Tencent Hunyuan-MT-7B via vLLM
+- **Features**:
+  - Fast parallel translation inference using vLLM
+  - Batch processing for efficiency
+  - Configurable GPU memory utilization
+  - Optional: can be disabled via `enable_translation=False`
+- **Output**: Korean translations added to matching results
+
+### 4. TTS Stage (Text + Slides → Audio)
 - **Model**: Kokoro TTS pipeline
 - **Features**:
   - Natural voice synthesis with multiple voice options
   - Precise timing generation for each sentence
   - Automatic silence insertion between sentences
   - Multi-format export (WAV, Opus, AAC)
-- **Output**: Reconstructed audio with timestamp metadata
+- **Output**: Reconstructed audio with timestamp metadata (including translations)
 
 ### Memory Management
 
@@ -262,6 +322,14 @@ The `LecturePipeline` automatically unloads models between stages to prevent VRA
 | `context_weight` | `0.05` | Weight for context similarity contribution |
 | `context_update_rate` | `0.25` | Update rate for EMA |
 
+### Translation Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `translation_model` | `tencent/Hunyuan-MT-7B` | Translation model name |
+| `translation_tensor_parallel_size` | `1` | Number of GPUs for tensor parallelism |
+| `enable_translation` | `True` | Enable English-to-Korean translation |
+
 ### TTS Parameters
 
 | Parameter | Default | Description |
@@ -283,16 +351,26 @@ Plain text transcription of the lecture audio.
 [
   {
     "text": "Welcome to the lecture.",
+    "text_kor": "강의에 오신 것을 환영합니다.",
     "matched_page": 1,
-    "confidence_score": 0.95
+    "confidence_score": 0.95,
+    "original_start_time": 0.12,
+    "original_end_time": 3.45
   },
   {
     "text": "Today we discuss AI.",
+    "text_kor": "오늘 우리는 AI에 대해 논의합니다.",
     "matched_page": 2,
-    "confidence_score": 0.92
+    "confidence_score": 0.92,
+    "original_start_time": 3.68,
+    "original_end_time": 6.92
   }
 ]
 ```
+
+**Notes:**
+- `text_kor` field is added when translation is enabled
+- `original_start_time` and `original_end_time` are in seconds (float), extracted from ASR segment timestamps
 
 ### Timestamps File (`.json`)
 ```json
@@ -307,17 +385,23 @@ Plain text transcription of the lecture audio.
     {
       "sentence_id": 1,
       "text": "Welcome to the lecture.",
+      "text_kor": "강의에 오신 것을 환영합니다.",
       "slide_number": 1,
       "start_time": 0,
       "end_time": 2500,
-      "duration": 2500
+      "duration": 2500,
+      "original_start_time": 120,
+      "original_end_time": 3450
     },
     ...
   ]
 }
 ```
 
-**Note:** All time values (`total_duration`, `start_time`, `end_time`, `duration`) are in milliseconds as integers.
+**Notes:**
+- All time values for **reconstructed audio** (`total_duration`, `start_time`, `end_time`, `duration`) are in milliseconds as integers
+- `original_start_time` and `original_end_time` are timestamps from the **original lecture audio** in milliseconds (integer)
+- `text_kor` field contains Korean translation (added when translation is enabled)
 
 ### Audio Files
 - **WAV** (`.wav`): Uncompressed audio, 24kHz sample rate
@@ -361,5 +445,20 @@ pipeline = LecturePipeline(
     backward_weight=3.0,        # Increase from default 2.0 to heavily penalize backward jumps
     exponential_scale=3.0,      # Increase from default 2.8 to amplify score differences
     context_weight=0.1          # Increase from default 0.05 for stronger context influence
+)
+```
+
+### Translation Memory Optimization
+
+```python
+# Reduce GPU memory usage for translation
+pipeline = LecturePipeline(
+    translation_tensor_parallel_size=1,  # Use 1 GPU (default)
+    enable_translation=True              # Enable translation
+)
+
+# Or disable translation if not needed
+pipeline = LecturePipeline(
+    enable_translation=False  # Skip translation stage entirely
 )
 ```

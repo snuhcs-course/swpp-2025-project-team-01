@@ -67,9 +67,9 @@ class ASRProcessor:
         batch_size: int = 3,
         temp_dir: str = "temp_chunks",
         progress_callback: Callable[[float, str], None] | None = None
-    ) -> str | None:
+    ) -> tuple[str, list[dict[str, Any]]] | None:
         """
-        Split audio file and transcribe in batches.
+        Split audio file and transcribe in batches with timestamps.
 
         Args:
             input_file: Input audio file path
@@ -79,7 +79,9 @@ class ASRProcessor:
             progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
-            Full transcript or None if no splitting needed
+            Tuple of (full transcript, segment timestamps) or None if no splitting needed
+            Segment timestamps is a list of dicts with 'text', 'start', 'end' keys (times in seconds)
+            Segments are automatically split by punctuation marks
         """
         print(f"Loading audio file: {input_file}")
 
@@ -143,22 +145,41 @@ class ASRProcessor:
         gc.collect()
 
         try:
-            # Process all chunks at once with batch_size
+            # Process all chunks at once with batch_size and enable timestamps
             with torch.no_grad():
                 outputs = self.model.transcribe(
                     chunk_files,
-                    batch_size = batch_size
+                    batch_size = batch_size,
+                    timestamps = True  # Enable word-level timestamps
                 )
 
             if progress_callback:
                 progress_callback(70.0, "Processing transcription results...")
 
-            # Extract transcripts
+            # Extract transcripts and timestamps
             transcripts = []
+            all_segment_timestamps = []
+            chunk_offset = 0.0  # Track cumulative time offset
+
             for idx, output in enumerate(outputs, 1):
                 transcript = output.text if hasattr(output, 'text') else str(output)
                 transcripts.append(transcript)
                 print(f"Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
+
+                # Extract segment-level timestamps if available
+                if hasattr(output, 'timestamp') and output.timestamp and 'segment' in output.timestamp:
+                    segment_timestamps = output.timestamp['segment']
+                    # Adjust timestamps by chunk offset
+                    for seg_info in segment_timestamps:
+                        all_segment_timestamps.append({
+                            'text': seg_info.get('segment', ''),
+                            'start': seg_info.get('start', 0.0) + chunk_offset,
+                            'end': seg_info.get('end', 0.0) + chunk_offset
+                        })
+
+                    # Update chunk offset for next chunk
+                    chunk_duration = len(audio[(idx - 1) * chunk_samples:idx * chunk_samples]) / sr
+                    chunk_offset += chunk_duration
 
                 # Report progress per chunk
                 if progress_callback:
@@ -198,7 +219,7 @@ class ASRProcessor:
 
         # Merge results
         full_transcript = ' '.join(filter(None, transcripts))
-        return full_transcript
+        return (full_transcript, all_segment_timestamps)
 
     def transcribe(
         self,
@@ -220,7 +241,7 @@ class ASRProcessor:
                              progress is 0-100 representing percentage completion
 
         Returns:
-            Dictionary with transcript and metadata
+            Dictionary with transcript, word_timestamps, and metadata
         """
         if self.model is None:
             self.load_model()
@@ -240,6 +261,8 @@ class ASRProcessor:
             progress_callback = progress_callback
         )
 
+        segment_timestamps = []
+
         if split_result is None:
             # Process original file directly (short audio)
             print("Processing original file directly:")
@@ -248,14 +271,26 @@ class ASRProcessor:
                 progress_callback(50.0, "Transcribing audio...")
 
             with torch.no_grad():
-                output = self.model.transcribe([audio_path])
+                output = self.model.transcribe([audio_path], timestamps = True)
             transcript = output[0].text
+
+            # Extract segment-level timestamps
+            if hasattr(output[0], 'timestamp') and output[0].timestamp and 'segment' in output[0].timestamp:
+                segment_timestamps_raw = output[0].timestamp['segment']
+                segment_timestamps = [
+                    {
+                        'text': seg.get('segment', ''),
+                        'start': seg.get('start', 0.0),
+                        'end': seg.get('end', 0.0)
+                    }
+                    for seg in segment_timestamps_raw
+                ]
 
             if progress_callback:
                 progress_callback(95.0, "Transcription complete")
         else:
             # Use split result (already reported progress in _auto_split_transcribe)
-            transcript = split_result
+            transcript, segment_timestamps = split_result
 
         if progress_callback:
             progress_callback(100.0, "Finalizing transcription...")
@@ -280,8 +315,11 @@ class ASRProcessor:
         result = {
             "transcript": transcript,
             "audio_path": audio_path,
-            "length": len(transcript)
+            "length": len(transcript),
+            "segment_timestamps": segment_timestamps  # Add segment-level timestamps (split by punctuation)
         }
+
+        print(f"\n✓ Extracted {len(segment_timestamps)} segment-level timestamps")
 
         return result
 

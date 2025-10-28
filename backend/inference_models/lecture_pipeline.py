@@ -12,6 +12,7 @@ from dataclasses import dataclass, asdict
 
 from .asr_processor import ASRProcessor
 from .slide_matching_processor import SlideMatchingProcessor
+from .translation_processor import TranslationProcessor
 from .tts_processor import TTSProcessor
 
 
@@ -81,6 +82,11 @@ class LecturePipeline:
         context_weight: float = 0.05,
         context_update_rate: float = 0.25,
 
+        # Translation settings
+        translation_model: str = "tencent/Hunyuan-MT-7B",
+        translation_tensor_parallel_size: int = 1,
+        enable_translation: bool = True,
+
         # TTS settings
         tts_voice: str = 'af_heart',
         tts_speed: float = 1.0,
@@ -110,6 +116,9 @@ class LecturePipeline:
             use_context_similarity: Enable context-aware scoring via EMA
             context_weight: weight for context similarity contribution
             context_update_rate: Update rate for EMA
+            translation_model: Translation model name
+            translation_tensor_parallel_size: Number of GPUs for translation tensor parallelism
+            enable_translation: Enable English-to-Korean translation
             tts_voice: TTS voice style
             tts_speed: TTS playback speed
             tts_lang_code: TTS language code
@@ -119,6 +128,7 @@ class LecturePipeline:
         """
         self.output_dir = output_dir
         self.device = device
+        self.enable_translation = enable_translation
 
         # Initialize processors
         print("="*60)
@@ -148,6 +158,17 @@ class LecturePipeline:
             context_update_rate = context_update_rate
         )
 
+        # Initialize translation processor if enabled
+        if self.enable_translation:
+            self.translator = TranslationProcessor(
+                model_name = translation_model,
+                device = device,
+                tensor_parallel_size = translation_tensor_parallel_size
+            )
+        else:
+            self.translator = None
+            print("\nTranslation disabled - Korean translations will not be generated")
+
         self.tts = TTSProcessor(
             voice = tts_voice,
             speed = tts_speed,
@@ -176,7 +197,7 @@ class LecturePipeline:
             sentence_splitter: Optional function to split transcript into sentences
             save_intermediate: Save intermediate results (WAV, transcript, matching.json)
             progress_callback: Optional callback function(stage: str, progress: float, message: str)
-                             stage is one of: "processing_asr", "processing_matching", "processing_tts"
+                             stage is one of: "processing_asr", "processing_matching", "processing_translation", "processing_tts"
                              progress is 0-100 representing percentage completion within that stage
 
         Returns:
@@ -205,7 +226,7 @@ class LecturePipeline:
         # Step 1: ASR - Transcribe audio
         # ====================================================================
         print("\n" + "="*60)
-        print("STEP 1/3: ASR - Transcribing Audio")
+        print(f"STEP 1/{4 if self.enable_translation else 3}: ASR - Transcribing Audio")
         print("="*60)
 
         if progress_callback:
@@ -229,9 +250,11 @@ class LecturePipeline:
         )
 
         transcript = asr_result['transcript']
+        segment_timestamps = asr_result.get('segment_timestamps', [])
         results['asr'] = asr_result
 
         print(f"\n✓ ASR Complete: {len(transcript)} characters")
+        print(f"✓ Segment timestamps extracted: {len(segment_timestamps)} segments")
 
         if progress_callback:
             progress_callback("processing_asr", 40.0, "ASR processing completed")
@@ -243,16 +266,21 @@ class LecturePipeline:
         # Step 2: Slide Matching - Match transcript to slides
         # ====================================================================
         print("\n" + "="*60)
-        print("STEP 2/3: Slide Matching - Matching to PDF Slides")
+        print(f"STEP 2/{4 if self.enable_translation else 3}: Slide Matching - Matching to PDF Slides")
         print("="*60)
 
         if progress_callback:
             progress_callback("processing_matching", 40.0, "Starting slide matching...")
 
-        # Split transcript into sentences if splitter provided
-        if sentence_splitter is not None:
+        # Use ASR segments directly as sentences (already split by punctuation)
+        # Extract segment texts for matching
+        if segment_timestamps:
+            sentences = [seg['text'] for seg in segment_timestamps]
+            print(f"Using {len(sentences)} ASR segments for matching")
+        elif sentence_splitter is not None:
+            # Fallback: use sentence splitter if no segments available
             sentences = sentence_splitter(transcript)
-            print(f"Split transcript into {len(sentences)} sentences")
+            print(f"Fallback: Split transcript into {len(sentences)} sentences")
         else:
             # Use full transcript as single query
             sentences = None
@@ -271,6 +299,15 @@ class LecturePipeline:
             sentences = sentences,
             progress_callback = matching_progress_callback
         )
+
+        # Add original audio timestamps directly from segments (1:1 correspondence)
+        if segment_timestamps and len(segment_timestamps) == len(matching_results):
+            for i, result in enumerate(matching_results):
+                result['original_start_time'] = segment_timestamps[i]['start']
+                result['original_end_time'] = segment_timestamps[i]['end']
+            print(f"✓ Added original audio timestamps to {len(matching_results)} results")
+        else:
+            print(f"Warning: Segment count mismatch - segments: {len(segment_timestamps)}, results: {len(matching_results)}")
 
         results['matching'] = {
             'num_matches': len(matching_results),
@@ -293,14 +330,57 @@ class LecturePipeline:
         self.matcher.unload_model()
 
         # ====================================================================
-        # Step 3: TTS - Generate audio with slide alignment
+        # Step 3: Translation - Translate English to Korean (Optional)
+        # ====================================================================
+        if self.enable_translation:
+            print("\n" + "="*60)
+            print("STEP 3/4: Translation - Translating to Korean")
+            print("="*60)
+
+            if progress_callback:
+                progress_callback("processing_translation", 70.0, "Starting translation...")
+
+            # Create a wrapper callback for translation progress
+            def translation_progress_callback(progress: float, message: str):
+                if progress_callback:
+                    # Map translation progress (0-100) to pipeline progress (70-80)
+                    pipeline_progress = 70.0 + (progress * 0.1)
+                    progress_callback("processing_translation", pipeline_progress, f"Translation: {message}")
+
+            matching_results = self.translator.translate_matching_results(
+                matching_results = matching_results,
+                progress_callback = translation_progress_callback
+            )
+
+            results['translation'] = {
+                'num_translated': len(matching_results)
+            }
+
+            # Save translated matching results if requested
+            if save_intermediate:
+                translated_json_path = os.path.join(lecture_output_dir, "matching_with_translation.json")
+                with open(translated_json_path, 'w', encoding = 'utf-8') as f:
+                    json.dump(matching_results, f, ensure_ascii = False, indent = 2)
+                print(f"\n✓ Translated results saved: {translated_json_path}")
+
+            print(f"\n✓ Translation Complete: {len(matching_results)} sentences translated")
+
+            if progress_callback:
+                progress_callback("processing_translation", 80.0, "Translation completed")
+
+            # Optionally unload translation model to free memory
+            self.translator.unload_model()
+
+        # ====================================================================
+        # Step 4: TTS - Generate audio with slide alignment
         # ====================================================================
         print("\n" + "="*60)
-        print("STEP 3/3: TTS - Generating Audio with Slide Alignment")
+        print(f"STEP {4 if self.enable_translation else 3}/{4 if self.enable_translation else 3}: TTS - Generating Audio with Slide Alignment")
         print("="*60)
 
+        tts_start_progress = 80.0 if self.enable_translation else 70.0
         if progress_callback:
-            progress_callback("processing_tts", 70.0, "Starting TTS generation...")
+            progress_callback("processing_tts", tts_start_progress, "Starting TTS generation...")
 
         # Generate WAV file first (intermediate)
         output_wav_path = os.path.join(lecture_output_dir, "reconstructed.wav")
@@ -309,8 +389,10 @@ class LecturePipeline:
         # Create a wrapper callback for TTS progress
         def tts_progress_callback(progress: float, message: str):
             if progress_callback:
-                # Map TTS progress (0-100) to pipeline progress (70-95)
-                pipeline_progress = 70.0 + (progress * 0.25)
+                # Map TTS progress (0-100) to pipeline progress
+                # If translation enabled: 80-95, else: 70-95
+                progress_range = 0.15 if self.enable_translation else 0.25
+                pipeline_progress = tts_start_progress + (progress * progress_range)
                 progress_callback("processing_tts", pipeline_progress, f"TTS: {message}")
 
         tts_result = self.tts.generate_from_matching_results(
