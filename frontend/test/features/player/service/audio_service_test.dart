@@ -212,6 +212,39 @@ void main() {
           throwsA(isA<Exception>()),
         );
       });
+
+      test('should call player.setSpeed() with correct speed', () async {
+        final speed = 1.5;
+        when(mockPlayer.setSpeed(speed)).thenAnswer((_) async => {});
+
+        await audioService.setSpeed(speed);
+
+        verify(mockPlayer.setSpeed(speed)).called(1);
+      });
+
+      test(
+        'should handle multiple setSpeed calls with different speeds',
+        () async {
+          when(mockPlayer.setSpeed(any)).thenAnswer((_) async => {});
+
+          await audioService.setSpeed(0.5);
+          await audioService.setSpeed(1.0);
+          await audioService.setSpeed(2.0);
+
+          verify(mockPlayer.setSpeed(0.5)).called(1);
+          verify(mockPlayer.setSpeed(1.0)).called(1);
+          verify(mockPlayer.setSpeed(2.0)).called(1);
+        },
+      );
+
+      test('should rethrow exception from setSpeed()', () async {
+        when(mockPlayer.setSpeed(any)).thenThrow(Exception('SetSpeed failed'));
+
+        expect(
+          () => audioService.setSpeed(1.5),
+          throwsA(isA<Exception>()),
+        );
+      });
     });
 
     group('Streams', () {
