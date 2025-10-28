@@ -49,7 +49,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       pdfCacheService: pdfCacheService,
     );
 
-    _loadLectureData();
+    // 프레임이 빌드된 이후에 실행
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadLectureData();
+    });
   }
 
   @override
@@ -64,19 +67,31 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // 로딩 상태 종료
+    setState(() {
+      _isLoading = false;
+    });
 
-    // SnackBar가 표시된 후 이전 페이지로 이동
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        Navigator.pop(context);
+    // ScaffoldMessenger가 준비된 후에 실행되도록 보장
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // SnackBar가 화면에 렌더링된 후 이전 페이지로 이동
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
     });
   }
 
