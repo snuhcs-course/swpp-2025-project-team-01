@@ -344,6 +344,96 @@ void main() {
     });
   });
 
+  group('SpeedButton', () {
+    testWidgets('should render with initial speed 1.0x', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: pw.SpeedButton(onSpeedChanged: (_) {}),
+          ),
+        ),
+      );
+
+      expect(find.byType(IconButton), findsOneWidget);
+      expect(find.text('1.0x'), findsOneWidget);
+    });
+
+    testWidgets('should cycle through speeds when tapped', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: pw.SpeedButton(onSpeedChanged: (_) {}),
+          ),
+        ),
+      );
+
+      // Initial: 1.0x
+      expect(find.text('1.0x'), findsOneWidget);
+
+      // First tap: 1.5x
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      expect(find.text('1.5x'), findsOneWidget);
+
+      // Second tap: 2.0x
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      expect(find.text('2.0x'), findsOneWidget);
+
+      // Third tap: 0.7x
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      expect(find.text('0.7x'), findsOneWidget);
+
+      // Fourth tap: back to 1.0x
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      expect(find.text('1.0x'), findsOneWidget);
+    });
+
+    testWidgets('should call onSpeedChanged with correct values',
+        (tester) async {
+      final speeds = <double>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: pw.SpeedButton(
+              onSpeedChanged: (speed) => speeds.add(speed),
+            ),
+          ),
+        ),
+      );
+
+      // Tap four times to cycle through all speeds
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+
+      expect(speeds, equals([1.5, 2.0, 0.7, 1.0]));
+    });
+
+    testWidgets('should have correct text style', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: pw.SpeedButton(onSpeedChanged: (_) {}),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text('1.0x'));
+      expect(text.style?.color, equals(Colors.white));
+      expect(text.style?.fontSize, equals(16));
+      expect(text.style?.fontWeight, equals(FontWeight.w600));
+    });
+  });
+
   group('VideoTimelineSlider', () {
     testWidgets('should render slider with correct values', (tester) async {
       await tester.pumpWidget(
