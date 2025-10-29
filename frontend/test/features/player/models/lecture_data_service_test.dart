@@ -7,7 +7,7 @@ void main() {
       test('should create instance from valid JSON', () {
         final json = {
           'total_sentences': 10,
-          'total_duration': 120.5,
+          'total_duration': 120500,
           'voice': 'af_heart',
           'speed': 1.0,
           'language_code': 'a',
@@ -17,33 +17,33 @@ void main() {
         final metadata = TranscriptMetadata.fromJson(json);
 
         expect(metadata.totalSentences, equals(10));
-        expect(metadata.totalDuration, equals(120.5));
+        expect(metadata.totalDuration, equals(120500));
         expect(metadata.voice, equals('af_heart'));
         expect(metadata.speed, equals(1.0));
         expect(metadata.languageCode, equals('a'));
         expect(metadata.sampleRate, equals(24000));
       });
 
-      test('should handle integer duration as double', () {
+      test('should throw error when duration is double', () {
         final json = {
           'total_sentences': 5,
-          'total_duration': 100,
+          'total_duration': 100.5, // double value instead of int
           'voice': 'voice-1',
           'speed': 1.5,
           'language_code': 'ko-KR',
           'sample_rate': 22050,
         };
 
-        final metadata = TranscriptMetadata.fromJson(json);
-
-        expect(metadata.totalDuration, isA<double>());
-        expect(metadata.totalDuration, equals(100.0));
+        expect(
+          () => TranscriptMetadata.fromJson(json),
+          throwsA(isA<TypeError>()),
+        );
       });
 
       test('should handle integer speed as double', () {
         final json = {
           'total_sentences': 3,
-          'total_duration': 50.0,
+          'total_duration': 50000,
           'voice': 'voice-2',
           'speed': 2,
           'language_code': 'ja-JP',
@@ -59,7 +59,7 @@ void main() {
       test('should handle zero values', () {
         final json = {
           'total_sentences': 0,
-          'total_duration': 0.0,
+          'total_duration': 0,
           'voice': '',
           'speed': 0.0,
           'language_code': '',
@@ -69,7 +69,7 @@ void main() {
         final metadata = TranscriptMetadata.fromJson(json);
 
         expect(metadata.totalSentences, equals(0));
-        expect(metadata.totalDuration, equals(0.0));
+        expect(metadata.totalDuration, equals(0));
         expect(metadata.voice, equals(''));
         expect(metadata.speed, equals(0.0));
         expect(metadata.languageCode, equals(''));
@@ -80,7 +80,7 @@ void main() {
     group('fromJson - Invalid Data', () {
       test('should throw when total_sentences is missing', () {
         final json = {
-          'total_duration': 120.5,
+          'total_duration': 120500,
           'voice': 'voice',
           'speed': 1.0,
           'language_code': 'en-US',
@@ -93,7 +93,7 @@ void main() {
       test('should throw when total_sentences is wrong type', () {
         final json = {
           'total_sentences': '10',
-          'total_duration': 120.5,
+          'total_duration': 120500,
           'voice': 'voice',
           'speed': 1.0,
           'language_code': 'en-US',
@@ -119,7 +119,7 @@ void main() {
       test('should throw when voice is wrong type', () {
         final json = {
           'total_sentences': 10,
-          'total_duration': 120.5,
+          'total_duration': 120500,
           'voice': 123,
           'speed': 1.0,
           'language_code': 'en-US',
@@ -132,7 +132,7 @@ void main() {
       test('should throw when sample_rate is wrong type', () {
         final json = {
           'total_sentences': 10,
-          'total_duration': 120.5,
+          'total_duration': 120500,
           'voice': 'voice',
           'speed': 1.0,
           'language_code': 'en-US',
@@ -151,9 +151,9 @@ void main() {
           'sentence_id': 1,
           'text': 'Hello world',
           'slide_number': 2,
-          'start_time': 10.5,
-          'end_time': 15.3,
-          'duration': 4.8,
+          'start_time': 10500,
+          'end_time': 15300,
+          'duration': 4800,
         };
 
         final sentence = TranscriptSentence.fromJson(json);
@@ -161,29 +161,9 @@ void main() {
         expect(sentence.sentenceId, equals(1));
         expect(sentence.text, equals('Hello world'));
         expect(sentence.slideNumber, equals(2));
-        expect(sentence.startTime, equals(10.5));
-        expect(sentence.endTime, equals(15.3));
-        expect(sentence.duration, equals(4.8));
-      });
-
-      test('should handle integer time values as double', () {
-        final json = {
-          'sentence_id': 2,
-          'text': 'Test sentence',
-          'slide_number': 1,
-          'start_time': 0,
-          'end_time': 5,
-          'duration': 5,
-        };
-
-        final sentence = TranscriptSentence.fromJson(json);
-
-        expect(sentence.startTime, isA<double>());
-        expect(sentence.endTime, isA<double>());
-        expect(sentence.duration, isA<double>());
-        expect(sentence.startTime, equals(0.0));
-        expect(sentence.endTime, equals(5.0));
-        expect(sentence.duration, equals(5.0));
+        expect(sentence.startTime, equals(10500));
+        expect(sentence.endTime, equals(15300));
+        expect(sentence.duration, equals(4800));
       });
 
       test('should handle empty text', () {
@@ -191,9 +171,9 @@ void main() {
           'sentence_id': 3,
           'text': '',
           'slide_number': 0,
-          'start_time': 0.0,
-          'end_time': 0.0,
-          'duration': 0.0,
+          'start_time': 0,
+          'end_time': 0,
+          'duration': 0,
         };
 
         final sentence = TranscriptSentence.fromJson(json);
@@ -202,21 +182,20 @@ void main() {
         expect(sentence.slideNumber, equals(0));
       });
 
-      test('should handle negative values', () {
+      test('should throw error when values are negative', () {
         final json = {
           'sentence_id': -1,
           'text': 'Negative test',
           'slide_number': -1,
-          'start_time': -1.0,
-          'end_time': -0.5,
-          'duration': 0.5,
+          'start_time': -1,
+          'end_time': -5,
+          'duration': -1,
         };
 
-        final sentence = TranscriptSentence.fromJson(json);
-
-        expect(sentence.sentenceId, equals(-1));
-        expect(sentence.slideNumber, equals(-1));
-        expect(sentence.startTime, equals(-1.0));
+        expect(
+          () => TranscriptSentence.fromJson(json),
+          throwsA(isA<AssertionError>()),
+        );
       });
     });
 
@@ -225,9 +204,9 @@ void main() {
         final json = {
           'text': 'Hello',
           'slide_number': 1,
-          'start_time': 0.0,
-          'end_time': 1.0,
-          'duration': 1.0,
+          'start_time': 0,
+          'end_time': 1000,
+          'duration': 1000,
         };
 
         expect(() => TranscriptSentence.fromJson(json), throwsA(anything));
@@ -237,9 +216,9 @@ void main() {
         final json = {
           'sentence_id': 1,
           'slide_number': 1,
-          'start_time': 0.0,
-          'end_time': 1.0,
-          'duration': 1.0,
+          'start_time': 0,
+          'end_time': 1000,
+          'duration': 1000,
         };
 
         expect(() => TranscriptSentence.fromJson(json), throwsA(anything));
@@ -250,9 +229,9 @@ void main() {
           'sentence_id': 1,
           'text': 'Hello',
           'slide_number': '1',
-          'start_time': 0.0,
-          'end_time': 1.0,
-          'duration': 1.0,
+          'start_time': 0,
+          'end_time': 1000,
+          'duration': 1000,
         };
 
         expect(() => TranscriptSentence.fromJson(json), throwsA(anything));
@@ -264,8 +243,8 @@ void main() {
           'text': 'Hello',
           'slide_number': 1,
           'start_time': 'invalid',
-          'end_time': 1.0,
-          'duration': 1.0,
+          'end_time': 1000,
+          'duration': 1000,
         };
 
         expect(() => TranscriptSentence.fromJson(json), throwsA(anything));
@@ -279,7 +258,7 @@ void main() {
         final json = {
           'metadata': {
             'total_sentences': 2,
-            'total_duration': 10.0,
+            'total_duration': 10000,
             'voice': 'test-voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -290,17 +269,17 @@ void main() {
               'sentence_id': 1,
               'text': 'First sentence',
               'slide_number': 1,
-              'start_time': 0.0,
-              'end_time': 5.0,
-              'duration': 5.0,
+              'start_time': 0,
+              'end_time': 5000,
+              'duration': 5000,
             },
             {
               'sentence_id': 2,
               'text': 'Second sentence',
               'slide_number': 1,
-              'start_time': 5.0,
-              'end_time': 10.0,
-              'duration': 5.0,
+              'start_time': 5000,
+              'end_time': 10000,
+              'duration': 5000,
             },
           ],
         };
@@ -318,7 +297,7 @@ void main() {
         final json = {
           'metadata': {
             'total_sentences': 0,
-            'total_duration': 0.0,
+            'total_duration': 0,
             'voice': 'voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -337,7 +316,7 @@ void main() {
         final json = {
           'metadata': {
             'total_sentences': 1,
-            'total_duration': 3.5,
+            'total_duration': 3500,
             'voice': 'voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -348,9 +327,9 @@ void main() {
               'sentence_id': 1,
               'text': 'Only one',
               'slide_number': 1,
-              'start_time': 0.0,
-              'end_time': 3.5,
-              'duration': 3.5,
+              'start_time': 0,
+              'end_time': 3500,
+              'duration': 3500,
             },
           ],
         };
@@ -368,16 +347,16 @@ void main() {
             'sentence_id': i,
             'text': 'Sentence $i',
             'slide_number': i ~/ 10,
-            'start_time': i * 1.0,
-            'end_time': (i + 1) * 1.0,
-            'duration': 1.0,
+            'start_time': i * 1000,
+            'end_time': (i + 1) * 1000,
+            'duration': 1000,
           },
         );
 
         final json = {
           'metadata': {
             'total_sentences': 100,
-            'total_duration': 100.0,
+            'total_duration': 100000,
             'voice': 'voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -405,7 +384,7 @@ void main() {
         final json = {
           'metadata': {
             'total_sentences': 0,
-            'total_duration': 0.0,
+            'total_duration': 0,
             'voice': 'voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -426,7 +405,7 @@ void main() {
         final json = {
           'metadata': {
             'total_sentences': 0,
-            'total_duration': 0.0,
+            'total_duration': 0,
             'voice': 'voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -442,7 +421,7 @@ void main() {
         final json = {
           'metadata': {
             'total_sentences': 1,
-            'total_duration': 1.0,
+            'total_duration': 1000,
             'voice': 'voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -463,7 +442,7 @@ void main() {
         final json = {
           'metadata': {
             'total_sentences': 'invalid',
-            'total_duration': 0.0,
+            'total_duration': 0,
             'voice': 'voice',
             'speed': 1.0,
             'language_code': 'en-US',
@@ -482,7 +461,7 @@ void main() {
       final json = {
         'metadata': {
           'total_sentences': 3,
-          'total_duration': 45.2,
+          'total_duration': 45200,
           'voice': 'en-US-Neural2-D',
           'speed': 1.2,
           'language_code': 'en-US',
@@ -493,25 +472,25 @@ void main() {
             'sentence_id': 0,
             'text': 'Welcome to this lecture.',
             'slide_number': 1,
-            'start_time': 0.0,
-            'end_time': 2.5,
-            'duration': 2.5,
+            'start_time': 0,
+            'end_time': 2500,
+            'duration': 2500,
           },
           {
             'sentence_id': 1,
             'text': 'Today we will discuss AI.',
             'slide_number': 1,
-            'start_time': 2.5,
-            'end_time': 5.3,
-            'duration': 2.8,
+            'start_time': 2500,
+            'end_time': 5300,
+            'duration': 2800,
           },
           {
             'sentence_id': 2,
             'text': 'Let us begin with the basics.',
             'slide_number': 2,
-            'start_time': 5.3,
-            'end_time': 8.1,
-            'duration': 2.8,
+            'start_time': 5300,
+            'end_time': 8100,
+            'duration': 2800,
           },
         ],
       };
@@ -519,20 +498,20 @@ void main() {
       final data = TranscriptData.fromJson(json);
 
       expect(data.metadata.totalSentences, equals(3));
-      expect(data.metadata.totalDuration, equals(45.2));
+      expect(data.metadata.totalDuration, equals(45200));
       expect(data.metadata.speed, equals(1.2));
       expect(data.timestamps.length, equals(3));
       expect(data.timestamps[0].slideNumber, equals(1));
       expect(data.timestamps[2].slideNumber, equals(2));
-      expect(data.timestamps[1].startTime, equals(2.5));
-      expect(data.timestamps[2].endTime, equals(8.1));
+      expect(data.timestamps[1].startTime, equals(2500));
+      expect(data.timestamps[2].endTime, equals(8100));
     });
 
     test('should maintain data consistency', () {
       final json = {
         'metadata': {
           'total_sentences': 2,
-          'total_duration': 10.0,
+          'total_duration': 10000,
           'voice': 'voice',
           'speed': 1.0,
           'language_code': 'en-US',
@@ -543,17 +522,17 @@ void main() {
             'sentence_id': 0,
             'text': 'First',
             'slide_number': 1,
-            'start_time': 0.0,
-            'end_time': 5.0,
-            'duration': 5.0,
+            'start_time': 0,
+            'end_time': 5000,
+            'duration': 5000,
           },
           {
             'sentence_id': 1,
             'text': 'Second',
             'slide_number': 1,
-            'start_time': 5.0,
-            'end_time': 10.0,
-            'duration': 5.0,
+            'start_time': 5000,
+            'end_time': 10000,
+            'duration': 5000,
           },
         ],
       };
