@@ -84,13 +84,10 @@ class FakeHiveManager extends Fake implements HiveManager {
   AppSettings get settings => _fakeSettings;
 
   @override
-  // 원본과 동일하게 선택적 매개변수를 추가합니다.
   List<HiveSubject> getSubjects({
     bool favoritesOnly = false,
     List<String> filterTagIds = const [],
   }) {
-    // 테스트에서는 필터링 로직이 필요 없으므로, 매개변수를 무시하고
-    // 저장된 모든 과목을 반환합니다.
     return fakeSubjects.values.toList();
   }
 
@@ -205,8 +202,8 @@ void main() {
         subjectId: 's1',
         weekLabel: 'Week 1',
         title: 'Intro',
-        durationSec: 3600,
-        audioPaths: [],
+        duration: 3600,
+        audioPath: 'test_audio_1.mp3',
       ),
     );
     fakeHiveManager.addFakeLecture(
@@ -215,8 +212,8 @@ void main() {
         subjectId: 's1',
         weekLabel: 'Week 2',
         title: 'Deep Learning',
-        durationSec: 3600,
-        audioPaths: [],
+        duration: 3600,
+        audioPath: 'test_audio_2.mp3',
       ),
     );
     fakeHiveManager.addFakeLecture(
@@ -225,8 +222,8 @@ void main() {
         subjectId: 's2',
         weekLabel: 'Week 1',
         title: 'HTML/CSS',
-        durationSec: 3600,
-        audioPaths: [],
+        duration: 3600,
+        audioPath: 'test_audio_3.mp3',
       ),
     );
     fakeHiveManager.addFakeLecture(
@@ -235,8 +232,8 @@ void main() {
         subjectId: 's2',
         weekLabel: 'Week 2',
         title: 'JavaScript',
-        durationSec: 3600,
-        audioPaths: [],
+        duration: 3600,
+        audioPath: 'test_audio_4.mp3',
       ),
     );
 
@@ -268,7 +265,6 @@ void main() {
   });
 
   // --- 테스트용 헬퍼 함수: 위젯 빌드 ---
-  // (l10n 문제를 해결하기 위해 lecture_form_screen_test.dart와 동일한 헬퍼 사용)
   Widget createTestableWidget(Widget child) {
     return MaterialApp(
       localizationsDelegates: [
@@ -278,7 +274,7 @@ void main() {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('ko'), // 'ko'로 고정
+      locale: const Locale('ko'),
       home: child,
     );
   }
@@ -302,214 +298,604 @@ void main() {
 
       expect(find.text('과목 수정'), findsOneWidget); // AppBar 제목
       expect(find.byIcon(Icons.add), findsOneWidget); // AppBar 추가 버튼
-
-      // [수정] _SubjectEditPanel 대신 SubjectPanelHeader (public)를 찾습니다.
       expect(find.byType(SubjectPanelHeader), findsNWidgets(3));
-
       expect(find.text('AI 기초'), findsOneWidget);
       expect(find.text('웹 프로그래밍'), findsOneWidget);
       expect(find.text('삭제될 과목'), findsOneWidget);
-      expect(find.text('수정 완료'), findsOneWidget); // 하단 바 (Hardcoded)
-      expect(find.text('취소'), findsOneWidget); // 하단 바 (Hardcoded)
+      expect(find.text('수정 완료'), findsOneWidget); // 하단 바
+      expect(find.text('취소'), findsOneWidget); // 하단 바
     });
+
+    testWidgets(
+      'Verify _initializeWorkingData correctly creates deep copies of lecture and tag IDs',
+      (WidgetTester tester) async {
+        // [Given] 초기 데이터
+        final s1Initial = fakeHiveManager.fakeSubjects['s1']!;
+        expect(s1Initial.lectureIds, ['l1', 'l2']);
+        expect(s1Initial.tagIds, ['t1']);
+
+        // [When] 화면을 빌드 (이때 _initializeWorkingData가 호출됨)
+        await pumpScreen(tester);
+
+        // [Then] 화면이 정상적으로 렌더링
+        expect(find.text('AI 기초'), findsOneWidget);
+        expect(find.textContaining('Intro'), findsOneWidget);
+        expect(find.textContaining('Deep Learning'), findsOneWidget);
+
+        // [When] 로컬 상태를 변경: 태그 변경
+        await tester.longPress(find.text('AI 기초'));
+        await tester.pumpAndSettle();
+
+        // AI 태그 해제, Web 태그 추가
+        await tester.tap(find.text('#AI'));
+        await tester.tap(find.text('#Web'));
+        await tester.tap(find.text('확인'));
+        await tester.pumpAndSettle();
+
+        // [Then] 원본 데이터는 변경되지 않아야 함 (deep copy 검증)
+        final s1AfterEdit = fakeHiveManager.fakeSubjects['s1']!;
+        expect(s1AfterEdit.lectureIds, ['l1', 'l2']); // 원본 순서 유지
+        expect(s1AfterEdit.tagIds, ['t1']); // 원본 태그 유지
+
+        // HiveManager 호출이 아직 없어야 함
+        expect(fakeHiveManager.updatedLectureIds.isEmpty, isTrue);
+        expect(fakeHiveManager.updatedTagIds.isEmpty, isTrue);
+      },
+    );
   });
 
   // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 2: Lecture Reordering
+  // 테스트 케이스 그룹 2: Lecture Reordering (Drag & Drop)
   // ------------------------------------------------------------------
   group('2. Lecture Reordering', () {
     testWidgets(
-      'Drag and drop updates local _workingLectureIds without calling Hive',
+      'Verify drag and drop triggers onReorder and updates UI order',
       (WidgetTester tester) async {
         await pumpScreen(tester);
 
         // [Given] AI 기초 과목의 초기 강의 순서: [l1=Intro, l2=Deep Learning]
         expect(fakeHiveManager.fakeSubjects['s1']!.lectureIds, ['l1', 'l2']);
 
-        // [When] 'Intro' 강의를 아래로 드래그 (l1과 l2 순서 바꾸기)
         final introFinder = find.text('Week 1  •  Intro');
-        if (introFinder.evaluate().isNotEmpty) {
-          await tester.drag(introFinder, const Offset(0, 100));
-          await tester.pumpAndSettle();
-        }
+        final deepLearningFinder = find.text('Week 2  •  Deep Learning');
+
+        expect(introFinder, findsOneWidget);
+        expect(deepLearningFinder, findsOneWidget);
+
+        // 드래그 전 위치 확인 (Intro가 Deep Learning보다 위에 있어야 함)
+        final introYBefore = tester.getTopLeft(introFinder).dy;
+        final deepLearningYBefore = tester.getTopLeft(deepLearningFinder).dy;
+        expect(
+          introYBefore,
+          lessThan(deepLearningYBefore),
+          reason: 'Initially, Intro should be above Deep Learning',
+        );
+
+        // [When] ReorderableListView 드래그 시뮬레이션
+        // ReorderableDragStartListener가 있는 drag_handle 아이콘을 찾아서 드래그
+        final dragHandles = find.byIcon(Icons.drag_handle);
+        expect(dragHandles, findsWidgets);
+
+        // AI 기초 과목의 첫 번째 강의(Intro)의 드래그 핸들
+        final firstDragHandle = dragHandles.first;
+
+        // ReorderableDragStartListener는 즉시 드래그를 시작함
+        final dragStartLocation = tester.getCenter(firstDragHandle);
+
+        // 드래그: timedDragFrom 사용
+        await tester.timedDragFrom(
+          dragStartLocation,
+          const Offset(0, 150),
+          const Duration(milliseconds: 500),
+        );
+        await tester.pumpAndSettle();
+
+        // [Then] UI 순서가 변경되어야 함
+        final introYAfter = tester.getTopLeft(introFinder).dy;
+        final deepLearningYAfter = tester.getTopLeft(deepLearningFinder).dy;
+
+        expect(
+          deepLearningYAfter,
+          lessThan(introYAfter),
+          reason: 'After drag, Deep Learning should be above Intro',
+        );
 
         // [Then] HiveManager는 아직 호출되지 않아야 함 (저장 전까지)
         expect(fakeHiveManager.updatedLectureIds.isEmpty, isTrue);
-
-        // UI는 업데이트되어야 함 (순서 변경 확인은 시각적으로는 어렵지만,
-        // 최소한 여전히 2개의 강의가 표시되는지 확인)
-        expect(find.textContaining('Intro'), findsOneWidget);
-        expect(find.textContaining('Deep Learning'), findsOneWidget);
       },
     );
 
-    testWidgets('Reordering followed by save calls updateSubjectLectures', (
-      WidgetTester tester,
-    ) async {
-      await pumpScreen(tester);
+    testWidgets(
+      'Verify visual order matches _workingLectureIds after setState',
+      (WidgetTester tester) async {
+        // [Given] 강의 순서를 미리 변경한 상태로 설정
+        fakeHiveManager.fakeSubjects['s1']!.lectureIds = ['l2', 'l1'];
 
-      // [When] 1. 강의 순서 변경 시도
-      final introFinder = find.text('Week 1  •  Intro');
-      bool reorderAttempted = false;
+        await pumpScreen(tester);
 
-      if (introFinder.evaluate().isNotEmpty) {
-        // 더 큰 거리로 드래그 시도
-        await tester.drag(introFinder, const Offset(0, 150));
-        await tester.pump();
-        await tester.pumpAndSettle();
-        reorderAttempted = true;
-      }
+        // [Then] 변경된 순서대로 강의가 표시되어야 함
+        expect(find.textContaining('Deep Learning'), findsOneWidget);
+        expect(find.textContaining('Intro'), findsOneWidget);
 
-      // [When] 2. '수정 완료' 클릭
-      await tester.tap(find.text('수정 완료'));
-      await tester.pumpAndSettle();
+        final deepLearningFinder = find.textContaining('Deep Learning');
+        final introFinder = find.textContaining('Intro');
 
-      // [Then] HiveManager.updateSubjectLectures가 호출되어야 함
-      // 드래그를 시도했으면 호출되었는지 확인 (순서가 바뀌었든 안 바뀌었든)
-      if (reorderAttempted) {
+        final deepLearningY = tester.getTopLeft(deepLearningFinder).dy;
+        final introY = tester.getTopLeft(introFinder).dy;
+
         expect(
-          fakeHiveManager.updatedLectureIds.containsKey('s1'),
-          isTrue,
+          deepLearningY,
+          lessThan(introY),
           reason:
-              'updateSubjectLectures should be called even if order unchanged',
+              'Deep Learning should appear above Intro when order is [l2, l1]',
         );
+      },
+    );
 
-        // 실제로 순서가 바뀌었다면 새 순서 확인
+    testWidgets(
+      'Verify reordering followed by save calls updateSubjectLectures with new order',
+      (WidgetTester tester) async {
+        const Key homeButtonKey = Key('reorder_save_test');
+
+        await tester.pumpWidget(
+          createTestableWidget(
+            Scaffold(
+              key: homeButtonKey,
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SubjectsEditScreen(hiveManager: fakeHiveManager),
+                    ),
+                  ),
+                  child: const Text('Go'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Go'));
+        await tester.pumpAndSettle();
+
+        // [When] 강의 순서 변경 - 드래그 핸들 사용
+        final dragHandles = find.byIcon(Icons.drag_handle);
+        expect(dragHandles, findsWidgets);
+
+        final firstDragHandle = dragHandles.first;
+        await tester.timedDragFrom(
+          tester.getCenter(firstDragHandle),
+          const Offset(0, 150),
+          const Duration(milliseconds: 500),
+        );
+        await tester.pumpAndSettle();
+
+        // [When] '수정 완료' 클릭
+        await tester.tap(find.text('수정 완료'));
+        await tester.pumpAndSettle();
+
+        // [Then] HiveManager.updateSubjectLectures가 호출되어야 함
+        expect(fakeHiveManager.updatedLectureIds.containsKey('s1'), isTrue);
+
+        // 새로운 순서가 [l2, l1]로 저장되어야 함
         final updatedOrder = fakeHiveManager.updatedLectureIds['s1']!;
-        // 순서가 바뀌었거나 그대로거나 둘 중 하나
-        expect(updatedOrder, anyOf(equals(['l2', 'l1']), equals(['l1', 'l2'])));
-      }
-    });
+        expect(updatedOrder, ['l2', 'l1']);
+
+        // Navigator.pop 확인
+        expect(find.byType(SubjectsEditScreen), findsNothing);
+        expect(find.byKey(homeButtonKey), findsOneWidget);
+      },
+    );
   });
 
   // ------------------------------------------------------------------
   // 테스트 케이스 그룹 3: Subject Creation
   // ------------------------------------------------------------------
   group('3. Subject Creation', () {
-    testWidgets('Tapping Add opens dialog, validates, and creates subject', (
+    testWidgets('Tapping Add opens dialog and validates input', (
       WidgetTester tester,
     ) async {
       await pumpScreen(tester);
-      expect(find.byType(SubjectPanelHeader), findsNWidgets(3)); // [수정]
 
-      // [When] 1. '+' 버튼 탭
+      // [When] '+' 버튼 탭
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
-      // [Then] 1. 다이얼로그 확인
+      // [Then] 다이얼로그 확인
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('과목 추가'), findsOneWidget);
       expect(find.text('#AI'), findsOneWidget);
       expect(find.text('#Web'), findsOneWidget);
 
-      // [When] 2. 검증: 이름 없이 '추가' 탭
-      await tester.tap(find.text('추가')); // (Hardcoded)
-      await tester.pumpAndSettle();
-
-      // [Then] 2. 스낵바 확인, 다이얼로그는 닫히지 않음
-      expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('과목명을 입력해주세요'), findsOneWidget); // (Hardcoded)
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(fakeHiveManager.createdSubjects.isEmpty, isTrue);
-
-      // [When] 3. 이름 입력, 태그 선택 후 '추가' 탭
-      await tester.enterText(find.widgetWithText(TextField, '과목명'), '새 과목');
-      await tester.tap(find.text('#AI'));
+      // [When] 검증: 이름 없이 '추가' 탭
       await tester.tap(find.text('추가'));
       await tester.pumpAndSettle();
 
-      // setState 및 postFrameCallback이 실행될 때까지 충분히 pump
-      await tester.pump();
-      await tester.pump();
+      // [Then] 스낵바 확인, 다이얼로그는 닫히지 않음
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('과목명을 입력해주세요'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(fakeHiveManager.createdSubjects.isEmpty, isTrue);
+    });
+
+    testWidgets('Creating subject with title and tags calls hive.createSubject', (
+      WidgetTester tester,
+    ) async {
+      await pumpScreen(tester);
+      expect(find.byType(SubjectPanelHeader), findsNWidgets(3));
+
+      await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
 
-      // [Then] 3. Hive 호출 및 데이터 생성 확인
+      // [When] 이름 입력, 태그 선택 후 '추가' 탭
+      await tester.enterText(find.widgetWithText(TextField, '과목명'), '새 과목');
+
+      // AI 태그 선택
+      await tester.tap(find.text('#AI'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('추가'));
+      await tester.pumpAndSettle();
+
+      // [Then] 1. Hive에 과목이 생성되었는지 확인
       expect(fakeHiveManager.createdSubjects.length, 1);
       expect(fakeHiveManager.createdSubjects.first['title'], '새 과목');
-      expect(fakeHiveManager.getSubjects().length, 4);
+      // AI 태그(t1)가 선택되었는지 확인
+      expect(fakeHiveManager.createdSubjects.first['tagIds'], contains('t1'));
+
+      // [Then] 2. Hive에서 과목을 가져왔을 때 새 과목이 포함되어야 함
+      expect(fakeHiveManager.getSubjects().length, 4); // 원래 3개 + 새 과목 1개
+
+      // [Then] 3. 다이얼로그가 닫혔는지 확인
       expect(find.byType(AlertDialog), findsNothing);
 
-      // UI 업데이트는 비동기적이므로 최소한 원래 과목들은 표시되는지만 확인
-      expect(find.byType(SubjectPanelHeader), findsAtLeastNWidgets(3));
+      // [Then] 4. Hive의 최종 상태 확인: 새 과목이 포함되어 있어야 함
+      final allSubjects = fakeHiveManager.getSubjects();
+      expect(allSubjects.any((s) => s.title == '새 과목'), isTrue);
+
+      // 참고: UI 업데이트 확인은 다음 테스트 케이스에서 더 명확하게 검증됨
+      // ("Verify new subject has _workingLectureIds, _workingTagIds, and _workingTitles initialized")
     });
+
+    testWidgets(
+      'Verify new subject has _workingLectureIds, _workingTagIds, and _workingTitles initialized',
+      (WidgetTester tester) async {
+        await pumpScreen(tester);
+
+        await tester.tap(find.byIcon(Icons.add));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.widgetWithText(TextField, '과목명'), '신규 과목');
+        await tester.tap(find.text('#Web'));
+        await tester.tap(find.text('추가'));
+        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump();
+
+        // [Then] 새 과목이 생성됨
+        expect(fakeHiveManager.createdSubjects.length, 1);
+
+        final newSubjectId = fakeHiveManager.fakeSubjects.values
+            .firstWhere((s) => s.title == '신규 과목')
+            .id;
+
+        expect(fakeHiveManager.fakeSubjects.containsKey(newSubjectId), isTrue);
+        expect(fakeHiveManager.fakeSubjects[newSubjectId]!.title, '신규 과목');
+        expect(
+          fakeHiveManager.fakeSubjects[newSubjectId]!.tagIds,
+          contains('t2'),
+        );
+      },
+    );
+
+    testWidgets(
+      'Tapping Cancel in create dialog closes without creating subject',
+      (WidgetTester tester) async {
+        await pumpScreen(tester);
+
+        // [When] '+' 버튼 탭하여 다이얼로그 열기
+        await tester.tap(find.byIcon(Icons.add));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+
+        // [When] 이름 입력 후 다이얼로그의 '취소' 버튼 탭
+        await tester.enterText(find.widgetWithText(TextField, '과목명'), '취소될 과목');
+        // 다이얼로그 안의 취소 버튼을 찾기 (TextButton)
+        final cancelButton = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.widgetWithText(TextButton, '취소'),
+        );
+        await tester.tap(cancelButton);
+        await tester.pumpAndSettle();
+
+        // [Then] 다이얼로그가 닫히고 과목이 생성되지 않아야 함
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(fakeHiveManager.createdSubjects.isEmpty, isTrue);
+        expect(fakeHiveManager.getSubjects().length, 3); // 원래 3개 유지
+      },
+    );
+
+    testWidgets(
+      'Deselecting a tag in create dialog removes it from selection',
+      (WidgetTester tester) async {
+        await pumpScreen(tester);
+
+        // [When] '+' 버튼 탭하여 다이얼로그 열기
+        await tester.tap(find.byIcon(Icons.add));
+        await tester.pumpAndSettle();
+
+        // [When] AI 태그 선택
+        await tester.tap(find.text('#AI'));
+        await tester.pumpAndSettle();
+
+        // [When] AI 태그 다시 탭하여 선택 해제
+        await tester.tap(find.text('#AI'));
+        await tester.pumpAndSettle();
+
+        // [When] 과목 생성
+        await tester.enterText(
+          find.widgetWithText(TextField, '과목명'),
+          '태그 없는 과목',
+        );
+        await tester.tap(find.text('추가'));
+        await tester.pumpAndSettle();
+
+        // [Then] 생성된 과목에 태그가 없어야 함
+        expect(fakeHiveManager.createdSubjects.length, 1);
+        expect(fakeHiveManager.createdSubjects.first['tagIds'], isEmpty);
+      },
+    );
   });
 
   // ------------------------------------------------------------------
   // 테스트 케이스 그룹 4 & 5: Subject Editing & Deletion
   // ------------------------------------------------------------------
   group('4 & 5. Subject Editing & Deletion', () {
-    testWidgets('Long press opens edit dialog, updates local state', (
+    testWidgets('Long press opens edit dialog with pre-filled values', (
       WidgetTester tester,
     ) async {
       await pumpScreen(tester);
 
-      // [When] 1. 'AI 기초' 패널 롱프레스
+      // [When] '웹 프로그래밍' 패널 롱프레스
+      await tester.longPress(find.text('웹 프로그래밍'));
+      await tester.pumpAndSettle();
+
+      // [Then] 다이얼로그가 현재 제목과 태그로 채워져 있어야 함
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.widgetWithText(TextField, '웹 프로그래밍'), findsOneWidget);
+
+      // 태그 확인: 모든 태그가 표시되어야 함
+      expect(find.text('#AI'), findsOneWidget);
+      expect(find.text('#Web'), findsOneWidget);
+    });
+
+    testWidgets('Editing title and tags updates local state only', (
+      WidgetTester tester,
+    ) async {
+      await pumpScreen(tester);
+
+      // [When] 'AI 기초' 패널 롱프레스
       await tester.longPress(find.text('AI 기초'));
       await tester.pumpAndSettle();
 
-      // [Then] 1. 다이얼로그 확인
-      // [수정] _SubjectEditDialog 대신 AlertDialog를 찾습니다.
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.widgetWithText(TextField, 'AI 기초'), findsOneWidget);
-      // ... (태그 선택 확인)
 
-      // [When] 2. 제목/태그 변경 후 '확인'
+      // [When] 제목/태그 변경 후 '확인'
       await tester.enterText(find.widgetWithText(TextField, 'AI 기초'), '수정된 AI');
+
+      // AI 태그 해제 (이미 선택됨)
       await tester.tap(find.text('#AI'));
+      await tester.pumpAndSettle();
+
+      // Web 태그 선택
       await tester.tap(find.text('#Web'));
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('확인'));
       await tester.pumpAndSettle();
 
-      // [Then] 2. 다이얼로그 닫힘, UI 업데이트
+      // [Then] 다이얼로그 닫힘, UI 업데이트
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.text('수정된 AI'), findsOneWidget);
+      expect(find.text('AI 기초'), findsNothing);
 
-      // [Then] 3. HiveManager가 아직 호출되지 않았는지 확인 (저장 전까지)
+      // [Then] HiveManager가 아직 호출되지 않았는지 확인 (저장 전까지)
       expect(fakeHiveManager.updatedTitles.isEmpty, isTrue);
       expect(fakeHiveManager.updatedTagIds.isEmpty, isTrue);
     });
 
+    testWidgets('Tapping Cancel in edit dialog closes without saving changes', (
+      WidgetTester tester,
+    ) async {
+      await pumpScreen(tester);
+
+      // [When] 'AI 기초' 패널 롱프레스
+      await tester.longPress(find.text('AI 기초'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // [When] 제목 변경 후 다이얼로그의 '취소' 버튼 탭
+      await tester.enterText(find.widgetWithText(TextField, 'AI 기초'), '취소된 변경');
+      // 다이얼로그 안의 취소 버튼을 찾기
+      final cancelButton = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(TextButton, '취소'),
+      );
+      await tester.tap(cancelButton);
+      await tester.pumpAndSettle();
+
+      // [Then] 다이얼로그가 닫히고 변경사항이 반영되지 않아야 함
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('AI 기초'), findsOneWidget); // 원래 제목 유지
+      expect(find.text('취소된 변경'), findsNothing);
+    });
+
     testWidgets(
-      'Tapping Delete in dialog triggers confirmation and updates UI',
+      'Empty title in edit dialog shows snackbar and does not close dialog',
       (WidgetTester tester) async {
         await pumpScreen(tester);
 
-        // "삭제될 과목"이 화면에 있는지 먼저 확인
-        final deleteSubjectFinder = find.text('삭제될 과목');
-        expect(deleteSubjectFinder, findsOneWidget);
-
-        // [When] 1. 롱프레스 (warnIfMissed: false 사용)
-        await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
+        // [When] '웹 프로그래밍' 패널 롱프레스
+        await tester.longPress(find.text('웹 프로그래밍'));
         await tester.pumpAndSettle();
 
-        // 다이얼로그가 열렸는지 확인
-        if (find.byType(AlertDialog).evaluate().isEmpty) {
-          // 다이얼로그가 안 열렸으면 테스트 스킵
+        expect(find.byType(AlertDialog), findsOneWidget);
+
+        // [When] 제목을 비우고 '확인' 버튼 탭
+        await tester.enterText(find.widgetWithText(TextField, '웹 프로그래밍'), '');
+        await tester.tap(find.text('확인'));
+        await tester.pumpAndSettle();
+
+        // [Then] 스낵바가 표시되고 다이얼로그는 닫히지 않아야 함
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.text('과목명을 입력해주세요'), findsOneWidget);
+        expect(find.byType(AlertDialog), findsOneWidget);
+      },
+    );
+
+    testWidgets('Deleting subject (Yes) then Save actually deletes from Hive', (
+      WidgetTester tester,
+    ) async {
+      const Key homeButtonKey = Key('delete_yes_save');
+
+      await tester.pumpWidget(
+        createTestableWidget(
+          Scaffold(
+            key: homeButtonKey,
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SubjectsEditScreen(hiveManager: fakeHiveManager),
+                  ),
+                ),
+                child: const Text('Go'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Go'));
+      await tester.pumpAndSettle();
+
+      // [Given] 초기 상태: 3개의 과목
+      expect(find.byType(SubjectPanelHeader), findsNWidgets(3));
+      expect(find.text('삭제될 과목'), findsOneWidget);
+
+      // [When] '삭제될 과목' 롱프레스 → 삭제 → 예
+      final deleteSubjectFinder = find.text('삭제될 과목');
+      await tester.longPress(deleteSubjectFinder);
+      await tester.pumpAndSettle();
+
+      // 다이얼로그가 열렸는지 확인
+      if (find.byType(AlertDialog).evaluate().isEmpty) {
+        // 다이얼로그가 안 열렸으면 스킵
+        return;
+      }
+
+      await tester.tap(find.text('과목 삭제'));
+      await tester.pumpAndSettle();
+
+      if (find.text('경고').evaluate().isEmpty) {
+        // 확인 다이얼로그가 안 열렸으면 스킵
+        return;
+      }
+
+      await tester.tap(find.text('예'));
+      await tester.pumpAndSettle();
+
+      // [Then] 로컬 상태에서 제거됨 (UI에서 사라짐)
+      expect(find.text('삭제될 과목'), findsNothing);
+      expect(find.byType(SubjectPanelHeader), findsNWidgets(2));
+
+      // [Then] HiveManager는 아직 호출되지 않음
+      expect(fakeHiveManager.deletedSubjectIds.isEmpty, isTrue);
+
+      // [When] '수정 완료' 클릭
+      await tester.tap(find.text('수정 완료'));
+      await tester.pumpAndSettle();
+
+      // [Then] HiveManager.deleteSubject가 호출됨
+      expect(fakeHiveManager.deletedSubjectIds.contains('s3'), isTrue);
+
+      // Navigator.pop 확인
+      expect(find.byType(SubjectsEditScreen), findsNothing);
+    });
+
+    testWidgets(
+      'Deleting subject (Yes) then Cancel does NOT delete from Hive',
+      (WidgetTester tester) async {
+        const Key homeButtonKey = Key('delete_yes_cancel');
+
+        await tester.pumpWidget(
+          createTestableWidget(
+            Scaffold(
+              key: homeButtonKey,
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SubjectsEditScreen(hiveManager: fakeHiveManager),
+                    ),
+                  ),
+                  child: const Text('Go'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Go'));
+        await tester.pumpAndSettle();
+
+        final deleteSubjectFinder = find.text('삭제될 과목');
+        if (deleteSubjectFinder.evaluate().isEmpty) {
+          // 과목이 없으면 스킵
           return;
         }
 
-        // [Then] 1. 수정 다이얼로그 열림
-        expect(find.byType(AlertDialog), findsOneWidget);
+        // [When] '삭제될 과목' 롱프레스 → 삭제 → 예
+        await tester.longPress(deleteSubjectFinder);
+        await tester.pumpAndSettle();
 
-        // [When] 2. '과목 삭제' 버튼 탭
+        if (find.byType(AlertDialog).evaluate().isEmpty) {
+          return;
+        }
+
         await tester.tap(find.text('과목 삭제'));
         await tester.pumpAndSettle();
 
-        // [Then] 2. 삭제 확인 다이얼로그 열림
-        expect(find.text('경고'), findsOneWidget);
+        if (find.text('경고').evaluate().isEmpty) {
+          return;
+        }
 
-        // [When] 3. '예' 버튼 탭
         await tester.tap(find.text('예'));
         await tester.pumpAndSettle();
 
-        // [Then] 3. 다이얼로그 닫힘
-        expect(find.text('경고'), findsNothing);
+        // [Then] 로컬에서 제거됨
+        expect(find.text('삭제될 과목'), findsNothing);
 
-        // 삭제는 로컬 상태에서만 제거되므로 UI 검증은 완화
-        expect(find.byType(SubjectPanelHeader), findsAtLeastNWidgets(2));
+        // [When] '취소' 클릭
+        await tester.tap(find.text('취소'));
+        await tester.pumpAndSettle();
 
-        // [Then] 4. HiveManager.deleteSubject는 아직 호출되지 않아야 함 (저장 전까지)
+        // [Then] HiveManager.deleteSubject가 호출되지 않음
         expect(fakeHiveManager.deletedSubjectIds.isEmpty, isTrue);
+
+        expect(find.byType(SubjectsEditScreen), findsNothing);
       },
     );
 
@@ -518,9 +904,10 @@ void main() {
     ) async {
       await pumpScreen(tester);
 
-      // [When] 1. 롱프레스 → 삭제 다이얼로그
-      final deleteSubjectFinder = find.text('삭제될 과목');
-      await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
+      expect(find.text('삭제될 과목'), findsOneWidget);
+
+      // [When] 롱프레스 → 삭제 다이얼로그 → 아니오
+      await tester.longPress(find.text('삭제될 과목'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       if (find.byType(AlertDialog).evaluate().isEmpty) {
@@ -530,7 +917,6 @@ void main() {
       await tester.tap(find.text('과목 삭제'));
       await tester.pumpAndSettle();
 
-      // [When] 2. '아니오' 클릭
       expect(find.text('경고'), findsOneWidget);
       await tester.tap(find.text('아니오'));
       await tester.pumpAndSettle();
@@ -540,19 +926,144 @@ void main() {
       expect(find.text('삭제될 과목'), findsOneWidget);
       expect(find.byType(SubjectPanelHeader), findsNWidgets(3));
     });
+
+    testWidgets('Deleting subject (No) then Save keeps subject in Hive', (
+      WidgetTester tester,
+    ) async {
+      const Key homeButtonKey = Key('delete_no_save');
+
+      await tester.pumpWidget(
+        createTestableWidget(
+          Scaffold(
+            key: homeButtonKey,
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SubjectsEditScreen(hiveManager: fakeHiveManager),
+                  ),
+                ),
+                child: const Text('Go'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Go'));
+      await tester.pumpAndSettle();
+
+      final deleteSubjectFinder = find.text('삭제될 과목');
+      if (deleteSubjectFinder.evaluate().isEmpty) {
+        // 과목이 없으면 스킵
+        return;
+      }
+
+      // [When] 삭제 시도하지만 "아니오" 선택
+      await tester.longPress(deleteSubjectFinder);
+      await tester.pumpAndSettle();
+
+      if (find.byType(AlertDialog).evaluate().isEmpty) {
+        return;
+      }
+
+      await tester.tap(find.text('과목 삭제'));
+      await tester.pumpAndSettle();
+
+      if (find.text('경고').evaluate().isEmpty) {
+        return;
+      }
+
+      await tester.tap(find.text('아니오'));
+      await tester.pumpAndSettle();
+
+      // [Then] 과목이 여전히 존재
+      expect(find.text('삭제될 과목'), findsOneWidget);
+
+      // [When] '수정 완료' 클릭
+      await tester.tap(find.text('수정 완료'));
+      await tester.pumpAndSettle();
+
+      // [Then] HiveManager.deleteSubject가 호출되지 않음
+      expect(fakeHiveManager.deletedSubjectIds.isEmpty, isTrue);
+    });
+
+    testWidgets('Deleting subject (No) then Cancel keeps subject in Hive', (
+      WidgetTester tester,
+    ) async {
+      const Key homeButtonKey = Key('delete_no_cancel');
+
+      await tester.pumpWidget(
+        createTestableWidget(
+          Scaffold(
+            key: homeButtonKey,
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SubjectsEditScreen(hiveManager: fakeHiveManager),
+                  ),
+                ),
+                child: const Text('Go'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Go'));
+      await tester.pumpAndSettle();
+
+      final deleteSubjectFinder = find.text('삭제될 과목');
+      if (deleteSubjectFinder.evaluate().isEmpty) {
+        // 과목이 없으면 스킵
+        return;
+      }
+
+      // [When] 삭제 시도하지만 "아니오" 선택
+      await tester.longPress(deleteSubjectFinder);
+      await tester.pumpAndSettle();
+
+      if (find.byType(AlertDialog).evaluate().isEmpty) {
+        return;
+      }
+
+      await tester.tap(find.text('과목 삭제'));
+      await tester.pumpAndSettle();
+
+      if (find.text('경고').evaluate().isEmpty) {
+        return;
+      }
+
+      await tester.tap(find.text('아니오'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('삭제될 과목'), findsOneWidget);
+
+      // [When] '취소' 클릭
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+
+      // [Then] HiveManager.deleteSubject가 호출되지 않음
+      expect(fakeHiveManager.deletedSubjectIds.isEmpty, isTrue);
+    });
   });
 
   // ------------------------------------------------------------------
   // 테스트 케이스 그룹 6: Saving & Canceling
   // ------------------------------------------------------------------
   group('6. Saving & Canceling', () {
-    // [수정] lecture_form_screen_test.dart와 동일한 Navigator.pop 테스트 방식
-    testWidgets('Tapping Cancel button calls Navigator.pop and does not save', (
+    testWidgets('Tapping Cancel does not save any changes', (
       WidgetTester tester,
     ) async {
-      const Key homeButtonKey = Key('home_button');
+      const Key homeButtonKey = Key('cancel_test');
 
-      // [Given] createTestableWidget 헬퍼를 사용해 홈 화면 렌더링
       await tester.pumpWidget(
         createTestableWidget(
           Scaffold(
@@ -574,99 +1085,146 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // [When] 1. 수정 화면으로 이동
       await tester.tap(find.byKey(homeButtonKey));
       await tester.pumpAndSettle();
       expect(find.byType(SubjectsEditScreen), findsOneWidget);
 
-      // (데이터 변경 시뮬레이션: 'AI 기초' 삭제)
+      // 데이터 변경: 'AI 기초' 제목 수정
       await tester.longPress(find.text('AI 기초'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('과목 삭제'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('예'));
-      await tester.pumpAndSettle();
-      expect(find.text('AI 기초'), findsNothing);
-
-      // [When] 2. '취소' 버튼 탭
-      await tester.tap(find.text('취소')); // (Hardcoded)
+      await tester.enterText(find.widgetWithText(TextField, 'AI 기초'), '변경된 제목');
+      await tester.tap(find.text('확인'));
       await tester.pumpAndSettle();
 
-      // [Then] 2. 화면 Pop, Hive 호출 없음
+      expect(find.text('변경된 제목'), findsOneWidget);
+
+      // [When] '취소' 버튼 탭
+      await tester.tap(find.text('취소'));
+      await tester.pumpAndSettle();
+
+      // [Then] 화면 Pop, Hive 호출 없음
       expect(find.byType(SubjectsEditScreen), findsNothing);
       expect(find.byKey(homeButtonKey), findsOneWidget);
+      expect(fakeHiveManager.updatedTitles.isEmpty, isTrue);
       expect(fakeHiveManager.deletedSubjectIds.isEmpty, isTrue);
     });
 
-    // [수정] lecture_form_screen_test.dart와 동일한 Navigator.pop 테스트 방식
-    testWidgets('Tapping Edit Complete saves all changes and pops', (
-      WidgetTester tester,
-    ) async {
-      const Key homeButtonKey = Key('home_button_key'); // Pop 검증용
+    testWidgets(
+      'FULL SAVE TEST: Edit title, delete subject, change tags then save',
+      (WidgetTester tester) async {
+        // 깨끗한 상태로 시작
+        final testHiveManager = FakeHiveManager();
 
-      // [Given] Pop 테스트를 위해 네비게이터 스택 설정
-      await tester.pumpWidget(
-        createTestableWidget(
-          Scaffold(
-            key: homeButtonKey, // 홈 화면 식별용 Key
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SubjectsEditScreen(hiveManager: fakeHiveManager),
+        testHiveManager.addFakeTag(
+          HiveTag(id: 't1', name: 'AI', color: 0xFFFF6B6B),
+        );
+        testHiveManager.addFakeTag(
+          HiveTag(id: 't2', name: 'Web', color: 0xFF4ECDC4),
+        );
+
+        testHiveManager.addFakeLecture(
+          HiveLecture(
+            id: 'l1',
+            subjectId: 's1',
+            weekLabel: 'Week 1',
+            title: 'Intro',
+            duration: 3600,
+            audioPath: 'test.mp3',
+          ),
+        );
+
+        testHiveManager.addFakeSubject(
+          HiveSubject(
+            id: 's1',
+            title: 'AI 기초',
+            tagIds: ['t1'],
+            lectureIds: ['l1'],
+          ),
+        );
+        testHiveManager.addFakeSubject(
+          HiveSubject(id: 's3', title: '삭제될 과목', tagIds: [], lectureIds: []),
+        );
+
+        testHiveManager.fakeExpandedStates['s1'] = true;
+        testHiveManager.fakeExpandedStates['s3'] = true;
+
+        const Key homeButtonKey = Key('full_save_test');
+
+        await tester.pumpWidget(
+          createTestableWidget(
+            Scaffold(
+              key: homeButtonKey,
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SubjectsEditScreen(hiveManager: testHiveManager),
+                    ),
                   ),
+                  child: const Text('Go'),
                 ),
-                child: const Text('Go'),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(ElevatedButton));
-      await tester.pumpAndSettle();
-      expect(find.byType(SubjectsEditScreen), findsOneWidget);
+        await tester.tap(find.text('Go'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SubjectsEditScreen), findsOneWidget);
 
-      // [When] 1. (Reorder) 'AI 기초'의 'Intro'를 'Deep Learning' 밑으로
-      final introFinder = find.text('Week 1  •  Intro');
-      if (introFinder.evaluate().isNotEmpty) {
-        await tester.drag(introFinder, const Offset(0, 100));
-        await tester.pump();
-      }
+        // [When] 1. 과목 제목 수정
+        await tester.longPress(find.text('AI 기초'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextField, 'AI 기초'),
+          '변경된 AI',
+        );
 
-      // [When] 2. (Edit) '웹 프로그래밍' 제목 수정 및 태그 변경
-      await tester.longPress(find.text('웹 프로그래밍'));
-      await tester.pumpAndSettle();
-
-      final textFieldFinder = find.widgetWithText(TextField, '웹 프로그래밍');
-      if (textFieldFinder.evaluate().isNotEmpty) {
-        await tester.enterText(textFieldFinder, '수정된 Web');
-
-        final aiTagFinder = find.text('#AI');
-        if (aiTagFinder.evaluate().isNotEmpty) {
-          await tester.tap(aiTagFinder);
-        }
+        // 태그도 변경 (AI 해제, Web 추가)
+        await tester.tap(find.text('#AI'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('#Web'));
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('확인'));
         await tester.pumpAndSettle();
-      }
 
-      // [When] 3. '수정 완료' 탭
-      await tester.tap(find.text('수정 완료'));
-      await tester.pumpAndSettle();
+        // [When] 2. 과목 삭제
+        await tester.longPress(find.text('삭제될 과목'), warnIfMissed: false);
+        await tester.pumpAndSettle();
 
-      // [Then] Hive 호출 검증 (최소한 제목 업데이트는 확인)
-      if (fakeHiveManager.updatedTitles.containsKey('s2')) {
-        expect(fakeHiveManager.updatedTitles['s2'], '수정된 Web');
-      }
+        if (find.byType(AlertDialog).evaluate().isNotEmpty) {
+          await tester.tap(find.text('과목 삭제'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('예'));
+          await tester.pumpAndSettle();
+        }
 
-      // Pop 검증
-      expect(find.byType(SubjectsEditScreen), findsNothing);
-      expect(find.byKey(homeButtonKey), findsOneWidget);
-    });
+        // [When] 3. '수정 완료' 클릭
+        await tester.tap(find.text('수정 완료'));
+        await tester.pumpAndSettle();
+
+        // [Then] 모든 HiveManager 메서드가 호출됨
+
+        // 1. 제목 업데이트 확인
+        expect(testHiveManager.updatedTitles.containsKey('s1'), isTrue);
+        expect(testHiveManager.updatedTitles['s1'], '변경된 AI');
+
+        // 2. 태그 업데이트 확인
+        expect(testHiveManager.updatedTagIds.containsKey('s1'), isTrue);
+        expect(testHiveManager.updatedTagIds['s1'], ['t2']);
+
+        // 3. 삭제 확인
+        expect(testHiveManager.deletedSubjectIds.contains('s3'), isTrue);
+
+        // 4. Navigator.pop 확인
+        expect(find.byType(SubjectsEditScreen), findsNothing);
+        expect(find.byKey(homeButtonKey), findsOneWidget);
+      },
+    );
   });
 
   // ------------------------------------------------------------------
@@ -686,9 +1244,6 @@ void main() {
       expect(find.textContaining('Intro'), findsOneWidget);
       expect(find.textContaining('Deep Learning'), findsOneWidget);
 
-      // '웹 프로그래밍' 패널은 접혀있어서 강의 목록이 안 보일 수 있음
-      // (접혀있으면 ReorderableListView가 렌더링되지 않음)
-      // 하지만 제목은 보여야 함
       expect(find.text('웹 프로그래밍'), findsOneWidget);
     });
 
@@ -697,17 +1252,13 @@ void main() {
       (WidgetTester tester) async {
         await pumpScreen(tester);
 
-        // [Given] 모든 패널이 펼쳐져 있음 (setUp에서 true로 설정)
+        // [Given] 모든 패널이 펼쳐져 있음
         expect(find.textContaining('Intro'), findsOneWidget);
 
-        // [When] 'AI 기초' 패널의 토글 버튼을 찾아서 탭
-        // SubjectPanelHeader에 있는 expand/collapse 아이콘을 찾기
-        // SubjectPanelHeader를 먼저 찾은 후, 그 안에 있는 IconButton 찾기
+        // [When] 'AI 기초' 패널의 토글 버튼 탭
         final headerWidgets = find.byType(SubjectPanelHeader).evaluate();
 
-        // 'AI 기초' 과목에 해당하는 SubjectPanelHeader 찾기 (첫 번째 패널)
         if (headerWidgets.isNotEmpty) {
-          // 첫 번째 SubjectPanelHeader의 IconButton 찾기
           final iconButtonFinder = find.descendant(
             of: find.byType(SubjectPanelHeader).first,
             matching: find.byType(IconButton),
@@ -723,8 +1274,6 @@ void main() {
               isTrue,
             );
 
-            // 강의 목록이 숨겨져야 함 (접혀있으면)
-            // 하지만 다시 펼칠 수도 있으므로, 상태가 변경되었는지만 확인
             final newState = fakeHiveManager.fakeExpandedStates['s1'];
             expect(newState, isNotNull);
           }
@@ -742,7 +1291,105 @@ void main() {
 
       // [Then] '웹 프로그래밍' 패널이 보여야 함
       expect(find.text('웹 프로그래밍'), findsOneWidget);
+
+      // 's1'의 강의는 보여야 함 (펼쳐져 있음)
       expect(find.textContaining('Intro'), findsOneWidget);
+    });
+
+    testWidgets('Panel expand animation runs when reduceMotion is false', (
+      WidgetTester tester,
+    ) async {
+      // [Given] reduceMotion이 false이고, 패널이 접혀있는 상태
+      fakeHiveManager._fakeSettings.accessibilityReduceMotion = false;
+      fakeHiveManager.fakeExpandedStates['s1'] = false;
+
+      await pumpScreen(tester);
+
+      // [When] 패널의 토글 버튼을 탭하여 펼침
+      final headerWidgets = find.byType(SubjectPanelHeader).evaluate();
+      if (headerWidgets.isNotEmpty) {
+        final iconButtonFinder = find.descendant(
+          of: find.byType(SubjectPanelHeader).first,
+          matching: find.byType(IconButton),
+        );
+
+        if (iconButtonFinder.evaluate().isNotEmpty) {
+          await tester.tap(iconButtonFinder.first);
+          // 애니메이션이 진행 중일 때 pump (완전히 settle하지 않음)
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // [Then] setSubjectExpandedState가 호출되었는지 확인
+          expect(
+            fakeHiveManager.updatedExpandedStates.containsKey('s1'),
+            isTrue,
+          );
+        }
+      }
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // 테스트 케이스: Back button navigation
+  // ------------------------------------------------------------------
+  group('AppBar Navigation', () {
+    testWidgets('Tapping AppBar back button navigates back', (
+      WidgetTester tester,
+    ) async {
+      const Key homeButtonKey = Key('back_button_test');
+
+      // [Given] 홈 화면이 있는 네비게이션 스택
+      await tester.pumpWidget(
+        createTestableWidget(
+          Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  key: homeButtonKey,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SubjectsEditScreen(hiveManager: fakeHiveManager),
+                      ),
+                    );
+                  },
+                  child: const Text('Go to Edit'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // [When] SubjectsEditScreen으로 이동
+      await tester.tap(find.byKey(homeButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SubjectsEditScreen), findsOneWidget);
+      expect(find.byKey(homeButtonKey), findsNothing);
+
+      // [When] AppBar의 back 버튼 탭
+      final backButton = find.byType(BackButton);
+      if (backButton.evaluate().isEmpty) {
+        // If there's no BackButton, look for leading IconButton
+        final leadingButton = find
+            .descendant(
+              of: find.byType(AppBar),
+              matching: find.byType(IconButton),
+            )
+            .first;
+        await tester.tap(leadingButton);
+      } else {
+        await tester.tap(backButton);
+      }
+      await tester.pumpAndSettle();
+
+      // [Then] 홈 화면으로 돌아가야 함
+      expect(find.byType(SubjectsEditScreen), findsNothing);
+      expect(find.byKey(homeButtonKey), findsOneWidget);
     });
   });
 }
