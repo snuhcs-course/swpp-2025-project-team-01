@@ -5,12 +5,16 @@ import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
+import 'package:re_view/features/edit/file_picker_service.dart';
+import 'package:re_view/features/edit/lecture_creation_service.dart';
+import 'package:re_view/features/edit/loader_service.dart';
+import 'package:re_view/features/edit/background_service.dart';
 
 // ------------------------------------------------------------------
 // Mockito 대신 사용할 "가짜" (Fake/Stub) 클래스 정의
 // ------------------------------------------------------------------
 
-/// AppSettings를 흉내내는 가짜 클래스 (accessibility_mode_test.dart에서 가져옴)
+/// AppSettings를 흉내내는 가짜 클래스 (accessibility_mode_test.dartf에서 가져옴)
 class FakeAppSettings implements AppSettings {
   FakeAppSettings({
     this.language = 'ko',
@@ -141,6 +145,133 @@ class FakeHiveManager extends Fake implements HiveManager {
   }
 }
 
+class FakeFilePickerService extends Fake implements FilePickerService {
+  String? _pathResult;
+  bool _willCancel = false;
+
+  void setFileResult(String path) {
+    _pathResult = path;
+    _willCancel = false;
+  }
+
+  void setPickerToCancel() {
+    _willCancel = true;
+  }
+
+  @override
+  Future<String?> pickPdf() async {
+    if (_willCancel) {
+      return null;
+    }
+    return _pathResult;
+  }
+
+  @override
+  Future<String?> pickAudio() async {
+    if (_willCancel) {
+      return null;
+    }
+    return _pathResult;
+  }
+}
+
+class FakeLectureCreationService extends Fake
+    implements LectureCreationService {
+  CreationResult? _result;
+  Exception? _exception;
+  bool cancelCalled = false;
+
+  // 테스트 설정: 성공 시나리오
+  void setSuccessResult(CreationResult result) {
+    _result = result;
+    _exception = null;
+  }
+
+  // 테스트 설정: 실패 시나리오
+  void setFailure(Exception exception) {
+    _result = null;
+    _exception = exception;
+  }
+
+  // 테스트 설정: 취소/중단 시나리오
+  void setCancel() {
+    _result = null;
+    _exception = null;
+  }
+
+  @override
+  Future<CreationResult?> createLecture({
+    required String slidePath,
+    required List<AudioFileEntry> audioEntries,
+    required String title,
+    required String serverAddress,
+    required String port,
+  }) async {
+    // 테스트용 딜레이
+    await Future.delayed(const Duration(milliseconds: 10));
+
+    if (cancelCalled) {
+      return null;
+    }
+    if (_exception != null) {
+      throw _exception!;
+    }
+
+    // _result가 null이면 취소(null 리턴), 아니면 성공(result 리턴)
+    return _result;
+  }
+
+  @override
+  void cancelCreation() {
+    cancelCalled = true;
+  }
+}
+
+class FakeLoaderService extends Fake implements LoaderService {
+  bool _isCancelled = false;
+  bool startLoadingCalled = false;
+  bool hideLoadingCalled = false;
+
+  @override
+  bool get isCancelled => _isCancelled;
+
+  void setCancelled(bool value) {
+    _isCancelled = value;
+  }
+
+  @override
+  void startLoading(String title) {
+    startLoadingCalled = true;
+  }
+
+  @override
+  void setOnCancel(VoidCallback onCancel) {
+    // 테스트에서는 취소 로직을 직접 호출하지 않으므로 비워 둠
+  }
+
+  @override
+  void hideLoading() {
+    hideLoadingCalled = true;
+  }
+}
+
+class FakeBackgroundService extends Fake implements BackgroundService {
+  @override
+  Future<bool> initialize() async {
+    return true; // 테스트 환경에서는 항상 성공
+  }
+
+  @override
+  Future<void> enableBackgroundExecution() async {
+    // 아무것도 안 함
+  }
+
+  @override
+  Future<void> disableBackgroundExecution() async {
+    // 아무것도 안 함
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -149,9 +280,17 @@ void main() {
   // ------------------------------------------------------------------
 
   late FakeHiveManager fakeHiveManager;
+  late FakeFilePickerService fakeFilePicker;
+  late FakeLectureCreationService fakeCreator;
+  late FakeLoaderService fakeLoader;
+  late FakeBackgroundService fakeBackground;
 
   setUp(() {
     fakeHiveManager = FakeHiveManager();
+    fakeFilePicker = FakeFilePickerService();
+    fakeCreator = FakeLectureCreationService();
+    fakeLoader = FakeLoaderService();
+    fakeBackground = FakeBackgroundService();
     // 테스트에 사용할 기본 과목 데이터 추가
     fakeHiveManager.addFakeSubject(
       HiveSubject(id: 's1', title: '소프트웨어 공학', lectureIds: []),
@@ -178,9 +317,16 @@ void main() {
 
   // 테스트용 헬퍼 함수: 화면 펌핑 및 l10n 인스턴스 반환
   Future<AppLocalizations> pumpScreen(WidgetTester tester) async {
-    // [중요] LectureFormScreen이 hiveManager를 주입받도록 수정되었다고 가정
     await tester.pumpWidget(
-      createTestableWidget(LectureFormScreen(hiveManager: fakeHiveManager)),
+      createTestableWidget(
+        LectureFormScreen(
+          hiveManager: fakeHiveManager,
+          filePickerService: fakeFilePicker,
+          lectureCreationService: fakeCreator,
+          loaderService: fakeLoader,
+          backgroundService: fakeBackground,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
     return AppLocalizations.of(tester.element(find.byType(LectureFormScreen)));
@@ -378,12 +524,29 @@ void main() {
         expect(find.byKey(homeButtonKey), findsOneWidget); // 홈 스크린이 다시 보임
       },
     );
+
+    testWidgets('Verify tapping Slide PDF button updates label', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      await pumpScreen(tester);
+      // 가짜 FilePicker가 'slide.pdf'를 반환하도록 설정
+      fakeFilePicker.setFileResult('/fake/path/to/slide.pdf');
+
+      // [When]
+      final slideButton = find.widgetWithText(OutlinedButton, '추가').at(0);
+      await tester.tap(slideButton);
+      await tester.pumpAndSettle();
+
+      // [Then]
+      expect(find.text('slide.pdf'), findsOneWidget);
+    });
   });
 
   // ------------------------------------------------------------------
   // 테스트 케이스 그룹 3: Audio File List Management
   // ------------------------------------------------------------------
-  group('3. Audio File List Management (Partial)', () {
+  group('3. Audio File List Management', () {
     testWidgets('Tapping Add Audio (+) when first file is null shows toast', (
       WidgetTester tester,
     ) async {
@@ -412,12 +575,143 @@ void main() {
         ),
         findsOneWidget,
       );
-      // expect(find.byType(_buildAudioFileEntry), findsOneWidget); // 새 항목이 추가되지 않음
+      // '추가' 버튼은 여전히 2개 (슬라이드 1, 오디오 1)
+      expect(find.widgetWithText(OutlinedButton, '추가'), findsNWidgets(2));
     });
 
-    // [참고] '파일 추가 성공' 및 '파일 제거' 테스트는
-    // FilePicker를 모킹(faking)할 수 있도록
-    // LectureFormScreen이 리팩토링 되어야 테스트 가능합니다.
+    testWidgets('Tapping Add Audio (+) success enables multi-mode', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      final l10n = await pumpScreen(tester);
+
+      // [When] 1. 첫 번째 오디오 파일을 업로드합니다.
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
+
+      // [Verify 1] 'audio1.m4a' 텍스트가 표시됨
+      expect(find.text('audio1.m4a'), findsOneWidget);
+
+      // [When] 2. 오디오 추가(+) 버튼을 탭합니다.
+      final addButtonFinder = find.byIcon(Icons.add_circle_outline);
+      await tester.ensureVisible(addButtonFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(addButtonFinder);
+      await tester.pumpAndSettle(); // 새 항목 추가 애니메이션
+
+      // [Then]
+      // 1. 오디오 파일 UI가 2개가 됨 ('추가' 버튼 3개: 슬라이드1, 오디오1, 오디오2)
+      expect(find.widgetWithText(OutlinedButton, '추가'), findsNWidgets(3));
+
+      // 2. 새로 추가된 항목에 '...' 플레이스홀더가 표시됨 (슬라이드 '...' 포함 2개)
+      expect(find.text('...'), findsNWidgets(2));
+
+      // 3. 다중 모드가 활성화되어 '페이지 설정'이 나타남
+      expect(
+        find.text(l10n.isKorean ? '페이지 설정' : 'Page Range'),
+        findsNWidgets(2), // 2개의 오디오 항목 모두에 대해
+      );
+
+      // 4. 제거(-) 버튼이 활성화됨
+      final removeButton = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.remove_circle_outline),
+      );
+      expect(removeButton.onPressed, isNotNull);
+    });
+
+    testWidgets('Tapping Remove Audio (-) with no file removes directly', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 다중 모드 상태 (파일은 추가 안 함)
+      await pumpScreen(tester);
+      // 1. 첫 번째 파일 업로드
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
+      // 2. 두 번째 슬롯 추가
+      final addButtonFinder = find.byIcon(Icons.add_circle_outline);
+      await tester.ensureVisible(addButtonFinder);
+      await tester.tap(addButtonFinder);
+      await tester.pumpAndSettle();
+
+      // [Verify Given] '추가' 버튼 3개, '페이지 설정' 2개 확인
+      expect(find.widgetWithText(OutlinedButton, '추가'), findsNWidgets(3));
+      expect(find.text('페이지 설정'), findsNWidgets(2));
+
+      // [When] 1. 제거(-) 버튼을 탭합니다. (두 번째 파일이 비어있음)
+      final removeButtonFinder = find.byIcon(Icons.remove_circle_outline);
+      await tester.tap(removeButtonFinder);
+      await tester.pumpAndSettle(); // 항목 제거
+
+      // [Then]
+      // 1. 다이얼로그가 뜨지 않음
+      expect(find.byType(AlertDialog), findsNothing);
+      // 2. '추가' 버튼이 2개로 줄어듦 (슬라이드1, 오디오1)
+      expect(find.widgetWithText(OutlinedButton, '추가'), findsNWidgets(2));
+      // 3. 다중 모드가 비활성화됨
+      expect(find.text('페이지 설정'), findsNothing);
+      // 4. 제거(-) 버튼이 비활성화됨
+      final removeButton = tester.widget<IconButton>(
+        find.widgetWithIcon(IconButton, Icons.remove_circle_outline),
+      );
+      expect(removeButton.onPressed, isNull);
+    });
+
+    testWidgets('Tapping Remove Audio (-) with file shows dialog and removes', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 다중 모드 + 두 번째 파일도 업로드된 상태
+      final l10n = await pumpScreen(tester);
+      // 1. 첫 번째 파일 업로드
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
+      // 2. 두 번째 슬롯 추가
+      final addButtonFinder = find.byIcon(Icons.add_circle_outline);
+      await tester.ensureVisible(addButtonFinder);
+      await tester.tap(addButtonFinder);
+      await tester.pumpAndSettle();
+      // 3. 두 번째 파일 업로드
+      fakeFilePicker.setFileResult('/fake/audio2.mp3');
+      final secondAudioButton = find
+          .widgetWithText(OutlinedButton, '추가')
+          .at(2); // [수정]
+      await tester.ensureVisible(secondAudioButton);
+      await tester.tap(secondAudioButton);
+      await tester.pumpAndSettle();
+
+      // [Verify Given] 'audio2.mp3' 파일명 확인
+      expect(find.text('audio2.mp3'), findsOneWidget);
+
+      // [When] 1. 제거(-) 버튼을 탭합니다. (두 번째 파일이 채워져 있음)
+      final removeButtonFinder = find.byIcon(Icons.remove_circle_outline);
+      await tester.tap(removeButtonFinder);
+      await tester.pumpAndSettle(); // 다이얼로그 표시
+
+      // [Then] 1. 경고 다이얼로그가 뜹니다.
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text(l10n.isKorean ? '경고' : 'Warning'), findsOneWidget);
+
+      // [When] 2. '삭제' 버튼을 탭합니다.
+      await tester.tap(find.text(l10n.isKorean ? '삭제' : 'Delete'));
+      await tester.pumpAndSettle(); // 다이얼로그 닫힘 및 항목 제거
+
+      // [Then]
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('audio2.mp3'), findsNothing); // 파일 삭제됨
+      expect(
+        find.widgetWithText(OutlinedButton, '추가'),
+        findsNWidgets(2),
+      ); // 슬라이드1, 오디오1
+      expect(find.text('페이지 설정'), findsNothing); // 다중 모드 비활성화
+    });
   });
 
   // ------------------------------------------------------------------
@@ -530,25 +824,30 @@ void main() {
     ) async {
       // [Given]
       final l10n = await pumpScreen(tester);
-      // 과목 선택
+      // 과목, 주차, 제목 입력
       await tester.tap(find.byType(DropdownButton<String?>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('소프트웨어 공학').last);
       await tester.pumpAndSettle();
-      // 주차 입력
       await tester.enterText(
         find.byWidgetPredicate(
           (w) => w is TextField && w.decoration?.hintText == 'Ex. Week 1-1',
         ),
         'Week 1',
       );
-      // 제목 입력
       await tester.enterText(
         find.byWidgetPredicate(
           (w) => w is TextField && w.decoration?.hintText == null,
         ),
         'Test Title',
       );
+
+      // 오디오 파일은 업로드
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
       // (슬라이드 PDF 업로드 안 함)
 
       // [When]
@@ -570,43 +869,162 @@ void main() {
     ) async {
       // [Given]
       final l10n = await pumpScreen(tester);
-      // 과목 선택
+      // 과목, 주차, 제목 입력
       await tester.tap(find.byType(DropdownButton<String?>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('소프트웨어 공학').last);
       await tester.pumpAndSettle();
-      // 주차 입력
       await tester.enterText(
         find.byWidgetPredicate(
           (w) => w is TextField && w.decoration?.hintText == 'Ex. Week 1-1',
         ),
         'Week 1',
       );
-      // 제목 입력
       await tester.enterText(
         find.byWidgetPredicate(
           (w) => w is TextField && w.decoration?.hintText == null,
         ),
         'Test Title',
       );
-      // 슬라이드 PDF는 있다고 가정 (하지만 실제로 업로드는 불가능 - FilePicker 모킹 필요)
-      // 오디오 파일도 업로드 안 함
+
+      // [수정] 슬라이드 PDF는 업로드
+      fakeFilePicker.setFileResult('/fake/slide.pdf');
+      await tester.tap(find.widgetWithText(OutlinedButton, '추가').at(0));
+      await tester.pumpAndSettle();
+      // (오디오 파일 업로드 안 함)
 
       // [When]
       await tester.tap(find.text(l10n.isKorean ? '생성하기' : 'Create'));
       await tester.pumpAndSettle();
 
       // [Then]
-      // 슬라이드 PDF 경고가 먼저 나타남 (순서상)
-      // 실제로는 오디오 파일 경고를 보려면 슬라이드도 업로드되어야 함
-      // FilePicker 모킹 없이는 이 테스트는 제한적
       expect(
         find.text(
-          l10n.isKorean ? '슬라이드 PDF를 업로드해주세요' : 'Please upload slide PDF',
+          l10n.isKorean
+              ? '오디오 파일을 최소 1개 업로드해주세요'
+              : 'Please upload at least one audio file',
         ),
         findsOneWidget,
       );
       expect(fakeHiveManager.addLectureCalled, isFalse);
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // 테스트 케이스 그룹 5: Create Button - Success & Failure Logic
+  // ------------------------------------------------------------------
+  group('5. Create Button - Success & Failure Logic', () {
+    // 헬퍼 함수: 모든 폼을 유효하게 채움
+    Future<void> fillValidForm(WidgetTester tester) async {
+      // 1. 과목 선택
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('소프트웨어 공학').last);
+      await tester.pumpAndSettle();
+
+      // 2. 주차/제목 입력
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Ex. Week 1-1',
+        ),
+        'Week 1',
+      );
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == null,
+        ),
+        'Test Title',
+      );
+
+      // 3. 슬라이드 업로드
+      fakeFilePicker.setFileResult('/fake/slide.pdf');
+      await tester.tap(find.widgetWithText(OutlinedButton, '추가').at(0));
+      await tester.pumpAndSettle();
+
+      // 4. 오디오 업로드
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Tapping Create on Success saves to Hive and shows toast', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 폼이 유효하고, 가짜 서비스가 성공을 반환하도록 설정
+      final l10n = await pumpScreen(tester);
+      await fillValidForm(tester);
+
+      final fakeResult = CreationResult(
+        audioPath: '/result/audio.m4a',
+        jsonPath: '/result/data.json',
+        duration: 12345,
+      );
+      fakeCreator.setSuccessResult(fakeResult);
+
+      // [When] 생성하기 버튼 탭
+      final createButton = find.text(l10n.isKorean ? '생성하기' : 'Create');
+      await tester.ensureVisible(createButton);
+      await tester.tap(createButton);
+
+      await tester.pumpAndSettle();
+
+      // [Then]
+      // 1. 로컬 로딩 인디케이터가 사라졌는지 확인
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      // 2. HiveManager.addLecture가 호출되었는지 검증
+      expect(fakeHiveManager.addLectureCalled, isTrue);
+      expect(fakeHiveManager.lastAddedLecture?.title, 'Test Title');
+
+      // 3. HiveManager.updateSubject가 호출되었는지 검증
+      expect(fakeHiveManager.updateSubjectCalled, isTrue);
+      expect(fakeHiveManager.lastUpdatedSubjectId, 's1');
+
+      // 4. 성공 토스트가 표시됨
+      expect(
+        find.text(
+          l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Tapping Create on Failure shows toast and does not save', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 폼이 유효하고, 가짜 서비스가 예외를 발생시키도록 설정
+      final l10n = await pumpScreen(tester);
+      await fillValidForm(tester);
+
+      final fakeError = Exception('Network Error 404');
+      fakeCreator.setFailure(fakeError);
+
+      // [When] 생성하기 버튼 탭
+      final createButton = find.text(l10n.isKorean ? '생성하기' : 'Create');
+      await tester.ensureVisible(createButton);
+      await tester.tap(createButton);
+
+      await tester.pumpAndSettle();
+
+      // [Then]
+      // 1. 로컬 로딩 인디케이터가 사라짐
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      // 2. 실패 토스트 메시지가 표시됨
+      expect(
+        find.text(
+          l10n.isKorean
+              ? '강의 생성 실패: $fakeError'
+              : 'Failed to create lecture: $fakeError',
+        ),
+        findsOneWidget,
+      );
+
+      // 3. Hive에는 아무것도 저장되지 않음
+      expect(fakeHiveManager.addLectureCalled, isFalse);
+      expect(fakeHiveManager.updateSubjectCalled, isFalse);
     });
   });
 
@@ -661,11 +1079,6 @@ void main() {
     ) async {
       // [Given]
       await pumpScreen(tester);
-
-      // [When & Then] - _getFileName은 private이므로 간접적으로 테스트
-      // 실제로는 파일을 업로드했을 때 파일명이 표시되는지 확인해야 함
-      // 하지만 FilePicker 모킹 없이는 직접 테스트 불가능
-      // 대신 UI에서 '...' 플레이스홀더가 표시되는지 확인
       expect(find.text('...'), findsNWidgets(2)); // 슬라이드 1, 오디오 1
     });
 
@@ -682,5 +1095,301 @@ void main() {
         expect(removeButton.onPressed, isNull); // 비활성화 상태
       },
     );
+  });
+
+  // ------------------------------------------------------------------
+  // 테스트 케이스 그룹 7: FilePicker Cancel Scenarios
+  // ------------------------------------------------------------------
+  group('7. FilePicker Cancel Scenarios', () {
+    testWidgets('Verify slide PDF picker cancel does not update state', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      await pumpScreen(tester);
+      fakeFilePicker.setPickerToCancel();
+
+      // [When]
+      final slideButton = find.widgetWithText(OutlinedButton, '추가').at(0);
+      await tester.tap(slideButton);
+      await tester.pumpAndSettle();
+
+      // [Then] 여전히 '...' 플레이스홀더 표시
+      expect(find.text('...'), findsNWidgets(2));
+    });
+
+    testWidgets('Verify audio file picker cancel does not update state', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      await pumpScreen(tester);
+      fakeFilePicker.setPickerToCancel();
+
+      // [When]
+      final audioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(audioButton);
+      await tester.tap(audioButton, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      // [Then] 여전히 '...' 플레이스홀더 표시
+      expect(find.text('...'), findsNWidgets(2));
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // 테스트 케이스 그룹 8: Subject Dropdown State Changes
+  // ------------------------------------------------------------------
+  group('8. Subject Dropdown State Changes', () {
+    testWidgets('Verify selecting subject then deselecting works', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      final l10n = await pumpScreen(tester);
+
+      // [When] 1. 과목 선택
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('소프트웨어 공학').last);
+      await tester.pumpAndSettle();
+
+      // [Then] 1. 과목이 선택됨
+      expect(find.text('소프트웨어 공학'), findsOneWidget);
+
+      // [When] 2. 다시 드롭다운 열어서 '선택 안 함' 선택
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text(l10n.isKorean ? '선택 안 함' : 'Not Selected').last,
+      );
+      await tester.pumpAndSettle();
+
+      // [Then] 2. 힌트가 다시 표시됨
+      expect(
+        find.text(l10n.isKorean ? '선택 안 함' : 'Not Selected'),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('Verify switching between subjects works', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      await pumpScreen(tester);
+
+      // [When] 1. 첫 번째 과목 선택
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('소프트웨어 공학').last);
+      await tester.pumpAndSettle();
+
+      // [Then] 1.
+      expect(find.text('소프트웨어 공학'), findsOneWidget);
+
+      // [When] 2. 두 번째 과목으로 변경
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('데이터베이스').last);
+      await tester.pumpAndSettle();
+
+      // [Then] 2.
+      expect(find.text('데이터베이스'), findsOneWidget);
+      expect(find.text('소프트웨어 공학'), findsNothing);
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // 테스트 케이스 그룹 9: Loading Cancellation
+  // ------------------------------------------------------------------
+  group('9. Loading Cancellation', () {
+    testWidgets('Verify creation can be cancelled during loading', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 유효한 폼 작성
+      final l10n = await pumpScreen(tester);
+
+      // 과목 선택
+      await tester.tap(find.byType(DropdownButton<String?>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('소프트웨어 공학').last);
+      await tester.pumpAndSettle();
+
+      // 주차/제목 입력
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == 'Ex. Week 1-1',
+        ),
+        'Week 1',
+      );
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) => w is TextField && w.decoration?.hintText == null,
+        ),
+        'Test Title',
+      );
+
+      // 슬라이드 업로드
+      fakeFilePicker.setFileResult('/fake/slide.pdf');
+      await tester.tap(find.widgetWithText(OutlinedButton, '추가').at(0));
+      await tester.pumpAndSettle();
+
+      // 오디오 업로드
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
+
+      // 가짜 서비스가 취소를 반환하도록 설정
+      fakeCreator.setCancel();
+
+      // [When] 생성하기 버튼 탭
+      final createButton = find.text(l10n.isKorean ? '생성하기' : 'Create');
+      await tester.ensureVisible(createButton);
+      await tester.tap(createButton);
+
+      // 취소 시뮬레이션
+      fakeLoader.setCancelled(true);
+      fakeCreator.cancelCreation();
+
+      await tester.pumpAndSettle();
+
+      // [Then] 취소됨을 확인
+      expect(fakeCreator.cancelCalled, isTrue);
+      expect(fakeHiveManager.addLectureCalled, isFalse);
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // 테스트 케이스 그룹 10: Multi-Audio Page Range Edge Cases
+  // ------------------------------------------------------------------
+  group('10. Multi-Audio Page Range Edge Cases', () {
+    testWidgets('Verify page range inputs appear in multi-audio mode', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      final l10n = await pumpScreen(tester);
+
+      // 첫 번째 오디오 업로드
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
+
+      // [When] 두 번째 오디오 추가
+      final addButtonFinder = find.byIcon(Icons.add_circle_outline);
+      await tester.ensureVisible(addButtonFinder);
+      await tester.tap(addButtonFinder);
+      await tester.pumpAndSettle();
+
+      // [Then] 페이지 범위 입력 필드가 나타남
+      expect(
+        find.text(l10n.isKorean ? '페이지 설정' : 'Page Range'),
+        findsNWidgets(2),
+      );
+
+      // TextFields for page numbers (2 entries × 2 fields each = 4)
+      final pageTextFields = find.byWidgetPredicate(
+        (w) => w is TextField && w.keyboardType == TextInputType.number,
+      );
+      expect(pageTextFields, findsNWidgets(4));
+    });
+
+    testWidgets('Verify page range inputs accept numbers', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 다중 모드 활성화
+      await pumpScreen(tester);
+
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final firstAudioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(firstAudioButton);
+      await tester.tap(firstAudioButton);
+      await tester.pumpAndSettle();
+
+      final addButtonFinder = find.byIcon(Icons.add_circle_outline);
+      await tester.ensureVisible(addButtonFinder);
+      await tester.tap(addButtonFinder);
+      await tester.pumpAndSettle();
+
+      // [When] 페이지 번호 입력
+      final pageTextFields = find.byWidgetPredicate(
+        (w) => w is TextField && w.keyboardType == TextInputType.number,
+      );
+
+      await tester.enterText(pageTextFields.at(0), '1');
+      await tester.enterText(pageTextFields.at(1), '10');
+      await tester.pump();
+
+      // [Then] 입력된 값 확인
+      expect(find.text('1'), findsWidgets);
+      expect(find.text('10'), findsWidgets);
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // 테스트 케이스 그룹 11: Edge Cases for File Uploads
+  // ------------------------------------------------------------------
+  group('11. Edge Cases for File Uploads', () {
+    testWidgets('Verify uploading slide with special characters in filename', (
+      WidgetTester tester,
+    ) async {
+      // [Given]
+      await pumpScreen(tester);
+      fakeFilePicker.setFileResult('/fake/path/슬라이드 2024-01.pdf');
+
+      // [When]
+      final slideButton = find.widgetWithText(OutlinedButton, '추가').at(0);
+      await tester.tap(slideButton);
+      await tester.pumpAndSettle();
+
+      // [Then] 파일명이 올바르게 표시됨
+      expect(find.text('슬라이드 2024-01.pdf'), findsOneWidget);
+    });
+
+    testWidgets('Verify replacing already uploaded slide', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 슬라이드가 이미 업로드됨
+      await pumpScreen(tester);
+      fakeFilePicker.setFileResult('/fake/slide1.pdf');
+      final slideButton = find.widgetWithText(OutlinedButton, '추가').at(0);
+      await tester.tap(slideButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('slide1.pdf'), findsOneWidget);
+
+      // [When] 새 파일로 교체
+      fakeFilePicker.setFileResult('/fake/slide2.pdf');
+      await tester.tap(slideButton);
+      await tester.pumpAndSettle();
+
+      // [Then] 새 파일명으로 업데이트됨
+      expect(find.text('slide2.pdf'), findsOneWidget);
+      expect(find.text('slide1.pdf'), findsNothing);
+    });
+
+    testWidgets('Verify replacing audio file in single mode', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 오디오가 이미 업로드됨
+      await pumpScreen(tester);
+      fakeFilePicker.setFileResult('/fake/audio1.m4a');
+      final audioButton = find.widgetWithText(OutlinedButton, '추가').at(1);
+      await tester.ensureVisible(audioButton);
+      await tester.tap(audioButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('audio1.m4a'), findsOneWidget);
+
+      // [When] 새 파일로 교체
+      fakeFilePicker.setFileResult('/fake/audio2.mp3');
+      await tester.ensureVisible(audioButton);
+      await tester.tap(audioButton);
+      await tester.pumpAndSettle();
+
+      // [Then] 새 파일명으로 업데이트됨
+      expect(find.text('audio2.mp3'), findsOneWidget);
+      expect(find.text('audio1.m4a'), findsNothing);
+    });
   });
 }
