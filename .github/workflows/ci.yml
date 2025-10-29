@@ -64,6 +64,16 @@ jobs:
     - name: Run home screen unit tests
       run: flutter test test/features/home/
 
+    - name: Run settings unit tests
+      run: flutter test test/features/settings/
+
+    - name: Run edit unit tests
+      run: |
+        flutter test test/features/tags/
+        flutter test test/features/subjects/
+        flutter test test/features/edit/
+      
+
   frontend-integration-test:
     runs-on: ubuntu-latest
     defaults:
