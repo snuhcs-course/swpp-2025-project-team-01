@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart' as ja;
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
@@ -13,9 +12,7 @@ import 'package:re_view/features/player/player_screen.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
 
-import 'player_screen_test.mocks.dart';
-
-@GenerateMocks([HiveManager, AudioService, PdfCacheService])
+import 'mocks.mocks.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
