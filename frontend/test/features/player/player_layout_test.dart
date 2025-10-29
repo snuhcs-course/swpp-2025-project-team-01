@@ -470,8 +470,9 @@ void main() {
   });
 
   group('HorizontalPlayerLayout - Pages Expanded with Controls', () {
-    testWidgets('shows HorizontalToggleBar when pages expanded',
-        (tester) async {
+    testWidgets('shows HorizontalToggleBar when pages expanded', (
+      tester,
+    ) async {
       controller.isPagesExpanded.value = true;
 
       await tester.pumpWidget(
@@ -508,11 +509,7 @@ void main() {
     testWidgets('handles vertical drag in horizontal mode', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          PdfArea(
-            isVertical: false,
-            controller: controller,
-            onBack: () {},
-          ),
+          PdfArea(isVertical: false, controller: controller, onBack: () {}),
         ),
       );
 
@@ -527,18 +524,15 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('shows caption overlay when enabled in horizontal mode',
-        (tester) async {
+    testWidgets('shows caption overlay when enabled in horizontal mode', (
+      tester,
+    ) async {
       controller.isCaptionEnabled.value = true;
       controller.currentSentenceIndex.value = 0;
 
       await tester.pumpWidget(
         buildTestApp(
-          PdfArea(
-            isVertical: false,
-            controller: controller,
-            onBack: () {},
-          ),
+          PdfArea(isVertical: false, controller: controller, onBack: () {}),
         ),
       );
 
@@ -552,11 +546,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(
-          PdfArea(
-            isVertical: false,
-            controller: controller,
-            onBack: () {},
-          ),
+          PdfArea(isVertical: false, controller: controller, onBack: () {}),
         ),
       );
 
@@ -566,27 +556,24 @@ void main() {
     });
 
     testWidgets(
-        'hides controls when pages expanded in horizontal mode and controls shown',
-        (tester) async {
-      controller.showControls.value = true;
-      controller.isPagesExpanded.value = true;
+      'hides controls when pages expanded in horizontal mode and controls shown',
+      (tester) async {
+        controller.showControls.value = true;
+        controller.isPagesExpanded.value = true;
 
-      await tester.pumpWidget(
-        buildTestApp(
-          PdfArea(
-            isVertical: false,
-            controller: controller,
-            onBack: () {},
+        await tester.pumpWidget(
+          buildTestApp(
+            PdfArea(isVertical: false, controller: controller, onBack: () {}),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Controls should be hidden when pages are expanded in horizontal mode
-      expect(controller.showControls.value, isTrue);
-      expect(controller.isPagesExpanded.value, isTrue);
-    });
+        // Controls should be hidden when pages are expanded in horizontal mode
+        expect(controller.showControls.value, isTrue);
+        expect(controller.isPagesExpanded.value, isTrue);
+      },
+    );
   });
 
   group('VideoControlsOverlay - State Tests', () {
@@ -613,10 +600,7 @@ void main() {
     testWidgets('renders with pages list', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalToggleBar(
-            onToggle: () {},
-            pagesList: Container(),
-          ),
+          HorizontalToggleBar(onToggle: () {}, pagesList: Container()),
         ),
       );
 
@@ -651,16 +635,12 @@ void main() {
   group('PagesListWidget', () {
     testWidgets('renders in vertical mode', (tester) async {
       when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
-      when(mockPdfCacheService.getCachedOrRenderPage(any))
-          .thenAnswer((_) async => Uint8List(0));
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
 
       await tester.pumpWidget(
-        buildTestApp(
-          PagesListWidget(
-            isVertical: true,
-            controller: controller,
-          ),
-        ),
+        buildTestApp(PagesListWidget(isVertical: true, controller: controller)),
       );
 
       await tester.pump();
@@ -671,15 +651,13 @@ void main() {
 
     testWidgets('renders in horizontal mode', (tester) async {
       when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
-      when(mockPdfCacheService.getCachedOrRenderPage(any))
-          .thenAnswer((_) async => Uint8List(0));
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
 
       await tester.pumpWidget(
         buildTestApp(
-          PagesListWidget(
-            isVertical: false,
-            controller: controller,
-          ),
+          PagesListWidget(isVertical: false, controller: controller),
         ),
       );
 
@@ -695,9 +673,7 @@ void main() {
       controller.isKoreanLanguage.value = false;
 
       await tester.pumpWidget(
-        buildTestApp(
-          TranslationButton(controller: controller),
-        ),
+        buildTestApp(TranslationButton(controller: controller)),
       );
 
       await tester.pump();
@@ -710,9 +686,7 @@ void main() {
       controller.isKoreanLanguage.value = true;
 
       await tester.pumpWidget(
-        buildTestApp(
-          TranslationButton(controller: controller),
-        ),
+        buildTestApp(TranslationButton(controller: controller)),
       );
 
       await tester.pump();
@@ -725,9 +699,7 @@ void main() {
       controller.isKoreanLanguage.value = false;
 
       await tester.pumpWidget(
-        buildTestApp(
-          TranslationButton(controller: controller),
-        ),
+        buildTestApp(TranslationButton(controller: controller)),
       );
 
       await tester.pump();
@@ -745,9 +717,7 @@ void main() {
       controller.transcriptData = null;
 
       await tester.pumpWidget(
-        buildTestApp(
-          TranscriptArea(controller: controller),
-        ),
+        buildTestApp(TranscriptArea(controller: controller)),
       );
 
       await tester.pump();
@@ -757,9 +727,7 @@ void main() {
 
     testWidgets('renders transcript title', (tester) async {
       await tester.pumpWidget(
-        buildTestApp(
-          TranscriptArea(controller: controller),
-        ),
+        buildTestApp(TranscriptArea(controller: controller)),
       );
 
       await tester.pump();

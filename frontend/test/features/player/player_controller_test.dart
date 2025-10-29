@@ -959,8 +959,9 @@ void main() {
   });
 
   group('PlayerController - Initialize', () {
-    testWidgets('initialize sets up transcript data and total time',
-        (tester) async {
+    testWidgets('initialize sets up transcript data and total time', (
+      tester,
+    ) async {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
@@ -973,15 +974,17 @@ void main() {
           home: Builder(
             builder: (context) {
               // Call initialize without awaiting to avoid hanging on PDF operations
-              controller.initialize(
-                context,
-                'test-lecture-id',
-                transcriptData,
-                'assets/test.pdf',
-                'assets/test.mp3',
-              ).catchError((_) {
-                // Ignore errors from PDF loading in test
-              });
+              controller
+                  .initialize(
+                    context,
+                    'test-lecture-id',
+                    transcriptData,
+                    'assets/test.pdf',
+                    'assets/test.mp3',
+                  )
+                  .catchError((_) {
+                    // Ignore errors from PDF loading in test
+                  });
               return Container();
             },
           ),
@@ -1121,26 +1124,28 @@ void main() {
   });
 
   group('PlayerController - seekToSlide', () {
-    test('seekToSlide with sync enabled seeks to first sentence of slide',
-        () async {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
+    test(
+      'seekToSlide with sync enabled seeks to first sentence of slide',
+      () async {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
 
-      controller.transcriptData = createTestTranscriptData();
-      controller.isSynced.value = true;
+        controller.transcriptData = createTestTranscriptData();
+        controller.isSynced.value = true;
 
-      // Seek to slide 2 (first sentence is index 2)
-      await controller.seekToSlide(2);
+        // Seek to slide 2 (first sentence is index 2)
+        await controller.seekToSlide(2);
 
-      // Verify seek was called with third sentence start time (2000ms)
-      verify(
-        mockAudioService.seek(const Duration(milliseconds: 2000)),
-      ).called(1);
+        // Verify seek was called with third sentence start time (2000ms)
+        verify(
+          mockAudioService.seek(const Duration(milliseconds: 2000)),
+        ).called(1);
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
 
     test('seekToSlide with sync disabled only jumps to page', () async {
       final controller = PlayerController(
@@ -1194,55 +1199,60 @@ void main() {
   });
 
   group('PlayerController - scrollToCurrentSentence', () {
-    test('scrollToCurrentSentence returns early when no sentence index',
-        () async {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
+    test(
+      'scrollToCurrentSentence returns early when no sentence index',
+      () async {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
 
-      controller.transcriptData = createTestTranscriptData();
-      // currentSentenceIndex is null by default
+        controller.transcriptData = createTestTranscriptData();
+        // currentSentenceIndex is null by default
 
-      // Should return early without error
-      await controller.scrollToCurrentSentence();
+        // Should return early without error
+        await controller.scrollToCurrentSentence();
 
-      controller.dispose();
-    });
-
-    test('scrollToCurrentSentence returns early when no transcript data',
-        () async {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      controller.currentSentenceIndex.value = 0;
-      // transcriptData is null
-
-      // Should return early without error
-      await controller.scrollToCurrentSentence();
-
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
 
     test(
-        'scrollToCurrentSentence returns early when not playing and not forced',
-        () async {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
+      'scrollToCurrentSentence returns early when no transcript data',
+      () async {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
 
-      controller.transcriptData = createTestTranscriptData();
-      controller.currentSentenceIndex.value = 0;
-      controller.isPlaying.value = false;
+        controller.currentSentenceIndex.value = 0;
+        // transcriptData is null
 
-      // Should return early without scrolling
-      await controller.scrollToCurrentSentence(forceScroll: false);
+        // Should return early without error
+        await controller.scrollToCurrentSentence();
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
+
+    test(
+      'scrollToCurrentSentence returns early when not playing and not forced',
+      () async {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
+
+        controller.transcriptData = createTestTranscriptData();
+        controller.currentSentenceIndex.value = 0;
+        controller.isPlaying.value = false;
+
+        // Should return early without scrolling
+        await controller.scrollToCurrentSentence(forceScroll: false);
+
+        controller.dispose();
+      },
+    );
   });
 
   group('PlayerController - seek error handling', () {
