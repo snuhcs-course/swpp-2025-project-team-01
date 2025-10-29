@@ -2,16 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart' as ja;
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
-import 'package:re_view/features/player/services/audio_service.dart';
-import 'package:re_view/features/player/services/pdf_cache_service.dart';
 
-import 'player_controller_test.mocks.dart';
-
-@GenerateMocks([AudioService, PdfCacheService])
+import 'mocks.mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +19,10 @@ void main() {
   setUp(() {
     mockAudioService = MockAudioService();
     mockPdfCacheService = MockPdfCacheService();
+
+    // Reset mocks to clear any previous interactions
+    reset(mockAudioService);
+    reset(mockPdfCacheService);
 
     // Create stream controllers for mocking
     positionStreamController = StreamController<Duration>.broadcast();
@@ -443,11 +442,26 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
+      // Setup position stream listener to update currentTime
+      final subscription = positionStreamController.stream.listen((position) {
+        controller.currentTime.value = position.inMilliseconds / 1000.0;
+      });
+
       controller.totalTime = 100.0;
 
       await controller.seek(50.0);
-      // The test audio service should handle this
 
+      // Wait for stream event to be processed
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // Verify audioService.seek was called with correct Duration
+      verify(mockAudioService.seek(const Duration(milliseconds: 50000)))
+          .called(1);
+
+      // Verify currentTime was updated
+      expect(controller.currentTime.value, equals(50.0));
+
+      await subscription.cancel();
       controller.dispose();
     });
 
@@ -457,16 +471,37 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
+      // Setup position stream listener to update currentTime
+      final subscription = positionStreamController.stream.listen((position) {
+        controller.currentTime.value = position.inMilliseconds / 1000.0;
+      });
+
       controller.totalTime = 100.0;
 
       // Start first seek (it will complete almost immediately in test)
       final future1 = controller.seek(30.0);
+      // Second seek is called while first is in progress
+      // Due to _isSeeking flag, second seek should be ignored
       final future2 = controller.seek(50.0);
 
       await future1;
       await future2;
 
-      // Both should complete without error
+      // Wait for stream event to be processed
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // Verify audioService.seek was only called once (for 30.0)
+      // The second seek (50.0) should have been prevented by _isSeeking flag
+      verify(mockAudioService.seek(const Duration(milliseconds: 30000)))
+          .called(1);
+
+      // Verify the second seek was never called
+      verifyNever(mockAudioService.seek(const Duration(milliseconds: 50000)));
+
+      // Current time should reflect the first seek
+      expect(controller.currentTime.value, equals(30.0));
+
+      await subscription.cancel();
       controller.dispose();
     });
 
@@ -476,12 +511,27 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
+      // Setup position stream listener to update currentTime
+      final subscription = positionStreamController.stream.listen((position) {
+        controller.currentTime.value = position.inMilliseconds / 1000.0;
+      });
+
       controller.totalTime = 100.0;
       controller.currentTime.value = 30.0;
 
       await controller.skipBackward();
-      // Should seek to 15.0
 
+      // Wait for stream event to be processed
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // Verify audioService.seek was called with correct Duration (30 - 15 = 15)
+      verify(mockAudioService.seek(const Duration(milliseconds: 15000)))
+          .called(1);
+
+      // Verify currentTime was updated to 15.0
+      expect(controller.currentTime.value, equals(15.0));
+
+      await subscription.cancel();
       controller.dispose();
     });
 
@@ -491,12 +541,27 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
+      // Setup position stream listener to update currentTime
+      final subscription = positionStreamController.stream.listen((position) {
+        controller.currentTime.value = position.inMilliseconds / 1000.0;
+      });
+
       controller.totalTime = 100.0;
       controller.currentTime.value = 10.0;
 
       await controller.skipBackward();
-      // Should seek to 0.0 (clamped)
 
+      // Wait for stream event to be processed
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // Verify audioService.seek was called with Duration 0 (clamped)
+      verify(mockAudioService.seek(const Duration(milliseconds: 0)))
+          .called(1);
+
+      // Verify currentTime was clamped to 0.0
+      expect(controller.currentTime.value, equals(0.0));
+
+      await subscription.cancel();
       controller.dispose();
     });
 
@@ -506,12 +571,27 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
+      // Setup position stream listener to update currentTime
+      final subscription = positionStreamController.stream.listen((position) {
+        controller.currentTime.value = position.inMilliseconds / 1000.0;
+      });
+
       controller.totalTime = 100.0;
       controller.currentTime.value = 30.0;
 
       await controller.skipForward();
-      // Should seek to 45.0
 
+      // Wait for stream event to be processed
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // Verify audioService.seek was called with correct Duration (30 + 15 = 45)
+      verify(mockAudioService.seek(const Duration(milliseconds: 45000)))
+          .called(1);
+
+      // Verify currentTime was updated to 45.0
+      expect(controller.currentTime.value, equals(45.0));
+
+      await subscription.cancel();
       controller.dispose();
     });
 
@@ -521,12 +601,27 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
+      // Setup position stream listener to update currentTime
+      final subscription = positionStreamController.stream.listen((position) {
+        controller.currentTime.value = position.inMilliseconds / 1000.0;
+      });
+
       controller.totalTime = 100.0;
       controller.currentTime.value = 95.0;
 
       await controller.skipForward();
-      // Should seek to 100.0 (clamped)
 
+      // Wait for stream event to be processed
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // Verify audioService.seek was called with Duration 100 (clamped)
+      verify(mockAudioService.seek(const Duration(milliseconds: 100000)))
+          .called(1);
+
+      // Verify currentTime was clamped to 100.0
+      expect(controller.currentTime.value, equals(100.0));
+
+      await subscription.cancel();
       controller.dispose();
     });
 
@@ -537,9 +632,14 @@ void main() {
       );
 
       await controller.setPlaybackSpeed(1.5);
-      // Audio service should handle this
+
+      // Verify audioService.setSpeed was called with correct speed
+      verify(mockAudioService.setSpeed(1.5)).called(1);
 
       await controller.setPlaybackSpeed(2.0);
+
+      // Verify audioService.setSpeed was called with new speed
+      verify(mockAudioService.setSpeed(2.0)).called(1);
 
       controller.dispose();
     });
@@ -809,8 +909,17 @@ void main() {
       controller.showControls.value = true;
       controller.currentTime.value = 50.0;
 
-      // Should not throw
-      controller.dispose();
+      // Call dispose - should not throw
+      expect(() => controller.dispose(), returnsNormally);
+
+      // Verify audioService.dispose was called
+      verify(mockAudioService.dispose()).called(1);
+
+      // Verify ValueNotifiers are disposed (they should throw FlutterError when accessed after dispose)
+      expect(
+        () => controller.showControls.value = false,
+        throwsFlutterError,
+      );
     });
 
     test('dispose can be called multiple times safely', () {
@@ -819,9 +928,18 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
+      // First dispose
       controller.dispose();
-      // Should not throw on second dispose
+
+      // Second dispose - should not throw
       expect(() => controller.dispose(), returnsNormally);
+
+      // Verify audioService.dispose was called exactly once (not twice)
+      // This confirms _isDisposed flag prevents duplicate disposal
+      verify(mockAudioService.dispose()).called(1);
+
+      // Verify no additional interactions with audioService after dispose
+      verifyNoMoreInteractions(mockAudioService);
     });
   });
 }
