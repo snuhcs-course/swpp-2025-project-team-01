@@ -20,7 +20,6 @@ void main() {
   late StreamController<Duration> positionStreamController;
   late StreamController<ja.PlayerState> stateStreamController;
 
-
   setUp(() {
     mockAudioService = MockAudioService();
     mockPdfCacheService = MockPdfCacheService();
@@ -30,18 +29,23 @@ void main() {
     stateStreamController = StreamController<ja.PlayerState>.broadcast();
 
     // Setup default mock behaviors
-    when(mockAudioService.positionStream)
-        .thenAnswer((_) => positionStreamController.stream);
-    when(mockAudioService.stateStream)
-        .thenAnswer((_) => stateStreamController.stream);
-    when(mockAudioService.loadAudio(any))
-        .thenAnswer((_) async => Future.value());
+    when(
+      mockAudioService.positionStream,
+    ).thenAnswer((_) => positionStreamController.stream);
+    when(
+      mockAudioService.stateStream,
+    ).thenAnswer((_) => stateStreamController.stream);
+    when(
+      mockAudioService.loadAudio(any),
+    ).thenAnswer((_) async => Future.value());
     when(mockAudioService.play()).thenAnswer((_) async {
       stateStreamController.add(ja.PlayerState(true, ja.ProcessingState.ready));
       return Future.value();
     });
     when(mockAudioService.pause()).thenAnswer((_) async {
-      stateStreamController.add(ja.PlayerState(false, ja.ProcessingState.ready));
+      stateStreamController.add(
+        ja.PlayerState(false, ja.ProcessingState.ready),
+      );
       return Future.value();
     });
     when(mockAudioService.seek(any)).thenAnswer((invocation) async {
@@ -49,10 +53,10 @@ void main() {
       positionStreamController.add(position);
       return Future.value();
     });
-    when(mockAudioService.setSpeed(any))
-        .thenAnswer((_) async => Future.value());
-    when(mockAudioService.dispose())
-        .thenAnswer((_) async => Future.value());
+    when(
+      mockAudioService.setSpeed(any),
+    ).thenAnswer((_) async => Future.value());
+    when(mockAudioService.dispose()).thenAnswer((_) async => Future.value());
 
     controller = PlayerController(
       audioService: mockAudioService,
@@ -106,21 +110,14 @@ void main() {
   });
 
   Widget buildTestApp(Widget child) {
-    return MaterialApp(
-      home: Scaffold(
-        body: child,
-      ),
-    );
+    return MaterialApp(home: Scaffold(body: child));
   }
 
   group('HorizontalPlayerLayout - Widget Creation', () {
     testWidgets('creates HorizontalPlayerLayout widget', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -130,10 +127,7 @@ void main() {
     testWidgets('renders main layout components', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -150,10 +144,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -170,10 +161,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -187,10 +175,7 @@ void main() {
     testWidgets('creates VerticalPlayerLayout widget', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          VerticalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -200,10 +185,7 @@ void main() {
     testWidgets('renders main layout components', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          VerticalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -220,10 +202,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(
-          VerticalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -235,16 +214,14 @@ void main() {
       expect(controller.isPagesExpanded.value, isTrue);
     });
 
-    testWidgets('collapses pages when isPagesExpanded is false',
-        (tester) async {
+    testWidgets('collapses pages when isPagesExpanded is false', (
+      tester,
+    ) async {
       controller.isPagesExpanded.value = false;
 
       await tester.pumpWidget(
         buildTestApp(
-          VerticalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -258,14 +235,12 @@ void main() {
   });
 
   group('Layout - Controller Integration', () {
-    testWidgets('HorizontalPlayerLayout responds to controller changes',
-        (tester) async {
+    testWidgets('HorizontalPlayerLayout responds to controller changes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -285,14 +260,12 @@ void main() {
       expect(controller.showTranscriptPanel.value, isFalse);
     });
 
-    testWidgets('VerticalPlayerLayout responds to controller changes',
-        (tester) async {
+    testWidgets('VerticalPlayerLayout responds to controller changes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(
-          VerticalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -320,10 +293,7 @@ void main() {
     testWidgets('Controller uses transcriptData', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -338,10 +308,7 @@ void main() {
     testWidgets('HorizontalPlayerLayout builds without error', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -352,10 +319,7 @@ void main() {
     testWidgets('VerticalPlayerLayout builds without error', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          VerticalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -366,10 +330,7 @@ void main() {
     testWidgets('HorizontalPlayerLayout can be disposed', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HorizontalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -383,10 +344,7 @@ void main() {
     testWidgets('VerticalPlayerLayout can be disposed', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          VerticalPlayerLayout(
-            controller: controller,
-            onBack: () {},
-          ),
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
 
@@ -399,106 +357,114 @@ void main() {
   });
 
   group('Layout - onBack callback', () {
-    testWidgets('VerticalPlayerLayout onBack callback is invoked (player_screen.dart:191-193)',
-        (tester) async {
-      bool backCalled = false;
+    testWidgets(
+      'VerticalPlayerLayout onBack callback is invoked (player_screen.dart:191-193)',
+      (tester) async {
+        bool backCalled = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => Scaffold(
-                        body: VerticalPlayerLayout(
-                          controller: controller,
-                          onBack: () {
-                            backCalled = true;
-                            Navigator.pop(context);
-                          },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => Scaffold(
+                          body: VerticalPlayerLayout(
+                            controller: controller,
+                            onBack: () {
+                              backCalled = true;
+                              Navigator.pop(context);
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-                child: const Text('Open Vertical'),
-              );
-            },
+                    );
+                  },
+                  child: const Text('Open Vertical'),
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      // Navigate to VerticalPlayerLayout
-      await tester.tap(find.text('Open Vertical'));
-      await tester.pump(); // Start the navigation
-      await tester.pump(const Duration(seconds: 1)); // Complete the animation
-
-      expect(find.byType(VerticalPlayerLayout), findsOneWidget);
-
-      // Find back button in PdfArea
-      final backButtons = find.byType(IconButton);
-      if (backButtons.evaluate().isNotEmpty) {
-        await tester.tap(backButtons.first);
+        // Navigate to VerticalPlayerLayout
+        await tester.tap(find.text('Open Vertical'));
         await tester.pump(); // Start the navigation
         await tester.pump(const Duration(seconds: 1)); // Complete the animation
 
-        expect(backCalled, isTrue);
-        expect(find.text('Open Vertical'), findsOneWidget);
-      }
-    });
+        expect(find.byType(VerticalPlayerLayout), findsOneWidget);
 
-    testWidgets('HorizontalPlayerLayout onBack callback is invoked (player_screen.dart:198)',
-        (tester) async {
-      bool backCalled = false;
+        // Find back button in PdfArea
+        final backButtons = find.byType(IconButton);
+        if (backButtons.evaluate().isNotEmpty) {
+          await tester.tap(backButtons.first);
+          await tester.pump(); // Start the navigation
+          await tester.pump(
+            const Duration(seconds: 1),
+          ); // Complete the animation
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => Scaffold(
-                        body: HorizontalPlayerLayout(
-                          controller: controller,
-                          onBack: () {
-                            backCalled = true;
-                            Navigator.pop(context);
-                          },
+          expect(backCalled, isTrue);
+          expect(find.text('Open Vertical'), findsOneWidget);
+        }
+      },
+    );
+
+    testWidgets(
+      'HorizontalPlayerLayout onBack callback is invoked (player_screen.dart:198)',
+      (tester) async {
+        bool backCalled = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => Scaffold(
+                          body: HorizontalPlayerLayout(
+                            controller: controller,
+                            onBack: () {
+                              backCalled = true;
+                              Navigator.pop(context);
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-                child: const Text('Open Horizontal'),
-              );
-            },
+                    );
+                  },
+                  child: const Text('Open Horizontal'),
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      // Navigate to HorizontalPlayerLayout
-      await tester.tap(find.text('Open Horizontal'));
-      await tester.pump(); // Start the navigation
-      await tester.pump(const Duration(seconds: 1)); // Complete the animation
-
-      expect(find.byType(HorizontalPlayerLayout), findsOneWidget);
-
-      // Find back button
-      final backButtons = find.byType(IconButton);
-      if (backButtons.evaluate().isNotEmpty) {
-        await tester.tap(backButtons.first);
+        // Navigate to HorizontalPlayerLayout
+        await tester.tap(find.text('Open Horizontal'));
         await tester.pump(); // Start the navigation
         await tester.pump(const Duration(seconds: 1)); // Complete the animation
 
-        expect(backCalled, isTrue);
-        expect(find.text('Open Horizontal'), findsOneWidget);
-      }
-    });
+        expect(find.byType(HorizontalPlayerLayout), findsOneWidget);
+
+        // Find back button
+        final backButtons = find.byType(IconButton);
+        if (backButtons.evaluate().isNotEmpty) {
+          await tester.tap(backButtons.first);
+          await tester.pump(); // Start the navigation
+          await tester.pump(
+            const Duration(seconds: 1),
+          ); // Complete the animation
+
+          expect(backCalled, isTrue);
+          expect(find.text('Open Horizontal'), findsOneWidget);
+        }
+      },
+    );
   });
 }

@@ -8,9 +8,5 @@ import 'package:re_view/features/player/services/pdf_cache_service.dart';
 /// This file contains all mock definitions used across player-related tests.
 /// Run `flutter pub run build_runner build --delete-conflicting-outputs`
 /// to generate mocks after any changes.
-@GenerateMocks([
-  AudioService,
-  PdfCacheService,
-  HiveManager,
-])
+@GenerateMocks([AudioService, PdfCacheService, HiveManager])
 void main() {}

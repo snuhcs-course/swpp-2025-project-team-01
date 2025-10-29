@@ -13,6 +13,7 @@ import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
 
 import 'mocks.mocks.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -72,9 +73,7 @@ void main() {
   });
 
   Widget buildTestApp({Object? args, Widget? child}) {
-    return MaterialApp(
-      home: child ?? PlayerScreen(args: args),
-    );
+    return MaterialApp(home: child ?? PlayerScreen(args: args));
   }
 
   group('PlayerScreen - Widget Creation', () {
@@ -176,7 +175,10 @@ void main() {
 
   group('PlayerScreen - Error Handling: Failed load from Hive', () {
     // Helper function to add lecture to Hive
-    Future<void> addLectureToHive(WidgetTester tester, HiveLecture lecture) async {
+    Future<void> addLectureToHive(
+      WidgetTester tester,
+      HiveLecture lecture,
+    ) async {
       await tester.runAsync(() async {
         final appData = AppData(
           settings: AppSettings(),
@@ -194,9 +196,9 @@ void main() {
     void setupAssetMockHandler(ByteData? Function(String key) handler) {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', (message) async {
-        final String key = utf8.decode(message!.buffer.asUint8List());
-        return handler(key);
-      });
+            final String key = utf8.decode(message!.buffer.asUint8List());
+            return handler(key);
+          });
     }
 
     // Helper function to clean up mock handler
@@ -211,17 +213,16 @@ void main() {
 
     testWidgets('shows error when lecture not found in Hive', (tester) async {
       // HiveManager is initialized with empty lectures
-      await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'nonexistent'}),
-      );
+      await tester.pumpWidget(buildTestApp(args: {'lectureId': 'nonexistent'}));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('강의를 찾을 수 없습니다.'), findsOneWidget);
     });
 
-    testWidgets('shows error when transcript asset file fails to load',
-        (tester) async {
+    testWidgets('shows error when transcript asset file fails to load', (
+      tester,
+    ) async {
       // Given: Add lecture to Hive
       final lecture = HiveLecture(
         id: 'test_lecture',
@@ -285,8 +286,9 @@ void main() {
       expect(find.text('자막 데이터 형식이 올바르지 않습니다.'), findsOneWidget);
     });
 
-    testWidgets('shows error when controller initialization fails',
-        (tester) async {
+    testWidgets('shows error when controller initialization fails', (
+      tester,
+    ) async {
       // Given: Add lecture to Hive with non-existent file path for PDF
       final lecture = HiveLecture(
         id: 'test_lecture',
@@ -319,14 +321,15 @@ void main() {
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
-          }
+          },
         ],
       };
 
       setupAssetMockHandler((key) {
         if (key.contains('test_valid_transcript.json')) {
           return ByteData.sublistView(
-              utf8.encode(json.encode(validTranscript)));
+            utf8.encode(json.encode(validTranscript)),
+          );
         }
         return null;
       });
@@ -346,8 +349,9 @@ void main() {
       expect(find.text('플레이어 초기화에 실패했습니다.'), findsOneWidget);
     });
 
-    testWidgets('handles errors gracefully with invalid Map structure',
-        (tester) async {
+    testWidgets('handles errors gracefully with invalid Map structure', (
+      tester,
+    ) async {
       // Given: Add lecture to Hive
       final lecture = HiveLecture(
         id: 'test_lecture',
@@ -380,10 +384,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: PlayerScreen(
-            args: null,
-            audioService: customAudioService,
-          ),
+          home: PlayerScreen(args: null, audioService: customAudioService),
         ),
       );
       await tester.pump();
@@ -432,10 +433,7 @@ void main() {
     testWidgets('accepts custom HiveManager', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: PlayerScreen(
-            args: null,
-            hiveManager: HiveManager.instance,
-          ),
+          home: PlayerScreen(args: null, hiveManager: HiveManager.instance),
         ),
       );
       await tester.pump();
@@ -455,9 +453,7 @@ void main() {
     });
 
     testWidgets('uses default services when not provided', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(args: null),
-      );
+      await tester.pumpWidget(buildTestApp(args: null));
       await tester.pump();
 
       // Should use default services without crashing
@@ -492,8 +488,9 @@ void main() {
   });
 
   group('PlayerScreen - Mounted checks', () {
-    testWidgets('handles unmounted state during error handling',
-        (tester) async {
+    testWidgets('handles unmounted state during error handling', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp(args: null));
       await tester.pump();
 
@@ -505,18 +502,9 @@ void main() {
       expect(find.byType(PlayerScreen), findsNothing);
     });
 
-    testWidgets('handles unmounted state during initialization',
-        (tester) async {
-      final lecture = HiveLecture(
-        id: 'test_lecture',
-        subjectId: 'test_subject',
-        weekLabel: 'Week 1',
-        title: 'Test Lecture',
-        duration: 3600,
-        audioPath: 'assets/lectures/test_lecture/audio.opus',
-        jsonPath: 'assets/test_transcript.json',
-      );
-
+    testWidgets('handles unmounted state during initialization', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(args: {'lectureId': 'test_lecture'}),
       );
@@ -533,7 +521,10 @@ void main() {
 
   group('PlayerScreen - PDF and Audio paths', () {
     // Helper function to add lecture to Hive for this group
-    Future<void> addLectureForPaths(WidgetTester tester, HiveLecture lecture) async {
+    Future<void> addLectureForPaths(
+      WidgetTester tester,
+      HiveLecture lecture,
+    ) async {
       await tester.runAsync(() async {
         final appData = AppData(
           settings: AppSettings(),
@@ -551,9 +542,9 @@ void main() {
     void setupAssetMockHandler(ByteData? Function(String key) handler) {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', (message) async {
-        final String key = utf8.decode(message!.buffer.asUint8List());
-        return handler(key);
-      });
+            final String key = utf8.decode(message!.buffer.asUint8List());
+            return handler(key);
+          });
     }
 
     // Helper function to clean up mock handler
@@ -566,8 +557,7 @@ void main() {
       cleanupMockHandler();
     });
 
-    testWidgets('uses default PDF path when slidePath is null',
-        (tester) async {
+    testWidgets('uses default PDF path when slidePath is null', (tester) async {
       final lecture = HiveLecture(
         id: 'test_lecture_default_pdf',
         subjectId: 'test_subject',
@@ -600,14 +590,15 @@ void main() {
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
-          }
+          },
         ],
       };
 
       setupAssetMockHandler((key) {
         if (key.contains('test_valid_transcript_pdf.json')) {
           return ByteData.sublistView(
-              utf8.encode(json.encode(validTranscript)));
+            utf8.encode(json.encode(validTranscript)),
+          );
         }
         return null;
       });
@@ -640,8 +631,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('uses default audio path when audioPath is null',
-        (tester) async {
+    testWidgets('uses default audio path when audioPath is null', (
+      tester,
+    ) async {
       final lecture = HiveLecture(
         id: 'test_lecture_default_audio',
         subjectId: 'test_subject',
@@ -674,14 +666,15 @@ void main() {
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
-          }
+          },
         ],
       };
 
       setupAssetMockHandler((key) {
         if (key.contains('test_valid_transcript_audio.json')) {
           return ByteData.sublistView(
-              utf8.encode(json.encode(validTranscript)));
+            utf8.encode(json.encode(validTranscript)),
+          );
         }
         return null;
       });
@@ -775,8 +768,9 @@ void main() {
   });
 
   group('PlayerScreen - Successful initialization', () {
-    testWidgets('successfully initializes and transitions to loaded state',
-        (tester) async {
+    testWidgets('successfully initializes and transitions to loaded state', (
+      tester,
+    ) async {
       // This test covers the setState at lines 169-171 when initialization succeeds
       // We'll test with a lecture that has file paths that will fail during controller init
       // but will successfully pass the earlier validation steps
@@ -823,19 +817,20 @@ void main() {
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
-          }
+          },
         ],
       };
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', (message) async {
-        final String key = utf8.decode(message!.buffer.asUint8List());
-        if (key.contains('test_valid.json')) {
-          return ByteData.sublistView(
-              utf8.encode(json.encode(validTranscript)));
-        }
-        return null;
-      });
+            final String key = utf8.decode(message!.buffer.asUint8List());
+            if (key.contains('test_valid.json')) {
+              return ByteData.sublistView(
+                utf8.encode(json.encode(validTranscript)),
+              );
+            }
+            return null;
+          });
 
       await tester.pumpWidget(
         buildTestApp(args: {'lectureId': 'test_success'}),
@@ -865,8 +860,7 @@ void main() {
   });
 
   group('PlayerScreen - Unexpected error handling', () {
-    testWidgets('handles unexpected errors during loading',
-        (tester) async {
+    testWidgets('handles unexpected errors during loading', (tester) async {
       // Create a lecture with a file path that will trigger file system error
       final lecture = HiveLecture(
         id: 'test_unexpected',
@@ -876,7 +870,8 @@ void main() {
         duration: 3600,
         audioPath: 'assets/audio.opus',
         slidePath: 'assets/slides.pdf',
-        jsonPath: '/invalid/file/path/that/does/not/exist.json', // File path (not asset)
+        jsonPath:
+            '/invalid/file/path/that/does/not/exist.json', // File path (not asset)
       );
 
       await tester.runAsync(() async {
@@ -912,8 +907,9 @@ void main() {
       await tester.pumpWidget(Container());
     });
 
-    testWidgets('handles unexpected errors with malformed JSON data',
-        (tester) async {
+    testWidgets('handles unexpected errors with malformed JSON data', (
+      tester,
+    ) async {
       // This test tries to trigger the outer catch block by providing
       // JSON that passes decode but fails TranscriptData.fromJson
       final lecture = HiveLecture(
@@ -947,13 +943,14 @@ void main() {
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', (message) async {
-        final String key = utf8.decode(message!.buffer.asUint8List());
-        if (key.contains('test_malformed.json')) {
-          return ByteData.sublistView(
-              utf8.encode(json.encode(malformedJson)));
-        }
-        return null;
-      });
+            final String key = utf8.decode(message!.buffer.asUint8List());
+            if (key.contains('test_malformed.json')) {
+              return ByteData.sublistView(
+                utf8.encode(json.encode(malformedJson)),
+              );
+            }
+            return null;
+          });
 
       await tester.pumpWidget(
         buildTestApp(args: {'lectureId': 'test_malformed'}),
@@ -978,13 +975,14 @@ void main() {
       await tester.pumpWidget(Container());
     });
 
-    testWidgets('handles truly unexpected errors with mock HiveManager',
-        (tester) async {
+    testWidgets('handles truly unexpected errors with mock HiveManager', (
+      tester,
+    ) async {
       // Use MockHiveManager to throw an unexpected exception
       final mockHiveManager = MockHiveManager();
-      when(mockHiveManager.getLecture(any)).thenThrow(
-        Exception('Truly unexpected error from HiveManager'),
-      );
+      when(
+        mockHiveManager.getLecture(any),
+      ).thenThrow(Exception('Truly unexpected error from HiveManager'));
 
       await tester.pumpWidget(
         MaterialApp(
@@ -1014,8 +1012,9 @@ void main() {
   });
 
   group('PlayerScreen - Successful Initialization with Real Assets', () {
-    testWidgets('successfully initializes with demo lecture and covers',
-        (tester) async {
+    testWidgets('successfully initializes with demo lecture and covers', (
+      tester,
+    ) async {
       // Use actual demo lecture from assets to test successful initialization
       final lecture = HiveLecture(
         id: 'lec_demo_001',
@@ -1074,70 +1073,73 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('successfully initializes in landscape mode and covers line 198',
-        (tester) async {
-      // Use actual demo lecture from assets
-      final lecture = HiveLecture(
-        id: 'lec_demo_001',
-        subjectId: 'test_subject',
-        weekLabel: 'Week 1',
-        title: 'Demo Lecture 001',
-        duration: 3600,
-        audioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
-        slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
-        jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
-      );
-
-      await tester.runAsync(() async {
-        final appData = AppData(
-          settings: AppSettings(),
-          subjects: {},
-          tags: {},
-          lectures: {lecture.id: lecture},
-          uiState: UiState(),
+    testWidgets(
+      'successfully initializes in landscape mode and covers line 198',
+      (tester) async {
+        // Use actual demo lecture from assets
+        final lecture = HiveLecture(
+          id: 'lec_demo_001',
+          subjectId: 'test_subject',
+          weekLabel: 'Week 1',
+          title: 'Demo Lecture 001',
+          duration: 3600,
+          audioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+          slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
+          jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
         );
-        await testBox.put('main', appData);
-        await HiveManager.instance.initForTesting(testBox);
-      });
 
-      // Set landscape orientation to test HorizontalPlayerLayout (line 196-198)
-      await tester.binding.setSurfaceSize(const Size(800, 400));
+        await tester.runAsync(() async {
+          final appData = AppData(
+            settings: AppSettings(),
+            subjects: {},
+            tags: {},
+            lectures: {lecture.id: lecture},
+            uiState: UiState(),
+          );
+          await testBox.put('main', appData);
+          await HiveManager.instance.initForTesting(testBox);
+        });
 
-      await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'lec_demo_001'}),
-      );
+        // Set landscape orientation to test HorizontalPlayerLayout (line 196-198)
+        await tester.binding.setSurfaceSize(const Size(800, 400));
 
-      // Initial loading state
-      await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        await tester.pumpWidget(
+          buildTestApp(args: {'lectureId': 'lec_demo_001'}),
+        );
 
-      // Wait for initialization to complete
-      // This should execute lines 169-171 (setState with _isLoading = false)
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(seconds: 6));
-      });
+        // Initial loading state
+        await tester.pump();
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      // Process multiple frames to ensure all async operations complete
-      for (int i = 0; i < 20; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+        // Wait for initialization to complete
+        // This should execute lines 169-171 (setState with _isLoading = false)
+        await tester.runAsync(() async {
+          await Future.delayed(const Duration(seconds: 6));
+        });
 
-      // After long wait and multiple pumps, check the state
-      // Lines 169-171, 196-198 are covered if initialization succeeds
-      // Even if PDF rendering has issues in test environment,
-      // the important state transitions get executed
-      expect(find.byType(PlayerScreen), findsOneWidget);
+        // Process multiple frames to ensure all async operations complete
+        for (int i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
-      // Clean up
-      await tester.binding.setSurfaceSize(null);
-      await tester.pumpWidget(Container());
-      await tester.pump();
-    });
+        // After long wait and multiple pumps, check the state
+        // Lines 169-171, 196-198 are covered if initialization succeeds
+        // Even if PDF rendering has issues in test environment,
+        // the important state transitions get executed
+        expect(find.byType(PlayerScreen), findsOneWidget);
+
+        // Clean up
+        await tester.binding.setSurfaceSize(null);
+        await tester.pumpWidget(Container());
+        await tester.pump();
+      },
+    );
   });
 
   group('PlayerScreen - OrientationBuilder and Layout rendering', () {
-    testWidgets('renders VerticalPlayerLayout in portrait mode',
-        (tester) async {
+    testWidgets('renders VerticalPlayerLayout in portrait mode', (
+      tester,
+    ) async {
       // This test will use mocks to allow successful initialization
       // and then verify that VerticalPlayerLayout is rendered in portrait mode
 
@@ -1145,11 +1147,15 @@ void main() {
       final mockPdfCacheService = MockPdfCacheService();
 
       // Setup mock to prevent errors
-      when(mockAudioService.positionStream).thenAnswer((_) => Stream.value(Duration.zero));
-      when(mockAudioService.stateStream).thenAnswer((_) => Stream.value(
-        ja.PlayerState(false, ja.ProcessingState.ready),
-      ));
-      when(mockAudioService.loadAudio(any)).thenAnswer((_) async => Future.value());
+      when(
+        mockAudioService.positionStream,
+      ).thenAnswer((_) => Stream.value(Duration.zero));
+      when(mockAudioService.stateStream).thenAnswer(
+        (_) => Stream.value(ja.PlayerState(false, ja.ProcessingState.ready)),
+      );
+      when(
+        mockAudioService.loadAudio(any),
+      ).thenAnswer((_) async => Future.value());
       when(mockAudioService.play()).thenAnswer((_) async => Future.value());
 
       final lecture = HiveLecture(
@@ -1194,19 +1200,20 @@ void main() {
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
-          }
+          },
         ],
       };
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', (message) async {
-        final String key = utf8.decode(message!.buffer.asUint8List());
-        if (key.contains('test_layout.json')) {
-          return ByteData.sublistView(
-              utf8.encode(json.encode(validTranscript)));
-        }
-        return null;
-      });
+            final String key = utf8.decode(message!.buffer.asUint8List());
+            if (key.contains('test_layout.json')) {
+              return ByteData.sublistView(
+                utf8.encode(json.encode(validTranscript)),
+              );
+            }
+            return null;
+          });
 
       // Set portrait orientation (default)
       await tester.binding.setSurfaceSize(const Size(400, 800)); // Portrait
@@ -1243,8 +1250,7 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
-    testWidgets('tests onBack callback in portrait mode',
-        (tester) async {
+    testWidgets('tests onBack callback in portrait mode', (tester) async {
       // Test that onBack navigation works in portrait mode
 
       await tester.pumpWidget(
@@ -1282,110 +1288,116 @@ void main() {
       expect(find.byType(PlayerScreen), findsNothing);
     });
 
-    testWidgets('renders HorizontalPlayerLayout in landscape mode and tests onBack',
-        (tester) async {
-      // This test covers line 198 (onBack in HorizontalPlayerLayout)
+    testWidgets(
+      'renders HorizontalPlayerLayout in landscape mode and tests onBack',
+      (tester) async {
+        // This test covers line 198 (onBack in HorizontalPlayerLayout)
 
-      final mockAudioService = MockAudioService();
-      final mockPdfCacheService = MockPdfCacheService();
+        final mockAudioService = MockAudioService();
+        final mockPdfCacheService = MockPdfCacheService();
 
-      // Setup mock to prevent errors
-      when(mockAudioService.positionStream).thenAnswer((_) => Stream.value(Duration.zero));
-      when(mockAudioService.stateStream).thenAnswer((_) => Stream.value(
-        ja.PlayerState(false, ja.ProcessingState.ready),
-      ));
-      when(mockAudioService.loadAudio(any)).thenAnswer((_) async => Future.value());
-      when(mockAudioService.play()).thenAnswer((_) async => Future.value());
-
-      final lecture = HiveLecture(
-        id: 'test_horizontal',
-        subjectId: 'test_subject',
-        weekLabel: 'Week 1',
-        title: 'Test Lecture',
-        duration: 3600,
-        audioPath: 'assets/lectures/test_horizontal/audio.opus',
-        slidePath: 'assets/lectures/test_horizontal/slides.pdf',
-        jsonPath: 'assets/test_horizontal.json',
-      );
-
-      await tester.runAsync(() async {
-        final appData = AppData(
-          settings: AppSettings(),
-          subjects: {},
-          tags: {},
-          lectures: {lecture.id: lecture},
-          uiState: UiState(),
+        // Setup mock to prevent errors
+        when(
+          mockAudioService.positionStream,
+        ).thenAnswer((_) => Stream.value(Duration.zero));
+        when(mockAudioService.stateStream).thenAnswer(
+          (_) => Stream.value(ja.PlayerState(false, ja.ProcessingState.ready)),
         );
-        await testBox.put('main', appData);
-        await HiveManager.instance.initForTesting(testBox);
-      });
+        when(
+          mockAudioService.loadAudio(any),
+        ).thenAnswer((_) async => Future.value());
+        when(mockAudioService.play()).thenAnswer((_) async => Future.value());
 
-      // Mock valid transcript
-      final validTranscript = {
-        'metadata': {
-          'total_sentences': 1,
-          'total_duration': 1000,
-          'voice': 'test',
-          'speed': 1.0,
-          'language_code': 'en',
-          'sample_rate': 22050,
-        },
-        'timestamps': [
-          {
-            'sentence_id': 0,
-            'text': 'Test sentence',
-            'text_kor': null,
-            'slide_number': 1,
-            'start_time': 0,
-            'end_time': 1000,
-            'duration': 1000,
-          }
-        ],
-      };
+        final lecture = HiveLecture(
+          id: 'test_horizontal',
+          subjectId: 'test_subject',
+          weekLabel: 'Week 1',
+          title: 'Test Lecture',
+          duration: 3600,
+          audioPath: 'assets/lectures/test_horizontal/audio.opus',
+          slidePath: 'assets/lectures/test_horizontal/slides.pdf',
+          jsonPath: 'assets/test_horizontal.json',
+        );
 
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', (message) async {
-        final String key = utf8.decode(message!.buffer.asUint8List());
-        if (key.contains('test_horizontal.json')) {
-          return ByteData.sublistView(
-              utf8.encode(json.encode(validTranscript)));
-        }
-        return null;
-      });
+        await tester.runAsync(() async {
+          final appData = AppData(
+            settings: AppSettings(),
+            subjects: {},
+            tags: {},
+            lectures: {lecture.id: lecture},
+            uiState: UiState(),
+          );
+          await testBox.put('main', appData);
+          await HiveManager.instance.initForTesting(testBox);
+        });
 
-      // Set landscape orientation
-      await tester.binding.setSurfaceSize(const Size(800, 400)); // Landscape
+        // Mock valid transcript
+        final validTranscript = {
+          'metadata': {
+            'total_sentences': 1,
+            'total_duration': 1000,
+            'voice': 'test',
+            'speed': 1.0,
+            'language_code': 'en',
+            'sample_rate': 22050,
+          },
+          'timestamps': [
+            {
+              'sentence_id': 0,
+              'text': 'Test sentence',
+              'text_kor': null,
+              'slide_number': 1,
+              'start_time': 0,
+              'end_time': 1000,
+              'duration': 1000,
+            },
+          ],
+        };
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: PlayerScreen(
-            args: {'lectureId': 'test_horizontal'},
-            audioService: mockAudioService,
-            pdfCacheService: mockPdfCacheService,
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMessageHandler('flutter/assets', (message) async {
+              final String key = utf8.decode(message!.buffer.asUint8List());
+              if (key.contains('test_horizontal.json')) {
+                return ByteData.sublistView(
+                  utf8.encode(json.encode(validTranscript)),
+                );
+              }
+              return null;
+            });
+
+        // Set landscape orientation
+        await tester.binding.setSurfaceSize(const Size(800, 400)); // Landscape
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: PlayerScreen(
+              args: {'lectureId': 'test_horizontal'},
+              audioService: mockAudioService,
+              pdfCacheService: mockPdfCacheService,
+            ),
           ),
-        ),
-      );
+        );
 
-      // Initial loading state
-      await tester.pump();
+        // Initial loading state
+        await tester.pump();
 
-      // Wait for initialization to complete (will fail at PDF loading)
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 800));
-      });
+        // Wait for initialization to complete (will fail at PDF loading)
+        await tester.runAsync(() async {
+          await Future.delayed(const Duration(milliseconds: 800));
+        });
 
-      await tester.pump();
-      await tester.pump();
+        await tester.pump();
+        await tester.pump();
 
-      // Line 198 (onBack callback in HorizontalPlayerLayout) is covered
-      expect(find.byType(PlayerScreen), findsOneWidget);
+        // Line 198 (onBack callback in HorizontalPlayerLayout) is covered
+        expect(find.byType(PlayerScreen), findsOneWidget);
 
-      // Clean up
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', null);
-      await tester.pumpWidget(Container());
-      await tester.binding.setSurfaceSize(null);
-    });
+        // Clean up
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMessageHandler('flutter/assets', null);
+        await tester.pumpWidget(Container());
+        await tester.binding.setSurfaceSize(null);
+      },
+    );
   });
 }
-

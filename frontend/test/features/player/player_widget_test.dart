@@ -348,9 +348,7 @@ void main() {
     testWidgets('should render with initial speed 1.0x', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: pw.SpeedButton(onSpeedChanged: (_) {}),
-          ),
+          home: Scaffold(body: pw.SpeedButton(onSpeedChanged: (_) {})),
         ),
       );
 
@@ -361,9 +359,7 @@ void main() {
     testWidgets('should cycle through speeds when tapped', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: pw.SpeedButton(onSpeedChanged: (_) {}),
-          ),
+          home: Scaffold(body: pw.SpeedButton(onSpeedChanged: (_) {})),
         ),
       );
 
@@ -391,16 +387,15 @@ void main() {
       expect(find.text('1.0x'), findsOneWidget);
     });
 
-    testWidgets('should call onSpeedChanged with correct values',
-        (tester) async {
+    testWidgets('should call onSpeedChanged with correct values', (
+      tester,
+    ) async {
       final speeds = <double>[];
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.SpeedButton(
-              onSpeedChanged: (speed) => speeds.add(speed),
-            ),
+            body: pw.SpeedButton(onSpeedChanged: (speed) => speeds.add(speed)),
           ),
         ),
       );
@@ -421,9 +416,7 @@ void main() {
     testWidgets('should have correct text style', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: pw.SpeedButton(onSpeedChanged: (_) {}),
-          ),
+          home: Scaffold(body: pw.SpeedButton(onSpeedChanged: (_) {})),
         ),
       );
 

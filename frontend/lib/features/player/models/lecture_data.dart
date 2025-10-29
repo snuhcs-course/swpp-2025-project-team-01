@@ -36,11 +36,11 @@ class TranscriptSentence {
     required this.startTime,
     required this.endTime,
     required this.duration,
-  })  : assert(sentenceId >= 0, 'sentenceId must be non-negative'),
-        assert(slideNumber >= 0, 'slideNumber must be non-negative'),
-        assert(startTime >= 0, 'startTime must be non-negative'),
-        assert(endTime >= 0, 'endTime must be non-negative'),
-        assert(duration >= 0, 'duration must be non-negative');
+  }) : assert(sentenceId >= 0, 'sentenceId must be non-negative'),
+       assert(slideNumber >= 0, 'slideNumber must be non-negative'),
+       assert(startTime >= 0, 'startTime must be non-negative'),
+       assert(endTime >= 0, 'endTime must be non-negative'),
+       assert(duration >= 0, 'duration must be non-negative');
 
   factory TranscriptSentence.fromJson(Map<String, dynamic> json) {
     return TranscriptSentence(

@@ -29,18 +29,23 @@ void main() {
     stateStreamController = StreamController<ja.PlayerState>.broadcast();
 
     // Setup default mock behaviors
-    when(mockAudioService.positionStream)
-        .thenAnswer((_) => positionStreamController.stream);
-    when(mockAudioService.stateStream)
-        .thenAnswer((_) => stateStreamController.stream);
-    when(mockAudioService.loadAudio(any))
-        .thenAnswer((_) async => Future.value());
+    when(
+      mockAudioService.positionStream,
+    ).thenAnswer((_) => positionStreamController.stream);
+    when(
+      mockAudioService.stateStream,
+    ).thenAnswer((_) => stateStreamController.stream);
+    when(
+      mockAudioService.loadAudio(any),
+    ).thenAnswer((_) async => Future.value());
     when(mockAudioService.play()).thenAnswer((_) async {
       stateStreamController.add(ja.PlayerState(true, ja.ProcessingState.ready));
       return Future.value();
     });
     when(mockAudioService.pause()).thenAnswer((_) async {
-      stateStreamController.add(ja.PlayerState(false, ja.ProcessingState.ready));
+      stateStreamController.add(
+        ja.PlayerState(false, ja.ProcessingState.ready),
+      );
       return Future.value();
     });
     when(mockAudioService.seek(any)).thenAnswer((invocation) async {
@@ -48,10 +53,10 @@ void main() {
       positionStreamController.add(position);
       return Future.value();
     });
-    when(mockAudioService.setSpeed(any))
-        .thenAnswer((_) async => Future.value());
-    when(mockAudioService.dispose())
-        .thenAnswer((_) async => Future.value());
+    when(
+      mockAudioService.setSpeed(any),
+    ).thenAnswer((_) async => Future.value());
+    when(mockAudioService.dispose()).thenAnswer((_) async => Future.value());
   });
 
   tearDown(() async {
@@ -220,26 +225,28 @@ void main() {
       controller.dispose();
     });
 
-    test('toggleTranscriptLanguage changes isKoreanLanguage when Korean exists',
-        () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
+    test(
+      'toggleTranscriptLanguage changes isKoreanLanguage when Korean exists',
+      () {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
 
-      controller.transcriptData = createTestTranscriptData();
+        controller.transcriptData = createTestTranscriptData();
 
-      expect(controller.hasKoreanTranscript, isTrue);
-      expect(controller.isKoreanLanguage.value, isFalse);
+        expect(controller.hasKoreanTranscript, isTrue);
+        expect(controller.isKoreanLanguage.value, isFalse);
 
-      controller.toggleTranscriptLanguage();
-      expect(controller.isKoreanLanguage.value, isTrue);
+        controller.toggleTranscriptLanguage();
+        expect(controller.isKoreanLanguage.value, isTrue);
 
-      controller.toggleTranscriptLanguage();
-      expect(controller.isKoreanLanguage.value, isFalse);
+        controller.toggleTranscriptLanguage();
+        expect(controller.isKoreanLanguage.value, isFalse);
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
 
     test('toggleTranscriptLanguage does nothing when no Korean transcript', () {
       final controller = PlayerController(
@@ -297,36 +304,41 @@ void main() {
       controller.dispose();
     });
 
-    test('handlePdfTap toggles controls in horizontal mode when pages not expanded',
-        () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
+    test(
+      'handlePdfTap toggles controls in horizontal mode when pages not expanded',
+      () {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
 
-      expect(controller.showControls.value, isFalse);
-      expect(controller.isPagesExpanded.value, isFalse);
+        expect(controller.showControls.value, isFalse);
+        expect(controller.isPagesExpanded.value, isFalse);
 
-      controller.handlePdfTap(false); // isVertical = false
-      expect(controller.showControls.value, isTrue);
+        controller.handlePdfTap(false); // isVertical = false
+        expect(controller.showControls.value, isTrue);
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
 
-    test('handlePdfTap closes pages in horizontal mode when pages expanded', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
+    test(
+      'handlePdfTap closes pages in horizontal mode when pages expanded',
+      () {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
 
-      controller.isPagesExpanded.value = true;
-      expect(controller.isPagesExpanded.value, isTrue);
+        controller.isPagesExpanded.value = true;
+        expect(controller.isPagesExpanded.value, isTrue);
 
-      controller.handlePdfTap(false); // isVertical = false
-      expect(controller.isPagesExpanded.value, isFalse);
+        controller.handlePdfTap(false); // isVertical = false
+        expect(controller.isPagesExpanded.value, isFalse);
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
 
     test('handleVerticalDrag expands pages when swiping up', () {
       final controller = PlayerController(
@@ -347,25 +359,27 @@ void main() {
       controller.dispose();
     });
 
-    test('handleVerticalDrag does not expand pages when not swiping up enough',
-        () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
+    test(
+      'handleVerticalDrag does not expand pages when not swiping up enough',
+      () {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
 
-      expect(controller.isPagesExpanded.value, isFalse);
+        expect(controller.isPagesExpanded.value, isFalse);
 
-      final details = DragUpdateDetails(
-        globalPosition: Offset.zero,
-        delta: const Offset(0, -4), // Not enough
-      );
+        final details = DragUpdateDetails(
+          globalPosition: Offset.zero,
+          delta: const Offset(0, -4), // Not enough
+        );
 
-      controller.handleVerticalDrag(details);
-      expect(controller.isPagesExpanded.value, isFalse);
+        controller.handleVerticalDrag(details);
+        expect(controller.isPagesExpanded.value, isFalse);
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
 
     test('handleVerticalDrag does nothing when pages already expanded', () {
       final controller = PlayerController(
@@ -455,8 +469,9 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 10));
 
       // Verify audioService.seek was called with correct Duration
-      verify(mockAudioService.seek(const Duration(milliseconds: 50000)))
-          .called(1);
+      verify(
+        mockAudioService.seek(const Duration(milliseconds: 50000)),
+      ).called(1);
 
       // Verify currentTime was updated
       expect(controller.currentTime.value, equals(50.0));
@@ -492,8 +507,9 @@ void main() {
 
       // Verify audioService.seek was only called once (for 30.0)
       // The second seek (50.0) should have been prevented by _isSeeking flag
-      verify(mockAudioService.seek(const Duration(milliseconds: 30000)))
-          .called(1);
+      verify(
+        mockAudioService.seek(const Duration(milliseconds: 30000)),
+      ).called(1);
 
       // Verify the second seek was never called
       verifyNever(mockAudioService.seek(const Duration(milliseconds: 50000)));
@@ -525,8 +541,9 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 10));
 
       // Verify audioService.seek was called with correct Duration (30 - 15 = 15)
-      verify(mockAudioService.seek(const Duration(milliseconds: 15000)))
-          .called(1);
+      verify(
+        mockAudioService.seek(const Duration(milliseconds: 15000)),
+      ).called(1);
 
       // Verify currentTime was updated to 15.0
       expect(controller.currentTime.value, equals(15.0));
@@ -555,8 +572,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 10));
 
       // Verify audioService.seek was called with Duration 0 (clamped)
-      verify(mockAudioService.seek(const Duration(milliseconds: 0)))
-          .called(1);
+      verify(mockAudioService.seek(const Duration(milliseconds: 0))).called(1);
 
       // Verify currentTime was clamped to 0.0
       expect(controller.currentTime.value, equals(0.0));
@@ -585,8 +601,9 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 10));
 
       // Verify audioService.seek was called with correct Duration (30 + 15 = 45)
-      verify(mockAudioService.seek(const Duration(milliseconds: 45000)))
-          .called(1);
+      verify(
+        mockAudioService.seek(const Duration(milliseconds: 45000)),
+      ).called(1);
 
       // Verify currentTime was updated to 45.0
       expect(controller.currentTime.value, equals(45.0));
@@ -615,8 +632,9 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 10));
 
       // Verify audioService.seek was called with Duration 100 (clamped)
-      verify(mockAudioService.seek(const Duration(milliseconds: 100000)))
-          .called(1);
+      verify(
+        mockAudioService.seek(const Duration(milliseconds: 100000)),
+      ).called(1);
 
       // Verify currentTime was clamped to 100.0
       expect(controller.currentTime.value, equals(100.0));
@@ -916,10 +934,7 @@ void main() {
       verify(mockAudioService.dispose()).called(1);
 
       // Verify ValueNotifiers are disposed (they should throw FlutterError when accessed after dispose)
-      expect(
-        () => controller.showControls.value = false,
-        throwsFlutterError,
-      );
+      expect(() => controller.showControls.value = false, throwsFlutterError);
     });
 
     test('dispose can be called multiple times safely', () {

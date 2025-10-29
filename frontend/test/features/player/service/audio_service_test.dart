@@ -240,10 +240,7 @@ void main() {
       test('should rethrow exception from setSpeed()', () async {
         when(mockPlayer.setSpeed(any)).thenThrow(Exception('SetSpeed failed'));
 
-        expect(
-          () => audioService.setSpeed(1.5),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => audioService.setSpeed(1.5), throwsA(isA<Exception>()));
       });
     });
 
