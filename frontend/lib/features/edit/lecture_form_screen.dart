@@ -1,15 +1,12 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:re_view/app_router.dart';
-import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/features/edit/loader_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
-import 'package:re_view/features/edit/fetch_lecture.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_background/flutter_background.dart';
+import 'package:re_view/features/edit/background_service.dart';
+import 'package:re_view/features/edit/file_picker_service.dart';
+import 'package:re_view/features/edit/lecture_creation_service.dart';
 
 const String _serverAddress = '147.46.78.61';
 const String _port = '8001';
@@ -25,9 +22,20 @@ const String _port = '8001';
 /// - 강의 녹음 파일(들) 업로드 (단일 또는 다중)
 /// - 다중 오디오 파일 모드에서 각 파일별 페이지 범위 설정
 class LectureFormScreen extends StatefulWidget {
-  const LectureFormScreen({super.key, this.hiveManager});
+  const LectureFormScreen({
+    super.key,
+    this.hiveManager,
+    this.filePickerService,
+    this.lectureCreationService,
+    this.loaderService,
+    this.backgroundService,
+  });
 
   final HiveManager? hiveManager;
+  final FilePickerService? filePickerService;
+  final LectureCreationService? lectureCreationService;
+  final LoaderService? loaderService;
+  final BackgroundService? backgroundService;
 
   @override
   State<LectureFormScreen> createState() => _LectureFormScreenState();
@@ -36,6 +44,10 @@ class LectureFormScreen extends StatefulWidget {
 class _LectureFormScreenState extends State<LectureFormScreen> {
   // 데이터 저장소 인스턴스
   late final HiveManager _hive;
+  late final FilePickerService _picker;
+  late final LectureCreationService _creator;
+  late final LoaderService _loader;
+  late final BackgroundService _background;
 
   // 텍스트 입력 컨트롤러
   final _weekController = TextEditingController();
@@ -59,23 +71,18 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 강의 생성 중 여부 (로딩 상태)
   bool _isCreating = false;
 
-  // HTTP 클라이언트 (취소를 위해)
-  http.Client? _httpClient;
-  bool _closeClientOnDispose = true;
-
   @override
   void initState() {
     super.initState();
     _hive = widget.hiveManager ?? HiveManager.instance;
+    _picker = widget.filePickerService ?? FilePickerService();
+    _creator = widget.lectureCreationService ?? LectureCreationService();
+    _loader = widget.loaderService ?? LoaderService();
+    _background = widget.backgroundService ?? BackgroundService();
   }
 
   @override
   void dispose() {
-    // HTTP 클라이언트 정리
-    if (_closeClientOnDispose) {
-      _httpClient?.close();
-    }
-
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
     _titleController.dispose();
@@ -563,28 +570,22 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 슬라이드 PDF 파일 선택
   Future<void> _pickSlidePdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
+    final path = await _picker.pickPdf();
 
-    if (result != null && result.files.single.path != null) {
+    if (path != null) {
       setState(() {
-        _slidePdfPath = result.files.single.path;
+        _slidePdfPath = path;
       });
     }
   }
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'flac'],
-    );
+    final path = await _picker.pickAudio();
 
-    if (result != null && result.files.single.path != null) {
+    if (path != null) {
       setState(() {
-        _audioFiles[index].filePath = result.files.single.path;
+        _audioFiles[index].filePath = path;
       });
     }
   }
@@ -733,44 +734,31 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     setState(() => _isCreating = true);
     final titleText = _titleController.text.trim();
 
-    // Enable background execution
-    final androidConfig = FlutterBackgroundAndroidConfig(
-      notificationTitle: 'Generating Lecture',
-      notificationText: 'Processing: $titleText',
-      notificationImportance: AndroidNotificationImportance.high,
-      enableWifiLock: true,
-    );
-
+    // [수정] Enable background execution
     bool backgroundEnabled = false;
     try {
-      backgroundEnabled = await FlutterBackground.initialize(
-        androidConfig: androidConfig,
-      );
+      backgroundEnabled = await _background.initialize();
       if (backgroundEnabled) {
-        await FlutterBackground.enableBackgroundExecution();
+        await _background.enableBackgroundExecution();
       }
     } catch (e) {
       debugPrint('Failed to enable background execution: $e');
-      // Continue anyway - app will still work in foreground
     }
 
-    // HTTP 클라이언트 생성
-    _httpClient = http.Client();
+    // [삭제] _httpClient = http.Client();
 
     // 로딩 서비스 시작 및 취소 콜백 등록
-    LectureLoadingService.instance.startLoading(titleText);
-    LectureLoadingService.instance.setOnCancel(() {
-      _httpClient?.close();
-      _closeClientOnDispose = true;
+    _loader.startLoading(titleText);
+    _loader.setOnCancel(() {
+      _creator.cancelCreation(); // [수정]
       if (mounted) {
         setState(() => _isCreating = false);
         _showToast(
           l10n.isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled',
         );
       }
-      // Disable background execution when cancelled
       if (backgroundEnabled) {
-        FlutterBackground.disableBackgroundExecution();
+        _background.disableBackgroundExecution(); // [수정]
       }
     });
 
@@ -785,7 +773,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
       if (mounted) {
-        _closeClientOnDispose = false;
         final navigator = Navigator.of(context);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           navigator.popUntil(
@@ -794,119 +781,38 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         });
       }
 
-      final audioPaths = <String>[];
-      final jsonPaths = <String>[];
+      // [수정] client 파라미터 제거
+      final CreationResult? result = await _creator.createLecture(
+        slidePath: slidePath,
+        audioEntries: effectiveAudios,
+        title: titleText,
+        serverAddress: _serverAddress,
+        port: _port,
+      );
 
-      for (int i = 1; i <= effectiveAudios.length; i++) {
-        final audioFileEntry = effectiveAudios[i - 1];
-        try {
-          debugPrint(
-            '🚀 Starting lecture request $i/${effectiveAudios.length}',
-          );
-          debugPrint('📤 Server: $_serverAddress:$_port');
-          debugPrint('📄 Slide: $slidePath');
-          debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
-          debugPrint('📊 isSingleAudio: ${effectiveAudios.length == 1}');
-          debugPrint(
-            '📝 Start page: "${audioFileEntry.startPageController.text}"',
-          );
-          debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
-
-          final jobId = await requestLecture(
-            slidePath,
-            audioFileEntry,
-            titleText,
-            i,
-            effectiveAudios.length == 1 ? true : false,
-            _serverAddress,
-            _port,
-            onProgress,
-            clientToClose: _httpClient,
-          );
-
-          debugPrint('✅ Request completed with jobId: $jobId');
-
-          if (jobId == null) {
-            LectureLoadingService.instance.hideLoading();
-
-            // 취소된 경우가 아닐 때만 실패 메시지 표시
-            if (!LectureLoadingService.instance.isCancelled && mounted) {
-              _showToast(
-                l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-              );
-            }
-            return;
-          }
-
-          final zipPath = await downloadResult(
-            jobId,
-            titleText,
-            i,
-            _serverAddress,
-            _port,
-          );
-
-          if (zipPath == null) {
-            LectureLoadingService.instance.hideLoading();
-            _showToast(
-              l10n.isKorean ? '강의 다운로드에 실패했습니다.' : 'Lecture download failed.',
-            );
-            return;
-          }
-
-          final filePaths = await unzipResult(zipPath, titleText, i);
-          if (filePaths == null) {
-            _showToast(
-              l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-            );
-            return;
-          }
-          audioPaths.add(filePaths[0]);
-          jsonPaths.add(filePaths[1]);
-        } catch (err) {
-          LectureLoadingService.instance.hideLoading();
+      // [수정] 사용자님 지적대로 'if (result == null)' 구조로 복원
+      if (result == null) {
+        // 취소되었거나 서비스 내부에서 실패/리턴됨
+        _loader.hideLoading();
+        if (!_loader.isCancelled && mounted) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
-          return;
         }
+        return; // [수정] 'return' 복원
       }
 
-      // 4. 음성 파일이 여러 개일 경우 통합 처리
-      String? audioPath;
-      String? jsonPath;
-      int? duration;
-
-      if (effectiveAudios.length > 1) {
-        audioPath = await concatenateAudioFiles(audioPaths, titleText);
-        jsonPath = await concatenateJsonFiles(jsonPaths, titleText);
-        if (audioPath == null || jsonPath == null) {
-          _showToast(
-            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-          );
-          return;
-        }
-      } else {
-        audioPath = audioPaths[0];
-        jsonPath = jsonPaths[0];
-      }
-
-      final jsonFile = File(jsonPath);
-      final jsonData =
-          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
-      final metadata = jsonData['metadata'] as Map<String, dynamic>;
-      duration = metadata['total_duration'] as int;
-
-      // 5. 강의 구조체 생성
+      // [수정] 'else' 제거. 성공 로직이 바로 이어짐
+      // 5. 강의 구조체 생성 (결과값 사용)
       final generatedLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,
-        duration: duration,
+        duration: result.duration,
         slidePath: _slidePdfPath,
-        audioPath: audioPath,
-        jsonPath: jsonPath,
+        audioPath: result.audioPath,
+        jsonPath: result.jsonPath,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -929,13 +835,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         }
       }
 
-      // 7. 성공 메시지
+      // 8. 성공 메시지
       _showToast(
         l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
       );
     } catch (e) {
-      // 8. 에러 처리
-      LectureLoadingService.instance.hideLoading();
+      // 9. 에러 처리
+      _loader.hideLoading();
       if (mounted) {
         _showToast(
           l10n.isKorean
@@ -944,20 +850,23 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
       }
     } finally {
-      // 9. 로딩 종료 및 클라이언트 정리
-      _httpClient?.close();
-      _httpClient = null;
-      _closeClientOnDispose = true;
+      // 10. 로딩 종료 및 클라이언트 정리
+      _loader.hideLoading();
 
-      // Disable background execution when task completes
+      // [삭제]
+      // _httpClient?.close();
+      // _httpClient = null;
+
+      // [수정] Disable background execution when task completes
       if (backgroundEnabled) {
         try {
-          await FlutterBackground.disableBackgroundExecution();
+          await _background.disableBackgroundExecution();
         } catch (e) {
           debugPrint('Failed to disable background execution: $e');
         }
       }
 
+      // Pop이 예약되었든 아니든, 위젯이 아직 화면에 있다면 항상 로컬 스피너를 끕니다.
       if (mounted) {
         setState(() => _isCreating = false);
       }
