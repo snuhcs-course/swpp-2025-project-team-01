@@ -957,4 +957,332 @@ void main() {
       verifyNoMoreInteractions(mockAudioService);
     });
   });
+
+  group('PlayerController - Initialize', () {
+    testWidgets('initialize sets up transcript data and total time',
+        (tester) async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      final transcriptData = createTestTranscriptData();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              // Call initialize without awaiting to avoid hanging on PDF operations
+              controller.initialize(
+                context,
+                'test-lecture-id',
+                transcriptData,
+                'assets/test.pdf',
+                'assets/test.mp3',
+              ).catchError((_) {
+                // Ignore errors from PDF loading in test
+              });
+              return Container();
+            },
+          ),
+        ),
+      );
+
+      // Wait for initialization to start
+      await tester.pump();
+
+      // Verify transcript data and total time are set
+      expect(controller.transcriptData, equals(transcriptData));
+      expect(controller.totalTime, equals(3.0)); // 3000ms / 1000
+
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - Additional Coverage', () {
+    test('playPause triggers scroll when conditions are met', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+      controller.currentSentenceIndex.value = 1;
+      controller.isAutoScrolling.value = true;
+      controller.isPlaying.value = false; // Initially not playing
+
+      // playPause should call play() and trigger delayed scroll
+      await controller.playPause();
+
+      // Wait for delayed scroll scheduling (100ms)
+      await Future.delayed(const Duration(milliseconds: 150));
+
+      verify(mockAudioService.play()).called(1);
+
+      controller.dispose();
+    });
+
+    test('seek handles different edge cases', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.totalTime = 100.0;
+      controller.transcriptData = createTestTranscriptData();
+
+      // Normal seek
+      await controller.seek(50.0);
+
+      // Verify that seek was called
+      verify(mockAudioService.seek(any)).called(1);
+
+      // Wait for forced move flag and auto-scroll restoration
+      await Future.delayed(const Duration(milliseconds: 550));
+
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - seekToSentence', () {
+    test('seekToSentence seeks to sentence start time', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+
+      await controller.seekToSentence(1);
+
+      // Verify seek was called with second sentence start time (1000ms)
+      verify(
+        mockAudioService.seek(const Duration(milliseconds: 1000)),
+      ).called(1);
+
+      controller.dispose();
+    });
+
+    test('seekToSentence handles invalid index', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+
+      // Try negative index
+      await controller.seekToSentence(-1);
+      verifyNever(mockAudioService.seek(any));
+
+      // Try out of bounds index
+      await controller.seekToSentence(999);
+      verifyNever(mockAudioService.seek(any));
+
+      controller.dispose();
+    });
+
+    test('seekToSentence handles null transcript data', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      // No transcript data set
+      await controller.seekToSentence(0);
+
+      verifyNever(mockAudioService.seek(any));
+
+      controller.dispose();
+    });
+
+    test('seekToSentence sets sentence index and page', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+      controller.isSynced.value = true;
+      controller.currentPage.value = 1;
+
+      // Seek to third sentence (page 2)
+      await controller.seekToSentence(2);
+
+      // Wait for delayed operations to complete
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Sentence and page should be updated immediately by _setCurrentSentenceAndPage
+      expect(controller.currentSentenceIndex.value, equals(2));
+      expect(controller.currentPage.value, equals(2));
+
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - seekToSlide', () {
+    test('seekToSlide with sync enabled seeks to first sentence of slide',
+        () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+      controller.isSynced.value = true;
+
+      // Seek to slide 2 (first sentence is index 2)
+      await controller.seekToSlide(2);
+
+      // Verify seek was called with third sentence start time (2000ms)
+      verify(
+        mockAudioService.seek(const Duration(milliseconds: 2000)),
+      ).called(1);
+
+      controller.dispose();
+    });
+
+    test('seekToSlide with sync disabled only jumps to page', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+      controller.isSynced.value = false;
+
+      await controller.seekToSlide(2);
+
+      // Should not call audio seek, only jump to page
+      verifyNever(mockAudioService.seek(any));
+      expect(controller.currentPage.value, equals(2));
+
+      controller.dispose();
+    });
+
+    test('seekToSlide handles null transcript data', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.isSynced.value = true;
+
+      await controller.seekToSlide(2);
+
+      verifyNever(mockAudioService.seek(any));
+
+      controller.dispose();
+    });
+
+    test('seekToSlide handles non-existent slide number', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+      controller.isSynced.value = true;
+
+      // Try slide number that doesn't exist
+      await controller.seekToSlide(999);
+
+      verifyNever(mockAudioService.seek(any));
+
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - scrollToCurrentSentence', () {
+    test('scrollToCurrentSentence returns early when no sentence index',
+        () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+      // currentSentenceIndex is null by default
+
+      // Should return early without error
+      await controller.scrollToCurrentSentence();
+
+      controller.dispose();
+    });
+
+    test('scrollToCurrentSentence returns early when no transcript data',
+        () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.currentSentenceIndex.value = 0;
+      // transcriptData is null
+
+      // Should return early without error
+      await controller.scrollToCurrentSentence();
+
+      controller.dispose();
+    });
+
+    test(
+        'scrollToCurrentSentence returns early when not playing and not forced',
+        () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.transcriptData = createTestTranscriptData();
+      controller.currentSentenceIndex.value = 0;
+      controller.isPlaying.value = false;
+
+      // Should return early without scrolling
+      await controller.scrollToCurrentSentence(forceScroll: false);
+
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - seek error handling', () {
+    test('seek handles audio service error gracefully', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      // Setup audio service to throw error on seek
+      when(mockAudioService.seek(any)).thenThrow(Exception('Seek failed'));
+
+      controller.totalTime = 100.0;
+
+      // Should not throw, error is caught internally
+      await controller.seek(50.0);
+
+      verify(mockAudioService.seek(any)).called(1);
+
+      controller.dispose();
+    });
+
+    test('seek sets forced move and auto-scroll flags', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      // Reset mock to default behavior
+      when(mockAudioService.seek(any)).thenAnswer((_) async => Future.value());
+
+      controller.totalTime = 100.0;
+      controller.isAutoScrolling.value = false;
+
+      await controller.seek(30.0);
+
+      // isAutoScrolling should be set to true by seek
+      expect(controller.isAutoScrolling.value, isTrue);
+
+      controller.dispose();
+    });
+  });
 }

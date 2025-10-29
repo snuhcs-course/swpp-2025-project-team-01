@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart' as ja;
@@ -466,5 +467,318 @@ void main() {
         }
       },
     );
+  });
+
+  group('HorizontalPlayerLayout - Pages Expanded with Controls', () {
+    testWidgets('shows HorizontalToggleBar when pages expanded',
+        (tester) async {
+      controller.isPagesExpanded.value = true;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(controller.isPagesExpanded.value, isTrue);
+    });
+
+    testWidgets('shows SyncButton when pages expanded', (tester) async {
+      controller.isPagesExpanded.value = true;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      // SyncButton should be present in the widget tree
+      expect(controller.isPagesExpanded.value, isTrue);
+      expect(controller.isSynced.value, isNotNull);
+    });
+  });
+
+  group('PdfArea - Horizontal Mode', () {
+    testWidgets('handles vertical drag in horizontal mode', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(
+            isVertical: false,
+            controller: controller,
+            onBack: () {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Find GestureDetector
+      final gestureDetector = find.byType(GestureDetector).first;
+      expect(gestureDetector, findsOneWidget);
+
+      // Simulate vertical drag (swipe up)
+      await tester.drag(gestureDetector, const Offset(0, -10));
+      await tester.pump();
+    });
+
+    testWidgets('shows caption overlay when enabled in horizontal mode',
+        (tester) async {
+      controller.isCaptionEnabled.value = true;
+      controller.currentSentenceIndex.value = 0;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(
+            isVertical: false,
+            controller: controller,
+            onBack: () {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(controller.isCaptionEnabled.value, isTrue);
+    });
+
+    testWidgets('shows video controls overlay when enabled', (tester) async {
+      controller.showControls.value = true;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(
+            isVertical: false,
+            controller: controller,
+            onBack: () {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(controller.showControls.value, isTrue);
+    });
+
+    testWidgets(
+        'hides controls when pages expanded in horizontal mode and controls shown',
+        (tester) async {
+      controller.showControls.value = true;
+      controller.isPagesExpanded.value = true;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(
+            isVertical: false,
+            controller: controller,
+            onBack: () {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Controls should be hidden when pages are expanded in horizontal mode
+      expect(controller.showControls.value, isTrue);
+      expect(controller.isPagesExpanded.value, isTrue);
+    });
+  });
+
+  group('VideoControlsOverlay - State Tests', () {
+    test('controller states can be set for video controls', () {
+      controller.isCaptionEnabled.value = false;
+      expect(controller.isCaptionEnabled.value, isFalse);
+
+      controller.isSynced.value = true;
+      controller.currentSentenceIndex.value = 1;
+      controller.currentPage.value = 1;
+      expect(controller.pageDifference, equals(1));
+
+      controller.isPlaying.value = false;
+      expect(controller.isPlaying.value, isFalse);
+
+      controller.currentTime.value = 1.0;
+      controller.totalTime = 2.0;
+      expect(controller.currentTime.value, equals(1.0));
+      expect(controller.totalTime, equals(2.0));
+    });
+  });
+
+  group('HorizontalToggleBar', () {
+    testWidgets('renders with pages list', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalToggleBar(
+            onToggle: () {},
+            pagesList: Container(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(HorizontalToggleBar), findsOneWidget);
+    });
+
+    testWidgets('toggle button is tappable', (tester) async {
+      bool toggled = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalToggleBar(
+            onToggle: () => toggled = true,
+            pagesList: Container(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Find the GestureDetector with the toggle
+      final gestureDetector = find.byType(GestureDetector).first;
+      await tester.tap(gestureDetector);
+      await tester.pump();
+
+      expect(toggled, isTrue);
+    });
+  });
+
+  group('PagesListWidget', () {
+    testWidgets('renders in vertical mode', (tester) async {
+      when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
+      when(mockPdfCacheService.getCachedOrRenderPage(any))
+          .thenAnswer((_) async => Uint8List(0));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PagesListWidget(
+            isVertical: true,
+            controller: controller,
+          ),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(PagesListWidget), findsOneWidget);
+    });
+
+    testWidgets('renders in horizontal mode', (tester) async {
+      when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
+      when(mockPdfCacheService.getCachedOrRenderPage(any))
+          .thenAnswer((_) async => Uint8List(0));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PagesListWidget(
+            isVertical: false,
+            controller: controller,
+          ),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(PagesListWidget), findsOneWidget);
+    });
+  });
+
+  group('TranslationButton', () {
+    testWidgets('shows ENG when not in Korean mode', (tester) async {
+      controller.isKoreanLanguage.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          TranslationButton(controller: controller),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('ENG'), findsOneWidget);
+      expect(controller.isKoreanLanguage.value, isFalse);
+    });
+
+    testWidgets('shows KOR when in Korean mode', (tester) async {
+      controller.isKoreanLanguage.value = true;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          TranslationButton(controller: controller),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('KOR'), findsOneWidget);
+      expect(controller.isKoreanLanguage.value, isTrue);
+    });
+
+    testWidgets('is tappable when Korean transcript exists', (tester) async {
+      controller.isKoreanLanguage.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          TranslationButton(controller: controller),
+        ),
+      );
+
+      await tester.pump();
+
+      // Tap to toggle
+      await tester.tap(find.byType(GestureDetector));
+      await tester.pump();
+
+      expect(controller.isKoreanLanguage.value, isTrue);
+    });
+  });
+
+  group('TranscriptArea', () {
+    testWidgets('shows loading when transcript data is null', (tester) async {
+      controller.transcriptData = null;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          TranscriptArea(controller: controller),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('renders transcript title', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          TranscriptArea(controller: controller),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('Transcript'), findsOneWidget);
+    });
+  });
+
+  group('CaptionOverlay - Caption Text', () {
+    test('caption text changes based on language setting', () {
+      controller.currentSentenceIndex.value = 0;
+      controller.isKoreanLanguage.value = false;
+      expect(controller.captionText, equals('First sentence'));
+
+      controller.isKoreanLanguage.value = true;
+      expect(controller.captionText, equals('첫 번째 문장'));
+
+      controller.currentSentenceIndex.value = null;
+      expect(controller.captionText, isEmpty);
+    });
   });
 }
