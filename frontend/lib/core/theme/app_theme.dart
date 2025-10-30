@@ -8,6 +8,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: lightScheme,
       scaffoldBackgroundColor: const Color(0xFFF2F3F6),
+      fontFamily: 'NanumSquare',
 
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(lightScheme),
@@ -20,9 +21,10 @@ class AppTheme {
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           color: Colors.black,
           letterSpacing: .2,
+          fontFamily: 'NanumSquare',
         ),
       ),
 
@@ -47,9 +49,15 @@ class AppTheme {
       seedColor: seedColor,
       brightness: Brightness.dark,
     );
-    return ThemeData.dark(useMaterial3: true).copyWith(
+
+    const fontFamily = 'NanumSquare';
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
       colorScheme: darkScheme,
       scaffoldBackgroundColor: const Color(0xFF212121),
+      fontFamily: fontFamily,
 
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(darkScheme),
@@ -62,9 +70,10 @@ class AppTheme {
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           color: Colors.white,
           letterSpacing: .2,
+          fontFamily: fontFamily,
         ),
       ),
 
@@ -103,6 +112,7 @@ class AppTheme {
         error: Color(0xFFD00000),
       ),
       scaffoldBackgroundColor: Colors.white,
+      fontFamily: 'NanumSquare',
 
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(lightScheme),
@@ -118,6 +128,7 @@ class AppTheme {
           fontWeight: FontWeight.w900,
           color: Colors.black,
           letterSpacing: .2,
+          fontFamily: 'NanumSquare',
         ),
       ),
 
@@ -190,6 +201,7 @@ class AppTheme {
         error: Color(0xFFFF5555),
       ),
       scaffoldBackgroundColor: Colors.black,
+      fontFamily: 'NanumSquare',
 
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(const ColorScheme.dark()),
@@ -203,6 +215,7 @@ class AppTheme {
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w900,
+          fontFamily: 'NanumSquare',
           color: Colors.white,
           letterSpacing: .2,
         ),
