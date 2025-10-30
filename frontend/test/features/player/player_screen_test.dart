@@ -881,7 +881,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Demo Lecture 001',
         duration: 3600,
-        originalAudioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+        originalAudioPath:
+            'assets/lectures/lec_demo_001/lecture_with_slides.opus',
         ttsAudioPath: null,
         slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
@@ -943,7 +944,8 @@ void main() {
           weekLabel: 'Week 1',
           title: 'Demo Lecture 001',
           duration: 3600,
-          originalAudioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+          originalAudioPath:
+              'assets/lectures/lec_demo_001/lecture_with_slides.opus',
           ttsAudioPath: null,
           slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
           jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
