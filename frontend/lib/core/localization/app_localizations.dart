@@ -39,7 +39,7 @@ class AppLocalizations {
   String get menu => isKorean ? '메뉴' : 'Menu';
   String get filter => isKorean ? '필터' : 'Filter';
   String get favorites => isKorean ? '즐겨찾기' : 'Favorites';
-  String get addLecture => isKorean ? '수업 추가' : 'Add Lecture';
+  String get addLecture => isKorean ? '강의 생성' : 'Create Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get editTags => isKorean ? '태그 수정' : 'Edit Tags';
   String get noFavoriteSubjects =>
