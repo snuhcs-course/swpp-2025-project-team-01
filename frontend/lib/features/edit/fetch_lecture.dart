@@ -367,6 +367,7 @@ Future<String?> concatenateAudioFiles(
 /// Concatenate multiple JSONs into a single continuous JSON.
 Future<String?> concatenateJsonFiles(
   List<String> jsonPaths,
+  List<int> pdfStarts,
   String titleText, {
   Directory? dirOverride, // for testing
 }) async {
@@ -400,6 +401,9 @@ Future<String?> concatenateJsonFiles(
       if (!jsonFile.existsSync()) {
         throw Exception('Input JSON not found: ${jsonPaths[i]}');
       }
+
+      // Actual start index
+      final pdfStart = pdfStarts[i];
 
       final data =
           jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
@@ -477,7 +481,7 @@ Future<String?> concatenateJsonFiles(
           'sentence_id': runningSentenceId++,
           'text': text,
           'text_kor': textKor,
-          'slide_number': slideNumber,
+          'slide_number': slideNumber + pdfStart - 1,
           'start_time': startTime + timeOffset,
           'end_time': endTime + timeOffset,
           'duration': duration,
