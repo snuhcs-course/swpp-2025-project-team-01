@@ -543,15 +543,6 @@ void main() {
       });
     }
 
-    // Helper function to setup asset mock handler
-    void setupAssetMockHandler(ByteData? Function(String key) handler) {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', (message) async {
-            final String key = utf8.decode(message!.buffer.asUint8List());
-            return handler(key);
-          });
-    }
-
     // Helper function to clean up mock handler
     void cleanupMockHandler() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
