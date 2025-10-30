@@ -794,7 +794,7 @@ void main() {
 
       // [When] '삭제될 과목' 롱프레스 → 삭제 → 예
       final deleteSubjectFinder = find.text('삭제될 과목');
-      await tester.longPress(deleteSubjectFinder);
+      await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       // 다이얼로그가 열렸는지 확인
@@ -868,7 +868,7 @@ void main() {
         }
 
         // [When] '삭제될 과목' 롱프레스 → 삭제 → 예
-        await tester.longPress(deleteSubjectFinder);
+        await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
         await tester.pumpAndSettle();
 
         if (find.byType(AlertDialog).evaluate().isEmpty) {
@@ -963,7 +963,7 @@ void main() {
       }
 
       // [When] 삭제 시도하지만 "아니오" 선택
-      await tester.longPress(deleteSubjectFinder);
+      await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       if (find.byType(AlertDialog).evaluate().isEmpty) {
@@ -1027,7 +1027,7 @@ void main() {
       }
 
       // [When] 삭제 시도하지만 "아니오" 선택
-      await tester.longPress(deleteSubjectFinder);
+      await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       if (find.byType(AlertDialog).evaluate().isEmpty) {
