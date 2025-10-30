@@ -888,7 +888,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         });
       }
 
-      final audioPaths = <String>[];
+      final originalAudioPaths =
+          effectiveAudios.map((entry) => entry.filePath!) as List<String>;
+      final ttsAudioPaths = <String>[];
       final jsonPaths = <String>[];
       final pdfStarts = <int>[];
 
@@ -956,7 +958,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             );
             return;
           }
-          audioPaths.add(filePaths[0]);
+          ttsAudioPaths.add(filePaths[0]);
           jsonPaths.add(filePaths[1]);
 
           // Add PDF ranges
@@ -975,21 +977,29 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // 4. 음성 파일이 여러 개일 경우 통합 처리
-      String? audioPath;
+      String? originalAudioPath;
+      String? ttsAudioPath;
       String? jsonPath;
       int? duration;
 
       if (effectiveAudios.length > 1) {
-        audioPath = await concatenateAudioFiles(audioPaths, titleText);
+        originalAudioPath = await concatenateAudioFiles(
+          originalAudioPaths,
+          titleText,
+        );
+        ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
         jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
-        if (audioPath == null || jsonPath == null) {
+        if (originalAudioPath == null ||
+            ttsAudioPath == null ||
+            jsonPath == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
           return;
         }
       } else {
-        audioPath = audioPaths[0];
+        originalAudioPath = originalAudioPaths[0];
+        ttsAudioPath = ttsAudioPaths[0];
         jsonPath = jsonPaths[0];
       }
 
@@ -1007,7 +1017,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         title: titleText,
         duration: duration,
         slidePath: _slidePdfPath,
-        audioPath: audioPath,
+        originalAudioPath: originalAudioPath,
+        ttsAudioPath: ttsAudioPath,
         jsonPath: jsonPath,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
