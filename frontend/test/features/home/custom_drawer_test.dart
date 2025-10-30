@@ -100,7 +100,7 @@ void main() {
 
       // Check if menu items are displayed
       expect(find.text('Menu'), findsOneWidget);
-      expect(find.text('Add Lecture'), findsOneWidget);
+      expect(find.text('Create Lecture'), findsOneWidget);
       expect(find.text('Edit Subjects'), findsOneWidget);
       expect(find.text('Edit Tags'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
@@ -131,7 +131,7 @@ void main() {
       expect(listTiles.length, 4);
 
       // Check order
-      expect((listTiles.elementAt(0).title as Text).data, 'Add Lecture');
+      expect((listTiles.elementAt(0).title as Text).data, 'Create Lecture');
       expect((listTiles.elementAt(1).title as Text).data, 'Edit Subjects');
       expect((listTiles.elementAt(2).title as Text).data, 'Edit Tags');
       expect((listTiles.elementAt(3).title as Text).data, 'Settings');
@@ -187,8 +187,8 @@ void main() {
       state.openDrawer();
       await tester.pumpAndSettle();
 
-      // Tap on "Add Lecture"
-      await tester.tap(find.text('Add Lecture'));
+      // Tap on "Create Lecture"
+      await tester.tap(find.text('Create Lecture'));
       await tester.pumpAndSettle();
 
       // Should navigate to lecture form screen
@@ -327,7 +327,7 @@ void main() {
 
       // Check if menu items are displayed in Korean
       expect(find.text('메뉴'), findsOneWidget);
-      expect(find.text('수업 추가'), findsOneWidget);
+      expect(find.text('강의 생성'), findsOneWidget);
       expect(find.text('과목 수정'), findsOneWidget);
       expect(find.text('태그 수정'), findsOneWidget);
       expect(find.text('설정'), findsOneWidget);
@@ -353,8 +353,8 @@ void main() {
       state.openDrawer();
       await tester.pumpAndSettle();
 
-      // Tap on "수업 추가"
-      await tester.tap(find.text('수업 추가'));
+      // Tap on "강의 생성"
+      await tester.tap(find.text('강의 생성'));
       await tester.pumpAndSettle();
 
       // Should navigate to lecture form screen
@@ -417,7 +417,7 @@ void main() {
 
       // Should show menu items
       expect(find.text('Menu'), findsOneWidget);
-      expect(find.text('Add Lecture'), findsOneWidget);
+      expect(find.text('Create Lecture'), findsOneWidget);
       expect(find.text('Edit Subjects'), findsOneWidget);
       expect(find.text('Edit Tags'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
@@ -584,8 +584,8 @@ void main() {
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
-      // Tap on "Add Lecture"
-      await tester.tap(find.text('Add Lecture'));
+      // Tap on "Create Lecture"
+      await tester.tap(find.text('Create Lecture'));
       await tester.pumpAndSettle();
 
       // Should navigate to lecture form screen and close dialog
@@ -788,7 +788,7 @@ void main() {
 
       // Check Korean text
       expect(find.text('메뉴'), findsOneWidget);
-      expect(find.text('수업 추가'), findsOneWidget);
+      expect(find.text('강의 생성'), findsOneWidget);
       expect(find.text('과목 수정'), findsOneWidget);
       expect(find.text('태그 수정'), findsOneWidget);
       expect(find.text('설정'), findsOneWidget);

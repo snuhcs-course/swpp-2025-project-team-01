@@ -74,7 +74,7 @@ void main() {
       expect(settings.accessibilityEmphasizeCaptions, isTrue);
       expect(settings.ttsGender, '남성');
       expect(settings.ttsSpeed, '보통');
-      expect(settings.tagColorTheme, '파스텔');
+      expect(settings.tagColorTheme, '봄');
     });
 
     test('allows mutation of fields', () {

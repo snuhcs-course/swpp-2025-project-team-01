@@ -47,9 +47,10 @@ void main() {
       test('should have correct title text style', () {
         final titleStyle = lightTheme.appBarTheme.titleTextStyle;
         expect(titleStyle?.fontSize, 20);
-        expect(titleStyle?.fontWeight, FontWeight.w700);
+        expect(titleStyle?.fontWeight, FontWeight.w800);
         expect(titleStyle?.color, Colors.black);
         expect(titleStyle?.letterSpacing, 0.2);
+        expect(titleStyle?.fontFamily, 'NanumSquare');
       });
     });
 
