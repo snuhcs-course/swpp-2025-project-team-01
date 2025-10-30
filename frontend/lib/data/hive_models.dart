@@ -51,6 +51,7 @@ class AppSettings {
     this.ttsGender = '남성',
     this.ttsSpeed = '보통',
     this.tagColorTheme = '파스텔',
+    this.hasCompletedTutorial = false,
   });
 
   @HiveField(0)
@@ -76,6 +77,9 @@ class AppSettings {
 
   @HiveField(7)
   String tagColorTheme; // '파스텔', etc.
+
+  @HiveField(8)
+  bool hasCompletedTutorial;
 }
 
 /// UI 상태 (과목 펼침/접힘, 최근 검색어 등)
