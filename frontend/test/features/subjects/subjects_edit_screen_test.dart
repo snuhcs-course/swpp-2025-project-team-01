@@ -862,10 +862,6 @@ void main() {
         await tester.pumpAndSettle();
 
         final deleteSubjectFinder = find.text('삭제될 과목');
-        if (deleteSubjectFinder.evaluate().isEmpty) {
-          // 과목이 없으면 스킵
-          return;
-        }
 
         // [When] '삭제될 과목' 롱프레스 → 삭제 → 예
         await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
@@ -957,10 +953,6 @@ void main() {
       await tester.pumpAndSettle();
 
       final deleteSubjectFinder = find.text('삭제될 과목');
-      if (deleteSubjectFinder.evaluate().isEmpty) {
-        // 과목이 없으면 스킵
-        return;
-      }
 
       // [When] 삭제 시도하지만 "아니오" 선택
       await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
@@ -1021,10 +1013,6 @@ void main() {
       await tester.pumpAndSettle();
 
       final deleteSubjectFinder = find.text('삭제될 과목');
-      if (deleteSubjectFinder.evaluate().isEmpty) {
-        // 과목이 없으면 스킵
-        return;
-      }
 
       // [When] 삭제 시도하지만 "아니오" 선택
       await tester.longPress(deleteSubjectFinder, warnIfMissed: false);
@@ -1244,7 +1232,10 @@ void main() {
       expect(find.textContaining('Intro'), findsOneWidget);
       expect(find.textContaining('Deep Learning'), findsOneWidget);
 
+      // '웹 프로그래밍' 패널은 접혀 있어서 강의 목록이 보이지 않음
       expect(find.text('웹 프로그래밍'), findsOneWidget);
+      expect(find.text('JavaScript'), findsNothing);
+      expect(find.text('HTML/CSS'), findsNothing);
     });
 
     testWidgets(
@@ -1294,6 +1285,9 @@ void main() {
 
       // 's1'의 강의는 보여야 함 (펼쳐져 있음)
       expect(find.textContaining('Intro'), findsOneWidget);
+      // 's2'의 강의는 보이지 않아야 함 (접혀 있음)
+      expect(find.text('JavaScript'), findsNothing);
+      expect(find.text('HTML/CSS'), findsNothing);
     });
 
     testWidgets('Panel expand animation runs when reduceMotion is false', (
