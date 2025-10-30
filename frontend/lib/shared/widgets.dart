@@ -1,6 +1,7 @@
 // 자주 쓰는 작은 위젯들
 import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
 
 /// 전체 너비를 차지하는 주요 버튼 위젯
@@ -72,14 +73,27 @@ class TagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
-    return Chip(
-      label: Text(
-        label ?? '$labelPrefix${tag.name}',
-        style: const TextStyle(color: Colors.black),
+    final Color textColor = getTextColorForBackground(tag.color);
+    return Theme(
+      data: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        chipTheme: const ChipThemeData(
+          labelStyle: TextStyle(fontWeight: FontWeight.w600),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          side: BorderSide(color: Color(0x33000000), width: 1),
+          shape: StadiumBorder(),
+        ),
       ),
-      backgroundColor: color,
-      elevation: 2,
-      side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+      child: Chip(
+        label: Text(
+          label ?? '$labelPrefix${tag.name}',
+          style: TextStyle(color: textColor),
+        ),
+        backgroundColor: color,
+        elevation: 2,
+        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+      ),
     );
   }
 }
@@ -106,18 +120,32 @@ class SelectableTagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
-    return ChoiceChip(
-      label: Text(
-        label ?? '$labelPrefix${tag.name}',
-        style: const TextStyle(color: Colors.black),
+    final Color textColor = getTextColorForBackground(tag.color);
+    return Theme(
+      data: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        chipTheme: const ChipThemeData(
+          labelStyle: TextStyle(fontWeight: FontWeight.w600),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          side: BorderSide(color: Color(0x33000000), width: 1),
+          shape: StadiumBorder(),
+        ),
       ),
-      selected: selected,
-      onSelected: onSelected,
-      backgroundColor: color,
-      selectedColor: color,
-      elevation: selected ? 4 : 2,
-      side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-      showCheckmark: showCheckmark,
+      child: ChoiceChip(
+        label: Text(
+          label ?? '$labelPrefix${tag.name}',
+          style: TextStyle(color: textColor),
+        ),
+        selected: selected,
+        onSelected: onSelected,
+        backgroundColor: color,
+        selectedColor: color,
+        elevation: selected ? 4 : 2,
+        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+        showCheckmark: showCheckmark,
+        checkmarkColor: textColor,
+      ),
     );
   }
 }
@@ -636,7 +664,13 @@ class SubjectPanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color headerColor = Color(0xFF1D1D1D);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color headerColor = isDark
+        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+    final Color textColor = isDark ? Colors.white : Colors.white;
+    final Color iconColor = isDark ? Colors.white : Colors.white;
+
     final BorderRadius resolvedCollapsedRadius =
         collapsedRadius ?? BorderRadius.circular(panelRadius);
     final BorderRadius resolvedExpandedRadius =
@@ -668,7 +702,7 @@ class SubjectPanelHeader extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       favoriteIcon,
-                      color: favoriteIconColor ?? Colors.white,
+                      color: favoriteIconColor ?? iconColor,
                       size: 22,
                     ),
                     onPressed: onToggleFavorite,
@@ -681,8 +715,8 @@ class SubjectPanelHeader extends StatelessWidget {
                     padding: EdgeInsets.only(right: titleEndPadding),
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
@@ -696,7 +730,7 @@ class SubjectPanelHeader extends StatelessWidget {
                     expanded
                         ? Icons.keyboard_arrow_down
                         : Icons.keyboard_arrow_up,
-                    color: Colors.white,
+                    color: iconColor,
                   ),
                   onPressed: onToggleExpanded,
                 ),

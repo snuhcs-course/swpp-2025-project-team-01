@@ -50,7 +50,7 @@ class AppSettings {
     this.accessibilityEmphasizeCaptions = true,
     this.ttsGender = '남성',
     this.ttsSpeed = '보통',
-    this.tagColorTheme = '파스텔',
+    this.tagColorTheme = '봄',
     this.hasCompletedTutorial = false,
   });
 
@@ -76,7 +76,7 @@ class AppSettings {
   String ttsSpeed; // '빠르게', '보통', '느리게'
 
   @HiveField(7)
-  String tagColorTheme; // '파스텔', etc.
+  String tagColorTheme; // '봄', '여름', '가을', '겨울', '솜사탕', '비비드', '바다'
 
   @HiveField(8)
   bool hasCompletedTutorial;
@@ -191,7 +191,8 @@ class HiveLecture {
     required this.title,
     required this.duration,
     this.slidePath,
-    required this.audioPath,
+    required this.originalAudioPath,
+    required this.ttsAudioPath,
     this.thumbnailUrl,
     this.jsonPath,
     this.createdAt,
@@ -217,18 +218,21 @@ class HiveLecture {
   String? slidePath; // 파일 경로 (PDF)
 
   @HiveField(6)
-  String? audioPath; // 파일 경로 (오디오)
+  String? originalAudioPath; // 원본 오디오 파일 경로
 
   @HiveField(7)
-  String? thumbnailUrl; // 썸네일 이미지 URL
+  String? ttsAudioPath; // TTS 오디오 파일 경로
 
   @HiveField(8)
-  String? jsonPath; // 자막/스크립트 JSON 경로
+  String? thumbnailUrl; // 썸네일 이미지 URL
 
   @HiveField(9)
-  DateTime? createdAt;
+  String? jsonPath; // 자막/스크립트 JSON 경로
 
   @HiveField(10)
+  DateTime? createdAt;
+
+  @HiveField(11)
   DateTime? updatedAt;
 
   /// models.dart Lecture로 변환 (UI 레이어용)
@@ -251,7 +255,8 @@ class HiveLecture {
     String? title,
     int? duration,
     String? slidePath,
-    String? audioPath,
+    String? originalAudioPath,
+    String? ttsAudioPath,
     String? thumbnailUrl,
     String? jsonPath,
     DateTime? createdAt,
@@ -264,7 +269,8 @@ class HiveLecture {
       title: title ?? this.title,
       duration: duration ?? this.duration,
       slidePath: slidePath ?? this.slidePath,
-      audioPath: audioPath ?? this.audioPath,
+      originalAudioPath: originalAudioPath ?? this.originalAudioPath,
+      ttsAudioPath: ttsAudioPath ?? this.ttsAudioPath,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       jsonPath: jsonPath ?? this.jsonPath,
       createdAt: createdAt ?? this.createdAt,
@@ -287,7 +293,8 @@ class HiveLecture {
         title: meta['title'] as String? ?? 'Untitled',
         duration: meta['duration'] as int? ?? 0,
         slidePath: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
-        audioPath: null, // 데모는 로컬 파일 사용
+        originalAudioPath: null,
+        ttsAudioPath: null, // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
         createdAt: DateTime.now(),

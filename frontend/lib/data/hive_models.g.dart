@@ -247,18 +247,19 @@ class HiveLectureAdapter extends TypeAdapter<HiveLecture> {
       title: fields[3] as String,
       duration: fields[4] as int,
       slidePath: fields[5] as String?,
-      audioPath: fields[6] as String?,
-      thumbnailUrl: fields[7] as String?,
-      jsonPath: fields[8] as String?,
-      createdAt: fields[9] as DateTime?,
-      updatedAt: fields[10] as DateTime?,
+      originalAudioPath: fields[6] as String?,
+      ttsAudioPath: fields[7] as String?,
+      thumbnailUrl: fields[8] as String?,
+      jsonPath: fields[9] as String?,
+      createdAt: fields[10] as DateTime?,
+      updatedAt: fields[11] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveLecture obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -272,14 +273,16 @@ class HiveLectureAdapter extends TypeAdapter<HiveLecture> {
       ..writeByte(5)
       ..write(obj.slidePath)
       ..writeByte(6)
-      ..write(obj.audioPath)
+      ..write(obj.originalAudioPath)
       ..writeByte(7)
-      ..write(obj.thumbnailUrl)
+      ..write(obj.ttsAudioPath)
       ..writeByte(8)
-      ..write(obj.jsonPath)
+      ..write(obj.thumbnailUrl)
       ..writeByte(9)
-      ..write(obj.createdAt)
+      ..write(obj.jsonPath)
       ..writeByte(10)
+      ..write(obj.createdAt)
+      ..writeByte(11)
       ..write(obj.updatedAt);
   }
 

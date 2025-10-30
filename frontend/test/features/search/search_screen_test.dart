@@ -94,7 +94,8 @@ void main() {
       title: 'Introduction to Algorithms',
       duration: 3600,
       slidePath: 'path/to/slides1.pdf',
-      audioPath: 'path/to/audio1.mp3',
+      originalAudioPath: 'path/to/audio1.mp3',
+      ttsAudioPath: 'path/to/audio1.mp3',
     );
     final lec2 = HiveLecture(
       id: 'lec2',
@@ -103,7 +104,8 @@ void main() {
       title: 'Data Structures',
       duration: 3600,
       slidePath: 'path/to/slides2.pdf',
-      audioPath: 'path/to/audio2.mp3',
+      originalAudioPath: 'path/to/audio2.mp3',
+      ttsAudioPath: 'path/to/audio2.mp3',
     );
     final lec3 = HiveLecture(
       id: 'lec3',
@@ -112,7 +114,8 @@ void main() {
       title: 'Linear Algebra Basics',
       duration: 3600,
       slidePath: 'path/to/slides3.pdf',
-      audioPath: 'path/to/audio3.mp3',
+      originalAudioPath: 'path/to/audio3.mp3',
+      ttsAudioPath: 'path/to/audio3.mp3',
     );
 
     // Update app data

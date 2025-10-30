@@ -103,7 +103,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: Colors.white,
+      // backgroundColor는 테마의 scaffoldBackgroundColor 사용
 
       // 스크롤 가능한 메인 콘텐츠 + 로딩 바
       body: Stack(
@@ -166,146 +166,197 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 섹션 제목 위젯
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.black87,
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        );
+      },
     );
   }
 
   /// 과목 선택 드롭다운 위젯
   /// 사용자가 강의를 소속시킬 과목을 선택하거나 "선택 안 함"을 선택할 수 있습니다.
   Widget _buildSubjectDropdown(AppLocalizations l10n, List<dynamic> subjects) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: _selectedSubjectId,
-          isExpanded: true,
-          icon: const Icon(Icons.arrow_drop_down, size: 28),
-          hint: Text(
-            l10n.isKorean ? '선택 안 함' : 'Not Selected',
-            style: const TextStyle(fontSize: 16),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade700
+            : Colors.grey.shade300;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor),
           ),
-          items: [
-            // "선택 안 함" 옵션
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String?>(
+              value: _selectedSubjectId,
+              isExpanded: true,
+              icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
+              hint: Text(
                 l10n.isKorean ? '선택 안 함' : 'Not Selected',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16, color: textColor),
               ),
-            ),
-            // 기존 과목 리스트
-            ...subjects.map(
-              (s) => DropdownMenuItem<String?>(
-                value: (s as dynamic).id as String,
-                child: Text(
-                  (s as dynamic).title as String,
-                  style: const TextStyle(fontSize: 16),
+              dropdownColor: cardColor,
+              items: [
+                // "선택 안 함" 옵션
+                DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(
+                    l10n.isKorean ? '선택 안 함' : 'Not Selected',
+                    style: TextStyle(fontSize: 16, color: textColor),
+                  ),
                 ),
-              ),
+                // 기존 과목 리스트
+                ...subjects.map(
+                  (s) => DropdownMenuItem<String?>(
+                    value: (s as dynamic).id as String,
+                    child: Text(
+                      (s as dynamic).title as String,
+                      style: TextStyle(fontSize: 16, color: textColor),
+                    ),
+                  ),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedSubjectId = value;
+                });
+              },
             ),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _selectedSubjectId = value;
-            });
-          },
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   /// 강의 주차 입력 텍스트 필드
   Widget _buildWeekTextField() {
-    return TextField(
-      controller: _weekController,
-      decoration: InputDecoration(
-        hintText: 'Ex. Week 1-1',
-        hintStyle: TextStyle(color: Colors.grey.shade400),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Colors.black87, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade600
+            : Colors.grey.shade400;
+        final focusColor = isDark ? Colors.white : Colors.black87;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return TextField(
+          controller: _weekController,
+          style: TextStyle(color: textColor),
+          decoration: InputDecoration(
+            hintText: 'Ex. Week 1-1',
+            hintStyle: TextStyle(color: Colors.grey.shade600),
+            filled: true,
+            fillColor: cardColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: focusColor, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// 강의 제목 입력 텍스트 필드
   Widget _buildTitleTextField() {
-    return TextField(
-      controller: _titleController,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Colors.black87, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade600
+            : Colors.grey.shade400;
+        final focusColor = isDark ? Colors.white : Colors.black87;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return TextField(
+          controller: _titleController,
+          style: TextStyle(color: textColor),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: cardColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: focusColor, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// 오디오 파일 섹션 헤더 (제목 + 추가/삭제 버튼)
   Widget _buildAudioFilesHeader(AppLocalizations l10n) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSectionTitle(
-            l10n.isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio',
-          ),
-        ),
-        // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
-        IconButton(
-          icon: Icon(
-            Icons.remove_circle_outline,
-            color: _canRemoveAudioFile()
-                ? Colors.grey.shade700
-                : Colors.grey.withValues(alpha: 0.3),
-          ),
-          onPressed: _canRemoveAudioFile() ? _removeLastAudioFile : null,
-        ),
-        // 오디오 파일 추가 버튼
-        IconButton(
-          icon: Icon(Icons.add_circle_outline, color: Colors.grey.shade700),
-          onPressed: _addAudioFile,
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final iconColor = isDark ? Colors.white70 : Colors.grey.shade700;
+        final disabledColor = isDark
+            ? Colors.grey.withValues(alpha: 0.3)
+            : Colors.grey.withValues(alpha: 0.3);
+
+        return Row(
+          children: [
+            Expanded(
+              child: _buildSectionTitle(
+                l10n.isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio',
+              ),
+            ),
+            // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
+            IconButton(
+              icon: Icon(
+                Icons.remove_circle_outline,
+                color: _canRemoveAudioFile() ? iconColor : disabledColor,
+              ),
+              onPressed: _canRemoveAudioFile() ? _removeLastAudioFile : null,
+            ),
+            // 오디오 파일 추가 버튼
+            IconButton(
+              icon: Icon(Icons.add_circle_outline, color: iconColor),
+              onPressed: _addAudioFile,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -336,65 +387,79 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 회전된 첨부 아이콘
-          Transform.rotate(
-            angle: 0.785, // 45도 회전
-            child: Icon(
-              Icons.attach_file,
-              color: Colors.grey.shade600,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          // 파일명 표시
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: label == '...' ? Colors.grey.shade400 : Colors.black87,
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade700
+            : Colors.grey.shade300;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          // 추가 버튼
-          OutlinedButton(
-            onPressed: onTap,
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              side: BorderSide(color: Colors.grey.shade400),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+          child: Row(
+            children: [
+              // 회전된 첨부 아이콘
+              Transform.rotate(
+                angle: 0.785, // 45도 회전
+                child: Icon(
+                  Icons.attach_file,
+                  color: isDark ? Colors.white70 : Colors.grey.shade600,
+                  size: 24,
+                ),
               ),
-            ),
-            child: Text(
-              l10n.isKorean ? '추가' : 'Add',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+              const SizedBox(width: 12),
+              // 파일명 표시
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: label == '...' ? Colors.grey.shade400 : textColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              // 추가 버튼
+              OutlinedButton(
+                onPressed: onTap,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  side: BorderSide(color: borderColor),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: Text(
+                  AppLocalizations.of(context).isKorean ? '추가' : 'Add',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -429,103 +494,140 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 페이지 범위 입력 필드 (시작 페이지 - 끝 페이지)
   Widget _buildPageRangeInputs(AudioFileEntry entry, AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 40),
-      child: Row(
-        children: [
-          Text(
-            l10n.isKorean ? '페이지 설정' : 'Page Range',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white70 : Colors.grey.shade600;
+
+        return Padding(
+          padding: const EdgeInsets.only(left: 40),
+          child: Row(
+            children: [
+              Text(
+                l10n.isKorean ? '페이지 설정' : 'Page Range',
+                style: TextStyle(fontSize: 14, color: textColor),
+              ),
+              const SizedBox(width: 16),
+              // 시작 페이지 입력
+              Expanded(child: _buildPageTextField(entry.startPageController)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  '-',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              // 끝 페이지 입력
+              Expanded(child: _buildPageTextField(entry.endPageController)),
+            ],
           ),
-          const SizedBox(width: 16),
-          // 시작 페이지 입력
-          Expanded(child: _buildPageTextField(entry.startPageController)),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              '-',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          // 끝 페이지 입력
-          Expanded(child: _buildPageTextField(entry.endPageController)),
-        ],
-      ),
+        );
+      },
     );
   }
 
   /// 페이지 번호 입력 텍스트 필드
   Widget _buildPageTextField(TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      textAlign: TextAlign.center,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.grey.shade50,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade600
+            : Colors.grey.shade300;
+        final focusColor = isDark ? Colors.white : Colors.blue;
+
+        return TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: cardColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: focusColor, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// 하단 고정 생성 버튼
   Widget _buildBottomCreateButton(AppLocalizations l10n) {
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final backgroundColor = isDark
+            ? const Color(0xFF212121) // 다크모드: 배경색과 동일
+            : Colors.white; // 라이트모드: 흰색
+
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.black87,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: isDark ? Colors.white : Colors.black87,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _isCreating ? null : _createLecture,
+                child: _isCreating
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation(
+                            isDark ? Colors.black : Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        l10n.isKorean ? '생성하기' : 'Create',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.black : Colors.white,
+                        ),
+                      ),
               ),
             ),
-            onPressed: _isCreating ? null : _createLecture,
-            child: _isCreating
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                    ),
-                  )
-                : Text(
-                    l10n.isKorean ? '생성하기' : 'Create',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -786,7 +888,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         });
       }
 
-      final audioPaths = <String>[];
+      final originalAudioPaths =
+          effectiveAudios.map((entry) => entry.filePath!) as List<String>;
+      final ttsAudioPaths = <String>[];
       final jsonPaths = <String>[];
       final pdfStarts = <int>[];
 
@@ -854,7 +958,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             );
             return;
           }
-          audioPaths.add(filePaths[0]);
+          ttsAudioPaths.add(filePaths[0]);
           jsonPaths.add(filePaths[1]);
 
           // Add PDF ranges
@@ -873,21 +977,29 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // 4. 음성 파일이 여러 개일 경우 통합 처리
-      String? audioPath;
+      String? originalAudioPath;
+      String? ttsAudioPath;
       String? jsonPath;
       int? duration;
 
       if (effectiveAudios.length > 1) {
-        audioPath = await concatenateAudioFiles(audioPaths, titleText);
+        originalAudioPath = await concatenateAudioFiles(
+          originalAudioPaths,
+          titleText,
+        );
+        ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
         jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
-        if (audioPath == null || jsonPath == null) {
+        if (originalAudioPath == null ||
+            ttsAudioPath == null ||
+            jsonPath == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
           return;
         }
       } else {
-        audioPath = audioPaths[0];
+        originalAudioPath = originalAudioPaths[0];
+        ttsAudioPath = ttsAudioPaths[0];
         jsonPath = jsonPaths[0];
       }
 
@@ -905,7 +1017,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         title: titleText,
         duration: duration,
         slidePath: _slidePdfPath,
-        audioPath: audioPath,
+        originalAudioPath: originalAudioPath,
+        ttsAudioPath: ttsAudioPath,
         jsonPath: jsonPath,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

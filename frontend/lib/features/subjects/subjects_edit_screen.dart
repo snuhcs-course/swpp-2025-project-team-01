@@ -11,10 +11,6 @@ const _editPanelShadow = BoxShadow(
   offset: Offset(0, 3),
 );
 
-/// 과목 편집 화면 (Figma 2-2. Modifying Subjects)
-///
-/// 이 화면은 과목 목록을 관리하고 편집할 수 있는 기능을 제공합니다.
-///
 /// 주요 기능:
 /// - 과목별 패널에 속한 강의 목록 표시
 /// - 강의 순서 재정렬 (드래그 앤 드롭)
@@ -193,7 +189,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
   /// 과목 편집 다이얼로그 표시
   ///
-  /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공합니다.
+  /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공
   Future<void> _showSubjectEditDialog(Subject subject) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -232,7 +228,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
   /// 과목 삭제 확인 다이얼로그
   ///
-  /// 과목 삭제 시 해당 과목의 모든 강의도 함께 삭제됨을 경고합니다.
+  /// 과목 삭제 시 해당 과목의 모든 강의도 함께 삭제됨을 경고
   Future<bool?> _showDeleteConfirmationDialog(Subject subject) {
     return showDialog<bool>(
       context: context,
@@ -622,7 +618,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 
 /// 개별 과목 편집 패널 위젯
 ///
-/// 과목의 강의 목록을 표시하고 드래그 앤 드롭으로 순서를 변경할 수 있습니다.
+/// 과목의 강의 목록을 표시하고 드래그 앤 드롭으로 순서 변경
 ///
 /// 기능:
 /// - 패널 펼침/접기 (상태 저장됨)
@@ -802,10 +798,15 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? const Color(0xFF212121) // 다크모드: 배경색과 동일
+        : const Color(0xFFEDEDED); // 라이트모드: 기존 색상
+
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        color: const Color(0xFFEDEDED),
+        color: backgroundColor,
         child: Row(
           children: [
             // 주 버튼 (수정 완료)

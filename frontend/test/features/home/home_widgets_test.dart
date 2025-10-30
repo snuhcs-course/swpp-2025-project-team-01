@@ -44,7 +44,8 @@ void main() {
       weekLabel: 'Week 1',
       title: 'Introduction',
       duration: 3600,
-      audioPath: null,
+      originalAudioPath: null,
+      ttsAudioPath: null,
     ),
     HiveLecture(
       id: 'lec-2',
@@ -52,7 +53,8 @@ void main() {
       weekLabel: 'Week 2',
       title: 'Advanced Topics',
       duration: 4200,
-      audioPath: null,
+      originalAudioPath: null,
+      ttsAudioPath: null,
     ),
   ];
 
@@ -333,7 +335,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Introduction',
         duration: 3600,
-        audioPath: null,
+        originalAudioPath: null,
+        ttsAudioPath: null,
       );
 
       await tester.pumpWidget(
@@ -359,7 +362,8 @@ void main() {
         weekLabel: 'Week 3',
         title: 'Advanced Algorithms',
         duration: 3600,
-        audioPath: null,
+        originalAudioPath: null,
+        ttsAudioPath: null,
       );
 
       await tester.pumpWidget(
@@ -382,7 +386,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test',
         duration: 3600,
-        audioPath: null,
+        originalAudioPath: null,
+        ttsAudioPath: null,
       );
 
       await tester.pumpWidget(
@@ -414,7 +419,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'No Slides',
         duration: 3600,
-        audioPath: null,
+        originalAudioPath: null,
+        ttsAudioPath: null,
         slidePath: null,
       );
 

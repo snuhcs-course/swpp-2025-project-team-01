@@ -39,7 +39,8 @@ void main() {
           weekLabel: 'Week 1',
           title: 'Lecture',
           duration: 60,
-          audioPath: null,
+          originalAudioPath: null,
+          ttsAudioPath: null,
         ),
       };
       final state = UiState(
@@ -74,7 +75,7 @@ void main() {
       expect(settings.accessibilityEmphasizeCaptions, isTrue);
       expect(settings.ttsGender, '남성');
       expect(settings.ttsSpeed, '보통');
-      expect(settings.tagColorTheme, '파스텔');
+      expect(settings.tagColorTheme, '봄');
     });
 
     test('allows mutation of fields', () {
@@ -178,7 +179,8 @@ void main() {
         title: 'Intro',
         duration: 120,
         slidePath: '/slides.pdf',
-        audioPath: 'audio.mp3',
+        originalAudioPath: 'original.mp3',
+        ttsAudioPath: 'tts.mp3',
         thumbnailUrl: 'thumb',
         jsonPath: 'timestamps.json',
         createdAt: DateTime.utc(2024, 1, 1),
@@ -200,7 +202,8 @@ void main() {
         title: 'Intro',
         duration: 120,
         slidePath: '/slides.pdf',
-        audioPath: 'audio.mp3',
+        originalAudioPath: 'original.mp3',
+        ttsAudioPath: 'tts.mp3',
         thumbnailUrl: 'https://example.com/thumb.png',
         jsonPath: 'timestamps.json',
         createdAt: DateTime.now(),
