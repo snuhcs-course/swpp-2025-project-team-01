@@ -7,6 +7,8 @@ import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/tags/tags_edit_screen.dart';
 import 'package:re_view/shared/widgets.dart';
 
+// TagColorTheme를 사용하기 위한 임포트 (이미 tags_edit_screen.dart에서 export됨)
+
 // ------------------------------------------------------------------
 // 1. Fake/Stub 클래스 정의
 // ------------------------------------------------------------------
@@ -143,11 +145,13 @@ void main() {
   setUp(() {
     fakeHiveManager = FakeHiveManager();
     // 테스트 데이터 초기화
+    // 색상은 실제 로직처럼 '파스텔' 테마의 색상을 사용
+    final pastelTheme = TagColorTheme.getTheme('파스텔');
     fakeHiveManager.addFakeTag(
-      HiveTag(id: 't1', name: 'AI', color: 0xFF0000FF),
+      HiveTag(id: 't1', name: 'AI', color: pastelTheme.colors[0]),
     );
     fakeHiveManager.addFakeTag(
-      HiveTag(id: 't2', name: 'Web', color: 0xFF00FF00),
+      HiveTag(id: 't2', name: 'Web', color: pastelTheme.colors[1]),
     );
     // 'AI' 태그를 사용하는 과목
     fakeHiveManager.addFakeSubject(
@@ -250,10 +254,12 @@ void main() {
     ) async {
       await pumpScreen(tester);
 
-      // [Given] '파스텔' 테마가 적용된 'AI' 태그
-      final pastelColor = TagColorTheme.getTheme('파스텔').colors[0];
+      // [Given] '파스텔' 테마가 적용된 'AI'와 'Web' 태그
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
       final aiTagPill = findTagPillByName(tester, 'AI');
-      expect(aiTagPill.tag.color, pastelColor);
+      final webTagPill = findTagPillByName(tester, 'Web');
+      expect(aiTagPill.tag.color, pastelTheme.colors[0]);
+      expect(webTagPill.tag.color, pastelTheme.colors[1]);
 
       final vividChips = tester
           .widgetList<ChoiceChip>(find.byType(ChoiceChip))
@@ -271,11 +277,135 @@ void main() {
       expect(vividChipsAfter.first.selected, isTrue);
       expect(fakeHiveManager.updatedTagColorTheme, '비비드');
 
-      // [Then] 'AI' 태그의 색상이 '비비드' 테마 색상으로 변경됨
-      final vividColor = TagColorTheme.getTheme('비비드').colors[0];
+      // [Then] 모든 태그의 색상이 '비비드' 테마 색상으로 변경됨
+      // _applyThemeToAllTags()는 모든 태그를 재할당하므로 모두 검증
+      final vividTheme = TagColorTheme.getTheme('비비드');
       final updatedAiTagPill = findTagPillByName(tester, 'AI');
-      expect(updatedAiTagPill.tag.color, vividColor);
-      expect(updatedAiTagPill.tag.color, isNot(pastelColor));
+      final updatedWebTagPill = findTagPillByName(tester, 'Web');
+      expect(updatedAiTagPill.tag.color, vividTheme.colors[0]);
+      expect(updatedWebTagPill.tag.color, vividTheme.colors[1]);
+      expect(updatedAiTagPill.tag.color, isNot(pastelTheme.colors[0]));
+      expect(updatedWebTagPill.tag.color, isNot(pastelTheme.colors[1]));
+    });
+
+    testWidgets('Theme change reassigns colors to all tags correctly', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 5개 태그가 있는 상태
+      fakeHiveManager.reset();
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
+      for (int i = 0; i < 5; i++) {
+        fakeHiveManager.addFakeTag(
+          HiveTag(
+            id: 't${i + 1}',
+            name: 'Tag $i',
+            color: pastelTheme.colors[i],
+          ),
+        );
+      }
+      await pumpScreen(tester);
+
+      // [Then] 모든 태그가 '파스텔' 테마 색상을 가짐
+      for (int i = 0; i < 5; i++) {
+        final tagPill = findTagPillByName(tester, 'Tag $i');
+        expect(tagPill.tag.color, pastelTheme.colors[i]);
+      }
+
+      // [When] '네온' 테마로 변경
+      await tester.tap(find.text('네온'));
+      await tester.pumpAndSettle();
+
+      // [Then] 모든 태그가 '네온' 테마 색상으로 변경됨
+      final neonTheme = TagColorTheme.getTheme('네온');
+      for (int i = 0; i < 5; i++) {
+        final tagPill = findTagPillByName(tester, 'Tag $i');
+        expect(tagPill.tag.color, neonTheme.colors[i]);
+        expect(tagPill.tag.color, isNot(pastelTheme.colors[i]));
+      }
+    });
+
+    testWidgets('All 15 tag positions get correct colors from theme', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 15개 태그 생성 (최대 개수)
+      fakeHiveManager.reset();
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
+      for (int i = 0; i < 15; i++) {
+        fakeHiveManager.addFakeTag(
+          HiveTag(
+            id: 't${i + 1}',
+            name: 'Tag $i',
+            color: pastelTheme.colors[i],
+          ),
+        );
+      }
+      await pumpScreen(tester);
+
+      // [Then] 15개 태그 모두 정확한 위치의 색상을 가짐
+      for (int i = 0; i < 15; i++) {
+        final tagPill = findTagPillByName(tester, 'Tag $i');
+        expect(
+          tagPill.tag.color,
+          pastelTheme.colors[i],
+          reason: 'Tag $i should have color at index $i from 파스텔 theme',
+        );
+      }
+
+      // [When] '비비드' 테마로 변경
+      await tester.tap(find.text('비비드'));
+      await tester.pumpAndSettle();
+
+      // [Then] 15개 태그 모두 '비비드' 테마의 정확한 위치 색상으로 변경됨
+      final vividTheme = TagColorTheme.getTheme('비비드');
+      for (int i = 0; i < 15; i++) {
+        final tagPill = findTagPillByName(tester, 'Tag $i');
+        expect(
+          tagPill.tag.color,
+          vividTheme.colors[i],
+          reason: 'Tag $i should have color at index $i from 비비드 theme',
+        );
+        expect(
+          tagPill.tag.color,
+          isNot(pastelTheme.colors[i]),
+          reason: 'Tag $i color should change from 파스텔 to 비비드',
+        );
+      }
+    });
+
+    testWidgets('All 5 themes apply colors correctly to 15 tags', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 15개 태그 생성
+      fakeHiveManager.reset();
+      final initialTheme = TagColorTheme.getTheme('파스텔');
+      for (int i = 0; i < 15; i++) {
+        fakeHiveManager.addFakeTag(
+          HiveTag(
+            id: 't${i + 1}',
+            name: 'Tag $i',
+            color: initialTheme.colors[i],
+          ),
+        );
+      }
+      await pumpScreen(tester);
+
+      // [When/Then] 5개 테마 모두 순회하며 색상 배정 확인
+      for (final theme in TagColorTheme.themes) {
+        // [When] 테마 변경
+        await tester.tap(find.text(theme.name));
+        await tester.pumpAndSettle();
+
+        // [Then] 15개 태그 모두 해당 테마의 정확한 색상을 가짐
+        for (int i = 0; i < 15; i++) {
+          final tagPill = findTagPillByName(tester, 'Tag $i');
+          expect(
+            tagPill.tag.color,
+            theme.colors[i],
+            reason:
+                'Tag $i should have color[$i] from ${theme.name} theme (${theme.colors[i].toRadixString(16)})',
+          );
+        }
+      }
     });
   });
 
@@ -378,6 +508,11 @@ void main() {
       final newTagPill = findTagPillByName(tester, '새 태그');
       expect(newTagPill.selected, isTrue);
 
+      // [Then] 새 태그의 색상이 현재 테마('파스텔')의 세 번째 색상이어야 함
+      // 기존 태그가 2개(index 0, 1)이므로 새 태그는 index 2의 색상을 받음
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
+      expect(newTagPill.tag.color, pastelTheme.colors[2]);
+
       // [Then] 폼이 초기화됨 (코드 로직: _nameC.clear())
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
@@ -388,14 +523,15 @@ void main() {
     testWidgets('Add tag generates non-duplicate name', (tester) async {
       // [Given] '새 태그'가 이미 존재함
       fakeHiveManager.reset();
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't1', name: 'AI', color: 0xFF0000FF),
+        HiveTag(id: 't1', name: 'AI', color: pastelTheme.colors[0]),
       );
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't2', name: 'Web', color: 0xFF00FF00),
+        HiveTag(id: 't2', name: 'Web', color: pastelTheme.colors[1]),
       );
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't3', name: '새 태그', color: 0xFFFFFFFF),
+        HiveTag(id: 't3', name: '새 태그', color: pastelTheme.colors[2]),
       );
       await pumpScreen(tester);
 
@@ -405,14 +541,25 @@ void main() {
 
       // [Then] '새 태그 (1)'이 생성됨 - '#새 태그 (1)' 형식으로 표시됨
       expect(find.text('#새 태그 (1)'), findsOneWidget);
+
+      // [Then] 새 태그의 색상이 현재 테마('파스텔')의 네 번째 색상이어야 함
+      final newTagPill = findTagPillByName(tester, '새 태그 (1)');
+      expect(newTagPill.tag.color, pastelTheme.colors[3]);
     });
 
     testWidgets('Add tag respects 15 tag limit', (tester) async {
-      // [Given] 13개 태그 추가 (기존 2개 + 13개 = 15개)
+      // [Given] 15개 태그 추가
       fakeHiveManager.reset();
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
       for (int i = 0; i < 15; i++) {
+        // 색상 순환 로직 적용: i % theme.colors.length
+        final colorIndex = i % pastelTheme.colors.length;
         fakeHiveManager.addFakeTag(
-          HiveTag(id: 't${i + 1}', name: 'Tag $i', color: 0xFFFFFFFF),
+          HiveTag(
+            id: 't${i + 1}',
+            name: 'Tag $i',
+            color: pastelTheme.colors[colorIndex],
+          ),
         );
       }
       await pumpScreen(tester);
@@ -427,6 +574,43 @@ void main() {
       expect(find.text('태그는 최대 15개까지 생성할 수 있습니다.'), findsOneWidget);
       expect(find.byType(SelectableTagPill), findsNWidgets(15));
     });
+
+    testWidgets('Tag color cycles when adding 16th+ tag (after deleting)', (
+      WidgetTester tester,
+    ) async {
+      // [Given] 15개 태그 추가 후 하나 삭제하여 14개 상태
+      fakeHiveManager.reset();
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
+      for (int i = 0; i < 14; i++) {
+        final colorIndex = i % pastelTheme.colors.length;
+        fakeHiveManager.addFakeTag(
+          HiveTag(
+            id: 't${i + 1}',
+            name: 'Tag $i',
+            color: pastelTheme.colors[colorIndex],
+          ),
+        );
+      }
+      await pumpScreen(tester);
+
+      // [When] '+' 버튼 탭 (15번째 태그 추가)
+      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.pumpAndSettle();
+
+      // [Then] 15번째 태그의 색상이 첫 번째 색상과 동일 (14 % 15 = 14)
+      final newTagPill = findTagPillByName(tester, '새 태그');
+      expect(newTagPill.tag.color, pastelTheme.colors[14]);
+
+      // [When] 이름 변경 후 한 번 더 추가 시도 (16번째 태그 - 순환 테스트)
+      await tester.enterText(find.byType(TextField), 'Tag 14');
+      await tester.tap(find.text('적용'));
+      await tester.pumpAndSettle();
+
+      // 15개 제한이므로 더 이상 추가 불가 (이 테스트는 순환 로직 검증)
+      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.pumpAndSettle();
+      expect(find.text('태그는 최대 15개까지 생성할 수 있습니다.'), findsOneWidget);
+    });
   });
 
   // ------------------------------------------------------------------
@@ -436,14 +620,15 @@ void main() {
     testWidgets('Delete tag (no warning) works', (tester) async {
       // [Given] 사용하지 않는 태그 추가
       fakeHiveManager.reset();
+      final pastelTheme = TagColorTheme.getTheme('파스텔');
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't1', name: 'AI', color: 0xFF0000FF),
+        HiveTag(id: 't1', name: 'AI', color: pastelTheme.colors[0]),
       );
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't2', name: 'Web', color: 0xFF00FF00),
+        HiveTag(id: 't2', name: 'Web', color: pastelTheme.colors[1]),
       );
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't3', name: 'Unused Tag', color: 0xFFFFFFFF),
+        HiveTag(id: 't3', name: 'Unused Tag', color: pastelTheme.colors[2]),
       );
       fakeHiveManager.addFakeSubject(
         HiveSubject(id: 's1', title: 'Subject A', tagIds: ['t1']),
@@ -464,6 +649,11 @@ void main() {
       expect(find.byType(Dialog), findsNothing);
       expect(find.text('#Unused Tag'), findsNothing);
       expect(find.byType(SelectableTagPill), findsNWidgets(2));
+
+      // [Then] 삭제 후 _assignColors()가 호출되어 색상이 재할당됨
+      // 'AI'는 여전히 첫 번째 색상, 'Web'은 두 번째 색상을 유지
+      expect(findTagPillByName(tester, 'AI').tag.color, pastelTheme.colors[0]);
+      expect(findTagPillByName(tester, 'Web').tag.color, pastelTheme.colors[1]);
 
       // [Then] 선택이 이전 태그('Web')로 이동함
       expect(findTagPillByName(tester, 'Web').selected, isTrue);
@@ -579,7 +769,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
 
-      // [Then] 4. 화면이 Pop되고, Hive가 업데이트됨
+      // [Then] 5. 화면이 Pop되고, Hive가 업데이트됨
       expect(find.byType(TagsEditScreen), findsNothing);
       expect(find.text('Go'), findsOneWidget);
 
