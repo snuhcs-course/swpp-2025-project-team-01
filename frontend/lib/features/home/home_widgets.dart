@@ -276,16 +276,20 @@ class _SubjectPanelState extends State<SubjectPanel>
   @override
   Widget build(BuildContext context) {
     final AppHighlights h = context.highlights;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnimatedBuilder(
       animation: _expandAnimation,
       builder: (context, child) {
         // 애니메이션 진행 중이거나 완전히 열린 상태일 때만 배경 표시
         final bool showBackground = _expandAnimation.value > 0;
+        final Color backgroundColor = isDark
+            ? const Color(0xFF3F3F3F) // 다크모드: 중간 회색
+            : Colors.white; // 라이트모드: 흰색
 
         return Container(
           decoration: BoxDecoration(
-            color: showBackground ? Colors.white : Colors.transparent,
+            color: showBackground ? backgroundColor : Colors.transparent,
             borderRadius: BorderRadius.circular(_panelRadius),
             boxShadow: showBackground ? const [_panelShadow] : const [],
           ),
@@ -436,6 +440,9 @@ class _LectureCardState extends State<LectureCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () => widget.onTap(widget.lec),
@@ -469,12 +476,13 @@ class _LectureCardState extends State<LectureCard> {
               const SizedBox(height: 10),
               Text(
                 widget.lec.weekLabel,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
               ),
               Text(
                 widget.lec.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: textColor),
               ),
             ],
           ),

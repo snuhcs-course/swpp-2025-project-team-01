@@ -640,7 +640,13 @@ class SubjectPanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color headerColor = Color(0xFF1D1D1D);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color headerColor = isDark
+        ? const Color(0xFFFAF8F3) // 다크모드: 아이보리
+        : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+    final Color textColor = isDark ? Colors.black : Colors.white;
+    final Color iconColor = isDark ? Colors.black : Colors.white;
+
     final BorderRadius resolvedCollapsedRadius =
         collapsedRadius ?? BorderRadius.circular(panelRadius);
     final BorderRadius resolvedExpandedRadius =
@@ -672,7 +678,7 @@ class SubjectPanelHeader extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       favoriteIcon,
-                      color: favoriteIconColor ?? Colors.white,
+                      color: favoriteIconColor ?? iconColor,
                       size: 22,
                     ),
                     onPressed: onToggleFavorite,
@@ -685,8 +691,8 @@ class SubjectPanelHeader extends StatelessWidget {
                     padding: EdgeInsets.only(right: titleEndPadding),
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
@@ -700,7 +706,7 @@ class SubjectPanelHeader extends StatelessWidget {
                     expanded
                         ? Icons.keyboard_arrow_down
                         : Icons.keyboard_arrow_up,
-                    color: Colors.white,
+                    color: iconColor,
                   ),
                   onPressed: onToggleExpanded,
                 ),

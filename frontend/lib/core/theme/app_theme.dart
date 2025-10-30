@@ -49,15 +49,42 @@ class AppTheme {
     );
     return ThemeData.dark(useMaterial3: true).copyWith(
       colorScheme: darkScheme,
+      scaffoldBackgroundColor: const Color(0xFF212121),
+
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(darkScheme),
       ],
+
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent, // 투명한 헤더
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: .2,
+        ),
+      ),
+
+      cardTheme: CardThemeData(
+        color: const Color(0xFFFAF8F3), // 아이보리색 카드
+        elevation: 1.5,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
 
       chipTheme: const ChipThemeData(
         labelStyle: TextStyle(fontWeight: FontWeight.w600),
         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         side: BorderSide(color: Color(0x33FFFFFF), width: 1),
         shape: StadiumBorder(),
+      ),
+
+      expansionTileTheme: const ExpansionTileThemeData(
+        backgroundColor: Color(0xFF3F3F3F), // 과목 토글 열린 배경
+        collapsedBackgroundColor: Colors.transparent,
       ),
     );
   }
