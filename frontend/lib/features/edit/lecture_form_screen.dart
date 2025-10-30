@@ -888,14 +888,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         });
       }
 
-      final originalAudioPaths =
-          effectiveAudios.map((entry) => entry.filePath!) as List<String>;
+      final originalAudioPaths = <String>[];
       final ttsAudioPaths = <String>[];
       final jsonPaths = <String>[];
       final pdfStarts = <int>[];
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
+        originalAudioPaths.add(audioFileEntry.filePath!);
         try {
           debugPrint(
             '🚀 Starting lecture request $i/${effectiveAudios.length}',
