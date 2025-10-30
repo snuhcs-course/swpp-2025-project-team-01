@@ -6,11 +6,11 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: lightScheme, // ← color_scheme.dart 에 있는 lightScheme 사용
+      colorScheme: lightScheme, 
       scaffoldBackgroundColor: const Color(0xFFF2F3F6),
 
       extensions: <ThemeExtension<dynamic>>[
-        AppHighlights.fromScheme(lightScheme), // ← AppHighlights 등록
+        AppHighlights.fromScheme(lightScheme),
       ],
 
       appBarTheme: const AppBarTheme(
