@@ -781,29 +781,118 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         });
       }
 
-      // [수정] client 파라미터 제거
-      final CreationResult? result = await _creator.createLecture(
-        slidePath: slidePath,
-        audioEntries: effectiveAudios,
-        title: titleText,
-        serverAddress: _serverAddress,
-        port: _port,
-      );
+      final audioPaths = <String>[];
+      final jsonPaths = <String>[];
+      final pdfStarts = <int>[];
 
-      // [수정] 사용자님 지적대로 'if (result == null)' 구조로 복원
-      if (result == null) {
-        // 취소되었거나 서비스 내부에서 실패/리턴됨
-        _loader.hideLoading();
-        if (!_loader.isCancelled && mounted) {
+      for (int i = 1; i <= effectiveAudios.length; i++) {
+        final audioFileEntry = effectiveAudios[i - 1];
+        try {
+          debugPrint(
+            '🚀 Starting lecture request $i/${effectiveAudios.length}',
+          );
+          debugPrint('📤 Server: $_serverAddress:$_port');
+          debugPrint('📄 Slide: $slidePath');
+          debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
+          debugPrint('📊 isSingleAudio: ${effectiveAudios.length == 1}');
+          debugPrint(
+            '📝 Start page: "${audioFileEntry.startPageController.text}"',
+          );
+          debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
+
+          final jobId = await requestLecture(
+            slidePath,
+            audioFileEntry,
+            titleText,
+            i,
+            effectiveAudios.length == 1 ? true : false,
+            _serverAddress,
+            _port,
+            onProgress,
+            clientToClose: _httpClient,
+          );
+
+          debugPrint('✅ Request completed with jobId: $jobId');
+
+          if (jobId == null) {
+            LectureLoadingService.instance.hideLoading();
+
+            // 취소된 경우가 아닐 때만 실패 메시지 표시
+            if (!LectureLoadingService.instance.isCancelled && mounted) {
+              _showToast(
+                l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+              );
+            }
+            return;
+          }
+
+          final zipPath = await downloadResult(
+            jobId,
+            titleText,
+            i,
+            _serverAddress,
+            _port,
+          );
+
+          if (zipPath == null) {
+            LectureLoadingService.instance.hideLoading();
+            _showToast(
+              l10n.isKorean ? '강의 다운로드에 실패했습니다.' : 'Lecture download failed.',
+            );
+            return;
+          }
+
+          final filePaths = await unzipResult(zipPath, titleText, i);
+          if (filePaths == null) {
+            _showToast(
+              l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+            );
+            return;
+          }
+          audioPaths.add(filePaths[0]);
+          jsonPaths.add(filePaths[1]);
+
+          // Add PDF ranges
+          if (effectiveAudios.length >= 2) {
+            final startText = audioFileEntry.startPageController.text.trim();
+            final pdfStart = int.parse(startText);
+            pdfStarts.add(pdfStart);
+          }
+        } catch (err) {
+          LectureLoadingService.instance.hideLoading();
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
+          return;
         }
-        return; // [수정] 'return' 복원
       }
 
-      // [수정] 'else' 제거. 성공 로직이 바로 이어짐
-      // 5. 강의 구조체 생성 (결과값 사용)
+      // 4. 음성 파일이 여러 개일 경우 통합 처리
+      String? audioPath;
+      String? jsonPath;
+      int? duration;
+
+      if (effectiveAudios.length > 1) {
+        audioPath = await concatenateAudioFiles(audioPaths, titleText);
+        jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
+        if (audioPath == null || jsonPath == null) {
+          _showToast(
+            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+          );
+          return;
+        }
+      } else {
+        audioPath = audioPaths[0];
+        jsonPath = jsonPaths[0];
+      }
+
+      final jsonFile = File(jsonPath);
+      final jsonData =
+          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
+      final metadata = jsonData['metadata'] as Map<String, dynamic>;
+      duration = metadata['total_duration'] as int;
+
+      // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
         subjectId: subjectId,

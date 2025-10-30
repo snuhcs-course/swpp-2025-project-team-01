@@ -618,49 +618,98 @@ void main() {
   // ------------------------------------------------------------------
   group('5. User Interaction - Tag Deletion', () {
     testWidgets('Delete tag (no warning) works', (tester) async {
-      // [Given] 사용하지 않는 태그 추가
+      // [Given] 5개 태그 생성 (중간 태그 삭제 시 색상 재할당 테스트)
       fakeHiveManager.reset();
       final pastelTheme = TagColorTheme.getTheme('파스텔');
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't1', name: 'AI', color: pastelTheme.colors[0]),
+        HiveTag(id: 't0', name: 'Tag0', color: pastelTheme.colors[0]),
       );
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't2', name: 'Web', color: pastelTheme.colors[1]),
+        HiveTag(id: 't1', name: 'Tag1', color: pastelTheme.colors[1]),
       );
       fakeHiveManager.addFakeTag(
-        HiveTag(id: 't3', name: 'Unused Tag', color: pastelTheme.colors[2]),
+        HiveTag(id: 't2', name: 'Tag2', color: pastelTheme.colors[2]),
+      );
+      fakeHiveManager.addFakeTag(
+        HiveTag(id: 't3', name: 'Tag3', color: pastelTheme.colors[3]),
+      );
+      fakeHiveManager.addFakeTag(
+        HiveTag(id: 't4', name: 'Tag4', color: pastelTheme.colors[4]),
+      );
+      // Tag0과 Tag1은 과목에서 사용 중 (삭제 시 경고 표시됨)
+      fakeHiveManager.addFakeSubject(
+        HiveSubject(id: 's1', title: 'Subject A', tagIds: ['t0']),
       );
       fakeHiveManager.addFakeSubject(
-        HiveSubject(id: 's1', title: 'Subject A', tagIds: ['t1']),
-      );
-      fakeHiveManager.addFakeSubject(
-        HiveSubject(id: 's2', title: 'Subject B', tagIds: ['t2']),
+        HiveSubject(id: 's2', title: 'Subject B', tagIds: ['t1']),
       );
       await pumpScreen(tester);
-      expect(find.text('#Unused Tag'), findsOneWidget);
 
-      // [When] 'Unused Tag' 선택 후 '태그 삭제'
-      await tester.tap(find.text('#Unused Tag'));
+      // [Given] 초기 상태: 5개 태그 모두 정확한 색상을 가짐
+      expect(find.byType(SelectableTagPill), findsNWidgets(5));
+      for (int i = 0; i < 5; i++) {
+        expect(
+          findTagPillByName(tester, 'Tag$i').tag.color,
+          pastelTheme.colors[i],
+        );
+      }
+
+      // [When] 중간 태그(Tag2) 삭제
+      await tester.tap(find.text('#Tag2'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('태그 삭제'));
       await tester.pumpAndSettle();
 
-      // [Then] 경고 없이 즉시 삭제됨
+      // [Then] 경고 없이 즉시 삭제됨 (Tag2는 사용되지 않음)
       expect(find.byType(Dialog), findsNothing);
-      expect(find.text('#Unused Tag'), findsNothing);
-      expect(find.byType(SelectableTagPill), findsNWidgets(2));
+      expect(find.text('#Tag2'), findsNothing);
+      expect(find.byType(SelectableTagPill), findsNWidgets(4));
 
-      // [Then] 삭제 후 _assignColors()가 호출되어 색상이 재할당됨
-      // 'AI'는 여전히 첫 번째 색상, 'Web'은 두 번째 색상을 유지
-      expect(findTagPillByName(tester, 'AI').tag.color, pastelTheme.colors[0]);
-      expect(findTagPillByName(tester, 'Web').tag.color, pastelTheme.colors[1]);
-
-      // [Then] 선택이 이전 태그('Web')로 이동함
-      expect(findTagPillByName(tester, 'Web').selected, isTrue);
+      // [Then] 삭제 후 색상이 재할당됨
+      // 남은 태그: Tag0, Tag1, Tag3, Tag4
+      // 위치 재할당: Tag0(색0), Tag1(색1), Tag3(색2로 변경됨), Tag4(색3으로 변경됨)
       expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'Web',
+        findTagPillByName(tester, 'Tag0').tag.color,
+        pastelTheme.colors[0],
       );
+      expect(
+        findTagPillByName(tester, 'Tag1').tag.color,
+        pastelTheme.colors[1],
+      );
+      expect(
+        findTagPillByName(tester, 'Tag3').tag.color,
+        pastelTheme.colors[2],
+        reason: 'Tag3 should be reassigned to color[2] after Tag2 deletion',
+      );
+      expect(
+        findTagPillByName(tester, 'Tag4').tag.color,
+        pastelTheme.colors[3],
+        reason: 'Tag4 should be reassigned to color[3] after Tag2 deletion',
+      );
+
+      // [When] 마지막 태그(Tag4) 삭제
+      await tester.tap(find.text('#Tag4'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('태그 삭제'));
+      await tester.pumpAndSettle();
+
+      // [Then] 남은 태그들의 색상이 여전히 정확함
+      expect(find.byType(SelectableTagPill), findsNWidgets(3));
+      expect(
+        findTagPillByName(tester, 'Tag0').tag.color,
+        pastelTheme.colors[0],
+      );
+      expect(
+        findTagPillByName(tester, 'Tag1').tag.color,
+        pastelTheme.colors[1],
+      );
+      expect(
+        findTagPillByName(tester, 'Tag3').tag.color,
+        pastelTheme.colors[2],
+      );
+
+      // [Then] 선택이 이전 인덱스로 이동함
+      expect(findTagPillByName(tester, 'Tag3').selected, isTrue);
     });
 
     testWidgets('Delete tag (with warning) shows dialog and handles No/Yes', (
