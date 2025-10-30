@@ -91,6 +91,13 @@ flutter:
     - assets/images/loading_background.png
     - assets/images/loading_complete.png
     - assets/images/loading_character.png
+    - assets/tutorial/tutorial_step1.png
+    - assets/tutorial/tutorial_step2.png
+    - assets/tutorial/tutorial_step3.png
+    - assets/tutorial/tutorial_step4.png
+    - assets/tutorial/tutorial_step5.png
+    - assets/tutorial/tutorial_character.png
+    - assets/tutorial/tutorial_speech_bubble.png
     - assets/lectures/lec_demo_001/
     - assets/lectures/lec_demo_002/
     - assets/lectures/lec_demo_003/
