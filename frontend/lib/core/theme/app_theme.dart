@@ -52,6 +52,13 @@ class AppTheme {
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(darkScheme),
       ],
+
+      chipTheme: const ChipThemeData(
+        labelStyle: TextStyle(fontWeight: FontWeight.w600),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        side: BorderSide(color: Color(0x33FFFFFF), width: 1),
+        shape: StadiumBorder(),
+      ),
     );
   }
 
