@@ -41,7 +41,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   final _nameC = TextEditingController();
 
   // 현재 선택된 색상 테마
-  String _currentTheme = '파스텔';
+  String _currentTheme = '봄';
 
   @override
   void initState() {

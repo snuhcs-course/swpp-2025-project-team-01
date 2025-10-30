@@ -6,7 +6,7 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: lightScheme, 
+      colorScheme: lightScheme,
       scaffoldBackgroundColor: const Color(0xFFF2F3F6),
 
       extensions: <ThemeExtension<dynamic>>[

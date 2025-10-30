@@ -50,7 +50,7 @@ class AppSettings {
     this.accessibilityEmphasizeCaptions = true,
     this.ttsGender = '남성',
     this.ttsSpeed = '보통',
-    this.tagColorTheme = '파스텔',
+    this.tagColorTheme = '봄',
   });
 
   @HiveField(0)
@@ -75,7 +75,7 @@ class AppSettings {
   String ttsSpeed; // '빠르게', '보통', '느리게'
 
   @HiveField(7)
-  String tagColorTheme; // '파스텔', etc.
+  String tagColorTheme; // '봄', '여름', '가을', '겨울', '솜사탕', '비비드', '바다'
 }
 
 /// UI 상태 (과목 펼침/접힘, 최근 검색어 등)
