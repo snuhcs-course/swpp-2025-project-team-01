@@ -2,12 +2,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-const Color seedColor = Color(0xFF1D1D1D);
+const Color seedColor = Color(0xFF2196F3); // Material Blue
 
 final ColorScheme lightScheme = ColorScheme.fromSeed(
   seedColor: seedColor,
   brightness: Brightness.light,
-).copyWith(primary: seedColor);
+);
 
 /// AppHighlights holds the highlight color roles for the app.
 class AppHighlights extends ThemeExtension<AppHighlights> {

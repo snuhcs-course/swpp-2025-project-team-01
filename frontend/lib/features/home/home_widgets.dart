@@ -60,13 +60,19 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = active ? Colors.black87 : Colors.white;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color bg = active
+        ? (isDark ? Colors.white : Colors.black87)
+        : (isDark ? const Color(0xFF2D2D2D) : Colors.white);
+    final Color borderColor = isDark
+        ? const Color(0xFF404040)
+        : const Color(0xFFE0E0E0);
 
     return Container(
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        border: Border.all(color: borderColor, width: 1),
         boxShadow: const [_pillShadow],
       ),
       child: Material(
@@ -101,7 +107,10 @@ class FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color fg = active ? Colors.white : Colors.black87;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color fg = active
+        ? (isDark ? Colors.black : Colors.white)
+        : (isDark ? Colors.white : Colors.black87);
 
     return _PillButton(
       onTap: onTap,
@@ -138,9 +147,14 @@ class FavoritePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final AppHighlights h = context.highlights;
-    final Color fg = active ? Colors.white : Colors.black87;
-    final Color starColor = active ? h.important : Colors.black87;
+    final Color fg = active
+        ? (isDark ? Colors.black : Colors.white)
+        : (isDark ? Colors.white : Colors.black87);
+    final Color starColor = active
+        ? h.important
+        : (isDark ? Colors.white : Colors.black87);
     final IconData starIcon = active ? Icons.star : Icons.star_border;
 
     return _PillButton(
@@ -284,7 +298,7 @@ class _SubjectPanelState extends State<SubjectPanel>
         // 애니메이션 진행 중이거나 완전히 열린 상태일 때만 배경 표시
         final bool showBackground = _expandAnimation.value > 0;
         final Color backgroundColor = isDark
-            ? const Color(0xFF3F3F3F) // 다크모드: 중간 회색
+            ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색 (카드와 동일)
             : Colors.white; // 라이트모드: 흰색
 
         return Container(

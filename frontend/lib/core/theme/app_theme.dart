@@ -69,7 +69,7 @@ class AppTheme {
       ),
 
       cardTheme: CardThemeData(
-        color: const Color(0xFFFAF8F3), // 아이보리색 카드
+        color: const Color(0xFF2D2D2D), // 다크모드: 어두운 회색 카드
         elevation: 1.5,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -83,7 +83,7 @@ class AppTheme {
       ),
 
       expansionTileTheme: const ExpansionTileThemeData(
-        backgroundColor: Color(0xFF3F3F3F), // 과목 토글 열린 배경
+        backgroundColor: Color(0xFF2D2D2D), // 과목 토글 열린 배경
         collapsedBackgroundColor: Colors.transparent,
       ),
     );

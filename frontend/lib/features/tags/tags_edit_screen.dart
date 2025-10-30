@@ -171,26 +171,32 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: tagColorThemes.map((TagColorTheme theme) {
-                return ChoiceChip(
-                  label: Text(
-                    AppLocalizations.of(context).getThemeName(theme.name),
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  selected: _currentTheme == theme.name,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _currentTheme = theme.name;
-                      });
-                      _applyThemeToAllTags();
-                    }
-                  },
-                );
-              }).toList(),
+            Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                brightness: Brightness.light, // 다크모드 자동 조정 방지
+              ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: tagColorThemes.map((TagColorTheme theme) {
+                  return ChoiceChip(
+                    label: Text(
+                      AppLocalizations.of(context).getThemeName(theme.name),
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                    selected: _currentTheme == theme.name,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _currentTheme = theme.name;
+                        });
+                        _applyThemeToAllTags();
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
             ),
           ],
         ),
@@ -200,21 +206,27 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 태그 칩 그리드 빌드
   Widget _buildTagChips() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        // 기존 태그 칩들
-        for (int i = 0; i < _tags.length; i++) _buildTagChip(i),
-        // 새 태그 추가 버튼
-        ActionChip(
-          label: const Text('+', style: TextStyle(color: Colors.black)),
-          onPressed: _addNewTag,
-          elevation: 2,
-          backgroundColor: Colors.white,
-          side: BorderSide.none,
-        ),
-      ],
+    return Theme(
+      data: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light, // 다크모드 자동 조정 방지
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          // 기존 태그 칩들
+          for (int i = 0; i < _tags.length; i++) _buildTagChip(i),
+          // 새 태그 추가 버튼
+          ActionChip(
+            label: const Text('+', style: TextStyle(color: Colors.black)),
+            onPressed: _addNewTag,
+            elevation: 2,
+            backgroundColor: Colors.white,
+            side: BorderSide.none,
+          ),
+        ],
+      ),
     );
   }
 

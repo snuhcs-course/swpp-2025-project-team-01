@@ -74,14 +74,26 @@ class TagPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
     final Color textColor = getTextColorForBackground(tag.color);
-    return Chip(
-      label: Text(
-        label ?? '$labelPrefix${tag.name}',
-        style: TextStyle(color: textColor),
+    return Theme(
+      data: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        chipTheme: const ChipThemeData(
+          labelStyle: TextStyle(fontWeight: FontWeight.w600),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          side: BorderSide(color: Color(0x33000000), width: 1),
+          shape: StadiumBorder(),
+        ),
       ),
-      backgroundColor: color,
-      elevation: 2,
-      side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+      child: Chip(
+        label: Text(
+          label ?? '$labelPrefix${tag.name}',
+          style: TextStyle(color: textColor),
+        ),
+        backgroundColor: color,
+        elevation: 2,
+        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+      ),
     );
   }
 }
@@ -109,19 +121,31 @@ class SelectableTagPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
     final Color textColor = getTextColorForBackground(tag.color);
-    return ChoiceChip(
-      label: Text(
-        label ?? '$labelPrefix${tag.name}',
-        style: TextStyle(color: textColor),
+    return Theme(
+      data: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        chipTheme: const ChipThemeData(
+          labelStyle: TextStyle(fontWeight: FontWeight.w600),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          side: BorderSide(color: Color(0x33000000), width: 1),
+          shape: StadiumBorder(),
+        ),
       ),
-      selected: selected,
-      onSelected: onSelected,
-      backgroundColor: color,
-      selectedColor: color,
-      elevation: selected ? 4 : 2,
-      side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-      showCheckmark: showCheckmark,
-      checkmarkColor: textColor,
+      child: ChoiceChip(
+        label: Text(
+          label ?? '$labelPrefix${tag.name}',
+          style: TextStyle(color: textColor),
+        ),
+        selected: selected,
+        onSelected: onSelected,
+        backgroundColor: color,
+        selectedColor: color,
+        elevation: selected ? 4 : 2,
+        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
+        showCheckmark: showCheckmark,
+        checkmarkColor: textColor,
+      ),
     );
   }
 }
@@ -642,10 +666,10 @@ class SubjectPanelHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color headerColor = isDark
-        ? const Color(0xFFFAF8F3) // 다크모드: 아이보리
+        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
         : const Color(0xFF1D1D1D); // 라이트모드: 검은색
-    final Color textColor = isDark ? Colors.black : Colors.white;
-    final Color iconColor = isDark ? Colors.black : Colors.white;
+    final Color textColor = isDark ? Colors.white : Colors.white;
+    final Color iconColor = isDark ? Colors.white : Colors.white;
 
     final BorderRadius resolvedCollapsedRadius =
         collapsedRadius ?? BorderRadius.circular(panelRadius);
