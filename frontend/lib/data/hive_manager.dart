@@ -40,6 +40,8 @@ class HiveManager extends ChangeNotifier {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
+  bool get hasTutorialCompleted => settings.hasCompletedTutorial;
+
   // ========== 초기화 ==========
 
   /// Test-only initialization method
@@ -524,5 +526,21 @@ class HiveManager extends ChangeNotifier {
 
     _appData = null;
     _isInitialized = false;
+  }
+
+  // ========== 튜토리얼 관련 ==========
+
+  // 튜토리얼 완료 상태 업데이트
+  Future<void> completeTutorial() async {
+    settings.hasCompletedTutorial = true;
+    await _save(); // Hive에 저장
+    notifyListeners(); // UI 업데이트 알림
+  }
+
+  // 개발/테스트용: 튜토리얼 리셋
+  Future<void> resetTutorial() async {
+    settings.hasCompletedTutorial = false;
+    await _save();
+    notifyListeners();
   }
 }

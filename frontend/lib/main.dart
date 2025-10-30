@@ -23,17 +23,19 @@ class ReViewApp extends StatefulWidget {
 }
 
 class _ReViewAppState extends State<ReViewApp> {
+  late final HiveManager _manager = HiveManager.instance;
+
   @override
   void initState() {
     super.initState();
     // HiveManager 변경 리스너 등록 (테마, 언어, 접근성 모두 통합)
-    HiveManager.instance.addListener(_onDataChanged);
+    _manager.addListener(_onDataChanged);
   }
 
   @override
   void dispose() {
     // 리스너 제거
-    HiveManager.instance.removeListener(_onDataChanged);
+    _manager.removeListener(_onDataChanged);
     super.dispose();
   }
 
@@ -130,7 +132,12 @@ class _ReViewAppState extends State<ReViewApp> {
             : null,
       ),
       themeMode: themeMode,
-      initialRoute: Routes.home, // 온보딩 전이라면 Routes.onboarding 사용
+      initialRoute:
+          hive
+              .hasTutorialCompleted // 앱을 처음 설치한 경우 튜토리얼 진행
+          ? Routes.home
+          : Routes.tutorial,
+
       onGenerateRoute: AppRouter.onGenerateRoute,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 // 화면들
+import 'package:re_view/features/tutorial/tutorial_screen.dart';
 import 'package:re_view/features/home/home_screen.dart';
 import 'package:re_view/features/search/search_screen.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
@@ -19,6 +20,7 @@ import 'package:re_view/features/tags/tags_edit_screen.dart';
 /// 앱의 모든 라우트 경로를 정의하는 클래스
 class Routes {
   static const onboarding = '/';
+  static const tutorial = '/tutorial';
   static const home = '/home';
   static const search = '/search';
   static const lectureForm = '/lectures/new';
@@ -39,8 +41,10 @@ class Routes {
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings s) {
     switch (s.name) {
-      case Routes.home:
       case Routes.onboarding:
+      case Routes.tutorial:
+        return MaterialPageRoute(builder: (_) => const TutorialScreen());
+      case Routes.home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case Routes.search:
         return MaterialPageRoute(builder: (_) => const SearchScreen());
