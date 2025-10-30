@@ -104,7 +104,8 @@ void main() {
             title: 'Lecture',
             duration: 100,
             slidePath: 'slides/lec1.pdf',
-            audioPath: 'audio.mp3',
+            originalAudioPath: 'original.mp3',
+            ttsAudioPath: 'tts.mp3',
             thumbnailUrl: 'thumb.png',
             jsonPath: 'timestamps.json',
             createdAt: DateTime.utc(2024, 1, 1),
@@ -222,7 +223,8 @@ void main() {
         title: 'Advanced Topics',
         duration: 3600,
         slidePath: null,
-        audioPath: 'audio.mp3',
+        originalAudioPath: 'original.mp3',
+        ttsAudioPath: 'tts.mp3',
         thumbnailUrl: null,
         jsonPath: 'timestamps.json',
         createdAt: DateTime.utc(2024, 2, 1),
@@ -231,7 +233,8 @@ void main() {
 
       final result = _roundTrip(bundle, bundle.hiveLecture, lecture);
       expect(result.id, 'lec');
-      expect(result.audioPath, 'audio.mp3');
+      expect(result.originalAudioPath, 'original.mp3');
+      expect(result.ttsAudioPath, 'tts.mp3');
       expect(result.thumbnailUrl, isNull);
       expect(result.jsonPath, 'timestamps.json');
       expect(result.createdAt, DateTime.utc(2024, 2, 1));

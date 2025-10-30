@@ -230,7 +230,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: 'assets/lectures/test_lecture/audio.opus',
+        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
+        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         jsonPath: 'assets/lectures/test_lecture/transcript.json',
       );
       await addLectureToHive(tester, lecture);
@@ -262,7 +263,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: 'assets/lectures/test_lecture/audio.opus',
+        originalAudioPath: null,
+        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         jsonPath: 'assets/test_invalid_json.json',
       );
       await addLectureToHive(tester, lecture);
@@ -301,7 +303,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: 'assets/lectures/test_lecture/audio.opus',
+        originalAudioPath: 'assets/lectures/test_lecture/audio.opus',
+        ttsAudioPath: null,
         slidePath: '/nonexistent/path/to/slides.pdf', // This will fail
         jsonPath: 'assets/test_valid_transcript.json',
       );
@@ -364,7 +367,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: 'assets/lectures/test_lecture/audio.opus',
+        originalAudioPath: null,
+        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         jsonPath: 'assets/test_transcript.json',
       );
       await addLectureToHive(tester, lecture);
@@ -560,7 +564,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: '/custom/audio.opus',
+        originalAudioPath: '/custom/audio.opus',
+        ttsAudioPath: null,
         slidePath: '/custom/slides.pdf',
         jsonPath: '/custom/transcript.json',
       );
@@ -632,7 +637,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: '/nonexistent/audio.opus',
+        originalAudioPath: '/nonexistent/audio.opus',
+        ttsAudioPath: null,
         slidePath: '/nonexistent/slides.pdf',
         jsonPath: 'assets/test_valid.json',
       );
@@ -719,7 +725,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: 'assets/audio.opus',
+        originalAudioPath: null,
+        ttsAudioPath: 'assets/audio.opus',
         slidePath: 'assets/slides.pdf',
         jsonPath:
             '/invalid/file/path/that/does/not/exist.json', // File path (not asset)
@@ -769,7 +776,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: 'assets/audio.opus',
+        originalAudioPath: null,
+        ttsAudioPath: 'assets/audio.opus',
         slidePath: 'assets/slides.pdf',
         jsonPath: 'assets/test_malformed.json',
       );
@@ -873,7 +881,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Demo Lecture 001',
         duration: 3600,
-        audioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+        originalAudioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+        ttsAudioPath: null,
         slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
       );
@@ -934,7 +943,8 @@ void main() {
           weekLabel: 'Week 1',
           title: 'Demo Lecture 001',
           duration: 3600,
-          audioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+          originalAudioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
+          ttsAudioPath: null,
           slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
           jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
         );
@@ -1019,7 +1029,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        audioPath: 'assets/lectures/test_layout/audio.opus',
+        originalAudioPath: 'assets/lectures/test_layout/audio.opus',
+        ttsAudioPath: null,
         slidePath: 'assets/lectures/test_layout/slides.pdf',
         jsonPath: 'assets/test_layout.json',
       );
@@ -1173,7 +1184,8 @@ void main() {
           weekLabel: 'Week 1',
           title: 'Test Lecture',
           duration: 3600,
-          audioPath: 'assets/lectures/test_horizontal/audio.opus',
+          originalAudioPath: 'assets/lectures/test_horizontal/audio.opus',
+          ttsAudioPath: null,
           slidePath: 'assets/lectures/test_horizontal/slides.pdf',
           jsonPath: 'assets/test_horizontal.json',
         );

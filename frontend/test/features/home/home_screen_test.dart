@@ -129,7 +129,8 @@ void main() {
       weekLabel: weekLabel,
       title: title,
       duration: duration,
-      audioPath: null,
+      originalAudioPath: null,
+      ttsAudioPath: null,
     );
   }
 
