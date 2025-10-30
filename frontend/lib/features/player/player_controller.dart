@@ -100,6 +100,7 @@ class PlayerController extends ChangeNotifier {
 
   bool _isForcedMove = false; // seek 등으로 강제 이동 중인지 표시
   bool _isSeeking = false; // seek 작업 진행 중인지 표시
+  bool _isDisposed = false; // dispose 여부 확인
   Timer? _scrollTimer;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<dynamic>? _stateSubscription;
@@ -452,6 +453,12 @@ class PlayerController extends ChangeNotifier {
 
   @override
   void dispose() {
+    // 이미 dispose되었으면 중복 실행 방지
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
+
     showControls.dispose();
     isPagesExpanded.dispose();
     showTranscriptPanel.dispose();
