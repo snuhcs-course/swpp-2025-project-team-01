@@ -21,6 +21,7 @@ class FakeAppSettings implements AppSettings {
     this.accessibilityReduceMotion = false,
     this.accessibilityEmphasizeCaptions = true,
     this.tagColorTheme = '파스텔',
+    this.hasCompletedTutorial = true,
   });
 
   @override
@@ -40,6 +41,8 @@ class FakeAppSettings implements AppSettings {
   bool accessibilityEmphasizeCaptions;
   @override
   String tagColorTheme;
+  @override
+  bool hasCompletedTutorial;
 }
 
 /// HiveManager 인터페이스를 구현하는 Fake 클래스
@@ -78,6 +81,16 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
     lastGender = null;
     lastSpeed = null;
   }
+
+  // Tutorial methods (not used in this test)
+  @override
+  bool get hasTutorialCompleted => _fakeSettings.hasCompletedTutorial;
+
+  @override
+  Future<void> completeTutorial() async {}
+
+  @override
+  Future<void> resetTutorial() async {}
 
   // HiveManager의 나머지 모든 멤버 (빈 구현)
   @override
