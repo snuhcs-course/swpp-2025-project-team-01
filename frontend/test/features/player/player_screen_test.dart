@@ -291,9 +291,9 @@ void main() {
     ) async {
       // Skip this test on Linux (CI environment) due to pdfx platform limitations
       if (Platform.isLinux) {
-          return;
+        return;
       }
-      
+
       // Given: Add lecture to Hive with non-existent file path for PDF
       final lecture = HiveLecture(
         id: 'test_lecture',
@@ -628,7 +628,7 @@ void main() {
     ) async {
       // Skip this test on Linux (CI environment) due to pdfx platform limitations
       if (Platform.isLinux) {
-          return;
+        return;
       }
 
       // This test covers the setState at lines 169-171 when initialization succeeds
@@ -1002,7 +1002,7 @@ void main() {
     ) async {
       // Skip this test on Linux (CI environment) due to pdfx platform limitations
       if (Platform.isLinux) {
-          return;
+        return;
       }
       // This test will use mocks to allow successful initialization
       // and then verify that VerticalPlayerLayout is rendered in portrait mode
@@ -1157,7 +1157,7 @@ void main() {
       (tester) async {
         // Skip this test on Linux (CI environment) due to pdfx platform limitations
         if (Platform.isLinux) {
-            return;
+          return;
         }
         // This test covers line 198 (onBack in HorizontalPlayerLayout)
 

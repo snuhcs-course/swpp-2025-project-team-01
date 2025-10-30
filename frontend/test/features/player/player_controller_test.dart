@@ -965,7 +965,7 @@ void main() {
     ) async {
       // Skip this test on Linux (CI environment) due to pdfx platform limitations
       if (Platform.isLinux) {
-          return;
+        return;
       }
 
       final controller = PlayerController(
