@@ -1,6 +1,7 @@
 // 자주 쓰는 작은 위젯들
 import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
 
 /// 전체 너비를 차지하는 주요 버튼 위젯
@@ -72,10 +73,11 @@ class TagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
+    final Color textColor = getTextColorForBackground(tag.color);
     return Chip(
       label: Text(
         label ?? '$labelPrefix${tag.name}',
-        style: const TextStyle(color: Colors.black),
+        style: TextStyle(color: textColor),
       ),
       backgroundColor: color,
       elevation: 2,
@@ -106,10 +108,11 @@ class SelectableTagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
+    final Color textColor = getTextColorForBackground(tag.color);
     return ChoiceChip(
       label: Text(
         label ?? '$labelPrefix${tag.name}',
-        style: const TextStyle(color: Colors.black),
+        style: TextStyle(color: textColor),
       ),
       selected: selected,
       onSelected: onSelected,
@@ -118,6 +121,7 @@ class SelectableTagPill extends StatelessWidget {
       elevation: selected ? 4 : 2,
       side: const BorderSide(color: Color(0x1F000000), width: 0.5),
       showCheckmark: showCheckmark,
+      checkmarkColor: textColor,
     );
   }
 }

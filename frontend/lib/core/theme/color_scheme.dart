@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 const Color seedColor = Color(0xFF1D1D1D);
@@ -108,6 +110,33 @@ class TagHighlight {
 
   final Color background;
   final Color foreground;
+}
+
+/// 색상의 밝기를 계산하여 어두운 배경인지 판단
+///
+/// W3C 기준의 상대적 휘도(relative luminance) 계산
+/// 0.5보다 작으면 어두운 색상으로 판단
+bool isColorDark(int argbColor) {
+  final r = ((argbColor >> 16) & 0xFF) / 255.0;
+  final g = ((argbColor >> 8) & 0xFF) / 255.0;
+  final b = (argbColor & 0xFF) / 255.0;
+
+  // 감마 보정
+  final rLinear = r <= 0.03928 ? r / 12.92 : pow((r + 0.055) / 1.055, 2.4);
+  final gLinear = g <= 0.03928 ? g / 12.92 : pow((g + 0.055) / 1.055, 2.4);
+  final bLinear = b <= 0.03928 ? b / 12.92 : pow((b + 0.055) / 1.055, 2.4);
+
+  // 상대적 휘도 계산
+  final luminance = 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+
+  return luminance < 0.5;
+}
+
+/// 배경 색상에 따라 적절한 텍스트 색상 반환
+///
+/// 어두운 배경이면 흰색, 밝은 배경이면 검은색 반환
+Color getTextColorForBackground(int backgroundColor) {
+  return isColorDark(backgroundColor) ? Colors.white : Colors.black;
 }
 
 /// 태그 색상 테마
