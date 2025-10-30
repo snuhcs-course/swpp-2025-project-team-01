@@ -123,7 +123,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.search), backgroundColor: Colors.white),
+      appBar: AppBar(title: Text(l10n.search)),
       body: Column(
         children: [
           // 검색 바

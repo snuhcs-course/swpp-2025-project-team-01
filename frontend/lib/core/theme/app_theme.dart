@@ -6,11 +6,12 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: lightScheme, // ← color_scheme.dart 에 있는 lightScheme 사용
+      colorScheme: lightScheme,
       scaffoldBackgroundColor: const Color(0xFFF2F3F6),
+      fontFamily: 'NanumSquare',
 
       extensions: <ThemeExtension<dynamic>>[
-        AppHighlights.fromScheme(lightScheme), // ← AppHighlights 등록
+        AppHighlights.fromScheme(lightScheme),
       ],
 
       appBarTheme: const AppBarTheme(
@@ -20,9 +21,10 @@ class AppTheme {
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           color: Colors.black,
           letterSpacing: .2,
+          fontFamily: 'NanumSquare',
         ),
       ),
 
@@ -47,11 +49,52 @@ class AppTheme {
       seedColor: seedColor,
       brightness: Brightness.dark,
     );
-    return ThemeData.dark(useMaterial3: true).copyWith(
+
+    const fontFamily = 'NanumSquare';
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
       colorScheme: darkScheme,
+      scaffoldBackgroundColor: const Color(0xFF212121),
+      fontFamily: fontFamily,
+
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(darkScheme),
       ],
+
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent, // 투명한 헤더
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          letterSpacing: .2,
+          fontFamily: fontFamily,
+        ),
+      ),
+
+      cardTheme: CardThemeData(
+        color: const Color(0xFF2D2D2D), // 다크모드: 어두운 회색 카드
+        elevation: 1.5,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+
+      chipTheme: const ChipThemeData(
+        labelStyle: TextStyle(fontWeight: FontWeight.w600),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        side: BorderSide(color: Color(0x33FFFFFF), width: 1),
+        shape: StadiumBorder(),
+      ),
+
+      expansionTileTheme: const ExpansionTileThemeData(
+        backgroundColor: Color(0xFF2D2D2D), // 과목 토글 열린 배경
+        collapsedBackgroundColor: Colors.transparent,
+      ),
     );
   }
 
@@ -69,6 +112,7 @@ class AppTheme {
         error: Color(0xFFD00000),
       ),
       scaffoldBackgroundColor: Colors.white,
+      fontFamily: 'NanumSquare',
 
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(lightScheme),
@@ -84,6 +128,7 @@ class AppTheme {
           fontWeight: FontWeight.w900,
           color: Colors.black,
           letterSpacing: .2,
+          fontFamily: 'NanumSquare',
         ),
       ),
 
@@ -156,6 +201,7 @@ class AppTheme {
         error: Color(0xFFFF5555),
       ),
       scaffoldBackgroundColor: Colors.black,
+      fontFamily: 'NanumSquare',
 
       extensions: <ThemeExtension<dynamic>>[
         AppHighlights.fromScheme(const ColorScheme.dark()),
@@ -169,6 +215,7 @@ class AppTheme {
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w900,
+          fontFamily: 'NanumSquare',
           color: Colors.white,
           letterSpacing: .2,
         ),

@@ -39,7 +39,7 @@ class AppLocalizations {
   String get menu => isKorean ? '메뉴' : 'Menu';
   String get filter => isKorean ? '필터' : 'Filter';
   String get favorites => isKorean ? '즐겨찾기' : 'Favorites';
-  String get addLecture => isKorean ? '수업 추가' : 'Add Lecture';
+  String get addLecture => isKorean ? '강의 생성' : 'Create Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get editTags => isKorean ? '태그 수정' : 'Edit Tags';
   String get noFavoriteSubjects =>
@@ -136,24 +136,30 @@ class AppLocalizations {
   String get searchBySubject => isKorean ? '과목명' : 'Subject name';
 
   // 색상 테마 이름들
-  String get themePastel => isKorean ? '파스텔' : 'Pastel';
+  String get themeSpring => isKorean ? '봄' : 'Spring';
+  String get themeSummer => isKorean ? '여름' : 'Summer';
+  String get themeAutumn => isKorean ? '가을' : 'Autumn';
+  String get themeWinter => isKorean ? '겨울' : 'Winter';
+  String get themeCottonCandy => isKorean ? '솜사탕' : 'Cotton Candy';
   String get themeVivid => isKorean ? '비비드' : 'Vivid';
-  String get themeNeon => isKorean ? '네온' : 'Neon';
-  String get themeSoft => isKorean ? '소프트' : 'Soft';
-  String get themeEarth => isKorean ? '어스톤' : 'Earth';
+  String get themeSea => isKorean ? '바다' : 'Sea';
 
   String getThemeName(String koreanName) {
     switch (koreanName) {
-      case '파스텔':
-        return themePastel;
+      case '봄':
+        return themeSpring;
+      case '여름':
+        return themeSummer;
+      case '가을':
+        return themeAutumn;
+      case '겨울':
+        return themeWinter;
+      case '솜사탕':
+        return themeCottonCandy;
       case '비비드':
         return themeVivid;
-      case '네온':
-        return themeNeon;
-      case '소프트':
-        return themeSoft;
-      case '어스톤':
-        return themeEarth;
+      case '바다':
+        return themeSea;
       default:
         return koreanName;
     }
