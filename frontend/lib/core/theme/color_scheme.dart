@@ -186,14 +186,12 @@ const List<TagColorTheme> tagColorThemes = [
     0xFFE1C5AE,
     0xFFEDDECB,
     0xFFD1D9D7,
-
     0xFFA3C1D1,
   ]),
   TagColorTheme('겨울', [
     0xFF705C50,
     0xFFCBDFEA,
     0xFFC8C2BC,
-
     0xFF4B3935,
     0xFFFAF3E0,
   ]),
@@ -223,7 +221,6 @@ const List<TagColorTheme> tagColorThemes = [
     0xFF15253F,
     0xFF354E6B,
     0xFF889BB0,
-
     0xFF405066,
     0xFF263C42,
     0xFF566C86,
