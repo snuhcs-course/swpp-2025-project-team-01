@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/subjects/subjects_edit_screen.dart';
@@ -21,7 +22,7 @@ class FakeAppSettings implements AppSettings {
     this.accessibilityEmphasizeCaptions = false,
     this.ttsGender = '남성',
     this.ttsSpeed = '보통',
-    this.tagColorTheme = '파스텔',
+    this.tagColorTheme = '봄',
     this.hasCompletedTutorial = false,
   });
 
@@ -190,12 +191,13 @@ void main() {
   setUp(() {
     fakeHiveManager = FakeHiveManager();
 
-    // 1. 태그 추가 (2개)
+    // 1. 태그 추가 (2개) - 기본 '봄' 테마에서 색상 가져오기
+    final defaultTheme = getTagColorTheme('봄');
     fakeHiveManager.addFakeTag(
-      HiveTag(id: 't1', name: 'AI', color: 0xFFFF6B6B),
+      HiveTag(id: 't1', name: 'AI', color: defaultTheme.colors[0]),
     );
     fakeHiveManager.addFakeTag(
-      HiveTag(id: 't2', name: 'Web', color: 0xFF4ECDC4),
+      HiveTag(id: 't2', name: 'Web', color: defaultTheme.colors[1]),
     );
 
     // 2. 강의 추가 (4개)
@@ -1110,11 +1112,13 @@ void main() {
         // 깨끗한 상태로 시작
         final testHiveManager = FakeHiveManager();
 
+        // 기본 '봄' 테마에서 색상 가져오기
+        final defaultTheme = getTagColorTheme('봄');
         testHiveManager.addFakeTag(
-          HiveTag(id: 't1', name: 'AI', color: 0xFFFF6B6B),
+          HiveTag(id: 't1', name: 'AI', color: defaultTheme.colors[0]),
         );
         testHiveManager.addFakeTag(
-          HiveTag(id: 't2', name: 'Web', color: 0xFF4ECDC4),
+          HiveTag(id: 't2', name: 'Web', color: defaultTheme.colors[1]),
         );
 
         testHiveManager.addFakeLecture(
