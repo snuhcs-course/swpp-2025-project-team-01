@@ -90,10 +90,10 @@ Future<String?> requestLecture(
   AudioFileEntry audioFileEntry,
   String titleText,
   int order,
-  bool isSingleAudio,
+  int audioCount,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String) onProgress, {
+  Future<void> Function(double, String, String, int, int) onProgress, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
@@ -120,7 +120,7 @@ Future<String?> requestLecture(
 
   // Skip file handling when testing
   if (fakeClient == null) {
-    if (isSingleAudio) {
+    if (audioCount == 1) {
       slideFile = File(slidePath);
     } else {
       // 다중 오디오 모드: 페이지 범위 파싱
@@ -215,7 +215,7 @@ Future<String?> requestLecture(
 
           final message = data['message'] as String;
 
-          await onProgress(progress, message, titleText);
+          await onProgress(progress, message, titleText, order, audioCount);
 
           if (data['status'] == 'completed') {
             return jobId;
@@ -334,19 +334,18 @@ Future<List<String>?> fetchLecture(String slidePath,
   AudioFileEntry audioFileEntry,
   String titleText,
   int order,
-  bool isSingleAudio,
+  int audioCount,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String) onProgress, {
+  Future<void> Function(double, String, String, int, int) onProgress, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
 }) async {
-  debugPrint('🚀 Starting lecture request $order');
+  debugPrint('🚀 Starting lecture request $order/$audioCount');
   debugPrint('📤 Server: $serverAddress:$port');
   debugPrint('📄 Slide: $slidePath');
   debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
-  debugPrint('📊 isSingleAudio: $isSingleAudio');
   debugPrint(
     '📝 Start page: "${audioFileEntry.startPageController.text}"',
   );
@@ -356,7 +355,7 @@ Future<List<String>?> fetchLecture(String slidePath,
     audioFileEntry,
     titleText,
     order,
-    isSingleAudio,
+    audioCount,
     serverAddress,
     port,
     onProgress,
@@ -386,7 +385,8 @@ Future<List<String>?> fetchLecture(String slidePath,
   if (filePaths == null) {
     return null;
   }
-
+  
+  debugPrint('Finishing lecture request $order/$audioCount');
   return filePaths;
 }
 
@@ -400,7 +400,12 @@ Future<String?> concatenateAudioFiles(
   final documentsDir = dirOverride ?? await getApplicationDocumentsDirectory();
   final outputDir = documentsDir.path;
   final listFile = '$outputDir/tmp_audio_list.txt';
-  final audioOutputPath = '$outputDir/$titleText.opus';
+  String audioOutputPath;
+  if (path.extension(audioPaths[0]) == '.opus') {
+    audioOutputPath = '$outputDir/$titleText.opus';
+  } else {
+    audioOutputPath = '$outputDir/$titleText.m4a';
+  }
 
   // Concatenate the audio files
   try {
@@ -636,6 +641,8 @@ Future<void> onProgress(
   double progress,
   String message,
   String lectureTitle,
+  int order,
+  int audioCount,
 ) async {
   await _ensureNotificationsInitialized();
 
@@ -649,19 +656,20 @@ Future<void> onProgress(
   final loadingService = LectureLoadingService.instance;
   if (!loadingService.isLoading && progress > 0) {
     // First progress update - start loading
-    loadingService.startLoading(lectureTitle);
+    loadingService.startLoading(lectureTitle, audioCount);
   }
 
-  if (progress >= 1.0) {
+  final currentProgress = loadingService.getProgress();
+  if (currentProgress >= 1.0) {
     // Completed
     loadingService.completeLoading();
   } else {
     // In progress
-    loadingService.updateProgress(progress, message);
+    loadingService.updateProgress(progress, order, message);
   }
 
-  final pct = (progress * 100).round();
-  final isDone = progress >= 1.0;
+  final pct = (currentProgress * 100).round();
+  final isDone = currentProgress >= 1.0;
 
   // Always show notification during progress to keep background task alive
   // Only skip notification if completed and app is in foreground

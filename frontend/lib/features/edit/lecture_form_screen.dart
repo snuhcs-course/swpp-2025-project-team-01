@@ -852,7 +852,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     _httpClient = http.Client();
 
     // 로딩 서비스 시작 및 취소 콜백 등록
-    LectureLoadingService.instance.startLoading(titleText);
+    final effectiveAudios = _audioFiles
+      .where((e) => (e.filePath ?? '').isNotEmpty)
+      .toList();
+    LectureLoadingService.instance.startLoading(titleText, effectiveAudios.length);
     LectureLoadingService.instance.setOnCancel(() {
       _httpClient?.close();
       _closeClientOnDispose = true;
@@ -873,9 +876,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
       final slidePath = _slidePdfPath!;
-      final effectiveAudios = _audioFiles
-          .where((e) => (e.filePath ?? '').isNotEmpty)
-          .toList();
 
       // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
       if (mounted) {
@@ -904,7 +904,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             audioFileEntry,
             titleText,
             i,
-            effectiveAudios.length == 1 ? true : false,
+            effectiveAudios.length,
             _serverAddress,
             _port,
             onProgress,
@@ -921,7 +921,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // Async calls in parallel
+      debugPrint('Number of requests: ${futures.length}');
       final results = await Future.wait(futures);
+      for (int i = 0; i < effectiveAudios.length; i++) {
+        if (results[i] == null) {
+          debugPrint('Request $i: null');
+        } else {
+          for (int j = 0; j < effectiveAudios.length; j++) {
+            debugPrint('Request $i path: ${results[i]![j]}');
+          }
+        }
+      }
       for (int i = 0; i < effectiveAudios.length; i++) {
         if (results[i] == null) {
           _showToast(
@@ -939,7 +949,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       String? ttsAudioPath;
       String? jsonPath;
       int? duration;
-
+      debugPrint('concatenating...');
       if (effectiveAudios.length > 1) {
         originalAudioPath = await concatenateAudioFiles(
           originalAudioPaths,
@@ -947,6 +957,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
         ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
         jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
+        debugPrint(originalAudioPath);
+        debugPrint(ttsAudioPath);
+        debugPrint(jsonPath);
         if (originalAudioPath == null ||
             ttsAudioPath == null ||
             jsonPath == null) {
@@ -960,6 +973,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         ttsAudioPath = ttsAudioPaths[0];
         jsonPath = jsonPaths[0];
       }
+      debugPrint('concatenation done');
 
       final jsonFile = File(jsonPath);
       final jsonData =
