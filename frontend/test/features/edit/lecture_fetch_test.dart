@@ -86,8 +86,20 @@ void main() {
 
       final progressEvents = <Map<String, dynamic>>[];
 
-      Future<void> onProgress(double p, String msg, String title, int i, int j) async {
-        progressEvents.add({'p': p, 'msg': msg, 'title': title, 'i': i, 'j': j});
+      Future<void> onProgress(
+        double p,
+        String msg,
+        String title,
+        int i,
+        int j,
+      ) async {
+        progressEvents.add({
+          'p': p,
+          'msg': msg,
+          'title': title,
+          'i': i,
+          'j': j,
+        });
       }
 
       // Act: call with injected client + endpointOverride so we don’t depend on host/port
@@ -126,8 +138,20 @@ void main() {
 
       final progressEvents = <Map<String, dynamic>>[];
 
-      Future<void> onProgress(double p, String msg, String title, int i, int j) async {
-        progressEvents.add({'p': p, 'msg': msg, 'title': title, 'i': i, 'j': j});
+      Future<void> onProgress(
+        double p,
+        String msg,
+        String title,
+        int i,
+        int j,
+      ) async {
+        progressEvents.add({
+          'p': p,
+          'msg': msg,
+          'title': title,
+          'i': i,
+          'j': j,
+        });
       }
 
       // Act: call with injected client + endpointOverride so we don’t depend on host/port

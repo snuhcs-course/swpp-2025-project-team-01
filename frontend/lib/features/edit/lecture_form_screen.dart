@@ -853,9 +853,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
     // 로딩 서비스 시작 및 취소 콜백 등록
     final effectiveAudios = _audioFiles
-      .where((e) => (e.filePath ?? '').isNotEmpty)
-      .toList();
-    LectureLoadingService.instance.startLoading(titleText, effectiveAudios.length);
+        .where((e) => (e.filePath ?? '').isNotEmpty)
+        .toList();
+    LectureLoadingService.instance.startLoading(
+      titleText,
+      effectiveAudios.length,
+    );
     LectureLoadingService.instance.setOnCancel(() {
       _httpClient?.close();
       _closeClientOnDispose = true;

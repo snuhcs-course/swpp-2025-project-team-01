@@ -330,7 +330,8 @@ Future<List<String>?> unzipResult(
   return resultPaths;
 }
 
-Future<List<String>?> fetchLecture(String slidePath,
+Future<List<String>?> fetchLecture(
+  String slidePath,
   AudioFileEntry audioFileEntry,
   String titleText,
   int order,
@@ -346,9 +347,7 @@ Future<List<String>?> fetchLecture(String slidePath,
   debugPrint('📤 Server: $serverAddress:$port');
   debugPrint('📄 Slide: $slidePath');
   debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
-  debugPrint(
-    '📝 Start page: "${audioFileEntry.startPageController.text}"',
-  );
+  debugPrint('📝 Start page: "${audioFileEntry.startPageController.text}"');
   debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
   final jobId = await requestLecture(
     slidePath,
@@ -385,7 +384,7 @@ Future<List<String>?> fetchLecture(String slidePath,
   if (filePaths == null) {
     return null;
   }
-  
+
   debugPrint('Finishing lecture request $order/$audioCount');
   return filePaths;
 }
