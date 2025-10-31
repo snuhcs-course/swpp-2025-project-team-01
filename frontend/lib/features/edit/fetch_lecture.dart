@@ -330,6 +330,66 @@ Future<List<String>?> unzipResult(
   return resultPaths;
 }
 
+Future<List<String>?> fetchLecture(String slidePath,
+  AudioFileEntry audioFileEntry,
+  String titleText,
+  int order,
+  bool isSingleAudio,
+  String serverAddress,
+  String port,
+  Future<void> Function(double, String, String) onProgress, {
+  http.Client? fakeClient, // for testing
+  Uri? endpointOverride, // for testing
+  http.Client? clientToClose, // client that can be closed externally
+}) async {
+  debugPrint('🚀 Starting lecture request $order');
+  debugPrint('📤 Server: $serverAddress:$port');
+  debugPrint('📄 Slide: $slidePath');
+  debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
+  debugPrint('📊 isSingleAudio: $isSingleAudio');
+  debugPrint(
+    '📝 Start page: "${audioFileEntry.startPageController.text}"',
+  );
+  debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
+  final jobId = await requestLecture(
+    slidePath,
+    audioFileEntry,
+    titleText,
+    order,
+    isSingleAudio,
+    serverAddress,
+    port,
+    onProgress,
+    fakeClient: fakeClient,
+    endpointOverride: endpointOverride,
+    clientToClose: clientToClose,
+  );
+
+  if (jobId == null) {
+    return null;
+  }
+
+  final zipPath = await downloadResult(
+    jobId,
+    titleText,
+    order,
+    serverAddress,
+    port,
+  );
+
+  if (zipPath == null) {
+    return null;
+  }
+
+  final filePaths = await unzipResult(zipPath, titleText, order);
+
+  if (filePaths == null) {
+    return null;
+  }
+
+  return filePaths;
+}
+
 /// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.
 Future<String?> concatenateAudioFiles(
   List<String> audioPaths,

@@ -57,6 +57,11 @@ class LectureLoadingService extends ChangeNotifier {
     _saveState();
   }
 
+  /// 현재 진행도
+  double getProgress() {
+    return _progress;
+  }
+
   /// 진행도 업데이트
   void updateProgress(double progress, String message) {
     if (!_isLoading) {
