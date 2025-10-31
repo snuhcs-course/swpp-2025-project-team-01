@@ -924,17 +924,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // Async calls in parallel
-      debugPrint('Number of requests: ${futures.length}');
       final results = await Future.wait(futures);
-      for (int i = 0; i < effectiveAudios.length; i++) {
-        if (results[i] == null) {
-          debugPrint('Request $i: null');
-        } else {
-          for (int j = 0; j < effectiveAudios.length; j++) {
-            debugPrint('Request $i path: ${results[i]![j]}');
-          }
-        }
-      }
       for (int i = 0; i < effectiveAudios.length; i++) {
         if (results[i] == null) {
           _showToast(
@@ -952,7 +942,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       String? ttsAudioPath;
       String? jsonPath;
       int? duration;
-      debugPrint('concatenating...');
+
       if (effectiveAudios.length > 1) {
         originalAudioPath = await concatenateAudioFiles(
           originalAudioPaths,
@@ -960,9 +950,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
         ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
         jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
-        debugPrint(originalAudioPath);
-        debugPrint(ttsAudioPath);
-        debugPrint(jsonPath);
+
         if (originalAudioPath == null ||
             ttsAudioPath == null ||
             jsonPath == null) {
@@ -976,7 +964,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         ttsAudioPath = ttsAudioPaths[0];
         jsonPath = jsonPaths[0];
       }
-      debugPrint('concatenation done');
 
       final jsonFile = File(jsonPath);
       final jsonData =
