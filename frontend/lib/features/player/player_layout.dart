@@ -4,6 +4,7 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/player_controller.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 // ========== Layout Widgets ==========
 
@@ -623,6 +624,9 @@ class CaptionOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hiveManager = HiveManager.instance;
+    final emphasizeCaptions = hiveManager.settings.accessibilityEmphasizeCaptions;
+
     return ValueListenableBuilder<int?>(
       valueListenable: controller.currentSentenceIndex,
       builder: (context, _, __) {
@@ -658,10 +662,10 @@ class CaptionOverlay extends StatelessWidget {
                       child: Text(
                         captionText,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
+                          fontSize: emphasizeCaptions ? 24 : 18,
+                          fontWeight: emphasizeCaptions ? FontWeight.bold : FontWeight.w500,
                           height: 1.4,
                         ),
                       ),
