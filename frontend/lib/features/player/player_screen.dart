@@ -30,14 +30,21 @@ class PlayerScreen extends StatefulWidget {
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
+class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver {
   late final PlayerController _controller;
   late final HiveManager _hiveManager;
   bool _isLoading = true;
+  bool _wasPlayingBeforePause = false;
 
   @override
   void initState() {
     super.initState();
+
+    // 시스템 UI 숨기기 (상태바, 네비게이션 바)
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+
+    // 앱 라이프사이클 옵저버 등록
+    WidgetsBinding.instance.addObserver(this);
 
     // 의존성 주입
     final audioService = widget._audioService ?? AudioService();
@@ -57,8 +64,32 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    // 앱 라이프사이클 옵저버 제거
+    WidgetsBinding.instance.removeObserver(this);
+    // 시스템 UI 다시 보이기
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // 앱이 백그라운드로 가면 자동으로 일시정지
+    if (state == AppLifecycleState.paused) {
+      _wasPlayingBeforePause = _controller.isPlaying.value;
+      if (_wasPlayingBeforePause) {
+        _controller.playPause();
+      }
+    }
+    // 앱이 다시 포그라운드로 돌아오면 자동으로 재개
+    else if (state == AppLifecycleState.resumed) {
+      if (_wasPlayingBeforePause) {
+        _controller.playPause();
+        _wasPlayingBeforePause = false;
+      }
+    }
   }
 
   /// 에러 발생 시 SnackBar를 표시하고 이전 페이지로 돌아가기
