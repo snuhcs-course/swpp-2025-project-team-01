@@ -15,12 +15,14 @@ class AppData extends HiveObject {
     Map<String, HiveTag>? tags,
     Map<String, HiveLecture>? lectures,
     UiState? uiState,
+    List<String>? subjectOrder,
   }) {
     this.settings = settings ?? AppSettings();
     this.subjects = subjects ?? {};
     this.tags = tags ?? {};
     this.lectures = lectures ?? {};
     this.uiState = uiState ?? UiState();
+    this.subjectOrder = subjectOrder ?? [];
   }
 
   @HiveField(0)
@@ -37,6 +39,9 @@ class AppData extends HiveObject {
 
   @HiveField(4)
   late Map<String, HiveLecture> lectures;
+
+  @HiveField(5)
+  late List<String> subjectOrder;
 }
 
 /// 앱 설정 (테마, 언어, 접근성, TTS 등)

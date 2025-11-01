@@ -22,13 +22,14 @@ class AppDataAdapter extends TypeAdapter<AppData> {
       tags: (fields[2] as Map?)?.cast<String, HiveTag>(),
       lectures: (fields[4] as Map?)?.cast<String, HiveLecture>(),
       uiState: fields[3] as UiState?,
+      subjectOrder: (fields[5] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, AppData obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.settings)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class AppDataAdapter extends TypeAdapter<AppData> {
       ..writeByte(3)
       ..write(obj.uiState)
       ..writeByte(4)
-      ..write(obj.lectures);
+      ..write(obj.lectures)
+      ..writeByte(5)
+      ..write(obj.subjectOrder);
   }
 
   @override
