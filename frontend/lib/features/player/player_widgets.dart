@@ -1,9 +1,14 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:re_view/core/utils.dart';
+
+// 시간 포맷 유틸 함수
+String formatDuration(int seconds) {
+  final m = (seconds ~/ 60).toString();
+  final s = (seconds % 60).toString().padLeft(2, '0');
+  return '$m:$s';
+}
 
 /// 비디오 컨트롤 공통 위젯 모듈
-
 // 뒤로가기 버튼
 class BackButton extends StatelessWidget {
   const BackButton({super.key, required this.onPressed});
