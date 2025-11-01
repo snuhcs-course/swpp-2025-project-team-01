@@ -83,7 +83,19 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     }
 
     // 과목 순서 초기화 (현재 getSubjects()가 반환하는 순서)
-    _workingSubjectOrder = subjects.map((s) => s.id).toList();
+    // 이미 _workingSubjectOrder가 존재하면 보존 (드래그앤드롭으로 변경된 순서 유지)
+    if (_workingSubjectOrder.isEmpty) {
+      _workingSubjectOrder = subjects.map((s) => s.id).toList();
+    } else {
+      // 기존 순서를 유지하되, 새로 추가된 과목이 있으면 추가
+      final currentIds = subjects.map((s) => s.id).toSet();
+      _workingSubjectOrder.removeWhere((id) => !currentIds.contains(id));
+      for (final subject in subjects) {
+        if (!_workingSubjectOrder.contains(subject.id)) {
+          _workingSubjectOrder.add(subject.id);
+        }
+      }
+    }
   }
 
   /// Hive 데이터 변경 시 호출되어 화면을 다시 빌드
