@@ -628,7 +628,8 @@ class CaptionOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hiveManager = HiveManager.instance;
-    final emphasizeCaptions = hiveManager.settings.accessibilityEmphasizeCaptions;
+    final emphasizeCaptions =
+        hiveManager.settings.accessibilityEmphasizeCaptions;
 
     return ValueListenableBuilder<int?>(
       valueListenable: controller.currentSentenceIndex,
@@ -668,7 +669,9 @@ class CaptionOverlay extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: emphasizeCaptions ? 24 : 18,
-                          fontWeight: emphasizeCaptions ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: emphasizeCaptions
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           height: 1.4,
                         ),
                       ),

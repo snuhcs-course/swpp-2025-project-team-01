@@ -155,7 +155,11 @@ class PlayerController extends ChangeNotifier {
     _audioService.play(); // await 제거 - fire-and-forget
   }
 
-  Future<void> _loadPdfDocument(String pdfPath, String lectureId, int initialPage) async {
+  Future<void> _loadPdfDocument(
+    String pdfPath,
+    String lectureId,
+    int initialPage,
+  ) async {
     pdfDocument = pdfPath.startsWith('assets/')
         ? await PdfDocument.openAsset(pdfPath)
         : await PdfDocument.openFile(pdfPath);
