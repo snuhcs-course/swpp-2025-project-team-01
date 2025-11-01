@@ -10,6 +10,7 @@ class LectureLoadingService extends ChangeNotifier {
   static final LectureLoadingService instance = LectureLoadingService._();
 
   bool _isLoading = false;
+  List<double> _progressLists = <double>[];
   double _progress = 0.0;
   String _message = '';
   String _lectureTitle = '';
@@ -45,8 +46,9 @@ class LectureLoadingService extends ChangeNotifier {
   }
 
   /// 로딩 시작
-  void startLoading(String title) {
+  void startLoading(String title, int audioCount) {
     _isLoading = true;
+    _progressLists = List.filled(audioCount, 0.0);
     _progress = 0.0;
     _message = 'Starting...';
     _lectureTitle = title;
@@ -57,14 +59,25 @@ class LectureLoadingService extends ChangeNotifier {
     _saveState();
   }
 
+  /// 현재 진행도
+  double getProgress() {
+    return _progress;
+  }
+
+  double computeProgress() {
+    final sum = _progressLists.reduce((a, b) => a + b);
+    return sum / _progressLists.length;
+  }
+
   /// 진행도 업데이트
-  void updateProgress(double progress, String message) {
+  void updateProgress(double progress, int order, String message) {
     if (!_isLoading) {
       return;
     }
 
-    _progress = progress.clamp(0.0, 1.0);
+    _progressLists[order - 1] = progress.clamp(0.0, 1.0);
     _message = message;
+    _progress = computeProgress();
     notifyListeners();
     _saveState();
   }

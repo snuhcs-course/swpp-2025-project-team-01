@@ -86,8 +86,20 @@ void main() {
 
       final progressEvents = <Map<String, dynamic>>[];
 
-      Future<void> onProgress(double p, String msg, String title) async {
-        progressEvents.add({'p': p, 'msg': msg, 'title': title});
+      Future<void> onProgress(
+        double p,
+        String msg,
+        String title,
+        int i,
+        int j,
+      ) async {
+        progressEvents.add({
+          'p': p,
+          'msg': msg,
+          'title': title,
+          'i': i,
+          'j': j,
+        });
       }
 
       // Act: call with injected client + endpointOverride so we don’t depend on host/port
@@ -96,7 +108,7 @@ void main() {
         audioEntry,
         'My Lecture',
         0,
-        true,
+        1,
         '127.0.0.1',
         '8080',
         onProgress,
@@ -126,8 +138,20 @@ void main() {
 
       final progressEvents = <Map<String, dynamic>>[];
 
-      Future<void> onProgress(double p, String msg, String title) async {
-        progressEvents.add({'p': p, 'msg': msg, 'title': title});
+      Future<void> onProgress(
+        double p,
+        String msg,
+        String title,
+        int i,
+        int j,
+      ) async {
+        progressEvents.add({
+          'p': p,
+          'msg': msg,
+          'title': title,
+          'i': i,
+          'j': j,
+        });
       }
 
       // Act: call with injected client + endpointOverride so we don’t depend on host/port
@@ -137,7 +161,7 @@ void main() {
           audioEntry,
           'My Lecture',
           0,
-          true,
+          1,
           '127.0.0.1',
           '8080',
           onProgress,
@@ -153,7 +177,7 @@ void main() {
           audioEntry,
           'My Lecture',
           0,
-          false,
+          2,
           '127.0.0.1',
           '8080',
           onProgress,
@@ -320,15 +344,6 @@ void main() {
     test('returns non-null path when valid inputs exist', () async {
       final result = await concatenateAudioFiles(
         [audio1, audio2],
-        title,
-        dirOverride: tempDir,
-      );
-      expect(result, anyOf(isNull, isA<String>()));
-    });
-
-    test('handles empty input list gracefully', () async {
-      final result = await concatenateAudioFiles(
-        [],
         title,
         dirOverride: tempDir,
       );

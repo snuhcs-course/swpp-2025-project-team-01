@@ -852,7 +852,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     _httpClient = http.Client();
 
     // 로딩 서비스 시작 및 취소 콜백 등록
-    LectureLoadingService.instance.startLoading(titleText);
+    final effectiveAudios = _audioFiles
+        .where((e) => (e.filePath ?? '').isNotEmpty)
+        .toList();
+    LectureLoadingService.instance.startLoading(
+      titleText,
+      effectiveAudios.length,
+    );
     LectureLoadingService.instance.setOnCancel(() {
       _httpClient?.close();
       _closeClientOnDispose = true;
@@ -873,9 +879,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
       final slidePath = _slidePdfPath!;
-      final effectiveAudios = _audioFiles
-          .where((e) => (e.filePath ?? '').isNotEmpty)
-          .toList();
 
       // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
       if (mounted) {
@@ -888,6 +891,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         });
       }
 
+      final List<Future<List<String>?>> futures = [];
       final originalAudioPaths = <String>[];
       final ttsAudioPaths = <String>[];
       final jsonPaths = <String>[];
@@ -896,83 +900,40 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
         originalAudioPaths.add(audioFileEntry.filePath!);
-        try {
-          debugPrint(
-            '🚀 Starting lecture request $i/${effectiveAudios.length}',
-          );
-          debugPrint('📤 Server: $_serverAddress:$_port');
-          debugPrint('📄 Slide: $slidePath');
-          debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
-          debugPrint('📊 isSingleAudio: ${effectiveAudios.length == 1}');
-          debugPrint(
-            '📝 Start page: "${audioFileEntry.startPageController.text}"',
-          );
-          debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
 
-          final jobId = await requestLecture(
+        futures.add(
+          fetchLecture(
             slidePath,
             audioFileEntry,
             titleText,
             i,
-            effectiveAudios.length == 1 ? true : false,
+            effectiveAudios.length,
             _serverAddress,
             _port,
             onProgress,
             clientToClose: _httpClient,
-          );
+          ),
+        );
 
-          debugPrint('✅ Request completed with jobId: $jobId');
+        // Add PDF ranges
+        if (effectiveAudios.length >= 2) {
+          final startText = audioFileEntry.startPageController.text.trim();
+          final pdfStart = int.parse(startText);
+          pdfStarts.add(pdfStart);
+        }
+      }
 
-          if (jobId == null) {
-            LectureLoadingService.instance.hideLoading();
-
-            // 취소된 경우가 아닐 때만 실패 메시지 표시
-            if (!LectureLoadingService.instance.isCancelled && mounted) {
-              _showToast(
-                l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-              );
-            }
-            return;
-          }
-
-          final zipPath = await downloadResult(
-            jobId,
-            titleText,
-            i,
-            _serverAddress,
-            _port,
-          );
-
-          if (zipPath == null) {
-            LectureLoadingService.instance.hideLoading();
-            _showToast(
-              l10n.isKorean ? '강의 다운로드에 실패했습니다.' : 'Lecture download failed.',
-            );
-            return;
-          }
-
-          final filePaths = await unzipResult(zipPath, titleText, i);
-          if (filePaths == null) {
-            _showToast(
-              l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-            );
-            return;
-          }
-          ttsAudioPaths.add(filePaths[0]);
-          jsonPaths.add(filePaths[1]);
-
-          // Add PDF ranges
-          if (effectiveAudios.length >= 2) {
-            final startText = audioFileEntry.startPageController.text.trim();
-            final pdfStart = int.parse(startText);
-            pdfStarts.add(pdfStart);
-          }
-        } catch (err) {
-          LectureLoadingService.instance.hideLoading();
+      // Async calls in parallel
+      final results = await Future.wait(futures);
+      for (int i = 0; i < effectiveAudios.length; i++) {
+        if (results[i] == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
           return;
+        } else {
+          ttsAudioPaths.add(results[i]![0]);
+          jsonPaths.add(results[i]![1]);
         }
       }
 
@@ -989,6 +950,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
         ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
         jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
+
         if (originalAudioPath == null ||
             ttsAudioPath == null ||
             jsonPath == null) {
