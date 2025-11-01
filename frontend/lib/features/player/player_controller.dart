@@ -139,8 +139,9 @@ class PlayerController extends ChangeNotifier {
       axis: Axis.vertical,
     );
 
-    // PDF 문서 로드
-    await _loadPdfDocument(pdfPath, lectureId);
+    // PDF 문서 로드 (transcript의 첫 슬라이드를 초기 페이지로 설정)
+    final initialPage = transcriptData.timestamps[0].slideNumber;
+    await _loadPdfDocument(pdfPath, lectureId, initialPage);
 
     // 오디오 리스너 설정
     _setupAudioListeners();
@@ -154,7 +155,7 @@ class PlayerController extends ChangeNotifier {
     _audioService.play(); // await 제거 - fire-and-forget
   }
 
-  Future<void> _loadPdfDocument(String pdfPath, String lectureId) async {
+  Future<void> _loadPdfDocument(String pdfPath, String lectureId, int initialPage) async {
     pdfDocument = pdfPath.startsWith('assets/')
         ? await PdfDocument.openAsset(pdfPath)
         : await PdfDocument.openFile(pdfPath);
@@ -170,7 +171,14 @@ class PlayerController extends ChangeNotifier {
       debugPrint('✅ First page pre-loaded from thumbnail cache for $lectureId');
     }
 
-    pdfController = PdfController(document: Future.value(pdfDocument!));
+    // PdfController 생성 시 초기 페이지 설정
+    pdfController = PdfController(
+      document: Future.value(pdfDocument!),
+      initialPage: initialPage,
+    );
+
+    // currentPage도 초기 페이지로 설정
+    currentPage.value = initialPage;
   }
 
   void _setupAudioListeners() {
