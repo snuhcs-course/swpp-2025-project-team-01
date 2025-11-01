@@ -233,80 +233,115 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
   }
 }
 
-class _CollapsedBubbleOverlay extends StatelessWidget {
+class _CollapsedBubbleOverlay extends StatefulWidget {
   const _CollapsedBubbleOverlay({super.key, required this.service});
 
   final LectureLoadingService service;
 
   @override
+  State<_CollapsedBubbleOverlay> createState() =>
+      _CollapsedBubbleOverlayState();
+}
+
+class _CollapsedBubbleOverlayState extends State<_CollapsedBubbleOverlay> {
+  late double _dragX;
+  late double _dragY;
+
+  @override
+  void initState() {
+    super.initState();
+    _dragX = widget.service.bubbleX;
+    _dragY = widget.service.bubbleY;
+  }
+
+  @override
   Widget build(BuildContext context) {
     const double bubbleSize = 88;
-    const double bottomInset = 24;
-    final progress = service.progress.clamp(0.0, 1.0);
+    final progress = widget.service.progress.clamp(0.0, 1.0);
+    final screenSize = MediaQuery.of(context).size;
+    final safeArea = MediaQuery.of(context).padding;
 
     return Stack(
       children: [
         Positioned(
-          bottom: bottomInset,
-          left: service.bubbleOnRight ? null : 24,
-          right: service.bubbleOnRight ? 24 : null,
+          left: _dragX,
+          bottom: _dragY,
           child: SafeArea(
             top: false,
-            child: Material(
-              type: MaterialType.transparency,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: service.expandFromBubble,
-                child: SizedBox(
-                  width: bubbleSize,
-                  height: bubbleSize,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.6),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x33000000),
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
-                            ),
-                          ],
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (details) {
+                // Prevent tap from triggering during drag
+              },
+              onPanUpdate: (details) {
+                setState(() {
+                  // Update position during drag
+                  _dragX = (_dragX + details.delta.dx).clamp(
+                    0.0,
+                    screenSize.width - bubbleSize - safeArea.right,
+                  );
+                  _dragY = (_dragY - details.delta.dy).clamp(
+                    0.0,
+                    screenSize.height - bubbleSize - safeArea.top,
+                  );
+                });
+              },
+              onPanEnd: (details) {
+                // Save final position when drag ends
+                widget.service.updateBubblePosition(_dragX, _dragY);
+              },
+              onTap: () {
+                // Tap to expand
+                widget.service.expandFromBubble();
+              },
+              child: SizedBox(
+                width: bubbleSize,
+                height: bubbleSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: bubbleSize,
+                      height: bubbleSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.6),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x33000000),
+                            blurRadius: 12,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: bubbleSize,
+                      height: bubbleSize,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 6,
+                        backgroundColor: Colors.white24,
+                        valueColor: const AlwaysStoppedAnimation(
+                          Color(0xFFF7FAB0),
                         ),
                       ),
-                      SizedBox(
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 6,
-                          backgroundColor: Colors.white24,
-                          valueColor: const AlwaysStoppedAnimation(
-                            Color(0xFFF7FAB0),
+                    ),
+                    ClipOval(
+                      child: Container(
+                        width: bubbleSize - 18,
+                        height: bubbleSize - 18,
+                        color: Colors.black.withValues(alpha: 0.2),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Image.asset(
+                            'assets/images/loading_character.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
-                      ClipOval(
-                        child: Container(
-                          width: bubbleSize - 18,
-                          height: bubbleSize - 18,
-                          color: Colors.black.withValues(alpha: 0.2),
-                          child: Padding(
-                            padding: const EdgeInsets.all(6.0),
-                            child: Image.asset(
-                              'assets/images/loading_character.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

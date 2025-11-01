@@ -18,6 +18,8 @@ class LectureLoadingService extends ChangeNotifier {
   VoidCallback? _onCancel;
   bool _isCollapsed = false;
   bool _bubbleOnRight = true;
+  double _bubbleX = 24.0; // X position from left edge
+  double _bubbleY = 24.0; // Y position from bottom edge
 
   /// 현재 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -39,6 +41,12 @@ class LectureLoadingService extends ChangeNotifier {
 
   /// 축소 상태에서 오른쪽에 위치하는지 여부
   bool get bubbleOnRight => _bubbleOnRight;
+
+  /// 버블의 X 위치 (왼쪽 가장자리로부터의 거리)
+  double get bubbleX => _bubbleX;
+
+  /// 버블의 Y 위치 (하단 가장자리로부터의 거리)
+  double get bubbleY => _bubbleY;
 
   /// 취소 콜백 등록
   void setOnCancel(VoidCallback? callback) {
@@ -154,6 +162,17 @@ class LectureLoadingService extends ChangeNotifier {
     _saveState();
   }
 
+  /// 버블 위치 업데이트
+  void updateBubblePosition(double x, double y) {
+    if (!_isLoading || !_isCollapsed) {
+      return;
+    }
+    _bubbleX = x;
+    _bubbleY = y;
+    notifyListeners();
+    _saveState();
+  }
+
   // SharedPreferences keys
   static const _keyIsLoading = 'lecture_loading_is_loading';
   static const _keyProgress = 'lecture_loading_progress';
@@ -161,6 +180,8 @@ class LectureLoadingService extends ChangeNotifier {
   static const _keyLectureTitle = 'lecture_loading_lecture_title';
   static const _keyIsCollapsed = 'lecture_loading_is_collapsed';
   static const _keyBubbleOnRight = 'lecture_loading_bubble_on_right';
+  static const _keyBubbleX = 'lecture_loading_bubble_x';
+  static const _keyBubbleY = 'lecture_loading_bubble_y';
 
   /// 상태를 SharedPreferences에 저장
   Future<void> _saveState() async {
@@ -172,6 +193,8 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setString(_keyLectureTitle, _lectureTitle);
       await prefs.setBool(_keyIsCollapsed, _isCollapsed);
       await prefs.setBool(_keyBubbleOnRight, _bubbleOnRight);
+      await prefs.setDouble(_keyBubbleX, _bubbleX);
+      await prefs.setDouble(_keyBubbleY, _bubbleY);
     } catch (e) {
       debugPrint('Failed to save loading state: $e');
     }
@@ -187,6 +210,8 @@ class LectureLoadingService extends ChangeNotifier {
       _lectureTitle = prefs.getString(_keyLectureTitle) ?? '';
       _isCollapsed = prefs.getBool(_keyIsCollapsed) ?? false;
       _bubbleOnRight = prefs.getBool(_keyBubbleOnRight) ?? true;
+      _bubbleX = prefs.getDouble(_keyBubbleX) ?? 24.0;
+      _bubbleY = prefs.getDouble(_keyBubbleY) ?? 24.0;
 
       // 복원 후 UI 업데이트
       if (_isLoading) {
@@ -207,6 +232,8 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyLectureTitle);
       await prefs.remove(_keyIsCollapsed);
       await prefs.remove(_keyBubbleOnRight);
+      await prefs.remove(_keyBubbleX);
+      await prefs.remove(_keyBubbleY);
     } catch (e) {
       debugPrint('Failed to clear loading state: $e');
     }
