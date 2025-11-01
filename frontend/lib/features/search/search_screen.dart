@@ -107,6 +107,10 @@ class _SearchScreenState extends State<SearchScreen> {
             (s) => s.id == lec.subjectId,
             orElse: () => const Subject(id: '', title: ''),
           );
+          // 미분류 과목은 검색에서 제외
+          if (subject.isUncategorized) {
+            return false;
+          }
           return subject.title.toLowerCase().contains(searchQuery);
       }
     }).toList();

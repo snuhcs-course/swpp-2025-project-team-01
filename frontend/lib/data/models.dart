@@ -54,6 +54,7 @@ class Subject {
     this.favorite = false,
     this.tagIds = const [],
     this.lectureIds = const [],
+    this.isUncategorized = false,
   });
 
   final String id;
@@ -61,18 +62,21 @@ class Subject {
   final bool favorite;
   final List<String> tagIds;
   final List<String> lectureIds;
+  final bool isUncategorized; // 미분류 과목 여부
 
   Subject copyWith({
     String? title,
     bool? favorite,
     List<String>? tagIds,
     List<String>? lectureIds,
+    bool? isUncategorized,
   }) => Subject(
     id: id,
     title: title ?? this.title,
     favorite: favorite ?? this.favorite,
     tagIds: tagIds ?? this.tagIds,
     lectureIds: lectureIds ?? this.lectureIds,
+    isUncategorized: isUncategorized ?? this.isUncategorized,
   );
 
   /// Convert to HiveSubject for storage
@@ -83,6 +87,7 @@ class Subject {
       favorite: favorite,
       tagIds: tagIds,
       lectureIds: lectureIds,
+      isUncategorized: isUncategorized,
     );
   }
 }

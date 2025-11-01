@@ -152,6 +152,21 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
         itemCount: subjects.length,
         onReorder: (oldIndex, newIndex) {
           setState(() {
+            // 미분류 과목은 드래그 불가 (항상 마지막 위치 유지)
+            if (subjects[oldIndex].isUncategorized) {
+              return;
+            }
+
+            // 미분류 과목의 인덱스 찾기
+            final uncategorizedIndex = subjects.indexWhere(
+              (s) => s.isUncategorized,
+            );
+
+            // 미분류 과목이 있고, 그 위치나 그 뒤로 드래그하려는 경우 차단
+            if (uncategorizedIndex != -1 && newIndex >= uncategorizedIndex) {
+              return;
+            }
+
             // 드래그앤드롭 인덱스 조정
             if (newIndex > oldIndex) {
               newIndex -= 1;
@@ -228,10 +243,15 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
           );
     }).toList();
 
+    // 미분류 과목은 다국어 처리된 제목 사용 (왼쪽 여백 추가)
+    final displayTitle = subject.isUncategorized
+        ? '  ${AppLocalizations.of(context).uncategorized}'
+        : _workingTitles[subject.id];
+
     return _SubjectEditPanel(
       index: index,
       subject: subject,
-      displayTitle: _workingTitles[subject.id],
+      displayTitle: displayTitle,
       isInitiallyExpanded: isExpanded,
       lectures: lectures,
       // 강의 순서 재정렬 콜백
@@ -305,6 +325,20 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   ///
   /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공
   Future<void> _showSubjectEditDialog(Subject subject) async {
+    // 미분류 과목은 편집 불가
+    if (subject.isUncategorized) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).isKorean
+                ? '미분류 과목은 편집할 수 없습니다'
+                : 'Uncategorized subject cannot be edited',
+          ),
+        ),
+      );
+      return;
+    }
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
@@ -856,19 +890,24 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Row(
           children: [
-            // 드래그 핸들 (좌측)
-            ReorderableDragStartListener(
-              index: widget.index,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.drag_indicator,
-                  color: iconColor.withValues(alpha: 0.7),
-                  size: 24,
+            // 드래그 핸들 (좌측) - 미분류 과목은 숨김
+            if (!widget.subject.isUncategorized) ...[
+              ReorderableDragStartListener(
+                index: widget.index,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: iconColor.withValues(alpha: 0.7),
+                    size: 24,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ] else ...[
+              // 미분류 과목은 드래그 핸들 대신 여백
+              const SizedBox(width: 40),
+            ],
             // 제목
             Expanded(
               child: Text(

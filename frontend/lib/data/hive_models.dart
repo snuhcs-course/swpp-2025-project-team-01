@@ -108,6 +108,7 @@ class HiveSubject {
     this.favorite = false,
     List<String>? tagIds,
     List<String>? lectureIds,
+    this.isUncategorized = false,
   }) : tagIds = tagIds ?? [],
        lectureIds = lectureIds ?? [];
 
@@ -126,12 +127,16 @@ class HiveSubject {
   @HiveField(4)
   List<String> lectureIds;
 
+  @HiveField(5)
+  bool isUncategorized;
+
   HiveSubject copyWith({
     String? id,
     String? title,
     bool? favorite,
     List<String>? tagIds,
     List<String>? lectureIds,
+    bool? isUncategorized,
   }) {
     return HiveSubject(
       id: id ?? this.id,
@@ -139,6 +144,7 @@ class HiveSubject {
       favorite: favorite ?? this.favorite,
       tagIds: tagIds ?? this.tagIds,
       lectureIds: lectureIds ?? this.lectureIds,
+      isUncategorized: isUncategorized ?? this.isUncategorized,
     );
   }
 
@@ -150,6 +156,7 @@ class HiveSubject {
       favorite: favorite,
       tagIds: tagIds,
       lectureIds: lectureIds,
+      isUncategorized: isUncategorized,
     );
   }
 }

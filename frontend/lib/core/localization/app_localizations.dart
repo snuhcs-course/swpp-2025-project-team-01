@@ -75,6 +75,7 @@ class AppLocalizations {
   // 과목
   String get subject => isKorean ? '과목' : 'Subject';
   String get subjects => isKorean ? '과목' : 'Subjects';
+  String get uncategorized => isKorean ? '미분류' : 'Uncategorized';
   String get editingSubjects => isKorean ? '과목 수정' : 'Editing Subjects';
   String get deleteSubject => isKorean ? '과목 삭제' : 'Delete Subject';
   String get deleteSubjectWarning => isKorean

@@ -73,6 +73,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // HiveManager가 초기화되지 않았으면 로딩 표시
+    if (!_manager.isInitialized) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final tags = _manager.getTags().map((ht) => ht.toTag()).toList();
     final subjects = _manager
         .getSubjects(
@@ -80,6 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
           filterTagIds: selectedTagIds.toList(),
         )
         .map((hs) => hs.toSubject())
+        .where((subject) {
+          // 미분류 과목은 강의가 있을 때만 표시
+          if (subject.isUncategorized) {
+            return subject.lectureIds.isNotEmpty;
+          }
+          return true;
+        })
         .toList();
     final reduceMotion = _manager.settings.accessibilityReduceMotion;
 

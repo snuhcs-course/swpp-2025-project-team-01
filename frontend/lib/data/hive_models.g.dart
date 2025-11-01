@@ -163,13 +163,14 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       favorite: fields[2] as bool,
       tagIds: (fields[3] as List?)?.cast<String>(),
       lectureIds: (fields[4] as List?)?.cast<String>(),
+      isUncategorized: fields[5] as bool? ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveSubject obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -179,7 +180,9 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       ..writeByte(3)
       ..write(obj.tagIds)
       ..writeByte(4)
-      ..write(obj.lectureIds);
+      ..write(obj.lectureIds)
+      ..writeByte(5)
+      ..write(obj.isUncategorized);
   }
 
   @override

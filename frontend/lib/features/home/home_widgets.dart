@@ -315,14 +315,20 @@ class _SubjectPanelState extends State<SubjectPanel>
         children: [
           // 검정 헤더 (태그 + ★ + 제목 + 화살표)
           SubjectPanelHeader(
-            title: widget.subject.title,
-            tags: widget.tags,
+            title: widget.subject.isUncategorized
+                ? '  ${AppLocalizations.of(context).uncategorized}'
+                : widget.subject.title,
+            tags: widget.subject.isUncategorized
+                ? []
+                : widget.tags, // 미분류는 태그 숨김
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
-            favoriteIcon: widget.subject.favorite
-                ? Icons.star
-                : Icons.star_border,
-            onToggleFavorite: widget.onToggleFavorite,
+            favoriteIcon: widget.subject.isUncategorized
+                ? null // 미분류는 즐겨찾기 아이콘 숨김
+                : (widget.subject.favorite ? Icons.star : Icons.star_border),
+            onToggleFavorite: widget.subject.isUncategorized
+                ? null // 미분류는 즐겨찾기 토글 불가
+                : widget.onToggleFavorite,
             favoriteIconColor: h.important,
           ),
 

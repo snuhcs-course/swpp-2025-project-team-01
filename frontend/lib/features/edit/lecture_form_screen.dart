@@ -202,7 +202,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String?>(
-              value: _selectedSubjectId,
+              value: _selectedSubjectId == 'uncategorized'
+                  ? null
+                  : _selectedSubjectId,
               isExpanded: true,
               icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
               hint: Text(
@@ -219,16 +221,21 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                     style: TextStyle(fontSize: 16, color: textColor),
                   ),
                 ),
-                // 기존 과목 리스트
-                ...subjects.map(
-                  (s) => DropdownMenuItem<String?>(
-                    value: (s as dynamic).id as String,
-                    child: Text(
-                      (s as dynamic).title as String,
-                      style: TextStyle(fontSize: 16, color: textColor),
+                // 기존 과목 리스트 (미분류 제외)
+                ...subjects
+                    .where((s) {
+                      final subject = s as HiveSubject;
+                      return !subject.isUncategorized;
+                    })
+                    .map(
+                      (s) => DropdownMenuItem<String?>(
+                        value: (s as dynamic).id as String,
+                        child: Text(
+                          (s as dynamic).title as String,
+                          style: TextStyle(fontSize: 16, color: textColor),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -794,10 +801,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 4. 최소 1개의 오디오 파일 업로드 여부
   Future<void> _createLecture() async {
     // 1. 검증
-    if (_selectedSubjectId == null) {
-      _showToast(l10n.isKorean ? '과목을 선택해주세요' : 'Please select a subject');
-      return;
-    }
+    // 과목 선택이 없으면 미분류로 처리
+    _selectedSubjectId ??= 'uncategorized';
     if (_weekController.text.trim().isEmpty) {
       _showToast(l10n.isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week');
       return;
