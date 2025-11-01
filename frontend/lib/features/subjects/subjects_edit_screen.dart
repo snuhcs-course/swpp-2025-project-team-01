@@ -657,7 +657,6 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
             ),
             const SizedBox(height: 16),
 
-            // ========== 태그 수정 ==========
             const Text(
               '태그 수정',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -976,8 +975,8 @@ class _BottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark
-        ? const Color(0xFF212121) // 다크모드: 배경색과 동일
-        : const Color(0xFFEDEDED); // 라이트모드: 기존 색상
+        ? null // 다크모드: Scaffold 기본 배경색 사용
+        : const Color(0xFFF5F5F5); // 라이트모드: Scaffold와 동일한 배경색
 
     return SafeArea(
       child: Container(
