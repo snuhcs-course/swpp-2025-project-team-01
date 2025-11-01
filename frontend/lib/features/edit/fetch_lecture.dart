@@ -449,7 +449,8 @@ Future<String?> concatenateJsonFiles(
 
     final List<Map<String, dynamic>> mergedTimestamps = [];
     int runningSentenceId = 1;
-    int timeOffset = 0;
+    int originalTimeOffset = 0;
+    int ttsTimeOffset = 0;
 
     int totalSentences = 0;
     int totalDuration = 0;
@@ -526,10 +527,14 @@ Future<String?> concatenateJsonFiles(
       totalDuration += fileTotalDuration;
 
       // Determine how much time to offset this file by: append after current last end
-      final currentTimelineEnd = mergedTimestamps.isEmpty
+      final currentTtsTimelineEnd = mergedTimestamps.isEmpty
           ? 0
           : mergedTimestamps.last['end_time'] as int;
-      timeOffset = i == 0 ? 0 : currentTimelineEnd + gapBetweenFiles;
+      final currentOriginalTimelineEnd = mergedTimestamps.isEmpty
+          ? 0
+          : mergedTimestamps.last['original_end_time'] as int;
+      ttsTimeOffset = i == 0 ? 0 : currentTtsTimelineEnd + gapBetweenFiles;
+      originalTimeOffset = i == 0 ? 0 : currentOriginalTimelineEnd + gapBetweenFiles;
 
       // Integrate timestamps with renumbering and offsets
       for (final ts in tsList) {
@@ -538,6 +543,8 @@ Future<String?> concatenateJsonFiles(
         final slideNumber = (ts['slide_number'] as num?)?.toInt() ?? 0;
         final startTime = (ts['start_time'] as num?)?.toInt() ?? 0;
         final endTime = (ts['end_time'] as num?)?.toInt() ?? startTime;
+        final originalStartTime = (ts['original_start_time'] as num?)?.toInt() ?? 0;
+        final originalEndTime = (ts['original_end_time'] as num?)?.toInt() ?? 0;
         final duration =
             (ts['duration'] as num?)?.toInt() ?? (endTime - startTime);
 
@@ -546,8 +553,10 @@ Future<String?> concatenateJsonFiles(
           'text': text,
           'text_kor': textKor,
           'slide_number': slideNumber + pdfStart - 1,
-          'start_time': startTime + timeOffset,
-          'end_time': endTime + timeOffset,
+          'start_time': startTime + ttsTimeOffset,
+          'end_time': endTime + ttsTimeOffset,
+          'original_start_time': originalStartTime + originalTimeOffset,
+          'original_end_time': originalEndTime + originalTimeOffset,
           'duration': duration,
         });
       }
@@ -667,8 +676,9 @@ Future<void> onProgress(
     loadingService.updateProgress(progress, order, message);
   }
 
-  final pct = (currentProgress * 100).round();
-  final isDone = currentProgress >= 1.0;
+  final updatedProgress = loadingService.getProgress();
+  final pct = (updatedProgress * 100).round();
+  final isDone = updatedProgress >= 1.0;
 
   // Always show notification during progress to keep background task alive
   // Only skip notification if completed and app is in foreground
