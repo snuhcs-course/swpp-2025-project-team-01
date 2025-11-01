@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
+import 'package:re_view/core/thumbnail_cache_manager.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -382,7 +383,7 @@ class LectureCard extends StatefulWidget {
 class _LectureCardState extends State<LectureCard> {
   PdfDocument? _pdfDocument;
   PdfPage? _pdfPage;
-  PdfPageImage? _cachedImage; // 렌더링된 이미지 캐싱
+  PdfPageImage? _cachedImage; // 렌더링된 이미지 (로컬 참조용)
   bool _isLoading = true;
   String? _error;
 
@@ -396,7 +397,8 @@ class _LectureCardState extends State<LectureCard> {
   void didUpdateWidget(LectureCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 강의 내용이 변경되면 PDF 다시 로드
-    if (oldWidget.lec.slidePath != widget.lec.slidePath) {
+    if (oldWidget.lec.slidePath != widget.lec.slidePath ||
+        oldWidget.lec.id != widget.lec.id) {
       _pdfPage?.close();
       _pdfDocument?.close();
       _pdfDocument = null;
@@ -414,6 +416,22 @@ class _LectureCardState extends State<LectureCard> {
       return;
     }
 
+    // 1. 먼저 글로벌 캐시에서 확인
+    final cacheManager = ThumbnailCacheManager.instance;
+    final cachedImage = cacheManager.get(widget.lec.id);
+
+    if (cachedImage != null) {
+      // 캐시에 있으면 바로 사용
+      if (mounted) {
+        setState(() {
+          _cachedImage = cachedImage;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    // 2. 캐시에 없으면 PDF 로드 및 렌더링
     try {
       // assets 경로인지 파일 시스템 경로인지 확인
       final bool isAsset = widget.lec.slidePath!.startsWith('assets/');
@@ -427,6 +445,12 @@ class _LectureCardState extends State<LectureCard> {
         height: page.height * 2,
         format: PdfPageImageFormat.png,
       );
+
+      if (image != null) {
+        // 3. 글로벌 캐시에 저장
+        cacheManager.put(widget.lec.id, image);
+      }
+
       if (mounted) {
         setState(() {
           _pdfDocument = document;
