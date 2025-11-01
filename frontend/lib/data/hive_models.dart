@@ -54,7 +54,6 @@ class AppSettings {
     this.accessibilityReduceMotion = false,
     this.accessibilityEmphasizeCaptions = true,
     this.ttsGender = '남성',
-    this.ttsSpeed = '보통',
     this.tagColorTheme = '봄',
     this.hasCompletedTutorial = false,
   });
@@ -78,12 +77,9 @@ class AppSettings {
   String ttsGender; // '남성', '여성'
 
   @HiveField(6)
-  String ttsSpeed; // '빠르게', '보통', '느리게'
-
-  @HiveField(7)
   String tagColorTheme; // '봄', '여름', '가을', '겨울', '솜사탕', '비비드', '바다'
 
-  @HiveField(8)
+  @HiveField(7)
   bool hasCompletedTutorial;
 }
 

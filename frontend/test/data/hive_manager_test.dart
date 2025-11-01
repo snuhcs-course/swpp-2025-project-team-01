@@ -139,7 +139,6 @@ void main() {
           accessibilityReduceMotion: true,
           accessibilityEmphasizeCaptions: true,
           ttsGender: '남성',
-          ttsSpeed: '보통',
           tagColorTheme: '파스텔',
         ),
         subjects: subjects,
@@ -190,7 +189,7 @@ void main() {
         reduceMotion: false,
         emphasizeCaptions: false,
       );
-      await manager.updateTts(gender: '여성', speed: '빠르게');
+      await manager.updateTts(gender: '여성');
       await manager.updateTagColorTheme('비비드');
 
       final saved = appBox.get('main');
@@ -201,7 +200,6 @@ void main() {
       expect(manager.settings.accessibilityReduceMotion, isFalse);
       expect(manager.settings.accessibilityEmphasizeCaptions, isFalse);
       expect(manager.settings.ttsGender, '여성');
-      expect(manager.settings.ttsSpeed, '빠르게');
       expect(manager.settings.tagColorTheme, '비비드');
       expect(saved?.settings.theme, 'light');
       expect(notificationCount, greaterThan(0));

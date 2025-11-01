@@ -83,7 +83,6 @@ void main() {
           accessibilityReduceMotion: true,
           accessibilityEmphasizeCaptions: false,
           ttsGender: '여성',
-          ttsSpeed: '빠르게',
           tagColorTheme: '비비드',
         ),
         subjects: {
@@ -142,14 +141,12 @@ void main() {
         accessibilityReduceMotion: true,
         accessibilityEmphasizeCaptions: false,
         ttsGender: '남성',
-        ttsSpeed: '느리게',
         tagColorTheme: '파스텔',
       );
 
       final result = _roundTrip(bundle, bundle.appSettings, original);
       expect(result.theme, 'light');
       expect(result.accessibilityReduceMotion, isTrue);
-      expect(result.ttsSpeed, '느리게');
       expect(result.tagColorTheme, '파스텔');
     });
   });

@@ -74,7 +74,6 @@ void main() {
       expect(settings.accessibilityReduceMotion, isFalse);
       expect(settings.accessibilityEmphasizeCaptions, isTrue);
       expect(settings.ttsGender, '남성');
-      expect(settings.ttsSpeed, '보통');
       expect(settings.tagColorTheme, '봄');
     });
 

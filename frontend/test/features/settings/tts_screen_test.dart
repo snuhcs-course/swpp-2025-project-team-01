@@ -14,7 +14,6 @@ import 'package:re_view/features/settings/tts_screen.dart';
 class FakeAppSettings implements AppSettings {
   FakeAppSettings({
     this.ttsGender = '남성',
-    this.ttsSpeed = '보통',
     this.theme = 'system',
     this.language = 'ko',
     this.accessibilityHighContrast = false,
@@ -26,8 +25,6 @@ class FakeAppSettings implements AppSettings {
 
   @override
   String ttsGender;
-  @override
-  String ttsSpeed;
 
   @override
   String theme;
@@ -47,39 +44,30 @@ class FakeAppSettings implements AppSettings {
 
 /// HiveManager 인터페이스를 구현하는 Fake 클래스
 class FakeHiveManager with ChangeNotifier implements HiveManager {
-  FakeHiveManager({String initialGender = '남성', String initialSpeed = '보통'}) {
-    _fakeSettings = FakeAppSettings(
-      ttsGender: initialGender,
-      ttsSpeed: initialSpeed,
-    );
+  FakeHiveManager({String initialGender = '남성'}) {
+    _fakeSettings = FakeAppSettings(ttsGender: initialGender);
   }
 
   late FakeAppSettings _fakeSettings;
 
   bool updateTtsCalled = false;
   String? lastGender;
-  String? lastSpeed;
 
   @override
   AppSettings get settings => _fakeSettings;
 
   @override
-  Future<void> updateTts({String? gender, String? speed}) async {
+  Future<void> updateTts({String? gender}) async {
     updateTtsCalled = true;
     if (gender != null) {
       _fakeSettings.ttsGender = gender;
       lastGender = gender;
-    }
-    if (speed != null) {
-      _fakeSettings.ttsSpeed = speed;
-      lastSpeed = speed;
     }
   }
 
   void resetCallHistory() {
     updateTtsCalled = false;
     lastGender = null;
-    lastSpeed = null;
   }
 
   // Tutorial methods (not used in this test)
@@ -149,6 +137,10 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
   ) async {}
   @override
   Future<void> updateSubjectTags(String id, List<String> tagIds) async {}
+  @override
+  List<String> get subjectOrder => [];
+  @override
+  Future<void> updateSubjectOrder(List<String> newOrder) async {}
   @override
   List<HiveTag> getTags() => [];
   @override
@@ -241,11 +233,6 @@ void main() {
     return text.style?.fontWeight == FontWeight.w600;
   }
 
-  bool isSpeedSelected(WidgetTester tester, String label) {
-    final text = tester.widget<Text>(find.text(label));
-    return text.style?.fontWeight == FontWeight.w600;
-  }
-
   group('tts_screen.dart: Widget Test', () {
     group('1. UI Initial State Verification (Mock Data -> UI)', () {
       testWidgets('메인 Scaffold가 렌더링되어야 함', (tester) async {
@@ -254,27 +241,19 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsNothing);
       });
 
-      testWidgets('설정이 "남성", "보통"일 때 UI에 반영되어야 함', (tester) async {
+      testWidgets('설정이 "남성"일 때 UI에 반영되어야 함', (tester) async {
         await pumpTtsScreen(tester, locale: const Locale('ko'));
 
         expect(isGenderSelected(tester, '남성'), isTrue);
         expect(isGenderSelected(tester, '여성'), isFalse);
-        expect(isSpeedSelected(tester, '보통'), isTrue);
-        expect(isSpeedSelected(tester, '빠르게'), isFalse);
-        expect(isSpeedSelected(tester, '느리게'), isFalse);
       });
 
-      testWidgets('설정이 "여성", "빠르게"일 때 UI에 반영되어야 함', (tester) async {
-        fakeHiveManager = FakeHiveManager(
-          initialGender: '여성',
-          initialSpeed: '빠르게',
-        );
+      testWidgets('설정이 "여성"일 때 UI에 반영되어야 함', (tester) async {
+        fakeHiveManager = FakeHiveManager(initialGender: '여성');
         await pumpTtsScreen(tester, locale: const Locale('ko'));
 
         expect(isGenderSelected(tester, '여성'), isTrue);
         expect(isGenderSelected(tester, '남성'), isFalse);
-        expect(isSpeedSelected(tester, '빠르게'), isTrue);
-        expect(isSpeedSelected(tester, '보통'), isFalse);
       });
 
       testWidgets('한국어(ko) 로케일일 때 한국어 라벨이 표시되어야 함', (tester) async {
@@ -347,32 +326,6 @@ void main() {
         expect(fakeHiveManager.lastGender, '여성');
       });
 
-      testWidgets('"빠르게" 버튼 탭 시 updateTts(speed: "빠르게") 호출 및 UI 변경', (
-        tester,
-      ) async {
-        await pumpTtsScreen(tester, locale: const Locale('ko'));
-
-        await tester.tap(find.text('빠르게'));
-        await tester.pumpAndSettle();
-
-        expect(fakeHiveManager.updateTtsCalled, isTrue);
-        expect(fakeHiveManager.lastSpeed, '빠르게');
-        expect(isSpeedSelected(tester, '빠르게'), isTrue);
-      });
-
-      testWidgets('"느리게" 버튼 탭 시 updateTts(speed: "느리게") 호출 및 UI 변경', (
-        tester,
-      ) async {
-        await pumpTtsScreen(tester, locale: const Locale('ko'));
-
-        await tester.tap(find.text('느리게'));
-        await tester.pumpAndSettle();
-
-        expect(fakeHiveManager.updateTtsCalled, isTrue);
-        expect(fakeHiveManager.lastSpeed, '느리게');
-        expect(isSpeedSelected(tester, '느리게'), isTrue);
-      });
-
       testWidgets('AppBar 닫기 버튼 탭 시 Navigator.pop 호출', (tester) async {
         await pumpTtsScreen(tester);
 
@@ -380,25 +333,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(fakeNavigatorObserver.popCalled, isTrue);
-      });
-    });
-
-    group('3. Static Method Unit Tests (speedToRate)', () {
-      test('TtsScreen.speedToRate("빠르게")는 1.5를 반환해야 함', () {
-        expect(TtsScreen.speedToRate('빠르게'), 1.5);
-      });
-
-      test('TtsScreen.speedToRate("보통")는 1.0을 반환해야 함', () {
-        expect(TtsScreen.speedToRate('보통'), 1.0);
-      });
-
-      test('TtsScreen.speedToRate("느리게")는 0.7을 반환해야 함', () {
-        expect(TtsScreen.speedToRate('느리게'), 0.7);
-      });
-
-      test('TtsScreen.speedToRate("other")는 1.0 (기본값)을 반환해야 함', () {
-        expect(TtsScreen.speedToRate('some_other_value'), 1.0);
-        expect(TtsScreen.speedToRate(''), 1.0);
       });
     });
   });

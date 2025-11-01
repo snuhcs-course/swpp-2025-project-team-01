@@ -238,12 +238,9 @@ class HiveManager extends ChangeNotifier {
     await _save();
   }
 
-  Future<void> updateTts({String? gender, String? speed}) async {
+  Future<void> updateTts({String? gender}) async {
     if (gender != null) {
       settings.ttsGender = gender;
-    }
-    if (speed != null) {
-      settings.ttsSpeed = speed;
     }
     await _save();
   }
