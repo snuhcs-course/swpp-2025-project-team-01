@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/main.dart' show navigatorKey;
 
 /// 전체 너비를 차지하는 주요 버튼 위젯
@@ -404,6 +405,8 @@ class _LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final language = HiveManager.instance.settings.language;
+    final isKorean = language == 'ko';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -433,7 +436,7 @@ class _LoadingView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '강의 생성 중…',
+                        isKorean ? '강의 생성 중…' : 'Creating Lecture…',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -458,7 +461,7 @@ class _LoadingView extends StatelessWidget {
                           vertical: 6,
                         ),
                       ),
-                      child: const Text('취소'),
+                      child: Text(isKorean ? '취소' : 'Cancel'),
                     ),
                   ],
                 ),
@@ -469,14 +472,16 @@ class _LoadingView extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: '강의명: ',
+                        text: isKorean ? '강의명: ' : 'Lecture: ',
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade400,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       TextSpan(
-                        text: title.isEmpty ? '제목 없음' : title,
+                        text: title.isEmpty
+                            ? (isKorean ? '제목 없음' : 'Untitled')
+                            : title,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade300,
                         ),
@@ -521,6 +526,8 @@ class _CompletedView extends StatelessWidget {
   Widget build(BuildContext widgetContext) {
     final textTheme = Theme.of(context).textTheme;
     final service = LectureLoadingService.instance;
+    final language = HiveManager.instance.settings.language;
+    final isKorean = language == 'ko';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -546,7 +553,7 @@ class _CompletedView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '강의 생성 완료!',
+                        isKorean ? '강의 생성 완료!' : 'Lecture Created!',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -568,7 +575,9 @@ class _CompletedView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '강의 생성이 완료되었습니다.\n결과를 확인해보세요.',
+                  isKorean
+                      ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
+                      : 'Lecture creation completed.\nCheck out the result.',
                   style: textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade300,
                   ),
@@ -595,7 +604,7 @@ class _CompletedView extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: const Text('생성된 강의 바로가기'),
+                    label: Text(isKorean ? '생성된 강의 바로가기' : 'Go to Lecture'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF7FAB0),
                       foregroundColor: Colors.black87,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
@@ -11,8 +12,8 @@ class LectureLoadingService extends ChangeNotifier {
   }
   static final LectureLoadingService instance = LectureLoadingService._();
 
-  // 유저 친화적인 메시지 목록
-  static const List<String> _friendlyMessages = [
+  // 유저 친화적인 메시지 목록 (한국어)
+  static const List<String> _friendlyMessagesKo = [
     '열심히 강의를 받아적는 중..',
     '강의 내용을 정리하고 있어요',
     '음성 파일을 듣고 있어요',
@@ -23,9 +24,27 @@ class LectureLoadingService extends ChangeNotifier {
     '거의 다 됐어요!',
   ];
 
+  // 유저 친화적인 메시지 목록 (영어)
+  static const List<String> _friendlyMessagesEn = [
+    'Taking notes from the lecture..',
+    'Organizing lecture content',
+    'Listening to the audio file',
+    'Matching slides with audio..',
+    'Writing lecture notes',
+    'Highlighting key points',
+    'Analyzing the lecture',
+    'Almost done!',
+  ];
+
   Timer? _messageTimer;
   int _currentMessageIndex = 0;
   final Random _random = Random();
+
+  /// 현재 언어 설정에 따른 메시지 목록 가져오기
+  List<String> get _friendlyMessages {
+    final language = HiveManager.instance.settings.language;
+    return language == 'ko' ? _friendlyMessagesKo : _friendlyMessagesEn;
+  }
 
   bool _isLoading = false;
   List<double> _progressLists = <double>[];
@@ -164,7 +183,8 @@ class LectureLoadingService extends ChangeNotifier {
 
     _messageTimer?.cancel();
     _progress = 1.0;
-    _message = '강의 생성 완료!';
+    final language = HiveManager.instance.settings.language;
+    _message = language == 'ko' ? '강의 생성 완료!' : 'Lecture created!';
     _lectureId = lectureId;
     notifyListeners();
     _saveState();
@@ -189,7 +209,8 @@ class LectureLoadingService extends ChangeNotifier {
   /// 에러 발생 시
   void setError(String errorMessage) {
     _messageTimer?.cancel();
-    _message = '오류가 발생했어요';
+    final language = HiveManager.instance.settings.language;
+    _message = language == 'ko' ? '오류가 발생했어요' : 'An error occurred';
     notifyListeners();
 
     // 3초 후 자동으로 숨김
@@ -200,7 +221,8 @@ class LectureLoadingService extends ChangeNotifier {
   void cancelLoading() {
     _messageTimer?.cancel();
     _isCancelled = true;
-    _message = '강의 생성을 취소하는 중..';
+    final language = HiveManager.instance.settings.language;
+    _message = language == 'ko' ? '강의 생성을 취소하는 중..' : 'Cancelling..';
     notifyListeners();
 
     // 취소 콜백 실행
