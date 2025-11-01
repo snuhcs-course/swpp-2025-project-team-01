@@ -1,4 +1,6 @@
 // 렉처 생성 로딩 상태를 전역으로 관리하는 서비스
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,6 +10,22 @@ class LectureLoadingService extends ChangeNotifier {
     _restoreState();
   }
   static final LectureLoadingService instance = LectureLoadingService._();
+
+  // 유저 친화적인 메시지 목록
+  static const List<String> _friendlyMessages = [
+    '열심히 강의를 받아적는 중..',
+    '강의 내용을 정리하고 있어요',
+    '교수님 목소리를 듣고 있어요',
+    '슬라이드와 음성을 매칭하는 중',
+    '강의 노트를 작성하고 있어요',
+    '중요한 부분을 체크하고 있어요',
+    '강의를 분석하고 있어요',
+    '거의 다 됐어요!',
+  ];
+
+  Timer? _messageTimer;
+  int _currentMessageIndex = 0;
+  final Random _random = Random();
 
   bool _isLoading = false;
   List<double> _progressLists = <double>[];
@@ -58,13 +76,46 @@ class LectureLoadingService extends ChangeNotifier {
     _isLoading = true;
     _progressLists = List.filled(audioCount, 0.0);
     _progress = 0.0;
-    _message = 'Starting...';
+    _currentMessageIndex = 0;
+    _message = _friendlyMessages[0];
     _lectureTitle = title;
     _isCancelled = false;
     _isCollapsed = false;
     _bubbleOnRight = true;
+
+    // 주기적으로 메시지 변경 (3-5초마다)
+    _startMessageTimer();
+
     notifyListeners();
     _saveState();
+  }
+
+  /// 메시지 타이머 시작
+  void _startMessageTimer() {
+    _messageTimer?.cancel();
+    _messageTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!_isLoading || _progress >= 1.0) {
+        timer.cancel();
+        return;
+      }
+
+      // 진행도에 따라 메시지 선택
+      if (_progress < 0.9) {
+        // 90% 미만일 때는 랜덤하게 메시지 선택 (마지막 메시지 제외)
+        int nextIndex;
+        do {
+          nextIndex = _random.nextInt(_friendlyMessages.length - 1);
+        } while (nextIndex == _currentMessageIndex);
+        _currentMessageIndex = nextIndex;
+      } else {
+        // 90% 이상일 때는 마지막 메시지 표시
+        _currentMessageIndex = _friendlyMessages.length - 1;
+      }
+
+      _message = _friendlyMessages[_currentMessageIndex];
+      notifyListeners();
+      _saveState();
+    });
   }
 
   /// 현재 진행도
@@ -84,7 +135,8 @@ class LectureLoadingService extends ChangeNotifier {
     }
 
     _progressLists[order - 1] = progress.clamp(0.0, 1.0);
-    _message = message;
+    // 서버 메시지는 무시하고 현재 유저 친화적 메시지 유지
+    // _message는 타이머에 의해서만 업데이트됨
     _progress = computeProgress();
     notifyListeners();
     _saveState();
@@ -96,14 +148,16 @@ class LectureLoadingService extends ChangeNotifier {
       return;
     }
 
+    _messageTimer?.cancel();
     _progress = 1.0;
-    _message = 'Completed!';
+    _message = '강의 생성 완료!';
     notifyListeners();
     _saveState();
   }
 
   /// 로딩 숨김 (즉시)
   void hideLoading() {
+    _messageTimer?.cancel();
     _isLoading = false;
     _progress = 0.0;
     _message = '';
@@ -118,7 +172,8 @@ class LectureLoadingService extends ChangeNotifier {
 
   /// 에러 발생 시
   void setError(String errorMessage) {
-    _message = errorMessage;
+    _messageTimer?.cancel();
+    _message = '오류가 발생했어요';
     notifyListeners();
 
     // 3초 후 자동으로 숨김
@@ -127,8 +182,9 @@ class LectureLoadingService extends ChangeNotifier {
 
   /// 강의 생성 취소
   void cancelLoading() {
+    _messageTimer?.cancel();
     _isCancelled = true;
-    _message = 'Cancelling...';
+    _message = '강의 생성을 취소하는 중..';
     notifyListeners();
 
     // 취소 콜백 실행
