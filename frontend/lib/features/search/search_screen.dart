@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 
 /// 검색 화면
@@ -18,7 +18,7 @@ enum SearchScope { lecture, week, subject }
 class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   List<String> _recentSearches = [];
-  List<Lecture> _searchResults = [];
+  List<HiveLecture> _searchResults = [];
   bool _isSearching = false;
   SearchScope _searchScope = SearchScope.lecture;
 
@@ -77,15 +77,12 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     final hive = HiveManager.instance;
-    final subjects = hive.getSubjects().map((s) => s.toSubject()).toList();
+    final subjects = hive.getSubjects();
 
     // 모든 과목의 모든 강의에서 검색
-    final allLectures = <Lecture>[];
+    final allLectures = <HiveLecture>[];
     for (final subject in subjects) {
-      final lectures = hive
-          .getLecturesBySubject(subject.id)
-          .map((l) => l.toLecture())
-          .toList();
+      final lectures = hive.getLecturesBySubject(subject.id);
       allLectures.addAll(lectures);
     }
 
@@ -105,7 +102,7 @@ class _SearchScreenState extends State<SearchScreen> {
         case SearchScope.subject:
           final subject = subjects.firstWhere(
             (s) => s.id == lec.subjectId,
-            orElse: () => const Subject(id: '', title: ''),
+            orElse: () => HiveSubject(id: '', title: ''),
           );
           return subject.title.toLowerCase().contains(searchQuery);
       }
@@ -284,10 +281,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     // 과목 목록을 한 번만 가져오기
-    final subjects = HiveManager.instance
-        .getSubjects()
-        .map((s) => s.toSubject())
-        .toList();
+    final subjects = HiveManager.instance.getSubjects();
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -297,7 +291,7 @@ class _SearchScreenState extends State<SearchScreen> {
         final lecture = _searchResults[index];
         final subject = subjects.firstWhere(
           (s) => s.id == lecture.subjectId,
-          orElse: () => const Subject(id: '', title: ''),
+          orElse: () => HiveSubject(id: '', title: ''),
         );
 
         return ListTile(

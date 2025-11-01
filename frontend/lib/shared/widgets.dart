@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/main.dart' show navigatorKey;
 
 /// 전체 너비를 차지하는 주요 버튼 위젯
 class PrimaryButton extends StatelessWidget {
@@ -158,7 +160,7 @@ class LectureLoadingBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: LectureLoadingService.instance,
-      builder: (context, _) {
+      builder: (buildContext, _) {
         final service = LectureLoadingService.instance;
         if (!service.isLoading) {
           return const SizedBox.shrink();
@@ -174,6 +176,7 @@ class LectureLoadingBar extends StatelessWidget {
           child = _ExpandedLoadingOverlay(
             key: const ValueKey('expanded-bar'),
             service: service,
+            context: buildContext,
           );
         }
 
@@ -190,12 +193,17 @@ class LectureLoadingBar extends StatelessWidget {
 
 /// 둥근모서리 + 그림자 카드 컨테이너
 class _ExpandedLoadingOverlay extends StatelessWidget {
-  const _ExpandedLoadingOverlay({super.key, required this.service});
+  const _ExpandedLoadingOverlay({
+    super.key,
+    required this.service,
+    required this.context,
+  });
 
   final LectureLoadingService service;
+  final BuildContext context;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext widgetContext) {
     final isCompleted = service.progress >= 1.0;
 
     return Align(
@@ -218,7 +226,10 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               child: isCompleted
-                  ? const _CompletedView(key: ValueKey('completed'))
+                  ? _CompletedView(
+                      key: const ValueKey('completed'),
+                      context: context,
+                    )
                   : _LoadingView(
                       key: const ValueKey('loading'),
                       title: service.lectureTitle,
@@ -233,80 +244,115 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
   }
 }
 
-class _CollapsedBubbleOverlay extends StatelessWidget {
+class _CollapsedBubbleOverlay extends StatefulWidget {
   const _CollapsedBubbleOverlay({super.key, required this.service});
 
   final LectureLoadingService service;
 
   @override
+  State<_CollapsedBubbleOverlay> createState() =>
+      _CollapsedBubbleOverlayState();
+}
+
+class _CollapsedBubbleOverlayState extends State<_CollapsedBubbleOverlay> {
+  late double _dragX;
+  late double _dragY;
+
+  @override
+  void initState() {
+    super.initState();
+    _dragX = widget.service.bubbleX;
+    _dragY = widget.service.bubbleY;
+  }
+
+  @override
   Widget build(BuildContext context) {
     const double bubbleSize = 88;
-    const double bottomInset = 24;
-    final progress = service.progress.clamp(0.0, 1.0);
+    final progress = widget.service.progress.clamp(0.0, 1.0);
+    final screenSize = MediaQuery.of(context).size;
+    final safeArea = MediaQuery.of(context).padding;
 
     return Stack(
       children: [
         Positioned(
-          bottom: bottomInset,
-          left: service.bubbleOnRight ? null : 24,
-          right: service.bubbleOnRight ? 24 : null,
+          left: _dragX,
+          bottom: _dragY,
           child: SafeArea(
             top: false,
-            child: Material(
-              type: MaterialType.transparency,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: service.expandFromBubble,
-                child: SizedBox(
-                  width: bubbleSize,
-                  height: bubbleSize,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.6),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x33000000),
-                              blurRadius: 12,
-                              offset: Offset(0, 6),
-                            ),
-                          ],
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (details) {
+                // Prevent tap from triggering during drag
+              },
+              onPanUpdate: (details) {
+                setState(() {
+                  // Update position during drag
+                  _dragX = (_dragX + details.delta.dx).clamp(
+                    0.0,
+                    screenSize.width - bubbleSize - safeArea.right,
+                  );
+                  _dragY = (_dragY - details.delta.dy).clamp(
+                    0.0,
+                    screenSize.height - bubbleSize - safeArea.top,
+                  );
+                });
+              },
+              onPanEnd: (details) {
+                // Save final position when drag ends
+                widget.service.updateBubblePosition(_dragX, _dragY);
+              },
+              onTap: () {
+                // Tap to expand
+                widget.service.expandFromBubble();
+              },
+              child: SizedBox(
+                width: bubbleSize,
+                height: bubbleSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: bubbleSize,
+                      height: bubbleSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.6),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x33000000),
+                            blurRadius: 12,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: bubbleSize,
+                      height: bubbleSize,
+                      child: CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 6,
+                        backgroundColor: Colors.white24,
+                        valueColor: const AlwaysStoppedAnimation(
+                          Color(0xFFF7FAB0),
                         ),
                       ),
-                      SizedBox(
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 6,
-                          backgroundColor: Colors.white24,
-                          valueColor: const AlwaysStoppedAnimation(
-                            Color(0xFFF7FAB0),
+                    ),
+                    ClipOval(
+                      child: Container(
+                        width: bubbleSize - 18,
+                        height: bubbleSize - 18,
+                        color: Colors.black.withValues(alpha: 0.2),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Image.asset(
+                            'assets/images/loading_character.png',
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
-                      ClipOval(
-                        child: Container(
-                          width: bubbleSize - 18,
-                          height: bubbleSize - 18,
-                          color: Colors.black.withValues(alpha: 0.2),
-                          child: Padding(
-                            padding: const EdgeInsets.all(6.0),
-                            child: Image.asset(
-                              'assets/images/loading_character.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -359,6 +405,8 @@ class _LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final language = HiveManager.instance.settings.language;
+    final isKorean = language == 'ko';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -388,7 +436,7 @@ class _LoadingView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '강의 생성 중…',
+                        isKorean ? '강의 생성 중…' : 'Creating Lecture…',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -413,7 +461,7 @@ class _LoadingView extends StatelessWidget {
                           vertical: 6,
                         ),
                       ),
-                      child: const Text('취소'),
+                      child: Text(isKorean ? '취소' : 'Cancel'),
                     ),
                   ],
                 ),
@@ -424,14 +472,16 @@ class _LoadingView extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: '강의명: ',
+                        text: isKorean ? '강의명: ' : 'Lecture: ',
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade400,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       TextSpan(
-                        text: title.isEmpty ? '제목 없음' : title,
+                        text: title.isEmpty
+                            ? (isKorean ? '제목 없음' : 'Untitled')
+                            : title,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade300,
                         ),
@@ -468,11 +518,16 @@ class _LoadingView extends StatelessWidget {
 
 /// 완료 화면 (요청: 배경이미지 위주, 카드 라운드 유지)
 class _CompletedView extends StatelessWidget {
-  const _CompletedView({super.key});
+  const _CompletedView({super.key, required this.context});
+
+  final BuildContext context;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext widgetContext) {
     final textTheme = Theme.of(context).textTheme;
+    final service = LectureLoadingService.instance;
+    final language = HiveManager.instance.settings.language;
+    final isKorean = language == 'ko';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -498,7 +553,7 @@ class _CompletedView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '강의 생성 완료!',
+                        isKorean ? '강의 생성 완료!' : 'Lecture Created!',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -510,7 +565,7 @@ class _CompletedView extends StatelessWidget {
                     ),
                     InkWell(
                       customBorder: const CircleBorder(),
-                      onTap: LectureLoadingService.instance.hideLoading,
+                      onTap: service.hideLoading,
                       child: const Padding(
                         padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
                         child: Icon(Icons.close, color: Colors.grey, size: 22),
@@ -520,13 +575,49 @@ class _CompletedView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '강의 생성이 완료되었습니다.\n결과를 확인해보세요.',
+                  isKorean
+                      ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
+                      : 'Lecture creation completed.\nCheck out the result.',
                   style: textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade300,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (service.lectureId != null) ...[
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      debugPrint('🔘 Button pressed!');
+                      final lectureId = service.getLectureIdAndHide();
+                      debugPrint('🔘 lectureId: $lectureId');
+                      debugPrint('🔘 navigatorKey: $navigatorKey');
+                      debugPrint(
+                        '🔘 navigatorKey.currentState: ${navigatorKey.currentState}',
+                      );
+
+                      if (lectureId != null) {
+                        navigatorKey.currentState?.pushNamed(
+                          '/player',
+                          arguments: {'lectureId': lectureId},
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.play_circle_outline, size: 20),
+                    label: Text(isKorean ? '생성된 강의 바로가기' : 'Go to Lecture'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF7FAB0),
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

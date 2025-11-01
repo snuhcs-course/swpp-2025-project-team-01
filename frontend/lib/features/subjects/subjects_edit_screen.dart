@@ -23,7 +23,9 @@ const _editPanelShadow = BoxShadow(
 /// - 본문: 과목별 펼침 패널 (검은 헤더 + 강의 리스트)
 /// - 하단: 고정 버튼 ([수정 완료] [취소])
 class SubjectsEditScreen extends StatefulWidget {
-  const SubjectsEditScreen({super.key});
+  const SubjectsEditScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
 
   @override
   State<SubjectsEditScreen> createState() => _SubjectsEditScreenState();
@@ -31,7 +33,7 @@ class SubjectsEditScreen extends StatefulWidget {
 
 class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   // 데이터 저장소 인스턴스
-  final hive = HiveManager.instance;
+  late final HiveManager hive;
 
   // 작업 중인 데이터 (원본 데이터를 복사하여 수정)
   final Map<String, List<String>> _workingLectureIds = {};
@@ -44,7 +46,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   @override
   void initState() {
     super.initState();
+    hive = widget.hiveManager ?? HiveManager.instance;
     _initializeWorkingData();
+    // 과목 추가/삭제 시 UI를 다시 그리기 위해 리스너 등록
+    hive.addListener(_onDataChanged);
   }
 
   /// 초기화: 편집용 작업 복사본 생성
@@ -56,6 +61,23 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       _workingLectureIds[subject.id] = List.from(subject.lectureIds);
       _workingTagIds[subject.id] = List.from(subject.tagIds);
       _workingTitles[subject.id] = subject.title;
+    }
+  }
+
+  @override
+  void dispose() {
+    // 리스너 해제
+    hive.removeListener(_onDataChanged);
+    super.dispose();
+  }
+
+  /// Hive 데이터 변경 시 호출되어 화면을 다시 빌드
+  void _onDataChanged() {
+    if (mounted) {
+      // 데이터가 변경되었으므로, 작업용 데이터도 다시 초기화
+      setState(() {
+        _initializeWorkingData();
+      });
     }
   }
 
@@ -110,6 +132,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 각 과목의 강의 목록을 표시하고 드래그 앤 드롭으로 순서를 재정렬할 수 있습니다.
   Widget _buildSubjectPanel(Subject subject) {
     final lectureIds = _workingLectureIds[subject.id]!;
+    final isExpanded = hive.getSubjectExpandedState(subject.id);
 
     // 강의 리스트를 한 번만 가져와서 Map으로 변환
     final allLectures = hive
@@ -134,6 +157,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       key: ValueKey(subject.id),
       subject: subject,
       displayTitle: _workingTitles[subject.id],
+      isInitiallyExpanded: isExpanded,
       lectures: lectures,
       // 강의 순서 재정렬 콜백
       onReorder: (oldIndex, newIndex) {
@@ -150,6 +174,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       // 패널 롱프레스 시 과목 편집 다이얼로그 표시
       onLongPress: () async {
         await _showSubjectEditDialog(subject);
+      },
+      // 패널 펼침/접기 상태 저장 콜백
+      onExpansionChanged: (isExpanded) {
+        hive.setSubjectExpandedState(subject.id, isExpanded);
       },
     );
   }
@@ -197,6 +225,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       builder: (context) => _SubjectEditDialog(
         subject: subject,
         initialTagIds: _workingTagIds[subject.id] ?? [],
+        allTags: hive.getTags().map((t) => t.toTag()).toList(),
       ),
     );
 
@@ -480,10 +509,12 @@ class _SubjectEditDialog extends StatefulWidget {
   const _SubjectEditDialog({
     required this.subject,
     required this.initialTagIds,
+    required this.allTags,
   });
 
   final Subject subject;
   final List<String> initialTagIds;
+  final List<Tag> allTags;
 
   @override
   State<_SubjectEditDialog> createState() => _SubjectEditDialogState();
@@ -508,11 +539,6 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final allTags = HiveManager.instance
-        .getTags()
-        .map((t) => t.toTag())
-        .toList();
-
     return AlertDialog(
       title: const Text('과목 수정'),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
@@ -549,7 +575,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: allTags.map((tag) {
+              children: widget.allTags.map((tag) {
                 final isSelected = _selectedTagIds.contains(tag.id);
                 return SelectableTagPill(
                   tag: tag,
@@ -629,16 +655,20 @@ class _SubjectEditPanel extends StatefulWidget {
     super.key,
     required this.subject,
     this.displayTitle,
+    required this.isInitiallyExpanded,
     required this.lectures,
     required this.onReorder,
     required this.onLongPress,
+    required this.onExpansionChanged,
   });
 
   final Subject subject;
   final String? displayTitle;
+  final bool isInitiallyExpanded;
   final List<Lecture> lectures;
   final void Function(int oldIndex, int newIndex) onReorder;
   final VoidCallback onLongPress;
+  final ValueChanged<bool> onExpansionChanged;
 
   @override
   State<_SubjectEditPanel> createState() => _SubjectEditPanelState();
@@ -656,8 +686,7 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
   void initState() {
     super.initState();
     // 저장된 펼침 상태 로드
-    expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
-
+    expanded = widget.isInitiallyExpanded;
     // reduce motion 설정 확인
     final reduceMotion =
         HiveManager.instance.settings.accessibilityReduceMotion;
@@ -688,16 +717,15 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
 
   /// 펼침/접기 토글
   void _toggleExpanded() {
-    final bool reduceMotion =
-        HiveManager.instance.settings.accessibilityReduceMotion;
-
     setState(() {
       expanded = !expanded;
     });
 
-    // Hive에 상태 저장
-    HiveManager.instance.setSubjectExpandedState(widget.subject.id, expanded);
+    // 변경된 상태를 부모 위젯에 알림
+    widget.onExpansionChanged(expanded);
 
+    final bool reduceMotion =
+        HiveManager.instance.settings.accessibilityReduceMotion;
     if (reduceMotion) {
       // 모션 줄이기가 활성화되면 즉시 전환
       _animationController.value = expanded ? 1.0 : 0.0;
