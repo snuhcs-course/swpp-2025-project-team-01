@@ -609,6 +609,8 @@ void main() {
             body: pw.TopControlBar(
               isVertical: false,
               onBack: () {},
+              isOriginalAudio: false,
+              onAudioToggle: () {},
               isCaptionEnabled: false,
               onCaptionToggle: () {},
               isSynced: true,
@@ -631,6 +633,8 @@ void main() {
             body: pw.TopControlBar(
               isVertical: true,
               onBack: () {},
+              isOriginalAudio: false,
+              onAudioToggle: () {},
               isCaptionEnabled: false,
               onCaptionToggle: () {},
               isSynced: true,
@@ -659,6 +663,8 @@ void main() {
             body: pw.TopControlBar(
               isVertical: false,
               onBack: () => backPressed = true,
+              isOriginalAudio: false,
+              onAudioToggle: () {},
               isCaptionEnabled: false,
               onCaptionToggle: () => captionPressed = true,
               isSynced: true,
@@ -922,6 +928,8 @@ void main() {
             body: pw.TopControlBar(
               isVertical: false,
               onBack: () => backCalled = true,
+              isOriginalAudio: false,
+              onAudioToggle: () {},
               isCaptionEnabled: true,
               onCaptionToggle: () => captionCalled = true,
               isSynced: false,
