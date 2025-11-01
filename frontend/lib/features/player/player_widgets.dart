@@ -128,6 +128,36 @@ class _SpeedButtonState extends State<SpeedButton> {
   }
 }
 
+// 오디오 소스 버튼
+class AudioSourceButton extends StatelessWidget {
+  const AudioSourceButton({
+    super.key,
+    required this.isOriginalAudio,
+    required this.onPressed,
+  });
+
+  final bool isOriginalAudio;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          isOriginalAudio ? 'Rec' : 'TTS',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // 자막 버튼
 class CaptionButton extends StatelessWidget {
   const CaptionButton({
@@ -351,6 +381,8 @@ class TopControlBar extends StatelessWidget {
     super.key,
     required this.isVertical,
     required this.onBack,
+    required this.isOriginalAudio,
+    required this.onAudioToggle,
     required this.isCaptionEnabled,
     required this.onCaptionToggle,
     required this.onSpeedChanged,
@@ -362,6 +394,8 @@ class TopControlBar extends StatelessWidget {
   final bool isVertical;
 
   final VoidCallback onBack;
+  final bool isOriginalAudio;
+  final VoidCallback onAudioToggle;
   final bool isCaptionEnabled;
   final VoidCallback onCaptionToggle;
   final ValueChanged<double> onSpeedChanged;
@@ -378,6 +412,11 @@ class TopControlBar extends StatelessWidget {
           BackButton(onPressed: onBack),
           const Spacer(),
           if (!isVertical) ...[
+            AudioSourceButton(
+              isOriginalAudio: isOriginalAudio,
+              onPressed: onAudioToggle,
+            ),
+            const SizedBox(width: 8),
             CaptionButton(
               isEnabled: isCaptionEnabled,
               onPressed: onCaptionToggle,

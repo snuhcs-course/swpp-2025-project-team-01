@@ -144,9 +144,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
           hiveLecture.slidePath ??
           'assets/lectures/$lectureId/${lectureId}_slides.pdf';
 
-      // final originalAudioPath = hiveLecture.originalAudioPath;
+      final originalAudioPath =
+          hiveLecture.originalAudioPath ??
+          'assets/lectures/$lectureId/lecture_with_slides.m4a';
 
-      final audioPath =
+      final ttsAudioPath =
           hiveLecture.ttsAudioPath ??
           'assets/lectures/$lectureId/lecture_with_slides.opus';
 
@@ -161,7 +163,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
           lectureId,
           transcriptData,
           pdfPath,
-          audioPath,
+          ttsAudioPath,
+          originalAudioPath,
         );
       } catch (e) {
         _handleError('플레이어 초기화에 실패했습니다.');

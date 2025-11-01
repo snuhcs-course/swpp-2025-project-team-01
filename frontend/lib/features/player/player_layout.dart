@@ -283,20 +283,27 @@ class VideoControlsOverlay extends StatelessWidget {
         child: Column(
           children: [
             ValueListenableBuilder<bool>(
-              valueListenable: controller.isCaptionEnabled,
-              builder: (context, isCaptionEnabled, _) {
+              valueListenable: controller.isOriginalAudio,
+              builder: (context, isOriginalAudio, _) {
                 return ValueListenableBuilder<bool>(
-                  valueListenable: controller.isSynced,
-                  builder: (context, isSynced, _) {
-                    return TopControlBar(
-                      isVertical: isVertical,
-                      onBack: onBack,
-                      isCaptionEnabled: isCaptionEnabled,
-                      onCaptionToggle: controller.toggleCaption,
-                      onSpeedChanged: controller.setPlaybackSpeed,
-                      isSynced: isSynced,
-                      onSyncToggle: controller.toggleSync,
-                      pageDifference: controller.pageDifference,
+                  valueListenable: controller.isCaptionEnabled,
+                  builder: (context, isCaptionEnabled, _) {
+                    return ValueListenableBuilder<bool>(
+                      valueListenable: controller.isSynced,
+                      builder: (context, isSynced, _) {
+                        return TopControlBar(
+                          isVertical: isVertical,
+                          onBack: onBack,
+                          isOriginalAudio: isOriginalAudio,
+                          onAudioToggle: controller.toggleAudioSource,
+                          isCaptionEnabled: isCaptionEnabled,
+                          onCaptionToggle: controller.toggleCaption,
+                          onSpeedChanged: controller.setPlaybackSpeed,
+                          isSynced: isSynced,
+                          onSyncToggle: controller.toggleSync,
+                          pageDifference: controller.pageDifference,
+                        );
+                      },
                     );
                   },
                 );

@@ -31,6 +31,7 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<bool> isSynced = ValueNotifier(true);
   final ValueNotifier<bool> isCaptionEnabled = ValueNotifier(false);
   final ValueNotifier<bool> isKoreanLanguage = ValueNotifier(false);
+  final ValueNotifier<bool> isOriginalAudio = ValueNotifier(false);
 
   /// 재생 위치 및 페이지
   final ValueNotifier<double> currentTime = ValueNotifier(0.0);
@@ -105,6 +106,14 @@ class PlayerController extends ChangeNotifier {
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<dynamic>? _stateSubscription;
 
+  // 오디오 경로 저장
+  String? _originalAudioPath;
+  String? _audioPath;
+
+  // 현재 sentence의 타이밍 정보 추적
+  int _currentOriginalStartTime = 0;
+  int _currentStartTime = 0;
+
   // ========== 초기화 메서드 ==========
 
   Future<void> initialize(
@@ -113,9 +122,14 @@ class PlayerController extends ChangeNotifier {
     TranscriptData transcriptData,
     String pdfPath,
     String audioPath,
+    String originalAudioPath,
   ) async {
     this.transcriptData = transcriptData;
     totalTime = transcriptData.metadata.totalDuration.toDouble() / 1000;
+
+    // 오디오 경로 저장
+    _audioPath = audioPath;
+    _originalAudioPath = originalAudioPath;
 
     // Transcript 스크롤 컨트롤러 초기화
     final screenHeight = MediaQuery.of(context).size.height;
@@ -133,7 +147,7 @@ class PlayerController extends ChangeNotifier {
     // 스크롤 리스너 설정
     _setupScrollListener();
 
-    // 오디오 로드 및 재생
+    // 오디오 로드 및 재생 (기본: TTS)
     await _audioService.loadAudio(audioPath);
 
     _audioService.play(); // await 제거 - fire-and-forget
@@ -212,6 +226,33 @@ class PlayerController extends ChangeNotifier {
     if (hasKoreanTranscript) {
       isKoreanLanguage.value = !isKoreanLanguage.value;
     }
+  }
+
+  /// 오디오 소스 전환 (Original ↔ TTS)
+  Future<void> toggleAudioSource() async {
+    if (_originalAudioPath == null || _audioPath == null) {
+      return; // 오디오 경로가 설정되지 않음
+    }
+
+    // 강제 이동 플래그 설정 (sentence 업데이트 방지)
+    _isForcedMove = true;
+
+    // 상태 전환
+    isOriginalAudio.value = !isOriginalAudio.value;
+
+    // 반대쪽 오디오의 같은 sentence 시작 위치로 이동
+    final newTimeMs = isOriginalAudio.value
+        ? _currentOriginalStartTime
+        : _currentStartTime;
+
+    // 오디오 전환
+    final newPath = isOriginalAudio.value ? _originalAudioPath! : _audioPath!;
+    await _audioService.switchAudio(newPath, newTimeMs);
+
+    // 강제 이동 플래그 해제
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _isForcedMove = false;
+    });
   }
 
   void handlePdfTap(bool isVertical) {
@@ -318,8 +359,21 @@ class PlayerController extends ChangeNotifier {
 
     for (int i = 0; i < transcriptData!.timestamps.length; i++) {
       final sentence = transcriptData!.timestamps[i];
-      if (currentTime.value * 1000 >= sentence.startTime &&
-          currentTime.value * 1000 < sentence.endTime + 0.2) {
+
+      // 현재 오디오 모드에 따라 적절한 타이밍 사용
+      final startTime = isOriginalAudio.value
+          ? sentence.originalStartTime
+          : sentence.startTime;
+      final endTime = isOriginalAudio.value
+          ? sentence.originalEndTime
+          : sentence.endTime;
+
+      if (currentTime.value * 1000 >= startTime &&
+          currentTime.value * 1000 < endTime + 0.2) {
+        // 4개의 타이밍 모두 별도 변수에 저장
+        _currentOriginalStartTime = sentence.originalStartTime;
+        _currentStartTime = sentence.startTime;
+
         _setCurrentSentenceAndPage(i);
         return;
       }
@@ -466,6 +520,7 @@ class PlayerController extends ChangeNotifier {
     isSynced.dispose();
     isCaptionEnabled.dispose();
     isKoreanLanguage.dispose();
+    isOriginalAudio.dispose();
     currentTime.dispose();
     currentPage.dispose();
     currentSentenceIndex.dispose();
