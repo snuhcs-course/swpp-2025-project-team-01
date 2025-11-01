@@ -537,6 +537,9 @@ class TranscriptArea extends StatelessWidget {
       );
     }
 
+    final language = HiveManager.instance.settings.language;
+    final transcriptLabel = language == 'ko' ? '대본' : 'Transcript';
+
     return Container(
       width: double.infinity,
       color: const Color(0xFFFAFAFA),
@@ -547,7 +550,7 @@ class TranscriptArea extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Transcript',
+                transcriptLabel,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
