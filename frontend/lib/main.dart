@@ -7,6 +7,9 @@ import 'package:re_view/core/theme/app_theme.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
 
+// Global navigator key for accessing navigator from anywhere
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 /// 앱 진입점 - HiveManager 초기화 후 앱 실행
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +90,7 @@ class _ReViewAppState extends State<ReViewApp> {
 
     // 모션 줄이기가 활성화되면 페이지 전환 애니메이션 제거
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Re:View',
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
