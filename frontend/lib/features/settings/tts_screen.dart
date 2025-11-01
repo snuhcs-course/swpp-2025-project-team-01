@@ -22,23 +22,6 @@ class TtsScreen extends StatefulWidget {
 
   @override
   State<TtsScreen> createState() => _TtsScreenState();
-
-  /// TTS 음성 속도를 재생 비율로 변환
-  ///
-  /// - 빠르게: 1.5 (주어진 시간 대비 꽤 빠르게 읽음)
-  /// - 보통: 1.0 (조금 빠르게 읽음)
-  /// - 느리게: 0.7 (주어진 시간을 꽉 채워 읽음)
-  static double speedToRate(String speed) {
-    switch (speed) {
-      case '빠르게':
-        return 1.5;
-      case '느리게':
-        return 0.7;
-      case '보통':
-      default:
-        return 1.0;
-    }
-  }
 }
 
 class _TtsScreenState extends State<TtsScreen> {
@@ -46,8 +29,6 @@ class _TtsScreenState extends State<TtsScreen> {
 
   // TTS 설정 상태
   String _gender = '남성'; // 음성 성별
-  String _speed = '보통'; // TTS 음성 속도 (빠르게/보통/느리게)
-  bool _isLoading = true; // 로딩 상태
 
   @override
   void initState() {
@@ -61,8 +42,6 @@ class _TtsScreenState extends State<TtsScreen> {
     if (mounted) {
       setState(() {
         _gender = _hiveManager.settings.ttsGender;
-        _speed = _hiveManager.settings.ttsSpeed;
-        _isLoading = false;
       });
     }
   }
@@ -71,13 +50,6 @@ class _TtsScreenState extends State<TtsScreen> {
   Future<void> _saveGender(String value) async {
     await _hiveManager.updateTts(gender: value);
     setState(() => _gender = value);
-    _playPreviewTTS();
-  }
-
-  /// TTS 음성 속도 저장 및 예시 음성 재생
-  Future<void> _saveSpeed(String value) async {
-    await _hiveManager.updateTts(speed: value);
-    setState(() => _speed = value);
     _playPreviewTTS();
   }
 
@@ -98,10 +70,6 @@ class _TtsScreenState extends State<TtsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isKorean = AppLocalizations.of(context).isKorean;
 
@@ -125,10 +93,6 @@ class _TtsScreenState extends State<TtsScreen> {
             _buildSectionTitle(isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender'),
             const SizedBox(height: 12),
             _buildGenderButtons(isKorean),
-            const SizedBox(height: 32),
-            _buildSectionTitle(isKorean ? 'TTS 음성 속도' : 'TTS Voice Speed'),
-            const SizedBox(height: 12),
-            _buildSpeedRadioButtons(isKorean),
           ],
         ),
       ),
@@ -152,18 +116,6 @@ class _TtsScreenState extends State<TtsScreen> {
         Expanded(
           child: _genderButton(isKorean ? '여성' : 'Female', _gender == '여성'),
         ),
-      ],
-    );
-  }
-
-  Widget _buildSpeedRadioButtons(bool isKorean) {
-    return Column(
-      children: [
-        _speedRadioButton(isKorean ? '빠르게' : 'Fast', '빠르게'),
-        const SizedBox(height: 8),
-        _speedRadioButton(isKorean ? '보통' : 'Normal', '보통'),
-        const SizedBox(height: 8),
-        _speedRadioButton(isKorean ? '느리게' : 'Slow', '느리게'),
       ],
     );
   }
@@ -197,62 +149,6 @@ class _TtsScreenState extends State<TtsScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _speedRadioButton(String label, String value) {
-    final isSelected = _speed == value;
-
-    return GestureDetector(
-      onTap: () => _saveSpeed(value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
-        ),
-        child: Row(
-          children: [
-            _buildRadioIcon(isSelected),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? Colors.black : const Color(0xFF666666),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRadioIcon(bool isSelected) {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: isSelected ? const Color(0xFF424242) : const Color(0xFFBDBDBD),
-          width: 2,
-        ),
-      ),
-      child: isSelected
-          ? Center(
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF424242),
-                ),
-              ),
-            )
-          : null,
     );
   }
 }
