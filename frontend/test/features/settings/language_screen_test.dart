@@ -160,6 +160,12 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
   Future<void> updateSubjectTags(String id, List<String> tagIds) async {}
 
   @override
+  List<String> get subjectOrder => [];
+
+  @override
+  Future<void> updateSubjectOrder(List<String> newOrder) async {}
+
+  @override
   List<HiveTag> getTags() => [];
 
   @override
