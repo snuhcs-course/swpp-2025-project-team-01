@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
+import 'package:re_view/core/thumbnail_cache_manager.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
@@ -139,7 +140,7 @@ class PlayerController extends ChangeNotifier {
     );
 
     // PDF 문서 로드
-    await _loadPdfDocument(pdfPath);
+    await _loadPdfDocument(pdfPath, lectureId);
 
     // 오디오 리스너 설정
     _setupAudioListeners();
@@ -153,12 +154,21 @@ class PlayerController extends ChangeNotifier {
     _audioService.play(); // await 제거 - fire-and-forget
   }
 
-  Future<void> _loadPdfDocument(String pdfPath) async {
+  Future<void> _loadPdfDocument(String pdfPath, String lectureId) async {
     pdfDocument = pdfPath.startsWith('assets/')
         ? await PdfDocument.openAsset(pdfPath)
         : await PdfDocument.openFile(pdfPath);
 
     _pdfCacheService.setPdfDocument(pdfDocument);
+
+    // Pre-populate first page from ThumbnailCacheManager if available
+    final thumbnailCache = ThumbnailCacheManager.instance;
+    final cachedThumbnail = thumbnailCache.get(lectureId);
+
+    if (cachedThumbnail != null) {
+      _pdfCacheService.setCachedImage(1, cachedThumbnail.bytes);
+      debugPrint('✅ First page pre-loaded from thumbnail cache for $lectureId');
+    }
 
     pdfController = PdfController(document: Future.value(pdfDocument!));
   }
