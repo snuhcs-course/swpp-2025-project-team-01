@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
+import 'package:re_view/core/thumbnail_cache_manager.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -388,7 +389,8 @@ class LectureCard extends StatefulWidget {
 class _LectureCardState extends State<LectureCard> {
   PdfDocument? _pdfDocument;
   PdfPage? _pdfPage;
-  PdfPageImage? _cachedImage; // 렌더링된 이미지 캐싱
+  PdfPageImage? _cachedImage; // 렌더링된 이미지 (로컬 참조용)
+  double? _aspectRatio; // PDF 페이지의 aspect ratio
   bool _isLoading = true;
   String? _error;
 
@@ -402,12 +404,14 @@ class _LectureCardState extends State<LectureCard> {
   void didUpdateWidget(LectureCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 강의 내용이 변경되면 PDF 다시 로드
-    if (oldWidget.lec.slidePath != widget.lec.slidePath) {
+    if (oldWidget.lec.slidePath != widget.lec.slidePath ||
+        oldWidget.lec.id != widget.lec.id) {
       _pdfPage?.close();
       _pdfDocument?.close();
       _pdfDocument = null;
       _pdfPage = null;
       _cachedImage = null;
+      _aspectRatio = null;
       _isLoading = true;
       _error = null;
       _loadPdf();
@@ -420,6 +424,23 @@ class _LectureCardState extends State<LectureCard> {
       return;
     }
 
+    // 1. 먼저 글로벌 캐시에서 확인
+    final cacheManager = ThumbnailCacheManager.instance;
+    final cachedThumbnail = cacheManager.get(widget.lec.id);
+
+    if (cachedThumbnail != null) {
+      // 캐시에 있으면 바로 사용
+      if (mounted) {
+        setState(() {
+          _cachedImage = cachedThumbnail.image;
+          _aspectRatio = cachedThumbnail.aspectRatio;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    // 2. 캐시에 없으면 PDF 로드 및 렌더링
     try {
       // assets 경로인지 파일 시스템 경로인지 확인
       final bool isAsset = widget.lec.slidePath!.startsWith('assets/');
@@ -427,17 +448,28 @@ class _LectureCardState extends State<LectureCard> {
           ? await PdfDocument.openAsset(widget.lec.slidePath!)
           : await PdfDocument.openFile(widget.lec.slidePath!);
       final PdfPage page = await document.getPage(1);
+
+      // aspect ratio 계산
+      final double aspectRatio = page.width / page.height;
+
       // 즉시 렌더링하여 캐싱
       final PdfPageImage? image = await page.render(
         width: page.width * 2,
         height: page.height * 2,
         format: PdfPageImageFormat.png,
       );
+
+      if (image != null) {
+        // 3. 글로벌 캐시에 aspect ratio와 함께 저장
+        cacheManager.put(widget.lec.id, image, aspectRatio);
+      }
+
       if (mounted) {
         setState(() {
           _pdfDocument = document;
           _pdfPage = page;
           _cachedImage = image;
+          _aspectRatio = aspectRatio;
           _isLoading = false;
         });
       }
@@ -532,14 +564,13 @@ class _LectureCardState extends State<LectureCard> {
       );
     }
 
-    if (_cachedImage != null) {
-      // PDF의 비율 계산
-      final double pdfAspectRatio = _pdfPage!.width / _pdfPage!.height;
+    if (_cachedImage != null && _aspectRatio != null) {
+      // PDF의 비율과 타겟 비율 비교
       const double targetAspectRatio = 16 / 9;
 
       // 4:3 비율인 경우 (또는 16:9보다 세로로 긴 경우) contain으로 중앙 정렬
       // 16:9 비율인 경우 cover로 꽉 채우기
-      final BoxFit fit = pdfAspectRatio < targetAspectRatio
+      final BoxFit fit = _aspectRatio! < targetAspectRatio
           ? BoxFit
                 .contain // 4:3 등 세로로 긴 경우 - 좌우 여백
           : BoxFit.cover; // 16:9 등 가로로 긴 경우 - 꽉 채우기

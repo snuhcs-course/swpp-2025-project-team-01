@@ -425,7 +425,7 @@ void main() {
       await manager.init();
 
       expect(manager.isInitialized, isTrue);
-      expect(manager.subjects.length, 1);
+      expect(manager.subjects.length, 2); // Asset Subject + Uncategorized
       expect(manager.tags.length, 1);
       expect(manager.lectures.length, 1);
       expect(manager.settings.theme, 'system');

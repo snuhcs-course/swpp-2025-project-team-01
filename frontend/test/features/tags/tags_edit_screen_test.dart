@@ -203,18 +203,20 @@ void main() {
     ) async {
       await pumpScreen(tester);
 
-      // AppBar 제목
-      expect(find.text('태그 수정'), findsOneWidget);
+      // AppBar 제목 (AppBar + Card 섹션 제목에 모두 나타남)
+      expect(find.text('태그 수정'), findsNWidgets(2));
 
       // _loadData -> _assignColors 호출 확인 (봄 테마 색상)
       final aiTagPill = findTagPillByName(tester, 'AI');
       expect(aiTagPill.tag.color, getTagColorTheme('봄').colors[0]);
 
-      // 테마 선택기 ('봄' 선택됨)
-      final springChips = tester
-          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
-          .where((chip) => (chip.label as Text).data == '봄');
-      expect(springChips.first.selected, isTrue);
+      // 테마 선택기 ('봄' 선택됨) - Radio 버튼 사용
+      final springRadios = tester
+          .widgetList<Radio<String>>(find.byType(Radio<String>))
+          .where((radio) => radio.value == '봄')
+          .toList();
+      expect(springRadios.isNotEmpty, isTrue);
+      expect(springRadios.first.groupValue, '봄');
       expect(find.text('비비드'), findsOneWidget);
 
       // 태그 칩 (2개) + 추가 버튼
@@ -260,20 +262,25 @@ void main() {
       expect(aiTagPill.tag.color, springTheme.colors[0]);
       expect(webTagPill.tag.color, springTheme.colors[1]);
 
-      final vividChips = tester
-          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
-          .where((chip) => (chip.label as Text).data == '비비드');
-      expect(vividChips.first.selected, isFalse);
+      final vividRadios = tester
+          .widgetList<Radio<String>>(find.byType(Radio<String>))
+          .where((radio) => radio.value == '비비드')
+          .toList();
+      expect(vividRadios.isNotEmpty, isTrue);
+      // ignore: deprecated_member_use
+      expect(vividRadios.first.groupValue, isNot('비비드'));
 
       // [When] '비비드' 테마 탭
       await tester.tap(find.text('비비드'));
       await tester.pumpAndSettle();
 
       // [Then] '비비드'가 선택되고 Hive가 호출됨
-      final vividChipsAfter = tester
-          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
-          .where((chip) => (chip.label as Text).data == '비비드');
-      expect(vividChipsAfter.first.selected, isTrue);
+      final vividRadiosAfter = tester
+          .widgetList<Radio<String>>(find.byType(Radio<String>))
+          .where((radio) => radio.value == '비비드')
+          .toList();
+      // ignore: deprecated_member_use
+      expect(vividRadiosAfter.first.groupValue, '비비드');
       expect(fakeHiveManager.updatedTagColorTheme, '비비드');
 
       // [Then] 모든 태그의 색상이 '비비드' 테마 색상으로 변경됨
@@ -452,9 +459,14 @@ void main() {
       // [Given] 'AI'가 선택됨
       expect(find.text('AI-Renamed'), findsNothing);
 
-      // [When] 이름 변경 후 '적용'
+      // [When] 이름 변경 후 '이름 적용'
       await tester.enterText(find.byType(TextField), 'AI-Renamed');
-      await tester.tap(find.text('적용'));
+      await tester.pumpAndSettle();
+
+      // 버튼이 화면 밖에 있을 수 있으므로 스크롤
+      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('이름 적용'));
       await tester.pumpAndSettle();
 
       // [Then] 태그 칩의 이름이 변경됨
@@ -465,7 +477,12 @@ void main() {
     testWidgets('Apply with empty name shows snackbar', (tester) async {
       await pumpScreen(tester);
       await tester.enterText(find.byType(TextField), '   '); // 공백
-      await tester.tap(find.text('적용'));
+      await tester.pumpAndSettle();
+
+      // 버튼이 화면 밖에 있을 수 있으므로 스크롤
+      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('이름 적용'));
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsOneWidget);
@@ -475,29 +492,20 @@ void main() {
     testWidgets('Apply with duplicate name shows snackbar', (tester) async {
       await pumpScreen(tester); // 'AI'가 선택됨
       await tester.enterText(find.byType(TextField), 'Web'); // 'Web' (중복)
-      await tester.tap(find.text('적용'));
+      await tester.pumpAndSettle();
+
+      // 버튼이 화면 밖에 있을 수 있으므로 스크롤
+      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('이름 적용'));
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.'), findsOneWidget);
     });
 
-    testWidgets('Cancel button reverts text field', (tester) async {
-      await pumpScreen(tester); // 'AI'가 선택됨
-      await tester.enterText(find.byType(TextField), 'Temporary Change');
-      await tester.pump();
-
-      expect(find.text('Temporary Change'), findsOneWidget);
-
-      await tester.tap(find.text('취소'));
-      await tester.pumpAndSettle();
-
-      // 폼의 텍스트가 원래 'AI'로 복원됨
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'AI',
-      );
-    });
+    // 취소 버튼이 제거되어 해당 테스트 삭제됨
+    // UI 변경: 이제 "이름 적용" 버튼만 존재하고 "취소" 버튼은 없음
   });
 
   // ------------------------------------------------------------------
@@ -575,7 +583,9 @@ void main() {
       await pumpScreen(tester);
       expect(find.byType(SelectableTagPill), findsNWidgets(15));
 
-      // [When] '+' 버튼 탭
+      // [When] '+' 버튼 탭 (화면 밖에 있을 수 있으므로 스크롤)
+      await tester.ensureVisible(find.widgetWithText(ActionChip, '+'));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ActionChip, '+'));
       await tester.pumpAndSettle();
 
@@ -603,7 +613,9 @@ void main() {
       }
       await pumpScreen(tester);
 
-      // [When] '+' 버튼 탭 (15번째 태그 추가)
+      // [When] '+' 버튼 탭 (15번째 태그 추가, 화면 밖에 있을 수 있으므로 스크롤)
+      await tester.ensureVisible(find.widgetWithText(ActionChip, '+'));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ActionChip, '+'));
       await tester.pumpAndSettle();
 
@@ -614,7 +626,12 @@ void main() {
 
       // [When] 이름 변경 후 한 번 더 추가 시도 (16번째 태그 - 순환 테스트)
       await tester.enterText(find.byType(TextField), 'Tag 14');
-      await tester.tap(find.text('적용'));
+      await tester.pumpAndSettle();
+
+      // 버튼이 화면 밖에 있을 수 있으므로 스크롤
+      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('이름 적용'));
       await tester.pumpAndSettle();
 
       // 15개 제한이므로 더 이상 추가 불가 (이 테스트는 순환 로직 검증)
@@ -677,6 +694,10 @@ void main() {
       // [When] 중간 태그(Tag2) 삭제
       await tester.tap(find.text('#Tag2'));
       await tester.pumpAndSettle();
+
+      // 삭제 버튼이 화면 밖에 있을 수 있으므로 스크롤
+      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('태그 삭제'));
       await tester.pumpAndSettle();
 
@@ -710,6 +731,10 @@ void main() {
       // [When] 마지막 태그(Tag4) 삭제
       await tester.tap(find.text('#Tag4'));
       await tester.pumpAndSettle();
+
+      // 삭제 버튼이 화면 밖에 있을 수 있으므로 스크롤
+      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('태그 삭제'));
       await tester.pumpAndSettle();
 
@@ -740,7 +765,9 @@ void main() {
       // [Given] 'AI' 태그(s1에서 사용 중)가 선택됨
       expect(findTagPillByName(tester, 'AI').selected, isTrue);
 
-      // [When] '태그 삭제' 탭
+      // [When] '태그 삭제' 탭 (화면 밖에 있을 수 있으므로 스크롤)
+      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('태그 삭제'));
       await tester.pumpAndSettle();
 
@@ -758,6 +785,8 @@ void main() {
       expect(find.text('#AI'), findsOneWidget);
 
       // [When] 다시 '태그 삭제' 후 '예' 탭
+      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('태그 삭제'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('예'));
@@ -821,7 +850,12 @@ void main() {
 
       // [When] 2. 'AI' 태그 이름 변경
       await tester.enterText(find.byType(TextField), 'AI-Renamed');
-      await tester.tap(find.text('적용'));
+      await tester.pumpAndSettle();
+
+      // 버튼이 화면 밖에 있을 수 있으므로 스크롤
+      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('이름 적용'));
       await tester.pumpAndSettle();
 
       // [When] 3. 'Web' 태그 삭제 (s2에서 사용 중)
