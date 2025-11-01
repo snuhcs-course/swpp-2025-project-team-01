@@ -1004,6 +1004,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         }
       }
 
+      // 강의 생성 완료 - lectureId 전달
+      LectureLoadingService.instance.completeLoading(
+        lectureId: generatedLecture.id,
+      );
+
       // 7. 성공 메시지
       _showToast(
         l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',

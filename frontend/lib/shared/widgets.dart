@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
+import 'package:re_view/main.dart' show navigatorKey;
 
 /// 전체 너비를 차지하는 주요 버튼 위젯
 class PrimaryButton extends StatelessWidget {
@@ -158,7 +159,7 @@ class LectureLoadingBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: LectureLoadingService.instance,
-      builder: (context, _) {
+      builder: (buildContext, _) {
         final service = LectureLoadingService.instance;
         if (!service.isLoading) {
           return const SizedBox.shrink();
@@ -174,6 +175,7 @@ class LectureLoadingBar extends StatelessWidget {
           child = _ExpandedLoadingOverlay(
             key: const ValueKey('expanded-bar'),
             service: service,
+            context: buildContext,
           );
         }
 
@@ -190,12 +192,17 @@ class LectureLoadingBar extends StatelessWidget {
 
 /// 둥근모서리 + 그림자 카드 컨테이너
 class _ExpandedLoadingOverlay extends StatelessWidget {
-  const _ExpandedLoadingOverlay({super.key, required this.service});
+  const _ExpandedLoadingOverlay({
+    super.key,
+    required this.service,
+    required this.context,
+  });
 
   final LectureLoadingService service;
+  final BuildContext context;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext widgetContext) {
     final isCompleted = service.progress >= 1.0;
 
     return Align(
@@ -218,7 +225,10 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               child: isCompleted
-                  ? const _CompletedView(key: ValueKey('completed'))
+                  ? _CompletedView(
+                      key: const ValueKey('completed'),
+                      context: context,
+                    )
                   : _LoadingView(
                       key: const ValueKey('loading'),
                       title: service.lectureTitle,
@@ -503,11 +513,14 @@ class _LoadingView extends StatelessWidget {
 
 /// 완료 화면 (요청: 배경이미지 위주, 카드 라운드 유지)
 class _CompletedView extends StatelessWidget {
-  const _CompletedView({super.key});
+  const _CompletedView({super.key, required this.context});
+
+  final BuildContext context;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext widgetContext) {
     final textTheme = Theme.of(context).textTheme;
+    final service = LectureLoadingService.instance;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -545,7 +558,7 @@ class _CompletedView extends StatelessWidget {
                     ),
                     InkWell(
                       customBorder: const CircleBorder(),
-                      onTap: LectureLoadingService.instance.hideLoading,
+                      onTap: service.hideLoading,
                       child: const Padding(
                         padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
                         child: Icon(Icons.close, color: Colors.grey, size: 22),
@@ -562,6 +575,40 @@ class _CompletedView extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (service.lectureId != null) ...[
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      debugPrint('🔘 Button pressed!');
+                      final lectureId = service.getLectureIdAndHide();
+                      debugPrint('🔘 lectureId: $lectureId');
+                      debugPrint('🔘 navigatorKey: $navigatorKey');
+                      debugPrint(
+                        '🔘 navigatorKey.currentState: ${navigatorKey.currentState}',
+                      );
+
+                      if (lectureId != null) {
+                        navigatorKey.currentState?.pushNamed(
+                          '/player',
+                          arguments: {'lectureId': lectureId},
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.play_circle_outline, size: 20),
+                    label: const Text('생성된 강의 바로가기'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF7FAB0),
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

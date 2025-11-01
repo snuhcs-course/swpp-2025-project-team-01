@@ -15,8 +15,8 @@ class LectureLoadingService extends ChangeNotifier {
   static const List<String> _friendlyMessages = [
     '열심히 강의를 받아적는 중..',
     '강의 내용을 정리하고 있어요',
-    '교수님 목소리를 듣고 있어요',
-    '슬라이드와 음성을 매칭하는 중',
+    '음성 파일을 듣고 있어요',
+    '슬라이드와 음성을 매칭하는 중..',
     '강의 노트를 작성하고 있어요',
     '중요한 부분을 체크하고 있어요',
     '강의를 분석하고 있어요',
@@ -32,6 +32,7 @@ class LectureLoadingService extends ChangeNotifier {
   double _progress = 0.0;
   String _message = '';
   String _lectureTitle = '';
+  String? _lectureId; // 생성된 강의 ID
   bool _isCancelled = false;
   VoidCallback? _onCancel;
   bool _isCollapsed = false;
@@ -51,6 +52,9 @@ class LectureLoadingService extends ChangeNotifier {
   /// 현재 생성 중인 렉처 제목
   String get lectureTitle => _lectureTitle;
 
+  /// 생성된 강의 ID
+  String? get lectureId => _lectureId;
+
   /// 취소 여부
   bool get isCancelled => _isCancelled;
 
@@ -69,6 +73,16 @@ class LectureLoadingService extends ChangeNotifier {
   /// 취소 콜백 등록
   void setOnCancel(VoidCallback? callback) {
     _onCancel = callback;
+  }
+
+  /// 강의로 이동 (위젯이 직접 Navigator를 사용할 수 없으므로 lectureId만 반환)
+  String? getLectureIdAndHide() {
+    debugPrint('🔥 getLectureIdAndHide called');
+    debugPrint('🔥 _lectureId: $_lectureId');
+
+    final id = _lectureId;
+    hideLoading();
+    return id;
   }
 
   /// 로딩 시작
@@ -143,7 +157,7 @@ class LectureLoadingService extends ChangeNotifier {
   }
 
   /// 로딩 완료 (완료 화면을 잠시 표시하기 위해 isLoading은 유지)
-  void completeLoading() {
+  void completeLoading({String? lectureId}) {
     if (!_isLoading) {
       return;
     }
@@ -151,6 +165,7 @@ class LectureLoadingService extends ChangeNotifier {
     _messageTimer?.cancel();
     _progress = 1.0;
     _message = '강의 생성 완료!';
+    _lectureId = lectureId;
     notifyListeners();
     _saveState();
   }
@@ -162,6 +177,7 @@ class LectureLoadingService extends ChangeNotifier {
     _progress = 0.0;
     _message = '';
     _lectureTitle = '';
+    _lectureId = null;
     _isCancelled = false;
     _onCancel = null;
     _isCollapsed = false;
