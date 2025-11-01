@@ -534,7 +534,9 @@ Future<String?> concatenateJsonFiles(
           ? 0
           : mergedTimestamps.last['original_end_time'] as int;
       ttsTimeOffset = i == 0 ? 0 : currentTtsTimelineEnd + gapBetweenFiles;
-      originalTimeOffset = i == 0 ? 0 : currentOriginalTimelineEnd + gapBetweenFiles;
+      originalTimeOffset = i == 0
+          ? 0
+          : currentOriginalTimelineEnd + gapBetweenFiles;
 
       // Integrate timestamps with renumbering and offsets
       for (final ts in tsList) {
@@ -543,7 +545,8 @@ Future<String?> concatenateJsonFiles(
         final slideNumber = (ts['slide_number'] as num?)?.toInt() ?? 0;
         final startTime = (ts['start_time'] as num?)?.toInt() ?? 0;
         final endTime = (ts['end_time'] as num?)?.toInt() ?? startTime;
-        final originalStartTime = (ts['original_start_time'] as num?)?.toInt() ?? 0;
+        final originalStartTime =
+            (ts['original_start_time'] as num?)?.toInt() ?? 0;
         final originalEndTime = (ts['original_end_time'] as num?)?.toInt() ?? 0;
         final duration =
             (ts['duration'] as num?)?.toInt() ?? (endTime - startTime);
