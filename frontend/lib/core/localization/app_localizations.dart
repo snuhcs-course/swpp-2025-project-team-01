@@ -100,6 +100,7 @@ class AppLocalizations {
   String get colorTheme => isKorean ? '색상 테마' : 'Color Theme';
   String get tagName => isKorean ? '이름' : 'Name';
   String get apply => isKorean ? '적용' : 'Apply';
+  String get nameApply => isKorean ? '이름 적용' : 'Apply Name';
   String get newTag => isKorean ? '새 태그' : 'New Tag';
   String get deleteTag => isKorean ? '태그 삭제' : 'Delete Tag';
   String get maxTagsReached =>
