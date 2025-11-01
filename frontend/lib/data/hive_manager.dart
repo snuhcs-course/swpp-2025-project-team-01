@@ -207,6 +207,7 @@ class HiveManager extends ChangeNotifier {
   Map<String, HiveTag> get tags => _appData?.tags ?? {};
   UiState get uiState => _appData?.uiState ?? UiState();
   Map<String, HiveLecture> get lectures => _appData?.lectures ?? {};
+  List<String> get subjectOrder => _appData?.subjectOrder ?? [];
 
   // ========== 설정 관련 ==========
 
@@ -258,8 +259,26 @@ class HiveManager extends ChangeNotifier {
     bool favoritesOnly = false,
     List<String> filterTagIds = const [],
   }) {
-    List<HiveSubject> list = subjects.values.toList()
-      ..sort((a, b) => a.title.compareTo(b.title));
+    List<HiveSubject> list;
+
+    // 저장된 순서가 있으면 그 순서를 사용, 없으면 알파벳 순
+    if (subjectOrder.isNotEmpty) {
+      // subjectOrder에 있는 과목들을 순서대로 추가
+      list = subjectOrder
+          .map((id) => subjects[id])
+          .whereType<HiveSubject>()
+          .toList();
+
+      // subjectOrder에 없는 과목들을 알파벳 순으로 추가
+      final orderedIds = subjectOrder.toSet();
+      final remainingSubjects =
+          subjects.values.where((s) => !orderedIds.contains(s.id)).toList()
+            ..sort((a, b) => a.title.compareTo(b.title));
+      list.addAll(remainingSubjects);
+    } else {
+      list = subjects.values.toList()
+        ..sort((a, b) => a.title.compareTo(b.title));
+    }
 
     if (favoritesOnly) {
       list = list.where((s) => s.favorite).toList();
@@ -312,11 +331,18 @@ class HiveManager extends ChangeNotifier {
       tagIds: tagIds,
       lectureIds: [],
     );
+
+    // 새 과목을 순서 목록의 맨 앞에 추가
+    if (!subjectOrder.contains(newId)) {
+      subjectOrder.insert(0, newId);
+    }
+
     await _save();
   }
 
   Future<void> deleteSubject(String id) async {
     subjects.remove(id);
+    subjectOrder.remove(id); // 순서 목록에서도 제거
     await _save();
   }
 
@@ -331,6 +357,13 @@ class HiveManager extends ChangeNotifier {
 
   Future<void> updateSubjectTags(String id, List<String> tagIds) async {
     await updateSubject(id, tagIds: tagIds);
+  }
+
+  /// 과목 순서 업데이트
+  Future<void> updateSubjectOrder(List<String> newOrder) async {
+    _appData?.subjectOrder.clear();
+    _appData?.subjectOrder.addAll(newOrder);
+    await _save();
   }
 
   // ========== 태그 관련 ==========
