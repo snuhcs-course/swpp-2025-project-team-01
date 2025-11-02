@@ -85,7 +85,7 @@ class LecturePipeline:
         context_update_rate: float = 0.25,
 
         # Translation settings
-        translation_model: str = "tencent/Hunyuan-MT-7B",
+        translation_model: str = "tencent/Hunyuan-MT-7B-fp8",
         translation_tensor_parallel_size: int = 1,
         enable_translation: bool = True,
 
