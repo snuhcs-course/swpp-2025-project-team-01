@@ -24,6 +24,8 @@ class SlideMatchingProcessor:
         model_name: str = 'nvidia/llama-nemoretriever-colembed-3b-v1',
         device: str = 'cuda',
         batch_size: int = 4,
+        use_image_batching: bool = True,
+        image_batch_size: int = 4,
         jump_penalty: float = 0.2,
         backward_weight: float = 2.0,
         use_exponential_scaling: bool = True,
@@ -41,7 +43,9 @@ class SlideMatchingProcessor:
         Args:
             model_name: Pretrained multimodal model name
             device: Device to run on (cuda/cpu)
-            batch_size: Batch size for embedding computation
+            batch_size: Batch size for text query embedding computation
+            use_image_batching: Enable batched image embedding computation (default: True)
+            image_batch_size: Batch size for image embedding when batching is enabled (default: 4)
             jump_penalty: Penalty for slide jumps
             backward_weight: Multiplier for backward jump penalty
             use_exponential_scaling: Apply exponential scaling to scores
@@ -56,6 +60,8 @@ class SlideMatchingProcessor:
         self.model_name = model_name
         self.device = device
         self.batch_size = batch_size
+        self.use_image_batching = use_image_batching
+        self.image_batch_size = image_batch_size
         self.jump_penalty = jump_penalty
         self.backward_weight = backward_weight
         self.use_exponential_scaling = use_exponential_scaling
@@ -71,7 +77,10 @@ class SlideMatchingProcessor:
         print(f"Initializing Slide Matching Processor")
         print(f"Model: {model_name}")
         print(f"Device: {device}")
-        print(f"Batch size: {batch_size}")
+        print(f"Text batch size: {batch_size}")
+        print(f"Image batching: {'enabled' if use_image_batching else 'disabled'}")
+        if use_image_batching:
+            print(f"Image batch size: {image_batch_size}")
 
     def load_model(self):
         """Load multimodal model into memory."""
@@ -168,13 +177,24 @@ class SlideMatchingProcessor:
             )
 
         print('Processing page images...')
-        # Process images one by one to avoid shared memory errors
-        image_embeddings = []
-        for image in tqdm(images, desc = 'Processing images'):
-            with torch.no_grad():
-                emb = self.model.forward_passages([image], batch_size = 1)
-                image_embeddings.append(emb)
-        image_embeddings = torch.cat(image_embeddings, dim = 0)
+        if self.use_image_batching:
+            # Process images in batches for faster processing
+            image_embeddings = []
+            num_images = len(images)
+            for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
+                batch = images[i:i + self.image_batch_size]
+                with torch.no_grad():
+                    emb = self.model.forward_passages(batch, batch_size = len(batch))
+                    image_embeddings.append(emb)
+            image_embeddings = torch.cat(image_embeddings, dim = 0)
+        else:
+            # Process images one by one to avoid shared memory errors
+            image_embeddings = []
+            for image in tqdm(images, desc = 'Processing images'):
+                with torch.no_grad():
+                    emb = self.model.forward_passages([image], batch_size = 1)
+                    image_embeddings.append(emb)
+            image_embeddings = torch.cat(image_embeddings, dim = 0)
 
         print(f'Query embeddings shape: {query_embeddings.shape}')
         print(f'Image embeddings shape: {image_embeddings.shape}')
@@ -369,6 +389,8 @@ class SlideMatchingProcessor:
 if __name__ == "__main__":
     # Example usage
     processor = SlideMatchingProcessor(
+        use_image_batching = True,
+        image_batch_size = 4,
         jump_penalty = 0.2,
         backward_weight = 2.0,
         use_exponential_scaling = True,

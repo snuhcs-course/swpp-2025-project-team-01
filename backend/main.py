@@ -139,7 +139,7 @@ def get_pipeline() -> LecturePipeline:
             context_update_rate = 0.25,
 
             # Translation settings
-            translation_model = "tencent/Hunyuan-MT-7B",
+            translation_model = "tencent/Hunyuan-MT-7B-fp8",
             translation_tensor_parallel_size = 1,
             enable_translation = True,
 

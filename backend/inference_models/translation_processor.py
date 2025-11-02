@@ -21,7 +21,7 @@ class TranslationProcessor:
 
     def __init__(
         self,
-        model_name: str = "tencent/Hunyuan-MT-7B",
+        model_name: str = "tencent/Hunyuan-MT-7B-fp8",
         device: str = "cuda",
         tensor_parallel_size: int = 1,
         max_model_len: int = 1024,

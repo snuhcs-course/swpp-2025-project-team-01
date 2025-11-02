@@ -311,6 +311,12 @@ class TTSProcessor:
             if 'text_kor' in result:
                 sentence_info['text_kor'] = result['text_kor']
 
+            # Include original audio timestamps if available
+            if 'original_start_time' in result:
+                sentence_info['original_start_time'] = result['original_start_time']
+            if 'original_end_time' in result:
+                sentence_info['original_end_time'] = result['original_end_time']
+
             sentences.append(sentence_info)
 
         return self.generate_audio(

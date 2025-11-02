@@ -71,6 +71,8 @@ class LecturePipeline:
         # Slide matching settings
         matching_model: str = 'nvidia/llama-nemoretriever-colembed-3b-v1',
         matching_batch_size: int = 4,
+        use_image_batching: bool = True,
+        image_batch_size: int = 4,
         jump_penalty: float = 0.2,
         backward_weight: float = 2.0,
         use_exponential_scaling: bool = True,
@@ -83,7 +85,7 @@ class LecturePipeline:
         context_update_rate: float = 0.25,
 
         # Translation settings
-        translation_model: str = "tencent/Hunyuan-MT-7B",
+        translation_model: str = "tencent/Hunyuan-MT-7B-fp8",
         translation_tensor_parallel_size: int = 1,
         enable_translation: bool = True,
 
@@ -105,7 +107,9 @@ class LecturePipeline:
             asr_chunk_seconds: Chunk duration for long audio files
             asr_batch_size: ASR batch size
             matching_model: Multimodal matching model name
-            matching_batch_size: Matching batch size
+            matching_batch_size: Matching batch size for text queries
+            use_image_batching: Enable batched image embedding computation
+            image_batch_size: Batch size for image embedding when batching is enabled
             jump_penalty: Slide jump penalty
             backward_weight: Backward jump penalty multiplier
             use_exponential_scaling: Use exponential scaling for matching scores
@@ -146,6 +150,8 @@ class LecturePipeline:
             model_name = matching_model,
             device = device,
             batch_size = matching_batch_size,
+            use_image_batching = use_image_batching,
+            image_batch_size = image_batch_size,
             jump_penalty = jump_penalty,
             backward_weight = backward_weight,
             use_exponential_scaling = use_exponential_scaling,
@@ -491,6 +497,8 @@ if __name__ == "__main__":
         asr_batch_size = 4,
 
         # Matching settings
+        use_image_batching = True,
+        image_batch_size = 4,
         jump_penalty = 0.2,
         backward_weight = 2.0,
         use_exponential_scaling = True,
