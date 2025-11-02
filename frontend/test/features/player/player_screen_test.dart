@@ -1080,7 +1080,6 @@ void main() {
           .setMockMessageHandler('flutter/assets', null);
       await tester.pumpWidget(Container());
     });
-
   });
   group('PlayerScreen - Successful Initialization with Real Assets', () {
     testWidgets('successfully initializes with demo lecture and covers', (
