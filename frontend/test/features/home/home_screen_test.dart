@@ -121,7 +121,7 @@ void main() {
     required String subjectId,
     String weekLabel = 'Week 1',
     String title = 'Lecture',
-    int duration = 3600,
+    int duration = 3600000, // 밀리초 단위 (1시간)
   }) {
     return HiveLecture(
       id: id,

@@ -28,7 +28,7 @@ HiveLecture buildLecture({
   required String subjectId,
   required String weekLabel,
   required String title,
-  int duration = 3600,
+  int duration = 3600000, // 밀리초 단위 (1시간)
   String? originalAudioPath,
   String? ttsAudioPath,
   String? jsonPath,
@@ -139,7 +139,6 @@ void main() {
           accessibilityReduceMotion: true,
           accessibilityEmphasizeCaptions: true,
           ttsGender: '남성',
-          ttsSpeed: '보통',
           tagColorTheme: '파스텔',
         ),
         subjects: subjects,
@@ -190,7 +189,7 @@ void main() {
         reduceMotion: false,
         emphasizeCaptions: false,
       );
-      await manager.updateTts(gender: '여성', speed: '빠르게');
+      await manager.updateTts(gender: '여성');
       await manager.updateTagColorTheme('비비드');
 
       final saved = appBox.get('main');
@@ -201,7 +200,6 @@ void main() {
       expect(manager.settings.accessibilityReduceMotion, isFalse);
       expect(manager.settings.accessibilityEmphasizeCaptions, isFalse);
       expect(manager.settings.ttsGender, '여성');
-      expect(manager.settings.ttsSpeed, '빠르게');
       expect(manager.settings.tagColorTheme, '비비드');
       expect(saved?.settings.theme, 'light');
       expect(notificationCount, greaterThan(0));
@@ -318,6 +316,69 @@ void main() {
         expect(manager.getLecturesBySubject('s1').map((l) => l.id), ['lec1']);
       },
     );
+
+    test('moveLectureToSubject moves lecture between subjects', () async {
+      // 초기 상태: lec1은 s1에 속함
+      expect(manager.getLecture('lec1')?.subjectId, 's1');
+      expect(manager.getLecturesBySubject('s1').map((l) => l.id), [
+        'lec1',
+        'lec2',
+      ]);
+      expect(manager.getLecturesBySubject('s2').map((l) => l.id), ['lec3']);
+
+      // lec1을 s1에서 s2로 이동
+      await manager.moveLectureToSubject('lec1', 's2');
+
+      // 검증: lec1의 subjectId가 s2로 변경됨
+      expect(manager.getLecture('lec1')?.subjectId, 's2');
+
+      // 검증: s1의 강의 목록에서 lec1이 제거됨
+      expect(manager.getLecturesBySubject('s1').map((l) => l.id), ['lec2']);
+
+      // 검증: s2의 강의 목록에 lec1이 추가됨
+      expect(manager.getLecturesBySubject('s2').map((l) => l.id), [
+        'lec3',
+        'lec1',
+      ]);
+
+      // 검증: updatedAt이 갱신됨
+      expect(
+        manager
+            .getLecture('lec1')
+            ?.updatedAt
+            ?.isAfter(DateTime(2024, 01, 01, 12)),
+        isTrue,
+      );
+    });
+
+    test(
+      'moveLectureToSubject does nothing when moving to same subject',
+      () async {
+        final originalUpdatedAt = manager.getLecture('lec1')?.updatedAt;
+
+        // 같은 과목으로 이동 시도
+        await manager.moveLectureToSubject('lec1', 's1');
+
+        // 검증: 아무 변화 없음
+        expect(manager.getLecture('lec1')?.subjectId, 's1');
+        expect(manager.getLecturesBySubject('s1').map((l) => l.id), [
+          'lec1',
+          'lec2',
+        ]);
+        expect(manager.getLecture('lec1')?.updatedAt, originalUpdatedAt);
+      },
+    );
+
+    test(
+      'moveLectureToSubject handles non-existent lecture gracefully',
+      () async {
+        // 존재하지 않는 강의를 이동하려고 시도
+        await manager.moveLectureToSubject('non-existent', 's2');
+
+        // 검증: 아무 변화 없음
+        expect(manager.getLecturesBySubject('s2').map((l) => l.id), ['lec3']);
+      },
+    );
   });
 
   group('HiveManager init with asset defaults', () {
@@ -427,7 +488,7 @@ void main() {
       await manager.init();
 
       expect(manager.isInitialized, isTrue);
-      expect(manager.subjects.length, 1);
+      expect(manager.subjects.length, 2); // Asset Subject + Uncategorized
       expect(manager.tags.length, 1);
       expect(manager.lectures.length, 1);
       expect(manager.settings.theme, 'system');

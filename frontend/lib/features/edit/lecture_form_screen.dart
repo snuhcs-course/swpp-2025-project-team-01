@@ -10,6 +10,7 @@ import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_background/flutter_background.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 const String _serverAddress = '147.46.78.61';
 const String _port = '8001';
@@ -202,7 +203,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String?>(
-              value: _selectedSubjectId,
+              value: _selectedSubjectId == 'uncategorized'
+                  ? null
+                  : _selectedSubjectId,
               isExpanded: true,
               icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
               hint: Text(
@@ -219,16 +222,21 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                     style: TextStyle(fontSize: 16, color: textColor),
                   ),
                 ),
-                // 기존 과목 리스트
-                ...subjects.map(
-                  (s) => DropdownMenuItem<String?>(
-                    value: (s as dynamic).id as String,
-                    child: Text(
-                      (s as dynamic).title as String,
-                      style: TextStyle(fontSize: 16, color: textColor),
+                // 기존 과목 리스트 (미분류 제외)
+                ...subjects
+                    .where((s) {
+                      final subject = s as HiveSubject;
+                      return !subject.isUncategorized;
+                    })
+                    .map(
+                      (s) => DropdownMenuItem<String?>(
+                        value: (s as dynamic).id as String,
+                        child: Text(
+                          (s as dynamic).title as String,
+                          style: TextStyle(fontSize: 16, color: textColor),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -465,7 +473,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 개별 오디오 파일 엔트리 위젯
   ///
-  /// 다중 오디오 파일 모드일 때는 페이지 범위 입력 필드도 함께 표시합니다.
+  /// 페이지 범위 입력 필드를 함께 표시합니다.
   Widget _buildAudioFileEntry(int index) {
     final entry = _audioFiles[index];
 
@@ -480,11 +488,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           onTap: () => _pickAudioFile(index),
         ),
 
-        // 다중 오디오 파일 모드일 때 페이지 범위 입력 필드 표시
-        if (_isMultipleAudioMode) ...[
-          const SizedBox(height: 12),
-          _buildPageRangeInputs(entry, l10n),
-        ],
+        // 페이지 범위 입력 필드 표시 (항상 표시)
+        const SizedBox(height: 12),
+        _buildPageRangeInputs(entry, l10n),
 
         // 마지막 아이템이 아니면 간격 추가
         if (index < _audioFiles.length - 1) const SizedBox(height: 12),
@@ -663,9 +669,36 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     );
 
     if (result != null && result.files.single.path != null) {
-      setState(() {
-        _slidePdfPath = result.files.single.path;
-      });
+      final pdfPath = result.files.single.path!;
+
+      // PDF 페이지 수 확인
+      try {
+        final pdfFile = File(pdfPath);
+        final bytes = await pdfFile.readAsBytes();
+        final document = PdfDocument(inputBytes: bytes);
+        final pageCount = document.pages.count;
+        document.dispose();
+
+        setState(() {
+          _slidePdfPath = pdfPath;
+
+          // 첫 번째 오디오 파일의 페이지 범위를 자동으로 설정
+          if (_audioFiles.isNotEmpty) {
+            _audioFiles[0].startPageController.text = '1';
+            _audioFiles[0].endPageController.text = pageCount.toString();
+          }
+        });
+      } catch (e) {
+        // PDF 로드 실패 시 경로만 저장
+        setState(() {
+          _slidePdfPath = pdfPath;
+        });
+        _showToast(
+          l10n.isKorean
+              ? 'PDF 페이지 수를 확인할 수 없습니다'
+              : 'Could not determine PDF page count',
+        );
+      }
     }
   }
 
@@ -690,20 +723,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 새로운 오디오 파일 엔트리를 추가합니다.
   /// 기존 파일들이 모두 업로드된 경우에만 추가 가능합니다.
   void _addAudioFile() {
-    // 모든 기존 파일이 업로드되었는지 확인
-    for (int i = 0; i < _audioFiles.length; i++) {
-      if (_audioFiles[i].filePath == null) {
-        _showToast(
-          l10n.isKorean
-              ? '파일을 순서대로 업로드해주세요'
-              : 'Please upload the files in order',
-        );
-        return;
-      }
-    }
+    final newEntry = AudioFileEntry();
+
+    // 두 번째 오디오부터는 초기값 없이 비워둠 (사용자가 직접 입력)
 
     setState(() {
-      _audioFiles.add(AudioFileEntry());
+      _audioFiles.add(newEntry);
       _isMultipleAudioMode = true;
     });
 
@@ -794,10 +819,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 4. 최소 1개의 오디오 파일 업로드 여부
   Future<void> _createLecture() async {
     // 1. 검증
-    if (_selectedSubjectId == null) {
-      _showToast(l10n.isKorean ? '과목을 선택해주세요' : 'Please select a subject');
-      return;
-    }
+    // 과목 선택이 없으면 미분류로 처리
+    _selectedSubjectId ??= 'uncategorized';
     if (_weekController.text.trim().isEmpty) {
       _showToast(l10n.isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week');
       return;
@@ -821,6 +844,75 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             : 'Please upload at least one audio file',
       );
       return;
+    }
+
+    // 페이지 범위 검증
+    // 첫 번째 오디오의 끝 페이지 = PDF 전체 페이지 수
+    int? totalPdfPages;
+
+    for (int i = 0; i < _audioFiles.length; i++) {
+      final entry = _audioFiles[i];
+      if (entry.filePath == null) {
+        continue; // 파일이 없으면 스킵
+      }
+
+      final startText = entry.startPageController.text.trim();
+      final endText = entry.endPageController.text.trim();
+
+      if (startText.isEmpty || endText.isEmpty) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 페이지 범위를 입력해주세요'
+              : 'Please enter page range for audio ${i + 1}',
+        );
+        return;
+      }
+
+      // 숫자 형식 검증
+      final startPage = int.tryParse(startText);
+      final endPage = int.tryParse(endText);
+
+      if (startPage == null || endPage == null) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 페이지 번호는 숫자로 입력해주세요'
+              : 'Page numbers for audio ${i + 1} must be numbers',
+        );
+        return;
+      }
+
+      if (startPage < 1 || endPage < 1) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 페이지 번호는 1 이상이어야 합니다'
+              : 'Page numbers for audio ${i + 1} must be at least 1',
+        );
+        return;
+      }
+
+      if (startPage > endPage) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 시작 페이지가 끝 페이지보다 클 수 없습니다'
+              : 'Start page cannot be greater than end page for audio ${i + 1}',
+        );
+        return;
+      }
+
+      // 첫 번째 오디오의 끝 페이지를 PDF 전체 페이지 수로 저장
+      if (i == 0) {
+        totalPdfPages = endPage;
+      } else {
+        // 두 번째 오디오부터는 PDF 전체 페이지 수를 초과하지 않는지 검증
+        if (totalPdfPages != null && endPage > totalPdfPages) {
+          _showToast(
+            l10n.isKorean
+                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($totalPdfPages)를 초과합니다'
+                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($totalPdfPages)',
+          );
+          return;
+        }
+      }
     }
 
     // 2. 로딩 시작
@@ -885,8 +977,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         _closeClientOnDispose = false;
         final navigator = Navigator.of(context);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          navigator.popUntil(
-            (route) => route.settings.name == Routes.home || route.isFirst,
+          navigator.pushNamedAndRemoveUntil(
+            Routes.home,
+            (route) => false, // remove everything behind Home
           );
         });
       }

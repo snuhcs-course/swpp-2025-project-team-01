@@ -43,7 +43,7 @@ void main() {
       subjectId: 'subject-1',
       weekLabel: 'Week 1',
       title: 'Introduction',
-      duration: 3600,
+      duration: 3600000, // 1시간 (밀리초)
       originalAudioPath: null,
       ttsAudioPath: null,
     ),
@@ -52,7 +52,7 @@ void main() {
       subjectId: 'subject-1',
       weekLabel: 'Week 2',
       title: 'Advanced Topics',
-      duration: 4200,
+      duration: 4200000, // 1시간 10분 (밀리초)
       originalAudioPath: null,
       ttsAudioPath: null,
     ),
@@ -334,7 +334,7 @@ void main() {
         subjectId: 'sub1',
         weekLabel: 'Week 1',
         title: 'Introduction',
-        duration: 3600,
+        duration: 3600000, // 1시간 (밀리초)
         originalAudioPath: null,
         ttsAudioPath: null,
       );
@@ -361,7 +361,7 @@ void main() {
         subjectId: 'sub1',
         weekLabel: 'Week 3',
         title: 'Advanced Algorithms',
-        duration: 3600,
+        duration: 3600000, // 1시간 (밀리초)
         originalAudioPath: null,
         ttsAudioPath: null,
       );
@@ -385,7 +385,7 @@ void main() {
         subjectId: 'sub1',
         weekLabel: 'Week 1',
         title: 'Test',
-        duration: 3600,
+        duration: 3600000, // 1시간 (밀리초)
         originalAudioPath: null,
         ttsAudioPath: null,
       );
@@ -418,7 +418,7 @@ void main() {
         subjectId: 'sub1',
         weekLabel: 'Week 1',
         title: 'No Slides',
-        duration: 3600,
+        duration: 3600000, // 1시간 (밀리초)
         originalAudioPath: null,
         ttsAudioPath: null,
         slidePath: null,

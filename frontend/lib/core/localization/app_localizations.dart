@@ -75,6 +75,7 @@ class AppLocalizations {
   // 과목
   String get subject => isKorean ? '과목' : 'Subject';
   String get subjects => isKorean ? '과목' : 'Subjects';
+  String get uncategorized => isKorean ? '미분류' : 'Uncategorized';
   String get editingSubjects => isKorean ? '과목 수정' : 'Editing Subjects';
   String get deleteSubject => isKorean ? '과목 삭제' : 'Delete Subject';
   String get deleteSubjectWarning => isKorean
@@ -100,6 +101,7 @@ class AppLocalizations {
   String get colorTheme => isKorean ? '색상 테마' : 'Color Theme';
   String get tagName => isKorean ? '이름' : 'Name';
   String get apply => isKorean ? '적용' : 'Apply';
+  String get nameApply => isKorean ? '이름 적용' : 'Apply Name';
   String get newTag => isKorean ? '새 태그' : 'New Tag';
   String get deleteTag => isKorean ? '태그 삭제' : 'Delete Tag';
   String get maxTagsReached =>

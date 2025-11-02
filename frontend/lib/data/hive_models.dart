@@ -15,12 +15,14 @@ class AppData extends HiveObject {
     Map<String, HiveTag>? tags,
     Map<String, HiveLecture>? lectures,
     UiState? uiState,
+    List<String>? subjectOrder,
   }) {
     this.settings = settings ?? AppSettings();
     this.subjects = subjects ?? {};
     this.tags = tags ?? {};
     this.lectures = lectures ?? {};
     this.uiState = uiState ?? UiState();
+    this.subjectOrder = subjectOrder ?? [];
   }
 
   @HiveField(0)
@@ -37,6 +39,9 @@ class AppData extends HiveObject {
 
   @HiveField(4)
   late Map<String, HiveLecture> lectures;
+
+  @HiveField(5)
+  late List<String> subjectOrder;
 }
 
 /// 앱 설정 (테마, 언어, 접근성, TTS 등)
@@ -49,7 +54,6 @@ class AppSettings {
     this.accessibilityReduceMotion = false,
     this.accessibilityEmphasizeCaptions = true,
     this.ttsGender = '남성',
-    this.ttsSpeed = '보통',
     this.tagColorTheme = '봄',
     this.hasCompletedTutorial = false,
   });
@@ -73,12 +77,9 @@ class AppSettings {
   String ttsGender; // '남성', '여성'
 
   @HiveField(6)
-  String ttsSpeed; // '빠르게', '보통', '느리게'
-
-  @HiveField(7)
   String tagColorTheme; // '봄', '여름', '가을', '겨울', '솜사탕', '비비드', '바다'
 
-  @HiveField(8)
+  @HiveField(7)
   bool hasCompletedTutorial;
 }
 
@@ -107,6 +108,7 @@ class HiveSubject {
     this.favorite = false,
     List<String>? tagIds,
     List<String>? lectureIds,
+    this.isUncategorized = false,
   }) : tagIds = tagIds ?? [],
        lectureIds = lectureIds ?? [];
 
@@ -125,12 +127,16 @@ class HiveSubject {
   @HiveField(4)
   List<String> lectureIds;
 
+  @HiveField(5)
+  bool isUncategorized;
+
   HiveSubject copyWith({
     String? id,
     String? title,
     bool? favorite,
     List<String>? tagIds,
     List<String>? lectureIds,
+    bool? isUncategorized,
   }) {
     return HiveSubject(
       id: id ?? this.id,
@@ -138,6 +144,7 @@ class HiveSubject {
       favorite: favorite ?? this.favorite,
       tagIds: tagIds ?? this.tagIds,
       lectureIds: lectureIds ?? this.lectureIds,
+      isUncategorized: isUncategorized ?? this.isUncategorized,
     );
   }
 
@@ -149,6 +156,7 @@ class HiveSubject {
       favorite: favorite,
       tagIds: tagIds,
       lectureIds: lectureIds,
+      isUncategorized: isUncategorized,
     );
   }
 }

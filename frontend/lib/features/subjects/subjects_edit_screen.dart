@@ -40,8 +40,17 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   final Map<String, List<String>> _workingTagIds = {};
   final Map<String, String> _workingTitles = {};
 
+  // 작업 중인 과목 순서 (드래그앤드롭으로 변경 가능)
+  List<String> _workingSubjectOrder = [];
+
   // 삭제된 과목 ID 목록
   final Set<String> _deletedSubjectIds = {};
+
+  // 스크롤 컨트롤러 (자동 스크롤을 위해)
+  final ScrollController _scrollController = ScrollController();
+
+  // 저장 중 플래그 (저장 중에는 Hive 변경 리스너를 무시)
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -52,27 +61,50 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     hive.addListener(_onDataChanged);
   }
 
-  /// 초기화: 편집용 작업 복사본 생성
-  ///
-  /// 원본 데이터를 보존하면서 사용자가 편집할 수 있도록
-  /// 모든 과목의 강의 ID와 태그 ID를 복사합니다.
-  void _initializeWorkingData() {
-    for (final subject in hive.getSubjects()) {
-      _workingLectureIds[subject.id] = List.from(subject.lectureIds);
-      _workingTagIds[subject.id] = List.from(subject.tagIds);
-      _workingTitles[subject.id] = subject.title;
-    }
-  }
-
   @override
   void dispose() {
+    _scrollController.dispose();
     // 리스너 해제
     hive.removeListener(_onDataChanged);
     super.dispose();
   }
 
+  /// 초기화: 편집용 작업 복사본 생성
+  ///
+  /// 원본 데이터를 보존하면서 사용자가 편집할 수 있도록
+  /// 모든 과목의 강의 ID와 태그 ID를 복사합니다.
+  void _initializeWorkingData() {
+    final subjects = hive.getSubjects();
+
+    for (final subject in subjects) {
+      _workingLectureIds[subject.id] = List.from(subject.lectureIds);
+      _workingTagIds[subject.id] = List.from(subject.tagIds);
+      _workingTitles[subject.id] = subject.title;
+    }
+
+    // 과목 순서 초기화 (현재 getSubjects()가 반환하는 순서)
+    // 이미 _workingSubjectOrder가 존재하면 보존 (드래그앤드롭으로 변경된 순서 유지)
+    if (_workingSubjectOrder.isEmpty) {
+      _workingSubjectOrder = subjects.map((s) => s.id).toList();
+    } else {
+      // 기존 순서를 유지하되, 새로 추가된 과목이 있으면 추가
+      final currentIds = subjects.map((s) => s.id).toSet();
+      _workingSubjectOrder.removeWhere((id) => !currentIds.contains(id));
+      for (final subject in subjects) {
+        if (!_workingSubjectOrder.contains(subject.id)) {
+          _workingSubjectOrder.add(subject.id);
+        }
+      }
+    }
+  }
+
   /// Hive 데이터 변경 시 호출되어 화면을 다시 빌드
   void _onDataChanged() {
+    // 저장 중일 때는 리스너를 무시 (저장 과정에서 발생하는 변경사항은 무시)
+    if (_isSaving) {
+      return;
+    }
+
     if (mounted) {
       // 데이터가 변경되었으므로, 작업용 데이터도 다시 초기화
       setState(() {
@@ -83,11 +115,17 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 삭제되지 않은 과목 목록만 표시
-    final subjects = hive
-        .getSubjects()
-        .map((s) => s.toSubject())
-        .where((s) => !_deletedSubjectIds.contains(s.id))
+    // 삭제되지 않은 과목 목록을 _workingSubjectOrder 순서대로 정렬
+    final subjectMap = {
+      for (var s in hive.getSubjects().map((s) => s.toSubject())) s.id: s,
+    };
+
+    final subjects = _workingSubjectOrder
+        .where(
+          (id) =>
+              !_deletedSubjectIds.contains(id) && subjectMap.containsKey(id),
+        )
+        .map((id) => subjectMap[id]!)
         .toList();
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -106,23 +144,75 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       ),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
 
-      // 과목 목록 (스크롤 가능)
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      // 과목 목록 (드래그앤드롭 가능)
+      body: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        scrollController: _scrollController,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         itemCount: subjects.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        onReorder: (oldIndex, newIndex) {
+          setState(() {
+            // 미분류 과목은 드래그 불가 (항상 마지막 위치 유지)
+            if (subjects[oldIndex].isUncategorized) {
+              return;
+            }
+
+            // 미분류 과목의 인덱스 찾기
+            final uncategorizedIndex = subjects.indexWhere(
+              (s) => s.isUncategorized,
+            );
+
+            // 미분류 과목이 있고, 그 위치나 그 뒤로 드래그하려는 경우 차단
+            if (uncategorizedIndex != -1 && newIndex >= uncategorizedIndex) {
+              return;
+            }
+
+            // 드래그앤드롭 인덱스 조정
+            if (newIndex > oldIndex) {
+              newIndex -= 1;
+            }
+
+            // subjects 리스트 기반으로 재정렬
+            final reorderedSubjects = List<Subject>.from(subjects);
+            final movedSubject = reorderedSubjects.removeAt(oldIndex);
+            reorderedSubjects.insert(newIndex, movedSubject);
+
+            // _workingSubjectOrder를 새 순서로 업데이트
+            _workingSubjectOrder = reorderedSubjects.map((s) => s.id).toList();
+          });
+        },
+        proxyDecorator: (child, index, animation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) {
+              return Material(
+                elevation: 8,
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(_editPanelRadius),
+                child: child,
+              );
+            },
+            child: child,
+          );
+        },
         itemBuilder: (_, index) {
           final subject = subjects[index];
-          return _buildSubjectPanel(subject);
+          return Padding(
+            key: ValueKey(subject.id),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildSubjectPanel(subject, index),
+          );
         },
       ),
 
       // 하단 고정 버튼 ([수정 완료] [취소])
-      bottomNavigationBar: _BottomBar(
-        primaryLabel: AppLocalizations.of(context).editComplete,
-        secondaryLabel: AppLocalizations.of(context).cancel,
-        onPrimary: _saveChanges,
-        onSecondary: () => Navigator.pop(context),
+      bottomNavigationBar: SafeArea(
+        child: _BottomBar(
+          primaryLabel: AppLocalizations.of(context).editComplete,
+          secondaryLabel: AppLocalizations.of(context).cancel,
+          onPrimary: _saveChanges,
+          onSecondary: () => Navigator.pop(context),
+        ),
       ),
     );
   }
@@ -130,7 +220,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 패널 빌더
   ///
   /// 각 과목의 강의 목록을 표시하고 드래그 앤 드롭으로 순서를 재정렬할 수 있습니다.
-  Widget _buildSubjectPanel(Subject subject) {
+  Widget _buildSubjectPanel(Subject subject, int index) {
     final lectureIds = _workingLectureIds[subject.id]!;
     final isExpanded = hive.getSubjectExpandedState(subject.id);
 
@@ -153,10 +243,15 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
           );
     }).toList();
 
+    // 미분류 과목은 다국어 처리된 제목 사용 (왼쪽 여백 추가)
+    final displayTitle = subject.isUncategorized
+        ? '  ${AppLocalizations.of(context).uncategorized}'
+        : _workingTitles[subject.id];
+
     return _SubjectEditPanel(
-      key: ValueKey(subject.id),
+      index: index,
       subject: subject,
-      displayTitle: _workingTitles[subject.id],
+      displayTitle: displayTitle,
       isInitiallyExpanded: isExpanded,
       lectures: lectures,
       // 강의 순서 재정렬 콜백
@@ -187,31 +282,42 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 모든 편집 내용(삭제, 순서 변경, 태그 변경, 제목 변경)을 저장하고
   /// 홈 화면을 새로고침한 후 이전 화면으로 돌아갑니다.
   Future<void> _saveChanges() async {
-    // 1. 삭제된 과목 처리
-    for (final subjectId in _deletedSubjectIds) {
-      await hive.deleteSubject(subjectId);
-    }
+    // 저장 시작 - 리스너 무시 플래그 설정
+    _isSaving = true;
 
-    // 2. 과목 제목, 강의 순서 및 태그 업데이트
-    for (final subject in hive.getSubjects()) {
-      if (!_deletedSubjectIds.contains(subject.id)) {
-        // 제목 업데이트
-        final newTitle = _workingTitles[subject.id];
-        if (newTitle != null && newTitle != subject.title) {
-          await hive.updateSubjectTitle(subject.id, newTitle);
-        }
-
-        await hive.updateSubjectLectures(
-          subject.id,
-          _workingLectureIds[subject.id]!,
-        );
-        await hive.updateSubjectTags(subject.id, _workingTagIds[subject.id]!);
+    try {
+      // 1. 삭제된 과목 처리
+      for (final subjectId in _deletedSubjectIds) {
+        await hive.deleteSubject(subjectId);
       }
-    }
 
-    // 3. 이전 화면으로 돌아가기
-    if (mounted) {
-      Navigator.pop(context);
+      // 2. 과목 제목, 강의 순서 및 태그 업데이트
+      for (final subject in hive.getSubjects()) {
+        if (!_deletedSubjectIds.contains(subject.id)) {
+          // 제목 업데이트
+          final newTitle = _workingTitles[subject.id];
+          if (newTitle != null && newTitle != subject.title) {
+            await hive.updateSubjectTitle(subject.id, newTitle);
+          }
+
+          await hive.updateSubjectLectures(
+            subject.id,
+            _workingLectureIds[subject.id]!,
+          );
+          await hive.updateSubjectTags(subject.id, _workingTagIds[subject.id]!);
+        }
+      }
+
+      // 3. 과목 순서 저장
+      await hive.updateSubjectOrder(_workingSubjectOrder);
+
+      // 4. 이전 화면으로 돌아가기
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      // 저장 완료 - 플래그 해제
+      _isSaving = false;
     }
   }
 
@@ -219,6 +325,20 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   ///
   /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공
   Future<void> _showSubjectEditDialog(Subject subject) async {
+    // 미분류 과목은 편집 불가
+    if (subject.isUncategorized) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).isKorean
+                ? '미분류 과목은 편집할 수 없습니다'
+                : 'Uncategorized subject cannot be edited',
+          ),
+        ),
+      );
+      return;
+    }
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
@@ -395,6 +515,11 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
         _workingLectureIds[newSubject.id] = [];
         _workingTagIds[newSubject.id] = List.from(selectedTagIds);
         _workingTitles[newSubject.id] = newSubject.title;
+
+        // 새 과목을 _workingSubjectOrder의 맨 앞에 추가
+        if (!_workingSubjectOrder.contains(newSubject.id)) {
+          _workingSubjectOrder.insert(0, newSubject.id);
+        }
       });
     }
   }
@@ -566,7 +691,6 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
             ),
             const SizedBox(height: 16),
 
-            // ========== 태그 수정 ==========
             const Text(
               '태그 수정',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -600,7 +724,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
                 width: MediaQuery.of(context).size.width * 0.4,
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: const Color.fromARGB(255, 231, 76, 60),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
@@ -652,7 +776,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 /// - 롱프레스로 과목 편집 다이얼로그 열기
 class _SubjectEditPanel extends StatefulWidget {
   const _SubjectEditPanel({
-    super.key,
+    required this.index,
     required this.subject,
     this.displayTitle,
     required this.isInitiallyExpanded,
@@ -662,6 +786,7 @@ class _SubjectEditPanel extends StatefulWidget {
     required this.onExpansionChanged,
   });
 
+  final int index;
   final Subject subject;
   final String? displayTitle;
   final bool isInitiallyExpanded;
@@ -701,7 +826,7 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
       curve: reduceMotion ? Curves.linear : Curves.easeInOut,
     );
     _colorAnimation = ColorTween(
-      begin: Colors.transparent,
+      begin: Colors.white,
       end: Colors.white,
     ).animate(_animationController);
 
@@ -739,10 +864,80 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
     }
   }
 
+  /// 드래그 가능한 헤더 빌드 (드래그 핸들 포함)
+  Widget _buildDraggableHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color headerColor = isDark
+        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+    final Color textColor = Colors.white;
+    final Color iconColor = Colors.white;
+
+    final BorderRadius resolvedRadius = expanded
+        ? BorderRadius.only(
+            topLeft: Radius.circular(_editPanelRadius),
+            topRight: Radius.circular(_editPanelRadius),
+          )
+        : BorderRadius.circular(_editPanelRadius);
+
+    return GestureDetector(
+      onLongPress: widget.onLongPress,
+      child: Container(
+        decoration: BoxDecoration(
+          color: headerColor,
+          borderRadius: resolvedRadius,
+        ),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
+          children: [
+            // 드래그 핸들 (좌측) - 미분류 과목은 숨김
+            if (!widget.subject.isUncategorized) ...[
+              ReorderableDragStartListener(
+                index: widget.index,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: iconColor.withValues(alpha: 0.7),
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ] else ...[
+              // 미분류 과목은 드래그 핸들 대신 여백
+              const SizedBox(width: 40),
+            ],
+            // 제목
+            Expanded(
+              child: Text(
+                widget.displayTitle ?? widget.subject.title,
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // 펼침/접기 버튼 (우측)
+            IconButton(
+              icon: Icon(
+                expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                color: iconColor,
+              ),
+              onPressed: _toggleExpanded,
+              tooltip: expanded ? '접기' : '펼치기',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: Duration.zero,
+    return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(_editPanelRadius),
         boxShadow: expanded ? const [_editPanelShadow] : const [],
@@ -757,17 +952,8 @@ class _SubjectEditPanelState extends State<_SubjectEditPanel>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ========== 검은 헤더 (과목 이름 + 펼침 버튼) ==========
-              SubjectPanelHeader(
-                title: widget.displayTitle ?? widget.subject.title,
-                tags: const [], // 과목 수정 화면에서는 태그 표시 안 함
-                expanded: expanded,
-                onToggleExpanded: _toggleExpanded,
-                panelRadius: _editPanelRadius,
-                collapsedRadius: BorderRadius.circular(_editPanelRadius),
-                onLongPress: widget.onLongPress,
-                titleEndPadding: 8,
-              ),
+              // ========== 검은 헤더 (과목 이름 + 펼침 버튼 + 드래그 핸들) ==========
+              _buildDraggableHeader(),
 
               // ========== 강의 리스트 (펼쳤을 때만 표시) ==========
               SizeTransition(
@@ -828,8 +1014,8 @@ class _BottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark
-        ? const Color(0xFF212121) // 다크모드: 배경색과 동일
-        : const Color(0xFFEDEDED); // 라이트모드: 기존 색상
+        ? null // 다크모드: Scaffold 기본 배경색 사용
+        : const Color(0xFFF5F5F5); // 라이트모드: Scaffold와 동일한 배경색
 
     return SafeArea(
       child: Container(

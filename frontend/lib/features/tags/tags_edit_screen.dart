@@ -150,56 +150,146 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           children: [
             _buildThemeSelector(context),
             const SizedBox(height: 16),
-            _buildTagChips(),
-            const SizedBox(height: 16),
-            _buildEditForm(context),
-            const SizedBox(height: 24),
-            _buildDeleteButton(context),
+            _buildTagEditSection(context),
           ],
         ),
       ),
     );
   }
 
-  /// 테마 선택 카드 빌드
+  /// 테마 선택 카드 빌드 (라디오 버튼 + 색상 미리보기)
   Widget _buildThemeSelector(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context).colorTheme,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            Theme(
-              data: ThemeData(
-                useMaterial3: true,
-                brightness: Brightness.light, // 다크모드 자동 조정 방지
+            ...tagColorThemes.map((TagColorTheme theme) {
+              return _buildThemeRadioTile(context, theme);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 개별 테마 라디오 타일 빌드
+  Widget _buildThemeRadioTile(BuildContext context, TagColorTheme theme) {
+    final isSelected = _currentTheme == theme.name;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _currentTheme = theme.name;
+        });
+        _applyThemeToAllTags();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            // 라디오 버튼
+            // ignore: deprecated_member_use
+            Radio<String>(
+              value: theme.name,
+              // ignore: deprecated_member_use
+              groupValue: _currentTheme,
+              // ignore: deprecated_member_use
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _currentTheme = value;
+                  });
+                  _applyThemeToAllTags();
+                }
+              },
+            ),
+            const SizedBox(width: 4),
+            // 테마 이름
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context).getThemeName(theme.name),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
               ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: tagColorThemes.map((TagColorTheme theme) {
-                  return ChoiceChip(
-                    label: Text(
-                      AppLocalizations.of(context).getThemeName(theme.name),
-                      style: const TextStyle(color: Colors.black),
+            ),
+            const SizedBox(width: 4),
+            // 색상 미리보기 팔레트
+            Wrap(
+              spacing: 4,
+              children: theme.colors.map((colorInt) {
+                return Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: Color(colorInt),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(width: 2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 태그 수정 섹션 (태그 칩 + 편집 폼 + 삭제 버튼)
+  Widget _buildTagEditSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context).editingTags,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            _buildTagChips(),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameC,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).tagName,
+                border: const OutlineInputBorder(),
+              ),
+              enableIMEPersonalizedLearning: false,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _applyNameChange,
+                    child: Text(AppLocalizations.of(context).nameApply),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 삭제 버튼을 버튼 행에 통합
+                if (_tags.isNotEmpty)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 231, 76, 60),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _deleteSelectedTag,
+                      label: Text(AppLocalizations.of(context).deleteTag),
                     ),
-                    selected: _currentTheme == theme.name,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _currentTheme = theme.name;
-                        });
-                        _applyThemeToAllTags();
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -243,67 +333,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       tag: _tags[index],
       selected: isSelected,
       onSelected: (_) => _syncForm(index),
-    );
-  }
-
-  /// 태그 이름 편집 폼 빌드
-  Widget _buildEditForm(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nameC,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context).tagName,
-              ),
-              enableIMEPersonalizedLearning: false,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _applyNameChange,
-                    child: Text(AppLocalizations.of(context).apply),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _cancelNameChange,
-                    child: Text(AppLocalizations.of(context).cancel),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 태그 삭제 버튼 빌드
-  Widget _buildDeleteButton(BuildContext context) {
-    if (_tags.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Center(
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.4,
-        child: FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: _deleteSelectedTag,
-          icon: const Icon(Icons.delete),
-          label: Text(AppLocalizations.of(context).deleteTag),
-        ),
-      ),
     );
   }
 
@@ -385,22 +414,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       }
     }
     return false;
-  }
-
-  /// 태그 이름 변경 취소
-  ///
-  /// 입력 필드를 현재 선택된 태그의 이름으로 되돌립니다.
-  void _cancelNameChange() {
-    if (_tags.isEmpty) {
-      return;
-    }
-
-    // 한글 입력 문제 방지를 위해 프레임 이후 실행
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _nameC.text = _tags[_selected].name;
-      }
-    });
   }
 
   /// 선택된 태그 삭제
