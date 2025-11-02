@@ -35,11 +35,15 @@ class TranscriptSentence {
     required this.slideNumber,
     required this.startTime,
     required this.endTime,
+    required this.originalStartTime,
+    required this.originalEndTime,
     required this.duration,
   }) : assert(sentenceId >= 0, 'sentenceId must be non-negative'),
        assert(slideNumber >= 0, 'slideNumber must be non-negative'),
        assert(startTime >= 0, 'startTime must be non-negative'),
        assert(endTime >= 0, 'endTime must be non-negative'),
+       assert(originalStartTime >= 0, 'originalStartTime must be non-negative'),
+       assert(originalEndTime >= 0, 'originalEndTime must be non-negative'),
        assert(duration >= 0, 'duration must be non-negative');
 
   factory TranscriptSentence.fromJson(Map<String, dynamic> json) {
@@ -50,6 +54,8 @@ class TranscriptSentence {
       slideNumber: json['slide_number'] as int,
       startTime: json['start_time'] as int,
       endTime: json['end_time'] as int,
+      originalStartTime: json['original_start_time'] as int,
+      originalEndTime: json['original_end_time'] as int,
       duration: json['duration'] as int,
     );
   }
@@ -58,8 +64,10 @@ class TranscriptSentence {
   final String text;
   final String? textKor;
   final int slideNumber;
-  final int startTime;
-  final int endTime;
+  final int startTime; // TTS audio timing
+  final int endTime; // TTS audio timing
+  final int originalStartTime; // Original audio timing
+  final int originalEndTime; // Original audio timing
   final int duration;
 }
 

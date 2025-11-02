@@ -1,9 +1,14 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:re_view/core/utils.dart';
+
+// 시간 포맷 유틸 함수
+String formatDuration(int seconds) {
+  final m = (seconds ~/ 60).toString();
+  final s = (seconds % 60).toString().padLeft(2, '0');
+  return '$m:$s';
+}
 
 /// 비디오 컨트롤 공통 위젯 모듈
-
 // 뒤로가기 버튼
 class BackButton extends StatelessWidget {
   const BackButton({super.key, required this.onPressed});
@@ -122,6 +127,36 @@ class _SpeedButtonState extends State<SpeedButton> {
           color: Colors.white,
           fontSize: 16,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// 오디오 소스 버튼
+class AudioSourceButton extends StatelessWidget {
+  const AudioSourceButton({
+    super.key,
+    required this.isOriginalAudio,
+    required this.onPressed,
+  });
+
+  final bool isOriginalAudio;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          isOriginalAudio ? 'Rec' : 'TTS',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -351,6 +386,8 @@ class TopControlBar extends StatelessWidget {
     super.key,
     required this.isVertical,
     required this.onBack,
+    required this.isOriginalAudio,
+    required this.onAudioToggle,
     required this.isCaptionEnabled,
     required this.onCaptionToggle,
     required this.onSpeedChanged,
@@ -362,6 +399,8 @@ class TopControlBar extends StatelessWidget {
   final bool isVertical;
 
   final VoidCallback onBack;
+  final bool isOriginalAudio;
+  final VoidCallback onAudioToggle;
   final bool isCaptionEnabled;
   final VoidCallback onCaptionToggle;
   final ValueChanged<double> onSpeedChanged;
@@ -378,6 +417,11 @@ class TopControlBar extends StatelessWidget {
           BackButton(onPressed: onBack),
           const Spacer(),
           if (!isVertical) ...[
+            AudioSourceButton(
+              isOriginalAudio: isOriginalAudio,
+              onPressed: onAudioToggle,
+            ),
+            const SizedBox(width: 8),
             CaptionButton(
               isEnabled: isCaptionEnabled,
               onPressed: onCaptionToggle,

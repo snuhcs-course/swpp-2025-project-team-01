@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 import 'package:mockito/mockito.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/player/player_layout.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
@@ -14,6 +18,8 @@ import 'mocks.mocks.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late Box<AppData> testBox;
+  late Directory testDirectory;
   late PlayerController controller;
   late TranscriptData transcriptData;
   late MockAudioService mockAudioService;
@@ -21,7 +27,57 @@ void main() {
   late StreamController<Duration> positionStreamController;
   late StreamController<ja.PlayerState> stateStreamController;
 
-  setUp(() {
+  setUpAll(() async {
+    // Create a temporary directory for Hive in tests
+    testDirectory = Directory.systemTemp.createTempSync('hive_test_layout_');
+
+    // Initialize Hive with the test directory
+    Hive.init(testDirectory.path);
+
+    // Register adapters if not already registered
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapter(AppDataAdapter());
+    }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(AppSettingsAdapter());
+    }
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(UiStateAdapter());
+    }
+    if (!Hive.isAdapterRegistered(3)) {
+      Hive.registerAdapter(HiveSubjectAdapter());
+    }
+    if (!Hive.isAdapterRegistered(4)) {
+      Hive.registerAdapter(HiveTagAdapter());
+    }
+    if (!Hive.isAdapterRegistered(5)) {
+      Hive.registerAdapter(HiveLectureAdapter());
+    }
+
+    // Open the box manually
+    testBox = await Hive.openBox<AppData>('app_data');
+  });
+
+  tearDownAll(() async {
+    // Close all Hive boxes and clean up
+    await Hive.close();
+    if (testDirectory.existsSync()) {
+      testDirectory.deleteSync(recursive: true);
+    }
+  });
+
+  setUp(() async {
+    // Initialize HiveManager with default English language
+    final appData = AppData(
+      settings: AppSettings(language: 'en'),
+      subjects: {},
+      tags: {},
+      lectures: {},
+      uiState: UiState(),
+    );
+    await testBox.put('main', appData);
+    await HiveManager.instance.initForTesting(testBox);
+
     mockAudioService = MockAudioService();
     mockPdfCacheService = MockPdfCacheService();
 
@@ -79,6 +135,8 @@ void main() {
           text: 'First sentence',
           textKor: '첫 번째 문장',
           slideNumber: 1,
+          originalStartTime: 0,
+          originalEndTime: 1000,
           startTime: 0,
           endTime: 1000,
           duration: 1000,
@@ -88,6 +146,8 @@ void main() {
           text: 'Second sentence',
           textKor: '두 번째 문장',
           slideNumber: 2,
+          originalStartTime: 0,
+          originalEndTime: 1000,
           startTime: 1000,
           endTime: 2000,
           duration: 1000,
@@ -725,7 +785,7 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('renders transcript title', (tester) async {
+    testWidgets('renders English transcript title', (tester) async {
       await tester.pumpWidget(
         buildTestApp(TranscriptArea(controller: controller)),
       );
@@ -733,6 +793,22 @@ void main() {
       await tester.pump();
 
       expect(find.text('Transcript'), findsOneWidget);
+    });
+
+    testWidgets('renders Korean transcript title', (tester) async {
+      // Change language setting directly without reinitializing
+      HiveManager.instance.settings.language = 'ko';
+
+      await tester.pumpWidget(
+        buildTestApp(TranscriptArea(controller: controller)),
+      );
+
+      await tester.pump();
+
+      expect(find.text('대본'), findsOneWidget);
+
+      // Reset language back to English for other tests
+      HiveManager.instance.settings.language = 'en';
     });
   });
 

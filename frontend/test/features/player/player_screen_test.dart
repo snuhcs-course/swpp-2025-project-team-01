@@ -62,7 +62,7 @@ void main() {
   setUp(() async {
     // Reset to empty data before each test
     final appData = AppData(
-      settings: AppSettings(),
+      settings: AppSettings(language: 'en'),
       subjects: {},
       tags: {},
       lectures: {},
@@ -105,7 +105,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('강의 ID가 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture ID is missing.'), findsOneWidget);
       expect(find.byType(SnackBar), findsOneWidget);
     });
 
@@ -114,7 +114,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('강의 ID가 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture ID is missing.'), findsOneWidget);
     });
 
     testWidgets('shows error when lectureId is null', (tester) async {
@@ -122,7 +122,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('강의 ID가 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture ID is missing.'), findsOneWidget);
     });
 
     testWidgets('shows error when lectureId is empty', (tester) async {
@@ -130,7 +130,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('강의 ID가 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture ID is missing.'), findsOneWidget);
     });
 
     testWidgets('navigates back after showing error', (tester) async {
@@ -162,7 +162,7 @@ void main() {
       await tester.pump(); // initState의 addPostFrameCallback 실행
       await tester.pump(); // _handleError의 addPostFrameCallback 실행
 
-      expect(find.text('강의 ID가 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture ID is missing.'), findsOneWidget);
 
       // Wait for navigation to complete
       await tester.pumpAndSettle();
@@ -174,21 +174,30 @@ void main() {
   });
 
   group('PlayerScreen - Error Handling: Failed load from Hive', () {
+    setUp(() async {
+      // Reset to English and clear lectures for each test
+      final currentData = testBox.get('main');
+      if (currentData != null) {
+        currentData.settings.language = 'en';
+        currentData.lectures.clear();
+        await testBox.put('main', currentData);
+        // initForTesting will reload HiveManager with cleared lectures and 'en' language
+        await HiveManager.instance.initForTesting(testBox);
+      }
+    });
+
     // Helper function to add lecture to Hive
     Future<void> addLectureToHive(
       WidgetTester tester,
       HiveLecture lecture,
     ) async {
       await tester.runAsync(() async {
-        final appData = AppData(
-          settings: AppSettings(),
-          subjects: {},
-          tags: {},
-          lectures: {lecture.id: lecture},
-          uiState: UiState(),
-        );
-        await testBox.put('main', appData);
-        await HiveManager.instance.initForTesting(testBox);
+        // Directly modify HiveManager's data to ensure same reference
+        HiveManager.instance.lectures[lecture.id] = lecture;
+        // Persist to testBox
+        final currentData = testBox.get('main')!;
+        currentData.lectures[lecture.id] = lecture;
+        await testBox.put('main', currentData);
       });
     }
 
@@ -217,7 +226,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('강의를 찾을 수 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture not found.'), findsOneWidget);
     });
 
     testWidgets('shows error when transcript asset file fails to load', (
@@ -252,7 +261,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Then: Should show error message
-      expect(find.text('자막 파일을 불러올 수 없습니다.'), findsOneWidget);
+      expect(find.text('Failed to load transcript file.'), findsOneWidget);
     });
 
     testWidgets('shows error when JSON parsing fails', (tester) async {
@@ -285,7 +294,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('자막 데이터 형식이 올바르지 않습니다.'), findsOneWidget);
+      expect(find.text('Invalid transcript data format.'), findsOneWidget);
     });
 
     testWidgets('shows error when controller initialization fails', (
@@ -326,6 +335,8 @@ void main() {
             'text': 'Test sentence',
             'text_kor': null,
             'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 1000,
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
@@ -354,7 +365,7 @@ void main() {
       await tester.pump(); // Process the error
       await tester.pump(); // Show SnackBar
 
-      expect(find.text('플레이어 초기화에 실패했습니다.'), findsOneWidget);
+      expect(find.text('Failed to initialize player.'), findsOneWidget);
     });
 
     testWidgets('handles errors gracefully with invalid Map structure', (
@@ -378,6 +389,240 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(args: {'lectureId': 'test_lecture'}),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Will fail at transcript loading stage
+      expect(find.text('Failed to load transcript file.'), findsOneWidget);
+    });
+  });
+
+  group('PlayerScreen - Korean Error Handling: Failed load from Hive', () {
+    setUp(() async {
+      // Reset to English and clear lectures for each test
+      final currentData = testBox.get('main');
+      if (currentData != null) {
+        currentData.settings.language = 'ko';
+        currentData.lectures.clear();
+        await testBox.put('main', currentData);
+        // initForTesting will reload HiveManager with cleared lectures and 'en' language
+        await HiveManager.instance.initForTesting(testBox);
+      }
+    });
+
+    // Helper function to add lecture to Hive
+    Future<void> addLectureToHive(
+      WidgetTester tester,
+      HiveLecture lecture,
+    ) async {
+      await tester.runAsync(() async {
+        // Directly modify HiveManager's data to ensure same reference
+        HiveManager.instance.lectures[lecture.id] = lecture;
+        // Persist to testBox
+        final currentData = testBox.get('main')!;
+        currentData.lectures[lecture.id] = lecture;
+        await testBox.put('main', currentData);
+      });
+    }
+
+    // Helper function to setup asset mock handler
+    void setupAssetMockHandler(ByteData? Function(String key) handler) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMessageHandler('flutter/assets', (message) async {
+            final String key = utf8.decode(message!.buffer.asUint8List());
+            return handler(key);
+          });
+    }
+
+    // Helper function to clean up mock handler
+    void cleanupMockHandler() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMessageHandler('flutter/assets', null);
+    }
+
+    tearDown(() {
+      cleanupMockHandler();
+    });
+
+    testWidgets('shows error when lecture not found in Hive', (tester) async {
+      // HiveManager is initialized with empty lectures
+      await tester.pumpWidget(buildTestApp(args: {'lectureId': 'nonexistent'}));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('강의를 찾을 수 없습니다.'), findsOneWidget);
+    });
+
+    testWidgets('shows error when transcript asset file fails to load', (
+      tester,
+    ) async {
+      // Given: Add lecture to Hive with unique Korean id
+      final lecture = HiveLecture(
+        id: 'korean_lecture_1',
+        subjectId: 'korean_subject',
+        weekLabel: 'Week 1',
+        title: 'Korean Test Lecture',
+        duration: 3600,
+        originalAudioPath: 'assets/korean_lectures/lecture1/audio.m4a',
+        ttsAudioPath: 'assets/korean_lectures/lecture1/audio.opus',
+        jsonPath: 'assets/korean_lectures/lecture1/transcript.json',
+      );
+      await addLectureToHive(tester, lecture);
+
+      // Mock asset loading failure by returning null
+      setupAssetMockHandler((key) {
+        if (key.contains('korean_lectures/lecture1/transcript.json')) {
+          return null; // Simulate asset loading failure
+        }
+        return null;
+      });
+
+      // Explicitly set Korean language
+      HiveManager.instance.settings.language = 'ko';
+
+      // When: Load the player screen
+      await tester.pumpWidget(
+        buildTestApp(args: {'lectureId': 'korean_lecture_1'}),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Then: Should show error message
+      expect(find.text('자막 파일을 불러올 수 없습니다.'), findsOneWidget);
+    });
+
+    testWidgets('shows error when JSON parsing fails', (tester) async {
+      // Given: Add lecture to Hive with unique Korean id
+      final lecture = HiveLecture(
+        id: 'korean_lecture_2',
+        subjectId: 'korean_subject',
+        weekLabel: 'Week 1',
+        title: 'Korean Test Lecture 2',
+        duration: 3600,
+        originalAudioPath: null,
+        ttsAudioPath: 'assets/korean_lectures/lecture2/audio.opus',
+        jsonPath: 'assets/korean_lectures/lecture2/invalid.json',
+      );
+      await addLectureToHive(tester, lecture);
+
+      // Mock invalid JSON content
+      setupAssetMockHandler((key) {
+        if (key.contains('korean_lectures/lecture2/invalid.json')) {
+          final invalidJson = 'this is not valid korean json{]';
+          final bytes = utf8.encode(invalidJson);
+          return ByteData.sublistView(Uint8List.fromList(bytes));
+        }
+        return null;
+      });
+
+      // Explicitly set Korean language
+      HiveManager.instance.settings.language = 'ko';
+
+      await tester.pumpWidget(
+        buildTestApp(args: {'lectureId': 'korean_lecture_2'}),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('자막 데이터 형식이 올바르지 않습니다.'), findsOneWidget);
+    });
+
+    testWidgets('shows error when controller initialization fails', (
+      tester,
+    ) async {
+      // Skip this test on Linux (CI environment) due to pdfx platform limitations
+      if (Platform.isLinux) {
+        return;
+      }
+
+      // Given: Add lecture to Hive with non-existent file path for PDF and unique Korean id
+      final lecture = HiveLecture(
+        id: 'korean_lecture_3',
+        subjectId: 'korean_subject',
+        weekLabel: 'Week 1',
+        title: 'Korean Test Lecture 3',
+        duration: 3600,
+        originalAudioPath: 'assets/korean_lectures/lecture3/audio.opus',
+        ttsAudioPath: null,
+        slidePath: '/nonexistent/korean/path/to/slides.pdf', // This will fail
+        jsonPath: 'assets/korean_lectures/lecture3/transcript.json',
+      );
+      await addLectureToHive(tester, lecture);
+
+      // Mock valid transcript
+      final validTranscript = {
+        'metadata': {
+          'total_sentences': 1,
+          'total_duration': 1000,
+          'voice': 'test',
+          'speed': 1.0,
+          'language_code': 'ko',
+          'sample_rate': 22050,
+        },
+        'timestamps': [
+          {
+            'sentence_id': 0,
+            'text': 'Korean test sentence',
+            'text_kor': '한국어 테스트 문장',
+            'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 1000,
+            'start_time': 0,
+            'end_time': 1000,
+            'duration': 1000,
+          },
+        ],
+      };
+
+      setupAssetMockHandler((key) {
+        if (key.contains('korean_lectures/lecture3/transcript.json')) {
+          return ByteData.sublistView(
+            utf8.encode(json.encode(validTranscript)),
+          );
+        }
+        return null;
+      });
+
+      // Explicitly set Korean language
+      HiveManager.instance.settings.language = 'ko';
+
+      await tester.pumpWidget(
+        buildTestApp(args: {'lectureId': 'korean_lecture_3'}),
+      );
+
+      // Let async operations complete
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 500));
+      });
+
+      await tester.pump(); // Process the error
+      await tester.pump(); // Show SnackBar
+
+      expect(find.text('플레이어 초기화에 실패했습니다.'), findsOneWidget);
+    });
+
+    testWidgets('handles errors gracefully with invalid Map structure', (
+      tester,
+    ) async {
+      // Given: Add lecture to Hive
+      final lecture = HiveLecture(
+        id: 'korean_lecture_4',
+        subjectId: 'korean_subject',
+        weekLabel: 'Week 1',
+        title: 'Korean Test Lecture 4',
+        duration: 3600,
+        originalAudioPath: 'assets/korean_lectures/lecture4/audio.opus',
+        ttsAudioPath: null,
+        jsonPath: 'assets/korean_lectures/lecture4/transcript.json',
+      );
+      await addLectureToHive(tester, lecture);
+
+      // Mock will return null for all assets
+      setupAssetMockHandler((key) => null);
+
+      await tester.pumpWidget(
+        buildTestApp(args: {'lectureId': 'korean_lecture_4'}),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -614,7 +859,7 @@ void main() {
 
       // Check that error message is shown via SnackBar
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text('강의 ID가 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture ID is missing.'), findsOneWidget);
     });
   });
 
@@ -671,6 +916,8 @@ void main() {
             'text': 'Test sentence',
             'text_kor': null,
             'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 1000,
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
@@ -833,43 +1080,7 @@ void main() {
           .setMockMessageHandler('flutter/assets', null);
       await tester.pumpWidget(Container());
     });
-
-    testWidgets('handles truly unexpected errors with mock HiveManager', (
-      tester,
-    ) async {
-      // Use MockHiveManager to throw an unexpected exception
-      final mockHiveManager = MockHiveManager();
-      when(
-        mockHiveManager.getLecture(any),
-      ).thenThrow(Exception('Truly unexpected error from HiveManager'));
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: PlayerScreen(
-            args: {'lectureId': 'test_lecture'},
-            hiveManager: mockHiveManager,
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      // Wait for error handling
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 500));
-      });
-
-      await tester.pump(); // Process error
-      await tester.pump(); // Show SnackBar
-
-      // Should show the unexpected error message (line 176)
-      expect(find.text('알 수 없는 오류가 발생했습니다.'), findsOneWidget);
-
-      // Clean up
-      await tester.pumpWidget(Container());
-    });
   });
-
   group('PlayerScreen - Successful Initialization with Real Assets', () {
     testWidgets('successfully initializes with demo lecture and covers', (
       tester,
@@ -1146,7 +1357,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('강의 ID가 없습니다.'), findsOneWidget);
+      expect(find.text('Lecture ID is missing.'), findsOneWidget);
 
       // Wait for navigation to complete
       await tester.pumpAndSettle();

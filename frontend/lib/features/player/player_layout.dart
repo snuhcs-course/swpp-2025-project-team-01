@@ -4,6 +4,7 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/player_controller.dart';
+import 'package:re_view/data/hive_manager.dart';
 
 // ========== Layout Widgets ==========
 
@@ -283,20 +284,27 @@ class VideoControlsOverlay extends StatelessWidget {
         child: Column(
           children: [
             ValueListenableBuilder<bool>(
-              valueListenable: controller.isCaptionEnabled,
-              builder: (context, isCaptionEnabled, _) {
+              valueListenable: controller.isOriginalAudio,
+              builder: (context, isOriginalAudio, _) {
                 return ValueListenableBuilder<bool>(
-                  valueListenable: controller.isSynced,
-                  builder: (context, isSynced, _) {
-                    return TopControlBar(
-                      isVertical: isVertical,
-                      onBack: onBack,
-                      isCaptionEnabled: isCaptionEnabled,
-                      onCaptionToggle: controller.toggleCaption,
-                      onSpeedChanged: controller.setPlaybackSpeed,
-                      isSynced: isSynced,
-                      onSyncToggle: controller.toggleSync,
-                      pageDifference: controller.pageDifference,
+                  valueListenable: controller.isCaptionEnabled,
+                  builder: (context, isCaptionEnabled, _) {
+                    return ValueListenableBuilder<bool>(
+                      valueListenable: controller.isSynced,
+                      builder: (context, isSynced, _) {
+                        return TopControlBar(
+                          isVertical: isVertical,
+                          onBack: onBack,
+                          isOriginalAudio: isOriginalAudio,
+                          onAudioToggle: controller.toggleAudioSource,
+                          isCaptionEnabled: isCaptionEnabled,
+                          onCaptionToggle: controller.toggleCaption,
+                          onSpeedChanged: controller.setPlaybackSpeed,
+                          isSynced: isSynced,
+                          onSyncToggle: controller.toggleSync,
+                          pageDifference: controller.pageDifference,
+                        );
+                      },
                     );
                   },
                 );
@@ -529,6 +537,9 @@ class TranscriptArea extends StatelessWidget {
       );
     }
 
+    final language = HiveManager.instance.settings.language;
+    final transcriptLabel = language == 'ko' ? '대본' : 'Transcript';
+
     return Container(
       width: double.infinity,
       color: const Color(0xFFFAFAFA),
@@ -539,7 +550,7 @@ class TranscriptArea extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Transcript',
+                transcriptLabel,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -616,6 +627,10 @@ class CaptionOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hiveManager = HiveManager.instance;
+    final emphasizeCaptions =
+        hiveManager.settings.accessibilityEmphasizeCaptions;
+
     return ValueListenableBuilder<int?>(
       valueListenable: controller.currentSentenceIndex,
       builder: (context, _, __) {
@@ -651,10 +666,12 @@ class CaptionOverlay extends StatelessWidget {
                       child: Text(
                         captionText,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
+                          fontSize: emphasizeCaptions ? 24 : 18,
+                          fontWeight: emphasizeCaptions
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           height: 1.4,
                         ),
                       ),

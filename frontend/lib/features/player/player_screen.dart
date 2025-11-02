@@ -30,14 +30,22 @@ class PlayerScreen extends StatefulWidget {
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
+class _PlayerScreenState extends State<PlayerScreen>
+    with WidgetsBindingObserver {
   late final PlayerController _controller;
   late final HiveManager _hiveManager;
   bool _isLoading = true;
+  bool _wasPlayingBeforePause = false;
 
   @override
   void initState() {
     super.initState();
+
+    // 시스템 UI 숨기기 (상태바, 네비게이션 바)
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+
+    // 앱 라이프사이클 옵저버 등록
+    WidgetsBinding.instance.addObserver(this);
 
     // 의존성 주입
     final audioService = widget._audioService ?? AudioService();
@@ -57,8 +65,32 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    // 앱 라이프사이클 옵저버 제거
+    WidgetsBinding.instance.removeObserver(this);
+    // 시스템 UI 다시 보이기
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // 앱이 백그라운드로 가면 자동으로 일시정지
+    if (state == AppLifecycleState.paused) {
+      _wasPlayingBeforePause = _controller.isPlaying.value;
+      if (_wasPlayingBeforePause) {
+        _controller.playPause();
+      }
+    }
+    // 앱이 다시 포그라운드로 돌아오면 자동으로 재개
+    else if (state == AppLifecycleState.resumed) {
+      if (_wasPlayingBeforePause) {
+        _controller.playPause();
+        _wasPlayingBeforePause = false;
+      }
+    }
   }
 
   /// 에러 발생 시 SnackBar를 표시하고 이전 페이지로 돌아가기
@@ -102,7 +134,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final lectureId = map['lectureId'] as String?;
 
       if (lectureId == null || lectureId.isEmpty) {
-        _handleError('강의 ID가 없습니다.');
+        final language = _hiveManager.settings.language;
+        _handleError(
+          language == 'ko' ? '강의 ID가 없습니다.' : 'Lecture ID is missing.',
+        );
         return;
       }
 
@@ -110,7 +145,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final hiveLecture = _hiveManager.getLecture(lectureId);
 
       if (hiveLecture == null) {
-        _handleError('강의를 찾을 수 없습니다.');
+        final language = _hiveManager.settings.language;
+        _handleError(
+          language == 'ko' ? '강의를 찾을 수 없습니다.' : 'Lecture not found.',
+        );
         return;
       }
 
@@ -124,7 +162,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ? await rootBundle.loadString(transcriptPath)
             : await File(transcriptPath).readAsString();
       } catch (e) {
-        _handleError('자막 파일을 불러올 수 없습니다.');
+        final language = _hiveManager.settings.language;
+        _handleError(
+          language == 'ko'
+              ? '자막 파일을 불러올 수 없습니다.'
+              : 'Failed to load transcript file.',
+        );
         return;
       }
 
@@ -135,7 +178,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
             json.decode(transcriptJson) as Map<String, dynamic>;
         transcriptData = TranscriptData.fromJson(transcriptJsonData);
       } catch (e) {
-        _handleError('자막 데이터 형식이 올바르지 않습니다.');
+        final language = _hiveManager.settings.language;
+        _handleError(
+          language == 'ko'
+              ? '자막 데이터 형식이 올바르지 않습니다.'
+              : 'Invalid transcript data format.',
+        );
         return;
       }
 
@@ -144,9 +192,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
           hiveLecture.slidePath ??
           'assets/lectures/$lectureId/${lectureId}_slides.pdf';
 
-      // final originalAudioPath = hiveLecture.originalAudioPath;
+      final originalAudioPath =
+          hiveLecture.originalAudioPath ??
+          'assets/lectures/$lectureId/lecture_with_slides.m4a';
 
-      final audioPath =
+      final ttsAudioPath =
           hiveLecture.ttsAudioPath ??
           'assets/lectures/$lectureId/lecture_with_slides.opus';
 
@@ -161,10 +211,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
           lectureId,
           transcriptData,
           pdfPath,
-          audioPath,
+          ttsAudioPath,
+          originalAudioPath,
         );
       } catch (e) {
-        _handleError('플레이어 초기화에 실패했습니다.');
+        final language = _hiveManager.settings.language;
+        _handleError(
+          language == 'ko'
+              ? '플레이어 초기화에 실패했습니다.'
+              : 'Failed to initialize player.',
+        );
         return;
       }
 
@@ -175,7 +231,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
     } catch (e) {
       // 예상하지 못한 에러 처리
-      _handleError('알 수 없는 오류가 발생했습니다.');
+      final language = _hiveManager.settings.language;
+      _handleError(
+        language == 'ko' ? '알 수 없는 오류가 발생했습니다.' : 'An unknown error occurred.',
+      );
     }
   }
 
@@ -185,23 +244,39 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final highContrast = _hiveManager.settings.accessibilityHighContrast;
+
+    final playerContent = OrientationBuilder(
+      builder: (_, orientation) {
+        final isVertical = orientation == Orientation.portrait;
+        if (isVertical) {
+          return VerticalPlayerLayout(
+            controller: _controller,
+            onBack: () => Navigator.pop(context),
+          );
+        } else {
+          return HorizontalPlayerLayout(
+            controller: _controller,
+            onBack: () => Navigator.pop(context),
+          );
+        }
+      },
+    );
+
     return Scaffold(
-      body: OrientationBuilder(
-        builder: (_, orientation) {
-          final isVertical = orientation == Orientation.portrait;
-          if (isVertical) {
-            return VerticalPlayerLayout(
-              controller: _controller,
-              onBack: () => Navigator.pop(context),
-            );
-          } else {
-            return HorizontalPlayerLayout(
-              controller: _controller,
-              onBack: () => Navigator.pop(context),
-            );
-          }
-        },
-      ),
+      body: highContrast
+          ? ColorFiltered(
+              colorFilter: const ColorFilter.matrix(<double>[
+                // 대비 증가 (색상 반전 없음)
+                // contrast = 1.8, offset = 128 * (1 - 1.8) = -102.4
+                1.8, 0, 0, 0, -102.4, // Red 채널
+                0, 1.8, 0, 0, -102.4, // Green 채널
+                0, 0, 1.8, 0, -102.4, // Blue 채널
+                0, 0, 0, 1, 0, // Alpha 채널 (투명도 유지)
+              ]),
+              child: playerContent,
+            )
+          : playerContent,
     );
   }
 }
