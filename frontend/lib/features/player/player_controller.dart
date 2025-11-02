@@ -171,7 +171,7 @@ class PlayerController extends ChangeNotifier {
     final cachedThumbnail = thumbnailCache.get(lectureId);
 
     if (cachedThumbnail != null) {
-      _pdfCacheService.setCachedImage(1, cachedThumbnail.bytes);
+      _pdfCacheService.setCachedImage(1, cachedThumbnail.image.bytes);
       debugPrint('✅ First page pre-loaded from thumbnail cache for $lectureId');
     }
 
