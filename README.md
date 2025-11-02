@@ -113,7 +113,7 @@ Follow these steps to reproduce the demo video:
 - **Playback Speed Button**: Now supports playback speed adjustments in player screen
 - **Dark Mode**: Extended dark mode to support more screens
 - **UI Modifications**: Added app logo, custom font (NanumSquare), customized tag color themes, refined UI wireframe
-- **Refactoring**: Unified cache managers, modularized player screen code etc
+- **Refactoring**: More global use of cache managers, modularizing player screen code etc
 
 
 ### Goals Achieved
