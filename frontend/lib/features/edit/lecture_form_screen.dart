@@ -890,8 +890,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         _closeClientOnDispose = false;
         final navigator = Navigator.of(context);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          navigator.popUntil(
-            (route) => route.settings.name == Routes.home || route.isFirst,
+          navigator.pushNamedAndRemoveUntil(
+            Routes.home,
+            (route) => false, // remove everything behind Home
           );
         });
       }
