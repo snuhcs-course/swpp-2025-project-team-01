@@ -22,7 +22,7 @@ class Lecture {
     required this.subjectId,
     required this.weekLabel,
     required this.title,
-    required this.durationSec,
+    required this.duration,
     this.thumbs = const [],
     this.slidesPath,
   });
@@ -31,7 +31,7 @@ class Lecture {
   final String subjectId;
   final String weekLabel;
   final String title;
-  final int durationSec;
+  final int duration;
   final List<String> thumbs; // 이미지 경로/URL
   final String? slidesPath; // PDF 슬라이드 경로
 
@@ -40,7 +40,7 @@ class Lecture {
     subjectId: subjectId,
     weekLabel: weekLabel ?? this.weekLabel,
     title: title ?? this.title,
-    durationSec: durationSec,
+    duration: duration,
     thumbs: thumbs,
     slidesPath: slidesPath,
   );
@@ -54,6 +54,7 @@ class Subject {
     this.favorite = false,
     this.tagIds = const [],
     this.lectureIds = const [],
+    this.isUncategorized = false,
   });
 
   final String id;
@@ -61,18 +62,21 @@ class Subject {
   final bool favorite;
   final List<String> tagIds;
   final List<String> lectureIds;
+  final bool isUncategorized; // 미분류 과목 여부
 
   Subject copyWith({
     String? title,
     bool? favorite,
     List<String>? tagIds,
     List<String>? lectureIds,
+    bool? isUncategorized,
   }) => Subject(
     id: id,
     title: title ?? this.title,
     favorite: favorite ?? this.favorite,
     tagIds: tagIds ?? this.tagIds,
     lectureIds: lectureIds ?? this.lectureIds,
+    isUncategorized: isUncategorized ?? this.isUncategorized,
   );
 
   /// Convert to HiveSubject for storage
@@ -83,6 +87,7 @@ class Subject {
       favorite: favorite,
       tagIds: tagIds,
       lectureIds: lectureIds,
+      isUncategorized: isUncategorized,
     );
   }
 }

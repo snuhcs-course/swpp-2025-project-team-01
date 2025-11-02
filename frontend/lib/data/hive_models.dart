@@ -15,12 +15,14 @@ class AppData extends HiveObject {
     Map<String, HiveTag>? tags,
     Map<String, HiveLecture>? lectures,
     UiState? uiState,
+    List<String>? subjectOrder,
   }) {
     this.settings = settings ?? AppSettings();
     this.subjects = subjects ?? {};
     this.tags = tags ?? {};
     this.lectures = lectures ?? {};
     this.uiState = uiState ?? UiState();
+    this.subjectOrder = subjectOrder ?? [];
   }
 
   @HiveField(0)
@@ -37,6 +39,9 @@ class AppData extends HiveObject {
 
   @HiveField(4)
   late Map<String, HiveLecture> lectures;
+
+  @HiveField(5)
+  late List<String> subjectOrder;
 }
 
 /// 앱 설정 (테마, 언어, 접근성, TTS 등)
@@ -49,8 +54,8 @@ class AppSettings {
     this.accessibilityReduceMotion = false,
     this.accessibilityEmphasizeCaptions = true,
     this.ttsGender = '남성',
-    this.ttsSpeed = '보통',
-    this.tagColorTheme = '파스텔',
+    this.tagColorTheme = '봄',
+    this.hasCompletedTutorial = false,
   });
 
   @HiveField(0)
@@ -72,10 +77,10 @@ class AppSettings {
   String ttsGender; // '남성', '여성'
 
   @HiveField(6)
-  String ttsSpeed; // '빠르게', '보통', '느리게'
+  String tagColorTheme; // '봄', '여름', '가을', '겨울', '솜사탕', '비비드', '바다'
 
   @HiveField(7)
-  String tagColorTheme; // '파스텔', etc.
+  bool hasCompletedTutorial;
 }
 
 /// UI 상태 (과목 펼침/접힘, 최근 검색어 등)
@@ -103,6 +108,7 @@ class HiveSubject {
     this.favorite = false,
     List<String>? tagIds,
     List<String>? lectureIds,
+    this.isUncategorized = false,
   }) : tagIds = tagIds ?? [],
        lectureIds = lectureIds ?? [];
 
@@ -121,12 +127,16 @@ class HiveSubject {
   @HiveField(4)
   List<String> lectureIds;
 
+  @HiveField(5)
+  bool isUncategorized;
+
   HiveSubject copyWith({
     String? id,
     String? title,
     bool? favorite,
     List<String>? tagIds,
     List<String>? lectureIds,
+    bool? isUncategorized,
   }) {
     return HiveSubject(
       id: id ?? this.id,
@@ -134,6 +144,7 @@ class HiveSubject {
       favorite: favorite ?? this.favorite,
       tagIds: tagIds ?? this.tagIds,
       lectureIds: lectureIds ?? this.lectureIds,
+      isUncategorized: isUncategorized ?? this.isUncategorized,
     );
   }
 
@@ -145,6 +156,7 @@ class HiveSubject {
       favorite: favorite,
       tagIds: tagIds,
       lectureIds: lectureIds,
+      isUncategorized: isUncategorized,
     );
   }
 }
@@ -185,39 +197,15 @@ class HiveLecture {
     required this.subjectId,
     required this.weekLabel,
     required this.title,
-    required this.durationSec,
+    required this.duration,
     this.slidePath,
-    required this.audioPaths,
+    required this.originalAudioPath,
+    required this.ttsAudioPath,
     this.thumbnailUrl,
-    this.transcriptPaths,
+    this.jsonPath,
     this.createdAt,
     this.updatedAt,
   });
-
-  /// 백엔드 API 응답에서 생성
-  factory HiveLecture.fromJson(
-    Map<String, dynamic> json,
-    List<String?> audioPaths,
-    List<String> jsonPaths,
-  ) {
-    return HiveLecture(
-      id: json['id'] as String,
-      subjectId: json['subject_id'] as String,
-      weekLabel: json['week_label'] as String,
-      title: json['title'] as String,
-      durationSec: json['duration_sec'] as int,
-      slidePath: json['slides_url'] as String?,
-      audioPaths: audioPaths,
-      thumbnailUrl: json['thumbnail_url'] as String?,
-      transcriptPaths: jsonPaths,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
-    );
-  }
 
   @HiveField(0)
   String id;
@@ -232,42 +220,28 @@ class HiveLecture {
   String title;
 
   @HiveField(4)
-  int durationSec;
+  int duration;
 
   @HiveField(5)
-  String? slidePath; // 백엔드 파일 경로 (PDF)
+  String? slidePath; // 파일 경로 (PDF)
 
   @HiveField(6)
-  List<String?>? audioPaths; // 백엔드 파일 경로 (오디오)
+  String? originalAudioPath; // 원본 오디오 파일 경로
 
   @HiveField(7)
-  String? thumbnailUrl; // 썸네일 이미지 URL
+  String? ttsAudioPath; // TTS 오디오 파일 경로
 
   @HiveField(8)
-  List<String>? transcriptPaths; // 자막/스크립트 JSON 경로
+  String? thumbnailUrl; // 썸네일 이미지 URL
 
   @HiveField(9)
-  DateTime? createdAt;
+  String? jsonPath; // 자막/스크립트 JSON 경로
 
   @HiveField(10)
-  DateTime? updatedAt;
+  DateTime? createdAt;
 
-  /// 백엔드로 전송할 JSON (필요 시)
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'subject_id': subjectId,
-      'week_label': weekLabel,
-      'title': title,
-      'duration_sec': durationSec,
-      'slides_url': slidePath,
-      'audio_url': audioPaths,
-      'thumbnail_url': thumbnailUrl,
-      'transcript_url': transcriptPaths,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
-    };
-  }
+  @HiveField(11)
+  DateTime? updatedAt;
 
   /// models.dart Lecture로 변환 (UI 레이어용)
   Lecture toLecture() {
@@ -276,7 +250,7 @@ class HiveLecture {
       subjectId: subjectId,
       weekLabel: weekLabel,
       title: title,
-      durationSec: durationSec,
+      duration: duration,
       slidesPath: slidePath, // URL을 path로 사용
       thumbs: thumbnailUrl != null ? [thumbnailUrl!] : [],
     );
@@ -287,11 +261,12 @@ class HiveLecture {
     String? subjectId,
     String? weekLabel,
     String? title,
-    int? durationSec,
+    int? duration,
     String? slidePath,
-    List<String?>? audioPaths,
+    String? originalAudioPath,
+    String? ttsAudioPath,
     String? thumbnailUrl,
-    List<String>? transcriptPaths,
+    String? jsonPath,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -300,11 +275,12 @@ class HiveLecture {
       subjectId: subjectId ?? this.subjectId,
       weekLabel: weekLabel ?? this.weekLabel,
       title: title ?? this.title,
-      durationSec: durationSec ?? this.durationSec,
+      duration: duration ?? this.duration,
       slidePath: slidePath ?? this.slidePath,
-      audioPaths: audioPaths ?? this.audioPaths,
+      originalAudioPath: originalAudioPath ?? this.originalAudioPath,
+      ttsAudioPath: ttsAudioPath ?? this.ttsAudioPath,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
-      transcriptPaths: transcriptPaths ?? this.transcriptPaths,
+      jsonPath: jsonPath ?? this.jsonPath,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -323,11 +299,12 @@ class HiveLecture {
         subjectId: meta['subjectId'] as String? ?? '',
         weekLabel: meta['weekLabel'] as String? ?? 'Week ?',
         title: meta['title'] as String? ?? 'Untitled',
-        durationSec: meta['durationSec'] as int? ?? 0,
+        duration: meta['duration'] as int? ?? 0,
         slidePath: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
-        audioPaths: null, // 데모는 로컬 파일 사용
+        originalAudioPath: null,
+        ttsAudioPath: null, // 데모는 로컬 파일 사용
         thumbnailUrl: null,
-        transcriptPaths: ['assets/lectures/$lectureId/transcript.json'],
+        jsonPath: 'assets/lectures/$lectureId/transcript.json',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

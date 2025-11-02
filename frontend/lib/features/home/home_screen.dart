@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/features/home/custom_drawer.dart';
@@ -72,6 +73,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // HiveManager가 초기화되지 않았으면 로딩 표시
+    if (!_manager.isInitialized) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final tags = _manager.getTags().map((ht) => ht.toTag()).toList();
     final subjects = _manager
         .getSubjects(
@@ -79,6 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
           filterTagIds: selectedTagIds.toList(),
         )
         .map((hs) => hs.toSubject())
+        .where((subject) {
+          // 미분류 과목은 강의가 있을 때만 표시
+          if (subject.isUncategorized) {
+            return subject.lectureIds.isNotEmpty;
+          }
+          return true;
+        })
         .toList();
     final reduceMotion = _manager.settings.accessibilityReduceMotion;
 
@@ -189,10 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // 태그 정렬: 숫자 > 한글 > 영어
                 subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));
 
-                final lectures = _manager
-                    .getLecturesBySubject(s.id)
-                    .map((l) => l.toLecture())
-                    .toList();
+                final lectures = _manager.getLecturesBySubject(s.id);
                 return Padding(
                   padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
                   child: SubjectPanel(
@@ -202,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onToggleFavorite: () async {
                       await _manager.toggleSubjectFavorite(s.id);
                     },
-                    onOpenLecture: (Lecture lec) {
+                    onOpenLecture: (HiveLecture lec) {
                       Navigator.pushNamed(
                         context,
                         Routes.player,

@@ -1,118 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
-
-/// 태그 색상 테마
-///
-/// 태그에 적용할 수 있는 5가지 색상 테마를 제공합니다.
-/// 각 테마는 15개의 색상으로 구성되어 있으며, 태그가 15개를 초과하면 순환 방식으로 색상이 재사용됩니다.
-class TagColorTheme {
-  const TagColorTheme(this.name, this.colors);
-
-  /// 테마 이름 (예: '파스텔', '비비드')
-  final String name;
-
-  /// 테마에 포함된 색상 리스트 (ARGB 형식)
-  final List<int> colors;
-
-  /// 사용 가능한 모든 테마
-  static const List<TagColorTheme> themes = [
-    TagColorTheme('파스텔', [
-      0xFFFFDADA,
-      0xFFFFE4C4,
-      0xFFFFF4B3,
-      0xFFE8F5E9,
-      0xFFB3E5FC,
-      0xFFE1BEE7,
-      0xFFF8BBD0,
-      0xFFFFCCBC,
-      0xFFD1C4E9,
-      0xFFC5E1A5,
-      0xFFFFE082,
-      0xFFFFAB91,
-      0xFFCE93D8,
-      0xFFA5D6A7,
-      0xFFB39DDB,
-    ]),
-    TagColorTheme('비비드', [
-      0xFFFF6B6B,
-      0xFFFFAA33,
-      0xFFFFEB3B,
-      0xFF66BB6A,
-      0xFF42A5F5,
-      0xFF9C27B0,
-      0xFFEC407A,
-      0xFFFF7043,
-      0xFF7E57C2,
-      0xFF9CCC65,
-      0xFFFDD835,
-      0xFFFF8A65,
-      0xFFAB47BC,
-      0xFF81C784,
-      0xFF8E24AA,
-    ]),
-    TagColorTheme('네온', [
-      0xFFFF1744,
-      0xFFFF9100,
-      0xFFFFEA00,
-      0xFF00E676,
-      0xFF00B0FF,
-      0xFFD500F9,
-      0xFFFF4081,
-      0xFFFF6E40,
-      0xFF651FFF,
-      0xFF76FF03,
-      0xFFC6FF00,
-      0xFFFF3D00,
-      0xFFE040FB,
-      0xFF00E5FF,
-      0xFFAA00FF,
-    ]),
-    TagColorTheme('소프트', [
-      0xFFEFDBD5,
-      0xFFF3E5DC,
-      0xFFFFF8DC,
-      0xFFE8F4EA,
-      0xFFE0F2F7,
-      0xFFF3E5F5,
-      0xFFFCE4EC,
-      0xFFFBE9E7,
-      0xFFEDE7F6,
-      0xFFE7EED3,
-      0xFFFFF9C4,
-      0xFFFFE0B2,
-      0xFFF1E1F5,
-      0xFFDCEDC8,
-      0xFFE1BEE7,
-    ]),
-    TagColorTheme('어스톤', [
-      0xFFBCAAA4,
-      0xFFD7CCC8,
-      0xFFE6D7C3,
-      0xFFC5E1A5,
-      0xFFB0BEC5,
-      0xFFCE93D8,
-      0xFFF48FB1,
-      0xFFFFAB91,
-      0xFFB39DDB,
-      0xFFA5D6A7,
-      0xFFDCE775,
-      0xFFFFCC80,
-      0xFFBA68C8,
-      0xFF90CAF9,
-      0xFF9FA8DA,
-    ]),
-  ];
-
-  /// 테마 이름으로 테마 객체 찾기
-  ///
-  /// 해당 이름의 테마가 없으면 첫 번째 테마(파스텔)를 반환합니다.
-  static TagColorTheme getTheme(String name) {
-    return themes.firstWhere((t) => t.name == name, orElse: () => themes[0]);
-  }
-}
 
 /// 태그 수정 화면 (Figma 2-3. Modifying Tags)
 ///
@@ -130,7 +21,9 @@ class TagColorTheme {
 /// - 태그 이름 편집 폼 (이름 입력 + 적용/취소)
 /// - 태그 삭제 버튼
 class TagsEditScreen extends StatefulWidget {
-  const TagsEditScreen({super.key});
+  const TagsEditScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
 
   @override
   State<TagsEditScreen> createState() => _TagsEditScreenState();
@@ -138,7 +31,7 @@ class TagsEditScreen extends StatefulWidget {
 
 class _TagsEditScreenState extends State<TagsEditScreen> {
   // 데이터 저장소
-  final _manager = HiveManager.instance;
+  late final HiveManager _manager;
 
   // 태그 목록 (작업 중인 데이터)
   late List<Tag> _tags;
@@ -150,11 +43,12 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   final _nameC = TextEditingController();
 
   // 현재 선택된 색상 테마
-  String _currentTheme = '파스텔';
+  String _currentTheme = '봄';
 
   @override
   void initState() {
     super.initState();
+    _manager = widget.hiveManager ?? HiveManager.instance;
     _loadData();
   }
 
@@ -199,7 +93,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 각 태그는 테마의 색상 배열에서 순환하며 색상을 부여받습니다.
   /// 예: 15개 색상 테마에서 16번째 태그는 첫 번째 색상을 받습니다.
   void _assignColors() {
-    final theme = TagColorTheme.getTheme(_currentTheme);
+    final theme = getTagColorTheme(_currentTheme);
     final newTags = <Tag>[];
 
     for (int i = 0; i < _tags.length; i++) {
@@ -256,50 +150,146 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           children: [
             _buildThemeSelector(context),
             const SizedBox(height: 16),
-            _buildTagChips(),
-            const SizedBox(height: 16),
-            _buildEditForm(context),
-            const SizedBox(height: 24),
-            _buildDeleteButton(context),
+            _buildTagEditSection(context),
           ],
         ),
       ),
     );
   }
 
-  /// 테마 선택 카드 빌드
+  /// 테마 선택 카드 빌드 (라디오 버튼 + 색상 미리보기)
   Widget _buildThemeSelector(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context).colorTheme,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 8),
+            ...tagColorThemes.map((TagColorTheme theme) {
+              return _buildThemeRadioTile(context, theme);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 개별 테마 라디오 타일 빌드
+  Widget _buildThemeRadioTile(BuildContext context, TagColorTheme theme) {
+    final isSelected = _currentTheme == theme.name;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _currentTheme = theme.name;
+        });
+        _applyThemeToAllTags();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            // 라디오 버튼
+            // ignore: deprecated_member_use
+            Radio<String>(
+              value: theme.name,
+              // ignore: deprecated_member_use
+              groupValue: _currentTheme,
+              // ignore: deprecated_member_use
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _currentTheme = value;
+                  });
+                  _applyThemeToAllTags();
+                }
+              },
+            ),
+            const SizedBox(width: 4),
+            // 테마 이름
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context).getThemeName(theme.name),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            // 색상 미리보기 팔레트
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: TagColorTheme.themes.map((theme) {
-                return ChoiceChip(
-                  label: Text(
-                    AppLocalizations.of(context).getThemeName(theme.name),
-                    style: const TextStyle(color: Colors.black),
+              spacing: 4,
+              children: theme.colors.map((colorInt) {
+                return Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: Color(colorInt),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.grey.shade300, width: 0.5),
                   ),
-                  selected: _currentTheme == theme.name,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _currentTheme = theme.name;
-                      });
-                      _applyThemeToAllTags();
-                    }
-                  },
                 );
               }).toList(),
+            ),
+            const SizedBox(width: 2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 태그 수정 섹션 (태그 칩 + 편집 폼 + 삭제 버튼)
+  Widget _buildTagEditSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              AppLocalizations.of(context).editingTags,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            _buildTagChips(),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameC,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).tagName,
+                border: const OutlineInputBorder(),
+              ),
+              enableIMEPersonalizedLearning: false,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _applyNameChange,
+                    child: Text(AppLocalizations.of(context).nameApply),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 삭제 버튼을 버튼 행에 통합
+                if (_tags.isNotEmpty)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 231, 76, 60),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _deleteSelectedTag,
+                      label: Text(AppLocalizations.of(context).deleteTag),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -309,21 +299,27 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 태그 칩 그리드 빌드
   Widget _buildTagChips() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        // 기존 태그 칩들
-        for (int i = 0; i < _tags.length; i++) _buildTagChip(i),
-        // 새 태그 추가 버튼
-        ActionChip(
-          label: const Text('+', style: TextStyle(color: Colors.black)),
-          onPressed: _addNewTag,
-          elevation: 2,
-          backgroundColor: Colors.white,
-          side: BorderSide.none,
-        ),
-      ],
+    return Theme(
+      data: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light, // 다크모드 자동 조정 방지
+      ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          // 기존 태그 칩들
+          for (int i = 0; i < _tags.length; i++) _buildTagChip(i),
+          // 새 태그 추가 버튼
+          ActionChip(
+            label: const Text('+', style: TextStyle(color: Colors.black)),
+            onPressed: _addNewTag,
+            elevation: 2,
+            backgroundColor: Colors.white,
+            side: BorderSide.none,
+          ),
+        ],
+      ),
     );
   }
 
@@ -337,67 +333,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       tag: _tags[index],
       selected: isSelected,
       onSelected: (_) => _syncForm(index),
-    );
-  }
-
-  /// 태그 이름 편집 폼 빌드
-  Widget _buildEditForm(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nameC,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context).tagName,
-              ),
-              enableIMEPersonalizedLearning: false,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _applyNameChange,
-                    child: Text(AppLocalizations.of(context).apply),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _cancelNameChange,
-                    child: Text(AppLocalizations.of(context).cancel),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 태그 삭제 버튼 빌드
-  Widget _buildDeleteButton(BuildContext context) {
-    if (_tags.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Center(
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.4,
-        child: FilledButton.icon(
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: _deleteSelectedTag,
-          icon: const Icon(Icons.delete),
-          label: Text(AppLocalizations.of(context).deleteTag),
-        ),
-      ),
     );
   }
 
@@ -421,7 +356,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     }
 
     // 현재 테마에서 다음 색상 할당
-    final theme = TagColorTheme.getTheme(_currentTheme);
+    final theme = getTagColorTheme(_currentTheme);
     final colorIndex = _tags.length % theme.colors.length;
 
     setState(() {
@@ -479,22 +414,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       }
     }
     return false;
-  }
-
-  /// 태그 이름 변경 취소
-  ///
-  /// 입력 필드를 현재 선택된 태그의 이름으로 되돌립니다.
-  void _cancelNameChange() {
-    if (_tags.isEmpty) {
-      return;
-    }
-
-    // 한글 입력 문제 방지를 위해 프레임 이후 실행
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _nameC.text = _tags[_selected].name;
-      }
-    });
   }
 
   /// 선택된 태그 삭제

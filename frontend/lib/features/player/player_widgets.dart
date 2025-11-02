@@ -1,9 +1,14 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:re_view/core/utils.dart';
+
+// 시간 포맷 유틸 함수
+String formatDuration(int seconds) {
+  final m = (seconds ~/ 60).toString();
+  final s = (seconds % 60).toString().padLeft(2, '0');
+  return '$m:$s';
+}
 
 /// 비디오 컨트롤 공통 위젯 모듈
-
 // 뒤로가기 버튼
 class BackButton extends StatelessWidget {
   const BackButton({super.key, required this.onPressed});
@@ -87,6 +92,73 @@ class SyncButton extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+// 재생 속도 버튼
+class SpeedButton extends StatefulWidget {
+  const SpeedButton({super.key, required this.onSpeedChanged});
+
+  final ValueChanged<double> onSpeedChanged;
+
+  @override
+  State<SpeedButton> createState() => _SpeedButtonState();
+}
+
+class _SpeedButtonState extends State<SpeedButton> {
+  static const _speeds = [0.7, 1.0, 1.5, 2.0];
+  int _currentIndex = 1; // 기본값 1.0x
+
+  void _toggleSpeed() {
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % _speeds.length;
+    });
+    widget.onSpeedChanged(_speeds[_currentIndex]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: _toggleSpeed,
+      icon: Text(
+        '${_speeds[_currentIndex]}x',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// 오디오 소스 버튼
+class AudioSourceButton extends StatelessWidget {
+  const AudioSourceButton({
+    super.key,
+    required this.isOriginalAudio,
+    required this.onPressed,
+  });
+
+  final bool isOriginalAudio;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          isOriginalAudio ? 'Rec' : 'TTS',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -308,55 +380,30 @@ class CenterPlayControls extends StatelessWidget {
   }
 }
 
-// 상단 컨트롤 바 (세로 모드용)
-class TopControlBarPortrait extends StatelessWidget {
-  const TopControlBarPortrait({
+// 상단 컨트롤 바
+class TopControlBar extends StatelessWidget {
+  const TopControlBar({
     super.key,
+    required this.isVertical,
     required this.onBack,
-    required this.isSynced,
-    required this.onSyncToggle,
-    this.pageDifference,
-  });
-
-  final VoidCallback onBack;
-  final bool isSynced;
-  final VoidCallback onSyncToggle;
-  final int? pageDifference;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          BackButton(onPressed: onBack),
-          const Spacer(),
-          SyncButton(
-            isSynced: isSynced,
-            onPressed: onSyncToggle,
-            pageDifference: pageDifference,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 상단 컨트롤 바 (가로 모드용)
-class TopControlBarLandscape extends StatelessWidget {
-  const TopControlBarLandscape({
-    super.key,
-    required this.onBack,
+    required this.isOriginalAudio,
+    required this.onAudioToggle,
     required this.isCaptionEnabled,
     required this.onCaptionToggle,
+    required this.onSpeedChanged,
     required this.isSynced,
     required this.onSyncToggle,
     this.pageDifference,
   });
 
+  final bool isVertical;
+
   final VoidCallback onBack;
+  final bool isOriginalAudio;
+  final VoidCallback onAudioToggle;
   final bool isCaptionEnabled;
   final VoidCallback onCaptionToggle;
+  final ValueChanged<double> onSpeedChanged;
   final bool isSynced;
   final VoidCallback onSyncToggle;
   final int? pageDifference;
@@ -369,10 +416,19 @@ class TopControlBarLandscape extends StatelessWidget {
         children: [
           BackButton(onPressed: onBack),
           const Spacer(),
-          CaptionButton(
-            isEnabled: isCaptionEnabled,
-            onPressed: onCaptionToggle,
-          ),
+          if (!isVertical) ...[
+            AudioSourceButton(
+              isOriginalAudio: isOriginalAudio,
+              onPressed: onAudioToggle,
+            ),
+            const SizedBox(width: 8),
+            CaptionButton(
+              isEnabled: isCaptionEnabled,
+              onPressed: onCaptionToggle,
+            ),
+            const SizedBox(width: 8),
+          ],
+          SpeedButton(onSpeedChanged: onSpeedChanged),
           const SizedBox(width: 8),
           SyncButton(
             isSynced: isSynced,
@@ -385,7 +441,7 @@ class TopControlBarLandscape extends StatelessWidget {
   }
 }
 
-/// PDF 슬라이드 리스트 (가로/세로 모드 공통 사용)
+/// PDF 슬라이드 리스트
 class PdfSlidesList extends StatefulWidget {
   const PdfSlidesList({
     super.key,
@@ -410,6 +466,31 @@ class PdfSlidesList extends StatefulWidget {
 
   @override
   State<PdfSlidesList> createState() => _PdfSlidesListState();
+}
+
+class _SlideThumbnailImage extends StatelessWidget {
+  const _SlideThumbnailImage({required this.bytes});
+
+  final Uint8List bytes;
+
+  @override
+  Widget build(BuildContext context) {
+    if (bytes.isEmpty) {
+      return _placeholder();
+    }
+
+    return Image.memory(
+      bytes,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => _placeholder(),
+    );
+  }
+
+  Widget _placeholder() {
+    return Center(
+      child: Icon(Icons.image_not_supported, color: Colors.grey[400], size: 32),
+    );
+  }
 }
 
 class _PdfSlidesListState extends State<PdfSlidesList> {
@@ -483,7 +564,7 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
               borderRadius: BorderRadius.circular(4),
             ),
             child: cachedImage != null
-                ? Image.memory(cachedImage, fit: BoxFit.contain)
+                ? _SlideThumbnailImage(bytes: cachedImage)
                 : FutureBuilder<Uint8List>(
                     // Future를 캐시하여 매번 새로운 Future가 생성되지 않도록 함
                     future: _futureCache.putIfAbsent(
@@ -493,10 +574,7 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done &&
                           snapshot.hasData) {
-                        return Image.memory(
-                          snapshot.data!,
-                          fit: BoxFit.contain,
-                        );
+                        return _SlideThumbnailImage(bytes: snapshot.data!);
                       }
 
                       // 에러 표시

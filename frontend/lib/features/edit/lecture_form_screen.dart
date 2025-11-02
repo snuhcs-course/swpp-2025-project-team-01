@@ -2,11 +2,18 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:re_view/app_router.dart';
+import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_background/flutter_background.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+
+const String _serverAddress = '147.46.78.61';
+const String _port = '8001';
 
 /// 강의 생성/편집 화면
 ///
@@ -51,8 +58,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 강의 생성 중 여부 (로딩 상태)
   bool _isCreating = false;
 
+  // HTTP 클라이언트 (취소를 위해)
+  http.Client? _httpClient;
+  bool _closeClientOnDispose = true;
+
   @override
   void dispose() {
+    // HTTP 클라이언트 정리
+    if (_closeClientOnDispose) {
+      _httpClient?.close();
+    }
+
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
     _titleController.dispose();
@@ -88,54 +104,58 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: Colors.white,
+      // backgroundColor는 테마의 scaffoldBackgroundColor 사용
 
-      // 스크롤 가능한 메인 콘텐츠
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ========== 과목 선택 섹션 ==========
-            _buildSectionTitle(l10n.isKorean ? '과목 선택' : 'Select Subject'),
-            const SizedBox(height: 8),
-            _buildSubjectDropdown(l10n, subjects),
-            const SizedBox(height: 20),
+      // 스크롤 가능한 메인 콘텐츠 + 로딩 바
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ========== 과목 선택 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '과목 선택' : 'Select Subject'),
+                const SizedBox(height: 8),
+                _buildSubjectDropdown(l10n, subjects),
+                const SizedBox(height: 20),
 
-            // ========== 강의 주차 입력 섹션 ==========
-            _buildSectionTitle(l10n.isKorean ? '강의 주차' : 'Lecture Week'),
-            const SizedBox(height: 8),
-            _buildWeekTextField(),
-            const SizedBox(height: 20),
+                // ========== 강의 주차 입력 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '강의 주차' : 'Lecture Week'),
+                const SizedBox(height: 8),
+                _buildWeekTextField(),
+                const SizedBox(height: 20),
 
-            // ========== 강의 제목 입력 섹션 ==========
-            _buildSectionTitle(l10n.isKorean ? '강의 제목' : 'Lecture Title'),
-            const SizedBox(height: 8),
-            _buildTitleTextField(),
-            const SizedBox(height: 20),
+                // ========== 강의 제목 입력 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '강의 제목' : 'Lecture Title'),
+                const SizedBox(height: 8),
+                _buildTitleTextField(),
+                const SizedBox(height: 20),
 
-            // ========== 강의 슬라이드 업로드 섹션 ==========
-            _buildSectionTitle(
-              l10n.isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)',
+                // ========== 강의 슬라이드 업로드 섹션 ==========
+                _buildSectionTitle(
+                  l10n.isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)',
+                ),
+                const SizedBox(height: 8),
+                _buildFileUploadButton(
+                  icon: Icons.attach_file,
+                  label: _slidePdfPath != null
+                      ? _getFileName(_slidePdfPath!)
+                      : (l10n.isKorean ? '...' : '...'),
+                  onTap: _pickSlidePdf,
+                ),
+                const SizedBox(height: 20),
+
+                // ========== 강의 녹음 파일 업로드 섹션 ==========
+                _buildAudioFilesHeader(l10n),
+                const SizedBox(height: 8),
+                _buildAudioFilesList(),
+
+                const SizedBox(height: 40),
+              ],
             ),
-            const SizedBox(height: 8),
-            _buildFileUploadButton(
-              icon: Icons.attach_file,
-              label: _slidePdfPath != null
-                  ? _getFileName(_slidePdfPath!)
-                  : (l10n.isKorean ? '...' : '...'),
-              onTap: _pickSlidePdf,
-            ),
-            const SizedBox(height: 20),
-
-            // ========== 강의 녹음 파일 업로드 섹션 ==========
-            _buildAudioFilesHeader(l10n),
-            const SizedBox(height: 8),
-            _buildAudioFilesList(),
-
-            const SizedBox(height: 40),
-          ],
-        ),
+          ),
+        ],
       ),
 
       // 하단 고정 생성 버튼
@@ -147,146 +167,204 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 섹션 제목 위젯
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.black87,
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        );
+      },
     );
   }
 
   /// 과목 선택 드롭다운 위젯
   /// 사용자가 강의를 소속시킬 과목을 선택하거나 "선택 안 함"을 선택할 수 있습니다.
   Widget _buildSubjectDropdown(AppLocalizations l10n, List<dynamic> subjects) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: _selectedSubjectId,
-          isExpanded: true,
-          icon: const Icon(Icons.arrow_drop_down, size: 28),
-          hint: Text(
-            l10n.isKorean ? '선택 안 함' : 'Not Selected',
-            style: const TextStyle(fontSize: 16),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade700
+            : Colors.grey.shade300;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor),
           ),
-          items: [
-            // "선택 안 함" 옵션
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String?>(
+              value: _selectedSubjectId == 'uncategorized'
+                  ? null
+                  : _selectedSubjectId,
+              isExpanded: true,
+              icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
+              hint: Text(
                 l10n.isKorean ? '선택 안 함' : 'Not Selected',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16, color: textColor),
               ),
-            ),
-            // 기존 과목 리스트
-            ...subjects.map(
-              (s) => DropdownMenuItem<String?>(
-                value: (s as dynamic).id as String,
-                child: Text(
-                  (s as dynamic).title as String,
-                  style: const TextStyle(fontSize: 16),
+              dropdownColor: cardColor,
+              items: [
+                // "선택 안 함" 옵션
+                DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(
+                    l10n.isKorean ? '선택 안 함' : 'Not Selected',
+                    style: TextStyle(fontSize: 16, color: textColor),
+                  ),
                 ),
-              ),
+                // 기존 과목 리스트 (미분류 제외)
+                ...subjects
+                    .where((s) {
+                      final subject = s as HiveSubject;
+                      return !subject.isUncategorized;
+                    })
+                    .map(
+                      (s) => DropdownMenuItem<String?>(
+                        value: (s as dynamic).id as String,
+                        child: Text(
+                          (s as dynamic).title as String,
+                          style: TextStyle(fontSize: 16, color: textColor),
+                        ),
+                      ),
+                    ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedSubjectId = value;
+                });
+              },
             ),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _selectedSubjectId = value;
-            });
-          },
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   /// 강의 주차 입력 텍스트 필드
   Widget _buildWeekTextField() {
-    return TextField(
-      controller: _weekController,
-      decoration: InputDecoration(
-        hintText: 'Ex. Week 1-1',
-        hintStyle: TextStyle(color: Colors.grey.shade400),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Colors.black87, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade600
+            : Colors.grey.shade400;
+        final focusColor = isDark ? Colors.white : Colors.black87;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return TextField(
+          controller: _weekController,
+          style: TextStyle(color: textColor),
+          decoration: InputDecoration(
+            hintText: 'Ex. Week 1-1',
+            hintStyle: TextStyle(color: Colors.grey.shade600),
+            filled: true,
+            fillColor: cardColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: focusColor, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// 강의 제목 입력 텍스트 필드
   Widget _buildTitleTextField() {
-    return TextField(
-      controller: _titleController,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.grey.shade400),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: Colors.black87, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade600
+            : Colors.grey.shade400;
+        final focusColor = isDark ? Colors.white : Colors.black87;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return TextField(
+          controller: _titleController,
+          style: TextStyle(color: textColor),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: cardColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: focusColor, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// 오디오 파일 섹션 헤더 (제목 + 추가/삭제 버튼)
   Widget _buildAudioFilesHeader(AppLocalizations l10n) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSectionTitle(
-            l10n.isKorean ? '강의 녹음 파일 (.m4a)' : 'Lecture Audio (.m4a)',
-          ),
-        ),
-        // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
-        IconButton(
-          icon: Icon(
-            Icons.remove_circle_outline,
-            color: _canRemoveAudioFile()
-                ? Colors.grey.shade700
-                : Colors.grey.withValues(alpha: 0.3),
-          ),
-          onPressed: _canRemoveAudioFile() ? _removeLastAudioFile : null,
-        ),
-        // 오디오 파일 추가 버튼
-        IconButton(
-          icon: Icon(Icons.add_circle_outline, color: Colors.grey.shade700),
-          onPressed: _addAudioFile,
-        ),
-      ],
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final iconColor = isDark ? Colors.white70 : Colors.grey.shade700;
+        final disabledColor = isDark
+            ? Colors.grey.withValues(alpha: 0.3)
+            : Colors.grey.withValues(alpha: 0.3);
+
+        return Row(
+          children: [
+            Expanded(
+              child: _buildSectionTitle(
+                l10n.isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio',
+              ),
+            ),
+            // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
+            IconButton(
+              icon: Icon(
+                Icons.remove_circle_outline,
+                color: _canRemoveAudioFile() ? iconColor : disabledColor,
+              ),
+              onPressed: _canRemoveAudioFile() ? _removeLastAudioFile : null,
+            ),
+            // 오디오 파일 추가 버튼
+            IconButton(
+              icon: Icon(Icons.add_circle_outline, color: iconColor),
+              onPressed: _addAudioFile,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -317,71 +395,85 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 회전된 첨부 아이콘
-          Transform.rotate(
-            angle: 0.785, // 45도 회전
-            child: Icon(
-              Icons.attach_file,
-              color: Colors.grey.shade600,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          // 파일명 표시
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: label == '...' ? Colors.grey.shade400 : Colors.black87,
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade700
+            : Colors.grey.shade300;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          // 추가 버튼
-          OutlinedButton(
-            onPressed: onTap,
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              side: BorderSide(color: Colors.grey.shade400),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+          child: Row(
+            children: [
+              // 회전된 첨부 아이콘
+              Transform.rotate(
+                angle: 0.785, // 45도 회전
+                child: Icon(
+                  Icons.attach_file,
+                  color: isDark ? Colors.white70 : Colors.grey.shade600,
+                  size: 24,
+                ),
               ),
-            ),
-            child: Text(
-              l10n.isKorean ? '추가' : 'Add',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+              const SizedBox(width: 12),
+              // 파일명 표시
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: label == '...' ? Colors.grey.shade400 : textColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              // 추가 버튼
+              OutlinedButton(
+                onPressed: onTap,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  side: BorderSide(color: borderColor),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: Text(
+                  AppLocalizations.of(context).isKorean ? '추가' : 'Add',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   /// 개별 오디오 파일 엔트리 위젯
   ///
-  /// 다중 오디오 파일 모드일 때는 페이지 범위 입력 필드도 함께 표시합니다.
+  /// 페이지 범위 입력 필드를 함께 표시합니다.
   Widget _buildAudioFileEntry(int index) {
     final entry = _audioFiles[index];
 
@@ -396,11 +488,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           onTap: () => _pickAudioFile(index),
         ),
 
-        // 다중 오디오 파일 모드일 때 페이지 범위 입력 필드 표시
-        if (_isMultipleAudioMode) ...[
-          const SizedBox(height: 12),
-          _buildPageRangeInputs(entry, l10n),
-        ],
+        // 페이지 범위 입력 필드 표시 (항상 표시)
+        const SizedBox(height: 12),
+        _buildPageRangeInputs(entry, l10n),
 
         // 마지막 아이템이 아니면 간격 추가
         if (index < _audioFiles.length - 1) const SizedBox(height: 12),
@@ -410,94 +500,140 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 페이지 범위 입력 필드 (시작 페이지 - 끝 페이지)
   Widget _buildPageRangeInputs(AudioFileEntry entry, AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 40),
-      child: Row(
-        children: [
-          Text(
-            l10n.isKorean ? '페이지 설정' : 'Page Range',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final textColor = isDark ? Colors.white70 : Colors.grey.shade600;
+
+        return Padding(
+          padding: const EdgeInsets.only(left: 40),
+          child: Row(
+            children: [
+              Text(
+                l10n.isKorean ? '페이지 설정' : 'Page Range',
+                style: TextStyle(fontSize: 14, color: textColor),
+              ),
+              const SizedBox(width: 16),
+              // 시작 페이지 입력
+              Expanded(child: _buildPageTextField(entry.startPageController)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  '-',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              // 끝 페이지 입력
+              Expanded(child: _buildPageTextField(entry.endPageController)),
+            ],
           ),
-          const SizedBox(width: 16),
-          // 시작 페이지 입력
-          Expanded(child: _buildPageTextField(entry.startPageController)),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              '-',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          // 끝 페이지 입력
-          Expanded(child: _buildPageTextField(entry.endPageController)),
-        ],
-      ),
+        );
+      },
     );
   }
 
   /// 페이지 번호 입력 텍스트 필드
   Widget _buildPageTextField(TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      textAlign: TextAlign.center,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.grey.shade50,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade600
+            : Colors.grey.shade300;
+        final focusColor = isDark ? Colors.white : Colors.blue;
+
+        return TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: cardColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide(color: focusColor, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 12,
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// 하단 고정 생성 버튼
   Widget _buildBottomCreateButton(AppLocalizations l10n) {
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final backgroundColor = isDark
+            ? const Color(0xFF212121) // 다크모드: 배경색과 동일
+            : Colors.white; // 라이트모드: 흰색
+
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.black87,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: _createLecture,
-            child: Text(
-              l10n.isKorean ? '생성하기' : 'Create',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            child: SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: isDark ? Colors.white : Colors.black87,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _isCreating ? null : _createLecture,
+                child: _isCreating
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation(
+                            isDark ? Colors.black : Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        l10n.isKorean ? '생성하기' : 'Create',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.black : Colors.white,
+                        ),
+                      ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -515,6 +651,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 토스트 메시지 표시
   void _showToast(String message) {
+    if (!mounted) {
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
@@ -530,15 +669,45 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     );
 
     if (result != null && result.files.single.path != null) {
-      setState(() {
-        _slidePdfPath = result.files.single.path;
-      });
+      final pdfPath = result.files.single.path!;
+
+      // PDF 페이지 수 확인
+      try {
+        final pdfFile = File(pdfPath);
+        final bytes = await pdfFile.readAsBytes();
+        final document = PdfDocument(inputBytes: bytes);
+        final pageCount = document.pages.count;
+        document.dispose();
+
+        setState(() {
+          _slidePdfPath = pdfPath;
+
+          // 첫 번째 오디오 파일의 페이지 범위를 자동으로 설정
+          if (_audioFiles.isNotEmpty) {
+            _audioFiles[0].startPageController.text = '1';
+            _audioFiles[0].endPageController.text = pageCount.toString();
+          }
+        });
+      } catch (e) {
+        // PDF 로드 실패 시 경로만 저장
+        setState(() {
+          _slidePdfPath = pdfPath;
+        });
+        _showToast(
+          l10n.isKorean
+              ? 'PDF 페이지 수를 확인할 수 없습니다'
+              : 'Could not determine PDF page count',
+        );
+      }
     }
   }
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'flac'],
+    );
 
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -554,20 +723,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 새로운 오디오 파일 엔트리를 추가합니다.
   /// 기존 파일들이 모두 업로드된 경우에만 추가 가능합니다.
   void _addAudioFile() {
-    // 모든 기존 파일이 업로드되었는지 확인
-    for (int i = 0; i < _audioFiles.length; i++) {
-      if (_audioFiles[i].filePath == null) {
-        _showToast(
-          l10n.isKorean
-              ? '파일을 순서대로 업로드해주세요'
-              : 'Please upload the files in order',
-        );
-        return;
-      }
-    }
+    final newEntry = AudioFileEntry();
+
+    // 두 번째 오디오부터는 초기값 없이 비워둠 (사용자가 직접 입력)
 
     setState(() {
-      _audioFiles.add(AudioFileEntry());
+      _audioFiles.add(newEntry);
       _isMultipleAudioMode = true;
     });
 
@@ -658,10 +819,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 4. 최소 1개의 오디오 파일 업로드 여부
   Future<void> _createLecture() async {
     // 1. 검증
-    if (_selectedSubjectId == null) {
-      _showToast(l10n.isKorean ? '과목을 선택해주세요' : 'Please select a subject');
-      return;
-    }
+    // 과목 선택이 없으면 미분류로 처리
+    _selectedSubjectId ??= 'uncategorized';
     if (_weekController.text.trim().isEmpty) {
       _showToast(l10n.isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week');
       return;
@@ -687,85 +846,243 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       return;
     }
 
+    // 페이지 범위 검증
+    // 첫 번째 오디오의 끝 페이지 = PDF 전체 페이지 수
+    int? totalPdfPages;
+
+    for (int i = 0; i < _audioFiles.length; i++) {
+      final entry = _audioFiles[i];
+      if (entry.filePath == null) {
+        continue; // 파일이 없으면 스킵
+      }
+
+      final startText = entry.startPageController.text.trim();
+      final endText = entry.endPageController.text.trim();
+
+      if (startText.isEmpty || endText.isEmpty) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 페이지 범위를 입력해주세요'
+              : 'Please enter page range for audio ${i + 1}',
+        );
+        return;
+      }
+
+      // 숫자 형식 검증
+      final startPage = int.tryParse(startText);
+      final endPage = int.tryParse(endText);
+
+      if (startPage == null || endPage == null) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 페이지 번호는 숫자로 입력해주세요'
+              : 'Page numbers for audio ${i + 1} must be numbers',
+        );
+        return;
+      }
+
+      if (startPage < 1 || endPage < 1) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 페이지 번호는 1 이상이어야 합니다'
+              : 'Page numbers for audio ${i + 1} must be at least 1',
+        );
+        return;
+      }
+
+      if (startPage > endPage) {
+        _showToast(
+          l10n.isKorean
+              ? '${i + 1}번째 오디오의 시작 페이지가 끝 페이지보다 클 수 없습니다'
+              : 'Start page cannot be greater than end page for audio ${i + 1}',
+        );
+        return;
+      }
+
+      // 첫 번째 오디오의 끝 페이지를 PDF 전체 페이지 수로 저장
+      if (i == 0) {
+        totalPdfPages = endPage;
+      } else {
+        // 두 번째 오디오부터는 PDF 전체 페이지 수를 초과하지 않는지 검증
+        if (totalPdfPages != null && endPage > totalPdfPages) {
+          _showToast(
+            l10n.isKorean
+                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($totalPdfPages)를 초과합니다'
+                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($totalPdfPages)',
+          );
+          return;
+        }
+      }
+    }
+
     // 2. 로딩 시작
     setState(() => _isCreating = true);
+    final titleText = _titleController.text.trim();
+
+    // Enable background execution
+    final androidConfig = FlutterBackgroundAndroidConfig(
+      notificationTitle: 'Generating Lecture',
+      notificationText: 'Processing: $titleText',
+      notificationImportance: AndroidNotificationImportance.high,
+      enableWifiLock: true,
+    );
+
+    bool backgroundEnabled = false;
+    try {
+      backgroundEnabled = await FlutterBackground.initialize(
+        androidConfig: androidConfig,
+      );
+      if (backgroundEnabled) {
+        await FlutterBackground.enableBackgroundExecution();
+      }
+    } catch (e) {
+      debugPrint('Failed to enable background execution: $e');
+      // Continue anyway - app will still work in foreground
+    }
+
+    // HTTP 클라이언트 생성
+    _httpClient = http.Client();
+
+    // 로딩 서비스 시작 및 취소 콜백 등록
+    final effectiveAudios = _audioFiles
+        .where((e) => (e.filePath ?? '').isNotEmpty)
+        .toList();
+    LectureLoadingService.instance.startLoading(
+      titleText,
+      effectiveAudios.length,
+    );
+    LectureLoadingService.instance.setOnCancel(() {
+      _httpClient?.close();
+      _closeClientOnDispose = true;
+      if (mounted) {
+        setState(() => _isCreating = false);
+        _showToast(
+          l10n.isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled',
+        );
+      }
+      // Disable background execution when cancelled
+      if (backgroundEnabled) {
+        FlutterBackground.disableBackgroundExecution();
+      }
+    });
 
     try {
-      // 3. 백엔드로 전송 (TODO: BackendApi 구현 필요)
+      // 3. 백엔드로 전송
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
-      final titleText = _titleController.text.trim();
       final slidePath = _slidePdfPath!;
-      final effectiveAudios = _audioFiles
-          .where((e) => (e.filePath ?? '').isNotEmpty)
-          .toList();
 
-      final audioPaths = <String>[];
+      // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
+      if (mounted) {
+        _closeClientOnDispose = false;
+        final navigator = Navigator.of(context);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          navigator.pushNamedAndRemoveUntil(
+            Routes.home,
+            (route) => false, // remove everything behind Home
+          );
+        });
+      }
+
+      final List<Future<List<String>?>> futures = [];
+      final originalAudioPaths = <String>[];
+      final ttsAudioPaths = <String>[];
       final jsonPaths = <String>[];
-      final durations = <int>[]; //double로 바꿀 것
+      final pdfStarts = <int>[];
 
       for (int i = 1; i <= effectiveAudios.length; i++) {
         final audioFileEntry = effectiveAudios[i - 1];
-        try {
-          final jobId = await requestLecture(
+        originalAudioPaths.add(audioFileEntry.filePath!);
+
+        futures.add(
+          fetchLecture(
             slidePath,
             audioFileEntry,
             titleText,
             i,
-            effectiveAudios.length == 1 ? true : false,
-          );
+            effectiveAudios.length,
+            _serverAddress,
+            _port,
+            onProgress,
+            clientToClose: _httpClient,
+          ),
+        );
 
-          if (jobId == null) {
-            _showToast(
-              l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-            );
-            return;
-          }
-
-          final zipPath = await downloadResult(jobId, titleText, i);
-
-          if (zipPath == null) {
-            _showToast(
-              l10n.isKorean ? '강의 다운로드에 실패했습니다.' : 'Lecture download failed.',
-            );
-            return;
-          }
-
-          await unzipResult(zipPath, titleText, i);
-          final documentsDir = await getApplicationDocumentsDirectory();
-          final outputDir = documentsDir.path;
-          audioPaths.add('$outputDir/${titleText}_$i.opus');
-          final jsonPath = File('$outputDir/${titleText}_$i.json');
-          jsonPaths.add('$outputDir/${titleText}_$i.json');
-          final jsonData =
-              jsonDecode(await jsonPath.readAsString()) as Map<String, dynamic>;
-          final metadata = jsonData['metadata'] as Map<String, dynamic>?;
-          durations.add((metadata?['total_duration'] as double).toInt());
-        } catch (err) {
-          _showToast(
-            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-          );
+        // Add PDF ranges
+        if (effectiveAudios.length >= 2) {
+          final startText = audioFileEntry.startPageController.text.trim();
+          final pdfStart = int.parse(startText);
+          pdfStarts.add(pdfStart);
         }
       }
 
-      // 4. 강의 구조체 생성
+      // Async calls in parallel
+      final results = await Future.wait(futures);
+      for (int i = 0; i < effectiveAudios.length; i++) {
+        if (results[i] == null) {
+          _showToast(
+            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+          );
+          return;
+        } else {
+          ttsAudioPaths.add(results[i]![0]);
+          jsonPaths.add(results[i]![1]);
+        }
+      }
+
+      // 4. 음성 파일이 여러 개일 경우 통합 처리
+      String? originalAudioPath;
+      String? ttsAudioPath;
+      String? jsonPath;
+      int? duration;
+
+      if (effectiveAudios.length > 1) {
+        originalAudioPath = await concatenateAudioFiles(
+          originalAudioPaths,
+          titleText,
+        );
+        ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
+        jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
+
+        if (originalAudioPath == null ||
+            ttsAudioPath == null ||
+            jsonPath == null) {
+          _showToast(
+            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+          );
+          return;
+        }
+      } else {
+        originalAudioPath = originalAudioPaths[0];
+        ttsAudioPath = ttsAudioPaths[0];
+        jsonPath = jsonPaths[0];
+      }
+
+      final jsonFile = File(jsonPath);
+      final jsonData =
+          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
+      final metadata = jsonData['metadata'] as Map<String, dynamic>;
+      duration = metadata['total_duration'] as int;
+
+      // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(
         id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,
-        durationSec: durations[0], // Only support single audio cases for now
+        duration: duration,
         slidePath: _slidePdfPath,
-        audioPaths: audioPaths,
-        transcriptPaths: jsonPaths,
+        originalAudioPath: originalAudioPath,
+        ttsAudioPath: ttsAudioPath,
+        jsonPath: jsonPath,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      // 5. Hive에 강의 저장
+      // 6. Hive에 강의 저장
       await _hive.addLecture(generatedLecture);
 
-      // 6. 과목에 강의 추가
+      // 7. 과목에 강의 추가
       if (_selectedSubjectId != null) {
         final subject = _hive.getSubject(_selectedSubjectId!);
         if (subject != null) {
@@ -780,15 +1097,18 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         }
       }
 
+      // 강의 생성 완료 - lectureId 전달
+      LectureLoadingService.instance.completeLoading(
+        lectureId: generatedLecture.id,
+      );
+
       // 7. 성공 메시지
-      if (mounted) {
-        _showToast(
-          l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
-        );
-        Navigator.pop(context, true); // true = 생성 완료
-      }
+      _showToast(
+        l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
+      );
     } catch (e) {
       // 8. 에러 처리
+      LectureLoadingService.instance.hideLoading();
       if (mounted) {
         _showToast(
           l10n.isKorean
@@ -797,7 +1117,20 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
       }
     } finally {
-      // 9. 로딩 종료
+      // 9. 로딩 종료 및 클라이언트 정리
+      _httpClient?.close();
+      _httpClient = null;
+      _closeClientOnDispose = true;
+
+      // Disable background execution when task completes
+      if (backgroundEnabled) {
+        try {
+          await FlutterBackground.disableBackgroundExecution();
+        } catch (e) {
+          debugPrint('Failed to disable background execution: $e');
+        }
+      }
+
       if (mounted) {
         setState(() => _isCreating = false);
       }
@@ -812,6 +1145,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 /// - 시작 페이지 번호 (다중 파일 모드)
 /// - 끝 페이지 번호 (다중 파일 모드)
 class AudioFileEntry {
+  AudioFileEntry();
+  AudioFileEntry.fromPath(this.filePath);
+
   /// 선택된 오디오 파일 경로
   String? filePath;
 

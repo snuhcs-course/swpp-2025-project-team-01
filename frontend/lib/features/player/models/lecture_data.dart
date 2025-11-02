@@ -1,32 +1,3 @@
-class LectureMetadata {
-  LectureMetadata({
-    required this.lectureId,
-    required this.subjectId,
-    required this.title,
-    required this.weekLabel,
-    required this.durationSec,
-    required this.slides,
-  });
-
-  factory LectureMetadata.fromJson(Map<String, dynamic> json) {
-    return LectureMetadata(
-      lectureId: json['lectureId'] as String,
-      subjectId: json['subjectId'] as String,
-      title: json['title'] as String,
-      weekLabel: json['weekLabel'] as String,
-      durationSec: json['durationSec'] as int,
-      slides: json['slides'] as int,
-    );
-  }
-
-  final String lectureId;
-  final String subjectId;
-  final String title;
-  final String weekLabel;
-  final int durationSec;
-  final int slides;
-}
-
 class TranscriptMetadata {
   TranscriptMetadata({
     required this.totalSentences,
@@ -40,7 +11,7 @@ class TranscriptMetadata {
   factory TranscriptMetadata.fromJson(Map<String, dynamic> json) {
     return TranscriptMetadata(
       totalSentences: json['total_sentences'] as int,
-      totalDuration: (json['total_duration'] as num).toDouble(),
+      totalDuration: json['total_duration'] as int,
       voice: json['voice'] as String,
       speed: (json['speed'] as num).toDouble(),
       languageCode: json['language_code'] as String,
@@ -49,7 +20,7 @@ class TranscriptMetadata {
   }
 
   final int totalSentences;
-  final double totalDuration;
+  final int totalDuration;
   final String voice;
   final double speed;
   final String languageCode;
@@ -60,29 +31,44 @@ class TranscriptSentence {
   TranscriptSentence({
     required this.sentenceId,
     required this.text,
+    this.textKor,
     required this.slideNumber,
     required this.startTime,
     required this.endTime,
+    required this.originalStartTime,
+    required this.originalEndTime,
     required this.duration,
-  });
+  }) : assert(sentenceId >= 0, 'sentenceId must be non-negative'),
+       assert(slideNumber >= 0, 'slideNumber must be non-negative'),
+       assert(startTime >= 0, 'startTime must be non-negative'),
+       assert(endTime >= 0, 'endTime must be non-negative'),
+       assert(originalStartTime >= 0, 'originalStartTime must be non-negative'),
+       assert(originalEndTime >= 0, 'originalEndTime must be non-negative'),
+       assert(duration >= 0, 'duration must be non-negative');
 
   factory TranscriptSentence.fromJson(Map<String, dynamic> json) {
     return TranscriptSentence(
       sentenceId: json['sentence_id'] as int,
       text: json['text'] as String,
+      textKor: json['text_kor'] as String?,
       slideNumber: json['slide_number'] as int,
-      startTime: (json['start_time'] as num).toDouble(),
-      endTime: (json['end_time'] as num).toDouble(),
-      duration: (json['duration'] as num).toDouble(),
+      startTime: json['start_time'] as int,
+      endTime: json['end_time'] as int,
+      originalStartTime: json['original_start_time'] as int,
+      originalEndTime: json['original_end_time'] as int,
+      duration: json['duration'] as int,
     );
   }
 
   final int sentenceId;
   final String text;
+  final String? textKor;
   final int slideNumber;
-  final double startTime;
-  final double endTime;
-  final double duration;
+  final int startTime; // TTS audio timing
+  final int endTime; // TTS audio timing
+  final int originalStartTime; // Original audio timing
+  final int originalEndTime; // Original audio timing
+  final int duration;
 }
 
 class TranscriptData {

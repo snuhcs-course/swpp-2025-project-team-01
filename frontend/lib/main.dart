@@ -5,6 +5,10 @@ import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/app_theme.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/shared/widgets.dart';
+
+// Global navigator key for accessing navigator from anywhere
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// 앱 진입점 - HiveManager 초기화 후 앱 실행
 void main() async {
@@ -22,17 +26,19 @@ class ReViewApp extends StatefulWidget {
 }
 
 class _ReViewAppState extends State<ReViewApp> {
+  late final HiveManager _manager = HiveManager.instance;
+
   @override
   void initState() {
     super.initState();
     // HiveManager 변경 리스너 등록 (테마, 언어, 접근성 모두 통합)
-    HiveManager.instance.addListener(_onDataChanged);
+    _manager.addListener(_onDataChanged);
   }
 
   @override
   void dispose() {
     // 리스너 제거
-    HiveManager.instance.removeListener(_onDataChanged);
+    _manager.removeListener(_onDataChanged);
     super.dispose();
   }
 
@@ -84,6 +90,7 @@ class _ReViewAppState extends State<ReViewApp> {
 
     // 모션 줄이기가 활성화되면 페이지 전환 애니메이션 제거
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Re:View',
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -129,18 +136,27 @@ class _ReViewAppState extends State<ReViewApp> {
             : null,
       ),
       themeMode: themeMode,
-      initialRoute: Routes.home, // 온보딩 전이라면 Routes.onboarding 사용
+      initialRoute:
+          hive
+              .hasTutorialCompleted // 앱을 처음 설치한 경우 튜토리얼 진행
+          ? Routes.home
+          : Routes.tutorial,
+
       onGenerateRoute: AppRouter.onGenerateRoute,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         // 모션 줄이기가 활성화되면 스크롤 물리 효과 제거
+        Widget wrappedChild = child!;
+
         if (reduceMotion) {
-          return ScrollConfiguration(
+          wrappedChild = ScrollConfiguration(
             behavior: const _NoBouncingScrollBehavior(),
-            child: child!,
+            child: wrappedChild,
           );
         }
-        return child!;
+
+        // 모든 화면 위에 로딩 바 오버레이 추가
+        return Stack(children: [wrappedChild, const LectureLoadingBar()]);
       },
     );
   }
