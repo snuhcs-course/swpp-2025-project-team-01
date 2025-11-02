@@ -56,7 +56,7 @@ Follow these steps to reproduce the demo video:
 2. Tutorial screen pops up - tap 'NEXT' to continue (x4), lastly tap 'DONE'
 3. Tap upper left 'menu' button to open menu sidebar, then press '강의 생성'
 4. Provide inputs for the lecture:
-- Subject ('unclassified' supported)
+- Subject (not required, as 'unclassified' is now supported)
 - Lecture Week (required)
 - Lecture Title (required)
 - Lecture Slide PDF (required)
@@ -79,14 +79,14 @@ Follow these steps to reproduce the demo video:
 - Press language switch button (ENG/KOR) to see Korean transcript
 - Press playback speed button to adjust tts speed
 - Change screen to horizontal mode
-- Tap on the TTS/Org audio button to hear original audio
+- Tap on the TTS/Rec button to listen to original audio
 - Tap on the right toggle to view transcript
 - Tap on the subtitle button to turn on subtitles
 - Tapping on the language button will also be reflected in subtitles
 14. Return to home screen
 15. Again, tap upper left 'menu' button to open menu sidebar, then press '설정'
 16. Tap on 'Accessibility' and turn on the switch for '고대비'
-17. Re-enter player mode to see high-contrast has been toggled on for pdf as well.
+17. Re-enter player mode to see high-contrast has been toggled on for lecture slides as well.
 
 ## What Our Demo Demonstrates
 
