@@ -17,7 +17,6 @@ class FakeAppSettings implements AppSettings {
     this.accessibilityReduceMotion = false,
     this.accessibilityEmphasizeCaptions = true,
     this.ttsGender = '남성',
-    this.ttsSpeed = '보통',
     this.tagColorTheme = '파스텔',
     this.hasCompletedTutorial = true,
   });
@@ -39,9 +38,6 @@ class FakeAppSettings implements AppSettings {
 
   @override
   String ttsGender;
-
-  @override
-  String ttsSpeed;
 
   @override
   String tagColorTheme;
@@ -160,6 +156,12 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
   Future<void> updateSubjectTags(String id, List<String> tagIds) async {}
 
   @override
+  List<String> get subjectOrder => [];
+
+  @override
+  Future<void> updateSubjectOrder(List<String> newOrder) async {}
+
+  @override
   List<HiveTag> getTags() => [];
 
   @override
@@ -204,6 +206,12 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
 
   @override
   Future<void> deleteLecture(String lectureId) async {}
+
+  @override
+  Future<void> moveLectureToSubject(
+    String lectureId,
+    String newSubjectId,
+  ) async {}
 
   @override
   List<HiveLecture> searchLectures(String query) => [];

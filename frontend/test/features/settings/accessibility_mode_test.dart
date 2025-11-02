@@ -21,7 +21,6 @@ class FakeAppSettings implements AppSettings {
     this.accessibilityReduceMotion = false,
     this.accessibilityEmphasizeCaptions = false,
     this.ttsGender = '남성',
-    this.ttsSpeed = '보통',
     this.tagColorTheme = '파스텔',
     this.hasCompletedTutorial = true,
   });
@@ -43,9 +42,6 @@ class FakeAppSettings implements AppSettings {
 
   @override
   String ttsGender;
-
-  @override
-  String ttsSpeed;
 
   @override
   String tagColorTheme;

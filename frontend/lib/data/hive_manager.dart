@@ -93,6 +93,21 @@ class HiveManager extends ChangeNotifier {
       await _initializeWithDefaults();
     } else {
       _appData = _appBox.get('main');
+
+      // 미분류 과목이 없으면 추가 (기존 데이터에 대한 마이그레이션)
+      if (_appData != null &&
+          !_appData!.subjects.containsKey('uncategorized')) {
+        final uncategorizedSubject = HiveSubject(
+          id: 'uncategorized',
+          title: 'Uncategorized', // UI에서 다국어 처리됨
+          favorite: false,
+          tagIds: [],
+          lectureIds: [],
+          isUncategorized: true,
+        );
+        _appData!.subjects['uncategorized'] = uncategorizedSubject;
+        await _save();
+      }
     }
 
     _isInitialized = true;
@@ -104,6 +119,17 @@ class HiveManager extends ChangeNotifier {
     final subjects = await _loadDefaultSubjects();
     final tags = await _loadDefaultTags();
     final lectures = await _loadDemoLectures(subjects);
+
+    // 미분류 과목 자동 생성
+    final uncategorizedSubject = HiveSubject(
+      id: 'uncategorized',
+      title: 'Uncategorized', // UI에서 다국어 처리됨
+      favorite: false,
+      tagIds: [],
+      lectureIds: [],
+      isUncategorized: true,
+    );
+    subjects['uncategorized'] = uncategorizedSubject;
 
     _appData = AppData(
       settings: AppSettings(),
@@ -207,6 +233,7 @@ class HiveManager extends ChangeNotifier {
   Map<String, HiveTag> get tags => _appData?.tags ?? {};
   UiState get uiState => _appData?.uiState ?? UiState();
   Map<String, HiveLecture> get lectures => _appData?.lectures ?? {};
+  List<String> get subjectOrder => _appData?.subjectOrder ?? [];
 
   // ========== 설정 관련 ==========
 
@@ -237,12 +264,9 @@ class HiveManager extends ChangeNotifier {
     await _save();
   }
 
-  Future<void> updateTts({String? gender, String? speed}) async {
+  Future<void> updateTts({String? gender}) async {
     if (gender != null) {
       settings.ttsGender = gender;
-    }
-    if (speed != null) {
-      settings.ttsSpeed = speed;
     }
     await _save();
   }
@@ -258,9 +282,35 @@ class HiveManager extends ChangeNotifier {
     bool favoritesOnly = false,
     List<String> filterTagIds = const [],
   }) {
-    List<HiveSubject> list = subjects.values.toList()
-      ..sort((a, b) => a.title.compareTo(b.title));
+    List<HiveSubject> list;
 
+    // 미분류 과목과 일반 과목 분리
+    final normalSubjects = subjects.values.where((s) => !s.isUncategorized);
+    final uncategorizedSubjects = subjects.values.where(
+      (s) => s.isUncategorized,
+    );
+
+    // 저장된 순서가 있으면 그 순서를 사용, 없으면 알파벳 순
+    if (subjectOrder.isNotEmpty) {
+      // subjectOrder에 있는 일반 과목들을 순서대로 추가
+      list = subjectOrder
+          .map((id) => subjects[id])
+          .whereType<HiveSubject>()
+          .where((s) => !s.isUncategorized)
+          .toList();
+
+      // subjectOrder에 없는 일반 과목들을 알파벳 순으로 추가
+      final orderedIds = subjectOrder.toSet();
+      final remainingSubjects =
+          normalSubjects.where((s) => !orderedIds.contains(s.id)).toList()
+            ..sort((a, b) => a.title.compareTo(b.title));
+      list.addAll(remainingSubjects);
+    } else {
+      list = normalSubjects.toList()
+        ..sort((a, b) => a.title.compareTo(b.title));
+    }
+
+    // 일반 과목에만 필터 적용
     if (favoritesOnly) {
       list = list.where((s) => s.favorite).toList();
     }
@@ -270,6 +320,9 @@ class HiveManager extends ChangeNotifier {
           .where((s) => filterTagIds.every((tagId) => s.tagIds.contains(tagId)))
           .toList();
     }
+
+    // 미분류 과목을 항상 마지막에 추가 (필터링 영향 받지 않음)
+    list.addAll(uncategorizedSubjects);
 
     return list;
   }
@@ -312,11 +365,18 @@ class HiveManager extends ChangeNotifier {
       tagIds: tagIds,
       lectureIds: [],
     );
+
+    // 새 과목을 순서 목록의 맨 앞에 추가
+    if (!subjectOrder.contains(newId)) {
+      subjectOrder.insert(0, newId);
+    }
+
     await _save();
   }
 
   Future<void> deleteSubject(String id) async {
     subjects.remove(id);
+    subjectOrder.remove(id); // 순서 목록에서도 제거
     await _save();
   }
 
@@ -331,6 +391,13 @@ class HiveManager extends ChangeNotifier {
 
   Future<void> updateSubjectTags(String id, List<String> tagIds) async {
     await updateSubject(id, tagIds: tagIds);
+  }
+
+  /// 과목 순서 업데이트
+  Future<void> updateSubjectOrder(List<String> newOrder) async {
+    _appData?.subjectOrder.clear();
+    _appData?.subjectOrder.addAll(newOrder);
+    await _save();
   }
 
   // ========== 태그 관련 ==========
@@ -463,6 +530,50 @@ class HiveManager extends ChangeNotifier {
       );
       await _save();
     }
+  }
+
+  /// 강의를 다른 과목으로 이동
+  Future<void> moveLectureToSubject(
+    String lectureId,
+    String newSubjectId,
+  ) async {
+    final lecture = lectures[lectureId];
+    if (lecture == null) {
+      return;
+    }
+
+    final oldSubjectId = lecture.subjectId;
+
+    // 같은 과목이면 아무 것도 하지 않음
+    if (oldSubjectId == newSubjectId) {
+      return;
+    }
+
+    // 이전 과목에서 강의 제거
+    final oldSubject = subjects[oldSubjectId];
+    if (oldSubject != null) {
+      final updatedOldIds = oldSubject.lectureIds
+          .where((id) => id != lectureId)
+          .toList();
+      subjects[oldSubjectId] = oldSubject.copyWith(lectureIds: updatedOldIds);
+    }
+
+    // 새 과목에 강의 추가
+    final newSubject = subjects[newSubjectId];
+    if (newSubject != null) {
+      if (!newSubject.lectureIds.contains(lectureId)) {
+        final updatedNewIds = [...newSubject.lectureIds, lectureId];
+        subjects[newSubjectId] = newSubject.copyWith(lectureIds: updatedNewIds);
+      }
+    }
+
+    // 강의의 subjectId 업데이트
+    lectures[lectureId] = lecture.copyWith(
+      subjectId: newSubjectId,
+      updatedAt: DateTime.now(),
+    );
+
+    await _save();
   }
 
   /// 강의 삭제

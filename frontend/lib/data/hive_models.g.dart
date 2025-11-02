@@ -22,13 +22,14 @@ class AppDataAdapter extends TypeAdapter<AppData> {
       tags: (fields[2] as Map?)?.cast<String, HiveTag>(),
       lectures: (fields[4] as Map?)?.cast<String, HiveLecture>(),
       uiState: fields[3] as UiState?,
+      subjectOrder: (fields[5] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, AppData obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.settings)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class AppDataAdapter extends TypeAdapter<AppData> {
       ..writeByte(3)
       ..write(obj.uiState)
       ..writeByte(4)
-      ..write(obj.lectures);
+      ..write(obj.lectures)
+      ..writeByte(5)
+      ..write(obj.subjectOrder);
   }
 
   @override
@@ -69,16 +72,15 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       accessibilityReduceMotion: fields[3] as bool,
       accessibilityEmphasizeCaptions: fields[4] as bool,
       ttsGender: fields[5] as String,
-      ttsSpeed: fields[6] as String,
-      tagColorTheme: fields[7] as String,
-      hasCompletedTutorial: fields[8] as bool,
+      tagColorTheme: fields[6] as String,
+      hasCompletedTutorial: fields[7] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.theme)
       ..writeByte(1)
@@ -92,10 +94,8 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(5)
       ..write(obj.ttsGender)
       ..writeByte(6)
-      ..write(obj.ttsSpeed)
-      ..writeByte(7)
       ..write(obj.tagColorTheme)
-      ..writeByte(8)
+      ..writeByte(7)
       ..write(obj.hasCompletedTutorial);
   }
 
@@ -163,13 +163,14 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       favorite: fields[2] as bool,
       tagIds: (fields[3] as List?)?.cast<String>(),
       lectureIds: (fields[4] as List?)?.cast<String>(),
+      isUncategorized: fields[5] as bool? ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveSubject obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -179,7 +180,9 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       ..writeByte(3)
       ..write(obj.tagIds)
       ..writeByte(4)
-      ..write(obj.lectureIds);
+      ..write(obj.lectureIds)
+      ..writeByte(5)
+      ..write(obj.isUncategorized);
   }
 
   @override
