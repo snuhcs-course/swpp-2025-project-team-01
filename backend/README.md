@@ -486,6 +486,12 @@ void main() async {
 - **Background Processing**: Jobs run in background tasks
 - **Progress Streaming**: Real-time updates via SSE
 
+### Performance Optimizations
+
+- **Image Batching**: Slide images are processed in batches (default: 4 images per batch) for faster embedding computation. Can be disabled if shared memory issues occur.
+- **FP8 Quantization**: Translation model uses FP8 quantization (`tencent/Hunyuan-MT-7B-fp8`) for reduced memory footprint while maintaining translation quality.
+- **Segment-based Processing**: ASR outputs are used directly as segments for slide matching, eliminating the need for separate sentence splitting.
+
 ### File Cleanup
 
 Automatic file management:
