@@ -151,6 +151,8 @@ void main() {
           'sentence_id': 1,
           'text': 'Hello world',
           'slide_number': 2,
+          'original_start_time': 10500,
+          'original_end_time': 15300,
           'start_time': 10500,
           'end_time': 15300,
           'duration': 4800,
@@ -161,6 +163,8 @@ void main() {
         expect(sentence.sentenceId, equals(1));
         expect(sentence.text, equals('Hello world'));
         expect(sentence.slideNumber, equals(2));
+        expect(sentence.originalStartTime, equals(10500));
+        expect(sentence.originalEndTime, equals(15300));
         expect(sentence.startTime, equals(10500));
         expect(sentence.endTime, equals(15300));
         expect(sentence.duration, equals(4800));
@@ -171,6 +175,8 @@ void main() {
           'sentence_id': 3,
           'text': '',
           'slide_number': 0,
+          'original_start_time': 0,
+          'original_end_time': 0,
           'start_time': 0,
           'end_time': 0,
           'duration': 0,
@@ -186,6 +192,8 @@ void main() {
         final json = {
           'sentence_id': -1,
           'text': 'Negative test',
+          'original_start_time': -1,
+          'original_end_time': -1,
           'slide_number': -1,
           'start_time': -1,
           'end_time': -5,
@@ -269,6 +277,8 @@ void main() {
               'sentence_id': 1,
               'text': 'First sentence',
               'slide_number': 1,
+              'original_start_time': 0,
+              'original_end_time': 0,
               'start_time': 0,
               'end_time': 5000,
               'duration': 5000,
@@ -277,6 +287,8 @@ void main() {
               'sentence_id': 2,
               'text': 'Second sentence',
               'slide_number': 1,
+              'original_start_time': 0,
+              'original_end_time': 0,
               'start_time': 5000,
               'end_time': 10000,
               'duration': 5000,
@@ -327,6 +339,8 @@ void main() {
               'sentence_id': 1,
               'text': 'Only one',
               'slide_number': 1,
+              'original_start_time': 0,
+              'original_end_time': 0,
               'start_time': 0,
               'end_time': 3500,
               'duration': 3500,
@@ -347,6 +361,8 @@ void main() {
             'sentence_id': i,
             'text': 'Sentence $i',
             'slide_number': i ~/ 10,
+            'original_start_time': i * 1000,
+            'original_end_time': (i + 1) * 1000,
             'start_time': i * 1000,
             'end_time': (i + 1) * 1000,
             'duration': 1000,
@@ -472,6 +488,8 @@ void main() {
             'sentence_id': 0,
             'text': 'Welcome to this lecture.',
             'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 2500,
             'start_time': 0,
             'end_time': 2500,
             'duration': 2500,
@@ -480,6 +498,8 @@ void main() {
             'sentence_id': 1,
             'text': 'Today we will discuss AI.',
             'slide_number': 1,
+            'original_start_time': 2500,
+            'original_end_time': 5300,
             'start_time': 2500,
             'end_time': 5300,
             'duration': 2800,
@@ -488,6 +508,8 @@ void main() {
             'sentence_id': 2,
             'text': 'Let us begin with the basics.',
             'slide_number': 2,
+            'original_start_time': 5300,
+            'original_end_time': 8100,
             'start_time': 5300,
             'end_time': 8100,
             'duration': 2800,
@@ -503,6 +525,8 @@ void main() {
       expect(data.timestamps.length, equals(3));
       expect(data.timestamps[0].slideNumber, equals(1));
       expect(data.timestamps[2].slideNumber, equals(2));
+      expect(data.timestamps[1].originalStartTime, equals(2500));
+      expect(data.timestamps[2].originalEndTime, equals(8100));
       expect(data.timestamps[1].startTime, equals(2500));
       expect(data.timestamps[2].endTime, equals(8100));
     });
@@ -522,6 +546,8 @@ void main() {
             'sentence_id': 0,
             'text': 'First',
             'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 2500,
             'start_time': 0,
             'end_time': 5000,
             'duration': 5000,
@@ -530,6 +556,8 @@ void main() {
             'sentence_id': 1,
             'text': 'Second',
             'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 2500,
             'start_time': 5000,
             'end_time': 10000,
             'duration': 5000,

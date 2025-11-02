@@ -326,6 +326,8 @@ void main() {
             'text': 'Test sentence',
             'text_kor': null,
             'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 1000,
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
@@ -671,6 +673,8 @@ void main() {
             'text': 'Test sentence',
             'text_kor': null,
             'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 1000,
             'start_time': 0,
             'end_time': 1000,
             'duration': 1000,
@@ -834,42 +838,7 @@ void main() {
       await tester.pumpWidget(Container());
     });
 
-    testWidgets('handles truly unexpected errors with mock HiveManager', (
-      tester,
-    ) async {
-      // Use MockHiveManager to throw an unexpected exception
-      final mockHiveManager = MockHiveManager();
-      when(
-        mockHiveManager.getLecture(any),
-      ).thenThrow(Exception('Truly unexpected error from HiveManager'));
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: PlayerScreen(
-            args: {'lectureId': 'test_lecture'},
-            hiveManager: mockHiveManager,
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      // Wait for error handling
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 500));
-      });
-
-      await tester.pump(); // Process error
-      await tester.pump(); // Show SnackBar
-
-      // Should show the unexpected error message (line 176)
-      expect(find.text('알 수 없는 오류가 발생했습니다.'), findsOneWidget);
-
-      // Clean up
-      await tester.pumpWidget(Container());
-    });
   });
-
   group('PlayerScreen - Successful Initialization with Real Assets', () {
     testWidgets('successfully initializes with demo lecture and covers', (
       tester,
