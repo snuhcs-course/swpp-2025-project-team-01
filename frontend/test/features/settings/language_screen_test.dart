@@ -208,6 +208,12 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
   Future<void> deleteLecture(String lectureId) async {}
 
   @override
+  Future<void> moveLectureToSubject(
+    String lectureId,
+    String newSubjectId,
+  ) async {}
+
+  @override
   List<HiveLecture> searchLectures(String query) => [];
 
   @override
