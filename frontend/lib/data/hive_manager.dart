@@ -532,6 +532,50 @@ class HiveManager extends ChangeNotifier {
     }
   }
 
+  /// 강의를 다른 과목으로 이동
+  Future<void> moveLectureToSubject(
+    String lectureId,
+    String newSubjectId,
+  ) async {
+    final lecture = lectures[lectureId];
+    if (lecture == null) {
+      return;
+    }
+
+    final oldSubjectId = lecture.subjectId;
+
+    // 같은 과목이면 아무 것도 하지 않음
+    if (oldSubjectId == newSubjectId) {
+      return;
+    }
+
+    // 이전 과목에서 강의 제거
+    final oldSubject = subjects[oldSubjectId];
+    if (oldSubject != null) {
+      final updatedOldIds = oldSubject.lectureIds
+          .where((id) => id != lectureId)
+          .toList();
+      subjects[oldSubjectId] = oldSubject.copyWith(lectureIds: updatedOldIds);
+    }
+
+    // 새 과목에 강의 추가
+    final newSubject = subjects[newSubjectId];
+    if (newSubject != null) {
+      if (!newSubject.lectureIds.contains(lectureId)) {
+        final updatedNewIds = [...newSubject.lectureIds, lectureId];
+        subjects[newSubjectId] = newSubject.copyWith(lectureIds: updatedNewIds);
+      }
+    }
+
+    // 강의의 subjectId 업데이트
+    lectures[lectureId] = lecture.copyWith(
+      subjectId: newSubjectId,
+      updatedAt: DateTime.now(),
+    );
+
+    await _save();
+  }
+
   /// 강의 삭제
   Future<void> deleteLecture(String lectureId) async {
     // 모든 과목에서 제거

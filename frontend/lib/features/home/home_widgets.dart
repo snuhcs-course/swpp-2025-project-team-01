@@ -613,12 +613,14 @@ class _LectureDetailDialog extends StatefulWidget {
 class _LectureDetailDialogState extends State<_LectureDetailDialog> {
   late TextEditingController _weekController;
   late TextEditingController _titleController;
+  late String _selectedSubjectId;
 
   @override
   void initState() {
     super.initState();
     _weekController = TextEditingController(text: widget.lecture.weekLabel);
     _titleController = TextEditingController(text: widget.lecture.title);
+    _selectedSubjectId = widget.lecture.subjectId;
   }
 
   @override
@@ -628,15 +630,24 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     super.dispose();
   }
 
-  String _formatDuration(int seconds) {
-    final int minutes = seconds ~/ 60;
-    final int secs = seconds % 60;
+  String _formatDuration(int milliseconds) {
+    final int totalSeconds = milliseconds ~/ 1000;
+    final int minutes = totalSeconds ~/ 60;
+    final int secs = totalSeconds % 60;
     return '$minutes:${secs.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final manager = HiveManager.instance;
+
+    // 모든 과목 가져오기 (미분류 포함)
+    final allSubjects = manager
+        .getSubjects()
+        .map((hs) => hs.toSubject())
+        .toList();
+
     return AlertDialog(
       titlePadding: EdgeInsets.zero,
       title: Container(
@@ -649,13 +660,24 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
             topRight: Radius.circular(28),
           ),
         ),
-        child: Text(
-          l10n.lectureDetails,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.lectureDetails,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
         ),
       ),
       content: SingleChildScrollView(
@@ -678,30 +700,81 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                 border: const OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  l10n.lectureLength,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(height: 16),
+            // 과목 선택 드롭다운
+            DropdownButtonFormField<String>(
+              initialValue: _selectedSubjectId,
+              decoration: InputDecoration(
+                labelText: l10n.isKorean ? '과목' : 'Subject',
+                border: const OutlineInputBorder(),
+              ),
+              items: allSubjects.map((subject) {
+                return DropdownMenuItem<String>(
+                  value: subject.id,
+                  child: Text(
+                    subject.isUncategorized
+                        ? l10n.uncategorized
+                        : subject.title,
                   ),
-                ),
-                Text(
-                  _formatDuration(widget.lecture.duration),
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedSubjectId = newValue;
+                  });
+                }
+              },
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
+            const SizedBox(height: 20),
+            // 강의 시간 정보
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.lectureLength,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    _formatDuration(widget.lecture.duration),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      actions: [
+        // 하단 버튼: 삭제 / 완료
+        Row(
+          children: [
+            // 삭제 버튼 (왼쪽)
+            Expanded(
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () async {
                   final bool? confirm = await showDialog<bool>(
@@ -730,42 +803,51 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                   );
 
                   if (confirm == true && context.mounted) {
-                    await HiveManager.instance.deleteLecture(widget.lecture.id);
+                    await manager.deleteLecture(widget.lecture.id);
                     if (context.mounted) {
                       Navigator.pop(context, true);
                     }
                   }
                 },
-                icon: const Icon(Icons.delete),
-                label: Text(l10n.deleteLecture),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                label: Text(l10n.isKorean ? '삭제' : 'Delete'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 완료 버튼 (오른쪽)
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () async {
+                  final weekText = _weekController.text.trim();
+                  final titleText = _titleController.text.trim();
+
+                  if (weekText.isNotEmpty && titleText.isNotEmpty) {
+                    await manager.updateLectureMetadata(
+                      widget.lecture.id,
+                      weekLabel: weekText,
+                      title: titleText,
+                    );
+                  }
+
+                  // 과목이 변경되었으면 이동
+                  if (_selectedSubjectId != widget.lecture.subjectId) {
+                    await manager.moveLectureToSubject(
+                      widget.lecture.id,
+                      _selectedSubjectId,
+                    );
+                  }
+
+                  if (context.mounted) {
+                    Navigator.pop(context, true);
+                  }
+                },
+                child: Text(l10n.complete),
               ),
             ),
           ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: () async {
-            final weekText = _weekController.text.trim();
-            final titleText = _titleController.text.trim();
-
-            if (weekText.isNotEmpty && titleText.isNotEmpty) {
-              await HiveManager.instance.updateLectureMetadata(
-                widget.lecture.id,
-                weekLabel: weekText,
-                title: titleText,
-              );
-            }
-
-            if (context.mounted) {
-              Navigator.pop(context, true); // true를 반환하여 새로고침 필요함을 알림
-            }
-          },
-          child: Text(l10n.complete),
         ),
       ],
     );
