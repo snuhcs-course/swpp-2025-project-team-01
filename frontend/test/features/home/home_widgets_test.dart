@@ -58,9 +58,9 @@ void main() {
     ),
   ];
 
-  const tags = [
-    Tag(id: 'math', name: 'math', color: 0xFFE0F7FA),
-    Tag(id: 'logic', name: 'logic', color: 0xFFFFF9C4),
+  final tags = [
+    HiveTag(id: 'math', name: 'math', color: 0xFFE0F7FA),
+    HiveTag(id: 'logic', name: 'logic', color: 0xFFFFF9C4),
   ];
 
   ThemeData buildTheme() => ThemeData.from(colorScheme: lightScheme).copyWith(
@@ -241,9 +241,9 @@ void main() {
       WidgetTester tester,
     ) async {
       final mockToggle = MockTagToggle();
-      const tags = [
-        Tag(id: 'math', name: 'math', color: 0xFFE0F7FA),
-        Tag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
+      final tags = [
+        HiveTag(id: 'math', name: 'math', color: 0xFFE0F7FA),
+        HiveTag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
       ];
 
       await tester.pumpWidget(
@@ -263,10 +263,10 @@ void main() {
     });
 
     testWidgets('displays all tags with # prefix', (WidgetTester tester) async {
-      const tags = [
-        Tag(id: 'math', name: 'math', color: 0xFFE0F7FA),
-        Tag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
-        Tag(id: 'physics', name: 'physics', color: 0xFFFFCDD2),
+      final tags = [
+        HiveTag(id: 'math', name: 'math', color: 0xFFE0F7FA),
+        HiveTag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
+        HiveTag(id: 'physics', name: 'physics', color: 0xFFFFCDD2),
       ];
 
       await tester.pumpWidget(
@@ -281,9 +281,9 @@ void main() {
     });
 
     testWidgets('shows selected state correctly', (WidgetTester tester) async {
-      const tags = [
-        Tag(id: 'math', name: 'math', color: 0xFFE0F7FA),
-        Tag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
+      final tags = [
+        HiveTag(id: 'math', name: 'math', color: 0xFFE0F7FA),
+        HiveTag(id: 'cs', name: 'cs', color: 0xFFFFF9C4),
       ];
 
       await tester.pumpWidget(
