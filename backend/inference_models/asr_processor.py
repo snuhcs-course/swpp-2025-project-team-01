@@ -74,7 +74,7 @@ class ASRProcessor:
         input_file: str,
         chunk_seconds: int = 300,
         batch_size: int = 3,
-        temp_dir: str = "temp_chunks",
+        temp_dir: str | None = None,
         progress_callback: Callable[[float, str], None] | None = None
     ) -> tuple[str, list[dict[str, Any]]] | None:
         """
@@ -84,7 +84,7 @@ class ASRProcessor:
             input_file: Input audio file path
             chunk_seconds: Chunk duration in seconds
             batch_size: Batch size for processing
-            temp_dir: Temporary directory for chunks
+            temp_dir: Temporary directory for chunks (auto-generated if None)
             progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
@@ -111,8 +111,14 @@ class ASRProcessor:
             print("File is short enough, no splitting needed")
             return None
 
+        # Create unique temp directory if not specified
+        if temp_dir is None:
+            import uuid
+            temp_dir = f"temp_chunks_{uuid.uuid4().hex[:8]}"
+
         # Create temp directory
         os.makedirs(temp_dir, exist_ok = True)
+        print(f"Using temporary directory: {temp_dir}")
 
         # Split audio
         chunk_samples = chunk_seconds * sr
@@ -204,7 +210,22 @@ class ASRProcessor:
             print(f"Batch processing error: {e}")
             print(f"Error type: {type(e).__name__}")
 
-            # Clean up on error
+            # Clean up temp files on error
+            print("\nCleaning up temporary files after error...")
+            for chunk_file in chunk_files:
+                try:
+                    if os.path.exists(chunk_file):
+                        os.remove(chunk_file)
+                except:
+                    pass
+
+            try:
+                if os.path.exists(temp_dir):
+                    os.rmdir(temp_dir)
+            except:
+                pass
+
+            # Clean up GPU memory on error
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 torch.cuda.synchronize()
@@ -217,14 +238,17 @@ class ASRProcessor:
         print("\nCleaning up temporary files...")
         for chunk_file in chunk_files:
             try:
-                os.remove(chunk_file)
-            except:
-                pass
+                if os.path.exists(chunk_file):
+                    os.remove(chunk_file)
+            except Exception as e:
+                print(f"Warning: Failed to delete {chunk_file}: {e}")
 
         try:
-            os.rmdir(temp_dir)
-        except:
-            pass
+            if os.path.exists(temp_dir):
+                os.rmdir(temp_dir)
+                print(f"Removed temporary directory: {temp_dir}")
+        except Exception as e:
+            print(f"Warning: Failed to delete temp directory {temp_dir}: {e}")
 
         # Merge results
         full_transcript = ' '.join(filter(None, transcripts))
@@ -252,6 +276,8 @@ class ASRProcessor:
         Returns:
             Dictionary with transcript, word_timestamps, and metadata
         """
+        # No lock during inference - each pipeline has its own model instance
+        # Only model loading is protected by _asr_init_lock
         if self.model is None:
             self.load_model()
 
