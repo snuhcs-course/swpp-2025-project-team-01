@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
 
@@ -345,7 +346,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       builder: (context) => _SubjectEditDialog(
         subject: subject,
         initialTagIds: _workingTagIds[subject.id] ?? [],
-        allTags: hive.getTags().map((t) => t.toTag()).toList(),
+        allTags: hive.getTags(),
       ),
     );
 
@@ -493,7 +494,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => _CreateSubjectDialog(
-        allTags: hive.getTags().map((t) => t.toTag()).toList(),
+        allTags: hive.getTags(),
       ),
     );
 
@@ -529,7 +530,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 class _CreateSubjectDialog extends StatefulWidget {
   const _CreateSubjectDialog({required this.allTags});
 
-  final List<Tag> allTags;
+  final List<HiveTag> allTags;
 
   @override
   State<_CreateSubjectDialog> createState() => _CreateSubjectDialogState();
@@ -639,7 +640,7 @@ class _SubjectEditDialog extends StatefulWidget {
 
   final Subject subject;
   final List<String> initialTagIds;
-  final List<Tag> allTags;
+  final List<HiveTag> allTags;
 
   @override
   State<_SubjectEditDialog> createState() => _SubjectEditDialogState();

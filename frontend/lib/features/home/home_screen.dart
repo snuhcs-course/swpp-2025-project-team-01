@@ -79,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final tags = _manager.getTags().map((ht) => ht.toTag()).toList();
+    final tags = _manager.getTags();
     final subjects = _manager
         .getSubjects(
           favoritesOnly: favoritesOnly,
@@ -190,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
               itemCount: subjects.length,
               itemBuilder: (context, i) {
                 final Subject s = subjects[i];
-                final List<Tag> subjectTags = s.tagIds
+                final List<HiveTag> subjectTags = s.tagIds
                     .map((tid) {
                       try {
                         return tags.firstWhere((t) => t.id == tid);
@@ -198,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         return null;
                       }
                     })
-                    .whereType<Tag>()
+                    .whereType<HiveTag>()
                     .toList();
                 // 태그 정렬: 숫자 > 한글 > 영어
                 subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));

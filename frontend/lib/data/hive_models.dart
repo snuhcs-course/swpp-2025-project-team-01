@@ -182,11 +182,6 @@ class HiveTag {
       color: color ?? this.color,
     );
   }
-
-  /// Convert to models.dart Tag
-  Tag toTag() {
-    return Tag(id: id, name: name, color: color);
-  }
 }
 
 /// 강의 모델 (백엔드에서 생성된 완성품)

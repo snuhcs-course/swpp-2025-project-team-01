@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
 
@@ -34,7 +35,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   late final HiveManager _manager;
 
   // 태그 목록 (작업 중인 데이터)
-  late List<Tag> _tags;
+  late List<HiveTag> _tags;
 
   // 선택된 태그 인덱스
   int _selected = 0;
@@ -62,8 +63,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   ///
   /// 저장소에서 태그 목록과 테마를 불러오고 색상을 할당합니다.
   void _loadData() {
-    // HiveTag → Tag 변환
-    _tags = _manager.getTags().map((ht) => ht.toTag()).toList();
+    _tags = _manager.getTags();
     _currentTheme = _manager.settings.tagColorTheme;
     _assignColors();
 
@@ -94,7 +94,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 예: 15개 색상 테마에서 16번째 태그는 첫 번째 색상을 받습니다.
   void _assignColors() {
     final theme = getTagColorTheme(_currentTheme);
-    final newTags = <Tag>[];
+    final newTags = <HiveTag>[];
 
     for (int i = 0; i < _tags.length; i++) {
       final colorIndex = i % theme.colors.length;
@@ -105,7 +105,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
         newTags.add(_tags[i]);
       } else {
         newTags.add(
-          Tag(id: _tags[i].id, name: _tags[i].name, color: expectedColor),
+          HiveTag(id: _tags[i].id, name: _tags[i].name, color: expectedColor),
         );
       }
     }
@@ -126,9 +126,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 뒤로가기 시 변경사항 저장
   Future<bool> _onWillPop() async {
     await _manager.updateTagColorTheme(_currentTheme);
-    // Tag → HiveTag 변환
-    final hiveTags = _tags.map((t) => t.toHiveTag()).toList();
-    await _manager.saveTags(hiveTags);
+    await _manager.saveTags(_tags);
     return true;
   }
 
@@ -361,7 +359,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     setState(() {
       _tags.add(
-        Tag(
+        HiveTag(
           id: 'new_${DateTime.now().millisecondsSinceEpoch}',
           name: newName,
           color: theme.colors[colorIndex],
@@ -398,7 +396,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     // 태그 이름 업데이트
     setState(() {
-      _tags[_selected] = Tag(
+      _tags[_selected] = HiveTag(
         id: _tags[_selected].id,
         name: newName,
         color: _tags[_selected].color,

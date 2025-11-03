@@ -187,7 +187,7 @@ class TagChips extends StatelessWidget {
     required this.onToggle,
   });
 
-  final List<Tag> tags;
+  final List<HiveTag> tags;
   final Set<String> selected;
   final ValueChanged<String> onToggle;
 
@@ -197,7 +197,7 @@ class TagChips extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: List.generate(tags.length, (i) {
-        final Tag t = tags[i];
+        final HiveTag t = tags[i];
         final bool isSel = selected.contains(t.id);
         return SelectableTagPill(
           tag: t,
@@ -222,7 +222,7 @@ class SubjectPanel extends StatefulWidget {
   });
 
   final Subject subject;
-  final List<Tag> tags;
+  final List<HiveTag> tags;
   final List<HiveLecture> lectures;
   final VoidCallback onToggleFavorite;
   final ValueChanged<HiveLecture> onOpenLecture;

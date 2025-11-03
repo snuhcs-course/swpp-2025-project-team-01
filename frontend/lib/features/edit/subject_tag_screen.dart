@@ -9,7 +9,7 @@ class SubjectTagScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final manager = HiveManager.instance;
     final subjects = manager.getSubjects().map((hs) => hs.toSubject()).toList();
-    final tags = manager.getTags().map((ht) => ht.toTag()).toList();
+    final tags = manager.getTags();
 
     return Scaffold(
       appBar: AppBar(title: const Text('과목/태그 관리')),
