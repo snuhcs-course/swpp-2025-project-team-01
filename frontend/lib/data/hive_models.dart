@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:hive/hive.dart';
-import 'package:re_view/data/models.dart';
 
 part 'hive_models.g.dart'; // 코드 생성 파일
 
@@ -209,10 +208,10 @@ class HiveLecture {
   String? slidePath; // 파일 경로 (PDF)
 
   @HiveField(6)
-  String? originalAudioPath; // 원본 오디오 파일 경로
+  String originalAudioPath; // 원본 오디오 파일 경로
 
   @HiveField(7)
-  String? ttsAudioPath; // TTS 오디오 파일 경로
+  String ttsAudioPath; // TTS 오디오 파일 경로
 
   @HiveField(8)
   String? thumbnailUrl; // 썸네일 이미지 URL
@@ -225,19 +224,6 @@ class HiveLecture {
 
   @HiveField(11)
   DateTime? updatedAt;
-
-  /// models.dart Lecture로 변환 (UI 레이어용)
-  Lecture toLecture() {
-    return Lecture(
-      id: id,
-      subjectId: subjectId,
-      weekLabel: weekLabel,
-      title: title,
-      duration: duration,
-      slidesPath: slidePath, // URL을 path로 사용
-      thumbs: thumbnailUrl != null ? [thumbnailUrl!] : [],
-    );
-  }
 
   HiveLecture copyWith({
     String? id,
@@ -284,8 +270,8 @@ class HiveLecture {
         title: meta['title'] as String? ?? 'Untitled',
         duration: meta['duration'] as int? ?? 0,
         slidePath: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
-        originalAudioPath: null,
-        ttsAudioPath: null, // 데모는 로컬 파일 사용
+        originalAudioPath: 'assets/lectures/$lectureId/${lectureId}_audio.m4a',
+        ttsAudioPath: 'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
         createdAt: DateTime.now(),

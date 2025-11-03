@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
@@ -228,18 +227,19 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     // 강의 리스트를 한 번만 가져와서 Map으로 변환
     final allLectures = hive
         .getLecturesBySubject(subject.id)
-        .map((l) => l.toLecture())
         .toList();
     final lectureMap = {for (var lec in allLectures) lec.id: lec};
 
     // Map에서 O(1)로 조회
     final lectures = lectureIds.map((id) {
       return lectureMap[id] ??
-          Lecture(
+          HiveLecture(
             id: id,
             subjectId: subject.id,
             weekLabel: 'Week ?',
             title: 'Untitled',
+            originalAudioPath: 'assets/lectures/${subject.id}/${subject.id}_audio.m4a',
+            ttsAudioPath: 'assets/lectures/${subject.id}/${subject.id}_audio.opus', // 데모는 로컬 파일 사용
             duration: 0,
           );
     }).toList();
@@ -791,7 +791,7 @@ class _SubjectEditPanel extends StatefulWidget {
   final HiveSubject subject;
   final String? displayTitle;
   final bool isInitiallyExpanded;
-  final List<Lecture> lectures;
+  final List<HiveLecture> lectures;
   final void Function(int oldIndex, int newIndex) onReorder;
   final VoidCallback onLongPress;
   final ValueChanged<bool> onExpansionChanged;
