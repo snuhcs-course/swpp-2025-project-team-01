@@ -642,9 +642,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     final manager = HiveManager.instance;
 
     // 모든 과목 가져오기 (미분류 포함)
-    final allSubjects = manager
-        .getSubjects()
-        .toList();
+    final allSubjects = manager.getSubjects().toList();
 
     return AlertDialog(
       titlePadding: EdgeInsets.zero,

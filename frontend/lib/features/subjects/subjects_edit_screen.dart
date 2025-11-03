@@ -116,9 +116,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   @override
   Widget build(BuildContext context) {
     // 삭제되지 않은 과목 목록을 _workingSubjectOrder 순서대로 정렬
-    final subjectMap = {
-      for (var s in hive.getSubjects()) s.id: s,
-    };
+    final subjectMap = {for (var s in hive.getSubjects()) s.id: s};
 
     final subjects = _workingSubjectOrder
         .where(
@@ -225,9 +223,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     final isExpanded = hive.getSubjectExpandedState(subject.id);
 
     // 강의 리스트를 한 번만 가져와서 Map으로 변환
-    final allLectures = hive
-        .getLecturesBySubject(subject.id)
-        .toList();
+    final allLectures = hive.getLecturesBySubject(subject.id).toList();
     final lectureMap = {for (var lec in allLectures) lec.id: lec};
 
     // Map에서 O(1)로 조회
@@ -238,8 +234,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
             subjectId: subject.id,
             weekLabel: 'Week ?',
             title: 'Untitled',
-            originalAudioPath: 'assets/lectures/${subject.id}/${subject.id}_audio.m4a',
-            ttsAudioPath: 'assets/lectures/${subject.id}/${subject.id}_audio.opus', // 데모는 로컬 파일 사용
+            originalAudioPath:
+                'assets/lectures/${subject.id}/${subject.id}_audio.m4a',
+            ttsAudioPath:
+                'assets/lectures/${subject.id}/${subject.id}_audio.opus', // 데모는 로컬 파일 사용
             duration: 0,
           );
     }).toList();
@@ -493,9 +491,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   Future<void> _showCreateSubjectDialog(BuildContext context) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _CreateSubjectDialog(
-        allTags: hive.getTags(),
-      ),
+      builder: (context) => _CreateSubjectDialog(allTags: hive.getTags()),
     );
 
     if (!mounted || result == null || result['action'] != 'create') {

@@ -52,8 +52,8 @@ void main() {
       weekLabel: 'Week 2',
       title: 'Advanced Topics',
       duration: 4200000, // 1시간 10분 (밀리초)
-        originalAudioPath: 'originalAudio.m4a',
-        ttsAudioPath: 'ttsAudio.opus',
+      originalAudioPath: 'originalAudio.m4a',
+      ttsAudioPath: 'ttsAudio.opus',
     ),
   ];
 

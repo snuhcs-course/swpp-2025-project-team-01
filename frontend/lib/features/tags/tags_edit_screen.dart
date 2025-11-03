@@ -424,9 +424,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     // 삭제하려는 태그를 사용 중인 과목 확인
     final tagToDelete = _tags[_selected];
-    final subjects = _manager
-        .getSubjects()
-        .toList();
+    final subjects = _manager.getSubjects().toList();
     final usingSubjects = subjects
         .where((s) => s.tagIds.contains(tagToDelete.id))
         .toList();

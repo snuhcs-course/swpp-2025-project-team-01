@@ -271,7 +271,8 @@ class HiveLecture {
         duration: meta['duration'] as int? ?? 0,
         slidePath: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
         originalAudioPath: 'assets/lectures/$lectureId/${lectureId}_audio.m4a',
-        ttsAudioPath: 'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
+        ttsAudioPath:
+            'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
         createdAt: DateTime.now(),
