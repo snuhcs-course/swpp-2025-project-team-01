@@ -163,7 +163,7 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       favorite: fields[2] as bool,
       tagIds: (fields[3] as List?)?.cast<String>(),
       lectureIds: (fields[4] as List?)?.cast<String>(),
-      isUncategorized: fields[5] as bool? ?? false,
+      isUncategorized: fields[5] as bool,
     );
   }
 
@@ -253,8 +253,8 @@ class HiveLectureAdapter extends TypeAdapter<HiveLecture> {
       title: fields[3] as String,
       duration: fields[4] as int,
       slidePath: fields[5] as String?,
-      originalAudioPath: fields[6] as String?,
-      ttsAudioPath: fields[7] as String?,
+      originalAudioPath: fields[6] as String,
+      ttsAudioPath: fields[7] as String,
       thumbnailUrl: fields[8] as String?,
       jsonPath: fields[9] as String?,
       createdAt: fields[10] as DateTime?,
