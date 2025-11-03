@@ -129,8 +129,8 @@ void main() {
       weekLabel: weekLabel,
       title: title,
       duration: duration,
-      originalAudioPath: null,
-      ttsAudioPath: null,
+      originalAudioPath: 'originalAudio.m4a',
+      ttsAudioPath: 'ttsAudio.opus',
     );
   }
 

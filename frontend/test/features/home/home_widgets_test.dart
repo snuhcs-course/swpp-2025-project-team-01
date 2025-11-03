@@ -7,7 +7,6 @@ import 'package:mockito/mockito.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
-import 'package:re_view/data/models.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 
 class MockVoidCallback extends Mock {
@@ -29,7 +28,7 @@ void main() {
   late Box<AppData> testBox;
   late Directory testDirectory;
 
-  const subject = Subject(
+  final subject = HiveSubject(
     id: 'subject-1',
     title: 'Algebra',
     favorite: false,
@@ -44,8 +43,8 @@ void main() {
       weekLabel: 'Week 1',
       title: 'Introduction',
       duration: 3600000, // 1시간 (밀리초)
-      originalAudioPath: null,
-      ttsAudioPath: null,
+      originalAudioPath: 'originalAudio.m4a',
+      ttsAudioPath: 'ttsAudio.opus',
     ),
     HiveLecture(
       id: 'lec-2',
@@ -53,8 +52,8 @@ void main() {
       weekLabel: 'Week 2',
       title: 'Advanced Topics',
       duration: 4200000, // 1시간 10분 (밀리초)
-      originalAudioPath: null,
-      ttsAudioPath: null,
+        originalAudioPath: 'originalAudio.m4a',
+        ttsAudioPath: 'ttsAudio.opus',
     ),
   ];
 
@@ -335,8 +334,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Introduction',
         duration: 3600000, // 1시간 (밀리초)
-        originalAudioPath: null,
-        ttsAudioPath: null,
+        originalAudioPath: 'originalAudio.m4a',
+        ttsAudioPath: 'ttsAudio.opus',
       );
 
       await tester.pumpWidget(
@@ -362,8 +361,8 @@ void main() {
         weekLabel: 'Week 3',
         title: 'Advanced Algorithms',
         duration: 3600000, // 1시간 (밀리초)
-        originalAudioPath: null,
-        ttsAudioPath: null,
+        originalAudioPath: 'originalAudio.m4a',
+        ttsAudioPath: 'ttsAudio.opus',
       );
 
       await tester.pumpWidget(
@@ -386,8 +385,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test',
         duration: 3600000, // 1시간 (밀리초)
-        originalAudioPath: null,
-        ttsAudioPath: null,
+        originalAudioPath: 'originalAudio.m4a',
+        ttsAudioPath: 'ttsAudio.opus',
       );
 
       await tester.pumpWidget(
@@ -419,8 +418,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'No Slides',
         duration: 3600000, // 1시간 (밀리초)
-        originalAudioPath: null,
-        ttsAudioPath: null,
+        originalAudioPath: 'originalAudio.m4a',
+        ttsAudioPath: 'ttsAudio.opus',
         slidePath: null,
       );
 

@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:re_view/data/hive_models.dart';
-import 'package:re_view/data/models.dart';
 
 ByteData _encodeAsset(String value) {
   final bytes = utf8.encoder.convert(value);
@@ -39,8 +38,8 @@ void main() {
           weekLabel: 'Week 1',
           title: 'Lecture',
           duration: 60,
-          originalAudioPath: null,
-          ttsAudioPath: null,
+          originalAudioPath: 'originalAudio.m4a',
+          ttsAudioPath: 'ttsAudio.opus',
         ),
       };
       final state = UiState(
@@ -132,22 +131,6 @@ void main() {
       expect(copy.tagIds, ['t2']);
       expect(copy.lectureIds, ['l1']);
     });
-
-    test('toSubject converts to UI model', () {
-      final hive = HiveSubject(
-        id: 'id',
-        title: 'Title',
-        favorite: true,
-        tagIds: const ['tag'],
-        lectureIds: const ['lecture'],
-      );
-      final subject = hive.toSubject();
-      expect(subject, isA<Subject>());
-      expect(subject.id, 'id');
-      expect(subject.favorite, isTrue);
-      expect(subject.tagIds, ['tag']);
-      expect(subject.lectureIds, ['lecture']);
-    });
   });
 
   group('HiveTag', () {
@@ -157,15 +140,6 @@ void main() {
       expect(copy.id, 'id');
       expect(copy.name, 'New');
       expect(copy.color, 0xFF000001);
-    });
-
-    test('toTag converts to Tag model', () {
-      final tag = HiveTag(id: 'id', name: 'Label', color: 0xFF123456);
-      final converted = tag.toTag();
-      expect(converted, isA<Tag>());
-      expect(converted.id, 'id');
-      expect(converted.name, 'Label');
-      expect(converted.color, 0xFF123456);
     });
   });
 
@@ -191,32 +165,6 @@ void main() {
       expect(copy.duration, 240);
       expect(copy.subjectId, 'sub1');
       expect(copy.slidePath, '/slides.pdf');
-    });
-
-    test('toLecture converts to lightweight model', () {
-      final hive = HiveLecture(
-        id: 'lec1',
-        subjectId: 'sub1',
-        weekLabel: 'Week 1',
-        title: 'Intro',
-        duration: 120,
-        slidePath: '/slides.pdf',
-        originalAudioPath: 'original.mp3',
-        ttsAudioPath: 'tts.mp3',
-        thumbnailUrl: 'https://example.com/thumb.png',
-        jsonPath: 'timestamps.json',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      final lecture = hive.toLecture();
-      expect(lecture, isA<Lecture>());
-      expect(lecture.id, 'lec1');
-      expect(lecture.weekLabel, 'Week 1');
-      expect(lecture.title, 'Intro');
-      expect(lecture.duration, 120);
-      expect(lecture.slidesPath, '/slides.pdf');
-      expect(lecture.thumbs, ['https://example.com/thumb.png']);
     });
   });
 
