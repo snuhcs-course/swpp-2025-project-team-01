@@ -118,7 +118,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   Widget build(BuildContext context) {
     // 삭제되지 않은 과목 목록을 _workingSubjectOrder 순서대로 정렬
     final subjectMap = {
-      for (var s in hive.getSubjects().map((s) => s.toSubject())) s.id: s,
+      for (var s in hive.getSubjects()) s.id: s,
     };
 
     final subjects = _workingSubjectOrder
@@ -174,7 +174,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
             }
 
             // subjects 리스트 기반으로 재정렬
-            final reorderedSubjects = List<Subject>.from(subjects);
+            final reorderedSubjects = List<HiveSubject>.from(subjects);
             final movedSubject = reorderedSubjects.removeAt(oldIndex);
             reorderedSubjects.insert(newIndex, movedSubject);
 
@@ -221,7 +221,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 패널 빌더
   ///
   /// 각 과목의 강의 목록을 표시하고 드래그 앤 드롭으로 순서를 재정렬할 수 있습니다.
-  Widget _buildSubjectPanel(Subject subject, int index) {
+  Widget _buildSubjectPanel(HiveSubject subject, int index) {
     final lectureIds = _workingLectureIds[subject.id]!;
     final isExpanded = hive.getSubjectExpandedState(subject.id);
 
@@ -325,7 +325,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 편집 다이얼로그 표시
   ///
   /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공
-  Future<void> _showSubjectEditDialog(Subject subject) async {
+  Future<void> _showSubjectEditDialog(HiveSubject subject) async {
     // 미분류 과목은 편집 불가
     if (subject.isUncategorized) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -379,7 +379,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 삭제 확인 다이얼로그
   ///
   /// 과목 삭제 시 해당 과목의 모든 강의도 함께 삭제됨을 경고
-  Future<bool?> _showDeleteConfirmationDialog(Subject subject) {
+  Future<bool?> _showDeleteConfirmationDialog(HiveSubject subject) {
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
@@ -638,7 +638,7 @@ class _SubjectEditDialog extends StatefulWidget {
     required this.allTags,
   });
 
-  final Subject subject;
+  final HiveSubject subject;
   final List<String> initialTagIds;
   final List<HiveTag> allTags;
 
@@ -788,7 +788,7 @@ class _SubjectEditPanel extends StatefulWidget {
   });
 
   final int index;
-  final Subject subject;
+  final HiveSubject subject;
   final String? displayTitle;
   final bool isInitiallyExpanded;
   final List<Lecture> lectures;

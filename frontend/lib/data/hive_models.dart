@@ -147,18 +147,6 @@ class HiveSubject {
       isUncategorized: isUncategorized ?? this.isUncategorized,
     );
   }
-
-  /// Convert to models.dart Subject
-  Subject toSubject() {
-    return Subject(
-      id: id,
-      title: title,
-      favorite: favorite,
-      tagIds: tagIds,
-      lectureIds: lectureIds,
-      isUncategorized: isUncategorized,
-    );
-  }
 }
 
 /// 태그 모델

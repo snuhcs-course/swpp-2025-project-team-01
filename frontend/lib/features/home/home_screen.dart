@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/home_widgets.dart';
@@ -85,7 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
           favoritesOnly: favoritesOnly,
           filterTagIds: selectedTagIds.toList(),
         )
-        .map((hs) => hs.toSubject())
         .where((subject) {
           // 미분류 과목은 강의가 있을 때만 표시
           if (subject.isUncategorized) {
@@ -189,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverList.builder(
               itemCount: subjects.length,
               itemBuilder: (context, i) {
-                final Subject s = subjects[i];
+                final HiveSubject s = subjects[i];
                 final List<HiveTag> subjectTags = s.tagIds
                     .map((tid) {
                       try {

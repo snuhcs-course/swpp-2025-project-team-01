@@ -4,7 +4,6 @@ import 'package:pdfx/pdfx.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/core/thumbnail_cache_manager.dart';
-import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
@@ -221,7 +220,7 @@ class SubjectPanel extends StatefulWidget {
     this.onLectureUpdated,
   });
 
-  final Subject subject;
+  final HiveSubject subject;
   final List<HiveTag> tags;
   final List<HiveLecture> lectures;
   final VoidCallback onToggleFavorite;
@@ -645,7 +644,6 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     // 모든 과목 가져오기 (미분류 포함)
     final allSubjects = manager
         .getSubjects()
-        .map((hs) => hs.toSubject())
         .toList();
 
     return AlertDialog(

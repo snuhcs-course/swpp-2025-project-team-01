@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
-import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
@@ -427,7 +426,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     final tagToDelete = _tags[_selected];
     final subjects = _manager
         .getSubjects()
-        .map((hs) => hs.toSubject())
         .toList();
     final usingSubjects = subjects
         .where((s) => s.tagIds.contains(tagToDelete.id))
@@ -484,7 +482,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   Future<bool?> _showDeleteWarningDialog(
     BuildContext context,
     String tagName,
-    List<Subject> usingSubjects,
+    List<HiveSubject> usingSubjects,
   ) {
     return showDialog<bool>(
       context: context,
@@ -528,7 +526,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 다이얼로그 본문 빌드
-  Widget _buildDialogBody(String tagName, List<Subject> usingSubjects) {
+  Widget _buildDialogBody(String tagName, List<HiveSubject> usingSubjects) {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: const BoxDecoration(

@@ -8,7 +8,7 @@ class SubjectTagScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final manager = HiveManager.instance;
-    final subjects = manager.getSubjects().map((hs) => hs.toSubject()).toList();
+    final subjects = manager.getSubjects();
     final tags = manager.getTags();
 
     return Scaffold(
