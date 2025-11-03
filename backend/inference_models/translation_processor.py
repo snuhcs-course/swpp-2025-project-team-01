@@ -6,12 +6,18 @@ English-to-Korean translation using Tencent Hunyuan-MT-7B with vLLM
 import os
 import torch
 import gc
+import threading
 from typing import Callable
 from vllm import LLM, SamplingParams
 
 # Set multiprocessing start method before any CUDA operations
 # This prevents the WARNING about overriding VLLM_WORKER_MULTIPROC_METHOD
 os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+
+# Global lock for vLLM model initialization only
+# Protects vLLM initialization which can fail if multiple instances start simultaneously
+# Inference is not locked since each pipeline has its own vLLM instance
+_vllm_init_lock = threading.Lock()
 
 
 class TranslationProcessor:
@@ -58,15 +64,20 @@ class TranslationProcessor:
         print(f"Loading translation model: {self.model_name}")
         print("This may take a few minutes...")
 
-        # Initialize vLLM with Hunyuan-MT-7B
-        self.model = LLM(
-            model = self.model_name,
-            tensor_parallel_size = self.tensor_parallel_size,
-            max_model_len = self.max_model_len,
-            gpu_memory_utilization = self.gpu_memory_utilization,
-            dtype = "bfloat16" if torch.cuda.is_bf16_supported() else "float16",
-            trust_remote_code = True
-        )
+        # Use global lock to prevent concurrent vLLM initialization
+        # This prevents memory profiling errors when multiple workers load models simultaneously
+        with _vllm_init_lock:
+            print("Acquired vLLM initialization lock")
+            # Initialize vLLM with Hunyuan-MT-7B
+            self.model = LLM(
+                model = self.model_name,
+                tensor_parallel_size = self.tensor_parallel_size,
+                max_model_len = self.max_model_len,
+                gpu_memory_utilization = self.gpu_memory_utilization,
+                dtype = "bfloat16" if torch.cuda.is_bf16_supported() else "float16",
+                trust_remote_code = True
+            )
+            print("Released vLLM initialization lock")
 
         print("Translation model loaded successfully")
 
@@ -123,6 +134,8 @@ class TranslationProcessor:
         Returns:
             List of Korean translations
         """
+        # No lock during inference - each pipeline has its own vLLM instance
+        # Only model loading is protected by _vllm_init_lock
         if self.model is None:
             self.load_model()
 

@@ -10,8 +10,14 @@ import soundfile as sf
 import subprocess
 import os
 import gc
+import threading
 from typing import Any, Callable
 from pathlib import Path
+
+# Global lock for TTS pipeline initialization only
+# Protects pipeline loading when multiple pipelines start simultaneously
+# Inference is not locked since each pipeline has its own TTS instance
+_tts_init_lock = threading.Lock()
 
 
 class TTSProcessor:
@@ -49,13 +55,15 @@ class TTSProcessor:
 
     def load_model(self):
         """Load TTS pipeline."""
-        if self.pipeline is not None:
-            print("Pipeline already loaded")
-            return
+        # Use global lock only during pipeline initialization
+        with _tts_init_lock:
+            if self.pipeline is not None:
+                print("Pipeline already loaded")
+                return
 
-        print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
-        self.pipeline = KPipeline(lang_code = self.lang_code)
-        print("TTS pipeline loaded successfully")
+            print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
+            self.pipeline = KPipeline(lang_code = self.lang_code)
+            print("TTS pipeline loaded successfully")
 
     def unload_model(self):
         """Unload pipeline to free memory."""
@@ -86,6 +94,8 @@ class TTSProcessor:
         Returns:
             Dictionary with metadata and timestamps
         """
+        # No lock during generation - each pipeline has its own TTS instance
+        # Only pipeline loading is protected by _tts_init_lock
         if self.pipeline is None:
             self.load_model()
 

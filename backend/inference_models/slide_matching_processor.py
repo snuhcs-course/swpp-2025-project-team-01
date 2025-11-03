@@ -10,8 +10,14 @@ import io
 from tqdm import tqdm
 from typing import Callable
 import gc
+import threading
 
 from transformers import AutoModel
+
+# Global lock for slide matching model initialization only
+# Protects CUDA initialization during model loading when multiple pipelines start simultaneously
+# Inference is not locked since each pipeline has its own model instance
+_matching_init_lock = threading.Lock()
 
 
 class SlideMatchingProcessor:
@@ -84,24 +90,27 @@ class SlideMatchingProcessor:
 
     def load_model(self):
         """Load multimodal model into memory."""
-        if self.model is not None:
-            print("Model already loaded")
-            return
+        # Use global lock only during model initialization
+        # This prevents CUDA initialization conflicts when multiple pipelines load models simultaneously
+        with _matching_init_lock:
+            if self.model is not None:
+                print("Model already loaded")
+                return
 
-        print('Loading NeMo Retriever model...')
+            print('Loading NeMo Retriever model...')
 
-        if torch.cuda.is_available():
-            torch.cuda.reset_peak_memory_stats()
+            if torch.cuda.is_available():
+                torch.cuda.reset_peak_memory_stats()
 
-        self.model = AutoModel.from_pretrained(
-            self.model_name,
-            device_map = self.device,
-            torch_dtype = torch.bfloat16,
-            trust_remote_code = True,
-            attn_implementation = "flash_attention_2",
-        ).eval()
+            self.model = AutoModel.from_pretrained(
+                self.model_name,
+                device_map = self.device,
+                torch_dtype = torch.bfloat16,
+                trust_remote_code = True,
+                attn_implementation = "flash_attention_2",
+            ).eval()
 
-        print("Model loaded successfully!")
+            print("Model loaded successfully!")
 
     def unload_model(self):
         """Unload model to free memory."""
@@ -340,6 +349,8 @@ class SlideMatchingProcessor:
         Returns:
             List of matching results with page numbers
         """
+        # No lock during inference - each pipeline has its own model instance
+        # Only model loading is protected by _matching_init_lock
         if self.model is None:
             self.load_model()
 

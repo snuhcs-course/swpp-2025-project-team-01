@@ -9,8 +9,14 @@ import librosa
 import soundfile as sf
 import os
 import gc
+import threading
 from typing import Any, Callable
 from pathlib import Path
+
+# Global lock for ASR model initialization only
+# Protects CUDA initialization during model loading when multiple pipelines start simultaneously
+# Inference is not locked since each pipeline has its own model instance
+_asr_init_lock = threading.Lock()
 
 
 class ASRProcessor:
@@ -36,18 +42,21 @@ class ASRProcessor:
 
     def load_model(self):
         """Load ASR model into memory."""
-        if self.model is not None:
-            print("Model already loaded")
-            return
+        # Use global lock only during model initialization
+        # This prevents CUDA initialization conflicts when multiple pipelines load models simultaneously
+        with _asr_init_lock:
+            if self.model is not None:
+                print("Model already loaded")
+                return
 
-        print(f"Loading ASR model: {self.model_name}")
-        if torch.cuda.is_available():
-            torch.cuda.reset_peak_memory_stats()
+            print(f"Loading ASR model: {self.model_name}")
+            if torch.cuda.is_available():
+                torch.cuda.reset_peak_memory_stats()
 
-        self.model = nemo_asr.models.ASRModel.from_pretrained(
-            model_name = self.model_name
-        )
-        print("ASR model loaded successfully")
+            self.model = nemo_asr.models.ASRModel.from_pretrained(
+                model_name = self.model_name
+            )
+            print("ASR model loaded successfully")
 
     def unload_model(self):
         """Unload model to free memory."""
