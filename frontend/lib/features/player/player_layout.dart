@@ -66,8 +66,15 @@ class HorizontalPlayerLayout extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: controller.showTranscriptPanel,
       builder: (context, showTranscriptPanel, _) {
-        return Stack(
-          children: [
+        return Container(
+          color: Colors.black,  // 마진 부분을 검은색으로 설정
+          child: SafeArea(
+            top: true,
+            bottom: true,
+            left: true,
+            right: true,
+            child: Stack(
+            children: [
             Row(
               children: [
                 Expanded(
@@ -162,6 +169,8 @@ class HorizontalPlayerLayout extends StatelessWidget {
               ),
             ),
           ],
+            ),
+          ),
         );
       },
     );

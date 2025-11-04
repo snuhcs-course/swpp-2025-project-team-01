@@ -1,6 +1,8 @@
 // 앱 엔트리: 테마 + 라우터 연결
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/app_theme.dart';
@@ -145,21 +147,42 @@ class _ReViewAppState extends State<ReViewApp> {
       onGenerateRoute: AppRouter.onGenerateRoute,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        // 모션 줄이기가 활성화되면 스크롤 물리 효과 제거
-        Widget wrappedChild = child!;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        // 모든 화면에 SafeArea 적용
-        wrappedChild = SafeArea(child: wrappedChild);
+        // NativeDeviceOrientationReader로 정확한 디바이스 방향 감지
+        return NativeDeviceOrientationReader(
+          builder: (context) {
+            final orientation = NativeDeviceOrientationReader.orientation(context);
 
-        if (reduceMotion) {
-          wrappedChild = ScrollConfiguration(
-            behavior: const _NoBouncingScrollBehavior(),
-            child: wrappedChild,
-          );
-        }
+            // DeviceOrientation에 따라 카메라 위치 판단
+            // - landscapeLeft: 카메라가 왼쪽
+            // - landscapeRight: 카메라가 오른쪽
+            final cameraOnLeft = orientation == NativeDeviceOrientation.landscapeLeft;
+            final cameraOnRight = orientation == NativeDeviceOrientation.landscapeRight;
 
-        // 모든 화면 위에 로딩 바 오버레이 추가
-        return Stack(children: [wrappedChild, const LectureLoadingBar()]);
+            Widget wrappedChild = child!;
+
+            // 모든 화면에 SafeArea 적용 (가로 모드일 때는 카메라 있는 쪽만 SafeArea 비활성화)
+            wrappedChild = Container(
+              color: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
+              child: SafeArea(
+                left: !cameraOnLeft,   // landscapeLeft일 때 좌측 SafeArea 비활성화 (마진 제거)
+                right: !cameraOnRight, // landscapeRight일 때 우측 SafeArea 비활성화 (마진 제거)
+                child: wrappedChild,
+              ),
+            );
+
+            if (reduceMotion) {
+              wrappedChild = ScrollConfiguration(
+                behavior: const _NoBouncingScrollBehavior(),
+                child: wrappedChild,
+              );
+            }
+
+            // 모든 화면 위에 로딩 바 오버레이 추가
+            return Stack(children: [wrappedChild, const LectureLoadingBar()]);
+          },
+        );
       },
     );
   }
