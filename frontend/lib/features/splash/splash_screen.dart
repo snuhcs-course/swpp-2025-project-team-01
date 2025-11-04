@@ -32,10 +32,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     // 애니메이션 종료 직후 다음 화면으로 전환.
-    _navigationTimer = Timer(
-      const Duration(milliseconds: 1500),
-      _navigateNext,
-    );
+    _navigationTimer = Timer(const Duration(milliseconds: 1500), _navigateNext);
   }
 
   @override
@@ -47,8 +44,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _navigateNext() async {
     final manager = HiveManager.instance;
-    final nextRoute =
-        manager.hasTutorialCompleted ? Routes.home : Routes.tutorial;
+    final nextRoute = manager.hasTutorialCompleted
+        ? Routes.home
+        : Routes.tutorial;
     if (!mounted) {
       return;
     }
@@ -113,10 +111,7 @@ class _GradientTitle extends StatelessWidget {
         return const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF7FBAE),
-            Color(0xFFE5F8DF),
-          ],
+          colors: [Color(0xFFF7FBAE), Color(0xFFE5F8DF)],
         ).createShader(bounds);
       },
       blendMode: BlendMode.srcIn,
