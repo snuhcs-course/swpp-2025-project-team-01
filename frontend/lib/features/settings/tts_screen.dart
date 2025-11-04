@@ -70,21 +70,21 @@ class _TtsScreenState extends State<TtsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isKorean = AppLocalizations.of(context).isKorean;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('TTS'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
+      backgroundColor: isDark
+          ? theme.scaffoldBackgroundColor
+          : const Color(0xFFF5F5F5),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -100,27 +100,56 @@ class _TtsScreenState extends State<TtsScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
     );
+
+    return Text(title, style: textStyle);
   }
 
   Widget _buildGenderButtons(bool isKorean) {
     return Row(
       children: [
         Expanded(
-          child: _genderButton(isKorean ? '남성' : 'Male', _gender == '남성'),
+          child: _genderButton(
+            context,
+            isKorean ? '남성' : 'Male',
+            _gender == '남성',
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _genderButton(isKorean ? '여성' : 'Female', _gender == '여성'),
+          child: _genderButton(
+            context,
+            isKorean ? '여성' : 'Female',
+            _gender == '여성',
+          ),
         ),
       ],
     );
   }
 
-  Widget _genderButton(String label, bool isSelected) {
+  Widget _genderButton(BuildContext context, String label, bool isSelected) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final backgroundColor = isDark
+        ? (isSelected
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceVariant)
+        : (isSelected ? Colors.white : const Color(0xFFE0E0E0));
+    final borderColor = isDark
+        ? (isSelected ? colorScheme.primary : Colors.transparent)
+        : (isSelected ? const Color(0xFF424242) : Colors.transparent);
+    final textColor = isDark
+        ? (isSelected
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.onSurfaceVariant)
+        : (isSelected ? Colors.black : const Color(0xFF666666));
+
     final actualValue = label == 'Male'
         ? '남성'
         : label == 'Female'
@@ -132,11 +161,11 @@ class _TtsScreenState extends State<TtsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : const Color(0xFFE0E0E0),
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: const Color(0xFF424242), width: 2)
-              : null,
+          border: isDark
+              ? Border.all(color: borderColor, width: isSelected ? 2 : 1)
+              : (isSelected ? Border.all(color: borderColor, width: 2) : null),
         ),
         child: Center(
           child: Text(
@@ -144,7 +173,7 @@ class _TtsScreenState extends State<TtsScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? Colors.black : const Color(0xFF666666),
+              color: textColor,
             ),
           ),
         ),
