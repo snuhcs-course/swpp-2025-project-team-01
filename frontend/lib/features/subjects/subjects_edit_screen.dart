@@ -563,7 +563,9 @@ class _CreateSubjectDialogState extends State<_CreateSubjectDialog> {
             controller: _titleController,
             decoration: InputDecoration(
               labelText: l10n.subjectName,
-              hintText: l10n.isKorean ? '예) 소프트웨어 개발의 원리와 실습' : 'ex) Software Development Principles and Practice',
+              hintText: l10n.isKorean
+                  ? '예) 소프트웨어 개발의 원리와 실습'
+                  : 'ex) Software Development Principles and Practice',
             ),
             autofocus: true,
           ),
@@ -682,7 +684,9 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
-                hintText: l10n.isKorean ? '예) 소프트웨어 개발의 원리와 실습' : 'ex) Software Development Principles and Practice',
+                hintText: l10n.isKorean
+                    ? '예) 소프트웨어 개발의 원리와 실습'
+                    : 'ex) Software Development Principles and Practice',
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12,
@@ -749,9 +753,9 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
           onPressed: () {
             final newTitle = _nameController.text.trim();
             if (newTitle.isEmpty) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(l10n.pleaseEnterSubjectName)));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.pleaseEnterSubjectName)),
+              );
               return;
             }
             Navigator.pop(context, {
