@@ -556,4 +556,11 @@ async def root():
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host = '0.0.0.0', port = 8080) # 8080 for port forwarding
+    uvicorn.run(
+        app,
+        host='0.0.0.0',
+        port=8001,  # Match client's port
+        timeout_keep_alive=300,  # 5 minutes keep-alive
+        limit_concurrency=10,
+        limit_max_requests=1000
+    )
