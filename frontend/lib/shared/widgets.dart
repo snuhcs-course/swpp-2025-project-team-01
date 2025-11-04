@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
-import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/main.dart' show navigatorKey;
 
@@ -68,7 +68,7 @@ class TagPill extends StatelessWidget {
     this.label,
   });
 
-  final Tag tag;
+  final HiveTag tag;
   final String? label;
   final String labelPrefix;
 
@@ -112,7 +112,7 @@ class SelectableTagPill extends StatelessWidget {
     this.label,
   });
 
-  final Tag tag;
+  final HiveTag tag;
   final bool selected;
   final ValueChanged<bool> onSelected;
   final bool showCheckmark;
@@ -741,7 +741,7 @@ class SubjectPanelHeader extends StatelessWidget {
   });
 
   final String title;
-  final List<Tag> tags;
+  final List<HiveTag> tags;
   final bool expanded;
   final VoidCallback onToggleExpanded;
   final double panelRadius;

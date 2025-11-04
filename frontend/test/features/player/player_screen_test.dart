@@ -272,7 +272,7 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: null,
+        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
         ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         jsonPath: 'assets/test_invalid_json.json',
       );
@@ -312,8 +312,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: 'assets/lectures/test_lecture/audio.opus',
-        ttsAudioPath: null,
+        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
+        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         slidePath: '/nonexistent/path/to/slides.pdf', // This will fail
         jsonPath: 'assets/test_valid_transcript.json',
       );
@@ -378,7 +378,7 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: null,
+        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
         ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         jsonPath: 'assets/test_transcript.json',
       );
@@ -500,8 +500,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Korean Test Lecture 2',
         duration: 3600,
-        originalAudioPath: null,
-        ttsAudioPath: 'assets/korean_lectures/lecture2/audio.opus',
+        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
+        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         jsonPath: 'assets/korean_lectures/lecture2/invalid.json',
       );
       await addLectureToHive(tester, lecture);
@@ -543,8 +543,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Korean Test Lecture 3',
         duration: 3600,
-        originalAudioPath: 'assets/korean_lectures/lecture3/audio.opus',
-        ttsAudioPath: null,
+        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
+        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         slidePath: '/nonexistent/korean/path/to/slides.pdf', // This will fail
         jsonPath: 'assets/korean_lectures/lecture3/transcript.json',
       );
@@ -612,8 +612,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Korean Test Lecture 4',
         duration: 3600,
-        originalAudioPath: 'assets/korean_lectures/lecture4/audio.opus',
-        ttsAudioPath: null,
+        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
+        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
         jsonPath: 'assets/korean_lectures/lecture4/transcript.json',
       );
       await addLectureToHive(tester, lecture);
@@ -809,8 +809,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: '/custom/audio.opus',
-        ttsAudioPath: null,
+        originalAudioPath: '/lectures/test_lecture/audio.m4a',
+        ttsAudioPath: '/lectures/test_lecture/audio.opus',
         slidePath: '/custom/slides.pdf',
         jsonPath: '/custom/transcript.json',
       );
@@ -882,8 +882,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: '/nonexistent/audio.opus',
-        ttsAudioPath: null,
+        originalAudioPath: '/nonexistent/audio.m4a',
+        ttsAudioPath: '/nonexistent/audio.opus',
         slidePath: '/nonexistent/slides.pdf',
         jsonPath: 'assets/test_valid.json',
       );
@@ -972,7 +972,7 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: null,
+        originalAudioPath: 'assets/audio.m4a',
         ttsAudioPath: 'assets/audio.opus',
         slidePath: 'assets/slides.pdf',
         jsonPath:
@@ -1023,7 +1023,7 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: null,
+        originalAudioPath: 'assets/audio.m4a',
         ttsAudioPath: 'assets/audio.opus',
         slidePath: 'assets/slides.pdf',
         jsonPath: 'assets/test_malformed.json',
@@ -1093,8 +1093,8 @@ void main() {
         title: 'Demo Lecture 001',
         duration: 3600,
         originalAudioPath:
-            'assets/lectures/lec_demo_001/lecture_with_slides.opus',
-        ttsAudioPath: null,
+            'assets/lectures/lec_demo_001/lecture_with_slides.m4a',
+        ttsAudioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
         slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
       );
@@ -1156,8 +1156,8 @@ void main() {
           title: 'Demo Lecture 001',
           duration: 3600,
           originalAudioPath:
-              'assets/lectures/lec_demo_001/lecture_with_slides.opus',
-          ttsAudioPath: null,
+              'assets/lectures/lec_demo_001/lecture_with_slides.m4a',
+          ttsAudioPath: 'assets/lectures/lec_demo_001/lecture_with_slides.opus',
           slidePath: 'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
           jsonPath: 'assets/lectures/lec_demo_001/transcript.json',
         );
@@ -1242,8 +1242,8 @@ void main() {
         weekLabel: 'Week 1',
         title: 'Test Lecture',
         duration: 3600,
-        originalAudioPath: 'assets/lectures/test_layout/audio.opus',
-        ttsAudioPath: null,
+        originalAudioPath: 'assets/lectures/test_layout/audio.m4a',
+        ttsAudioPath: 'assets/lectures/test_layout/audio.opus',
         slidePath: 'assets/lectures/test_layout/slides.pdf',
         jsonPath: 'assets/test_layout.json',
       );
@@ -1397,8 +1397,8 @@ void main() {
           weekLabel: 'Week 1',
           title: 'Test Lecture',
           duration: 3600,
-          originalAudioPath: 'assets/lectures/test_horizontal/audio.opus',
-          ttsAudioPath: null,
+          originalAudioPath: 'assets/lectures/test_horizontal/audio.m4a',
+          ttsAudioPath: 'assets/lectures/test_horizontal/audio.opus',
           slidePath: 'assets/lectures/test_horizontal/slides.pdf',
           jsonPath: 'assets/test_horizontal.json',
         );

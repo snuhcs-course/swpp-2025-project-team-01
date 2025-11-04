@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/home_widgets.dart';
@@ -79,13 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final tags = _manager.getTags().map((ht) => ht.toTag()).toList();
+    final tags = _manager.getTags();
     final subjects = _manager
         .getSubjects(
           favoritesOnly: favoritesOnly,
           filterTagIds: selectedTagIds.toList(),
         )
-        .map((hs) => hs.toSubject())
         .where((subject) {
           // 미분류 과목은 강의가 있을 때만 표시
           if (subject.isUncategorized) {
@@ -189,8 +187,8 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverList.builder(
               itemCount: subjects.length,
               itemBuilder: (context, i) {
-                final Subject s = subjects[i];
-                final List<Tag> subjectTags = s.tagIds
+                final HiveSubject s = subjects[i];
+                final List<HiveTag> subjectTags = s.tagIds
                     .map((tid) {
                       try {
                         return tags.firstWhere((t) => t.id == tid);
@@ -198,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         return null;
                       }
                     })
-                    .whereType<Tag>()
+                    .whereType<HiveTag>()
                     .toList();
                 // 태그 정렬: 숫자 > 한글 > 영어
                 subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));

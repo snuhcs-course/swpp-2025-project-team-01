@@ -192,13 +192,9 @@ class _PlayerScreenState extends State<PlayerScreen>
           hiveLecture.slidePath ??
           'assets/lectures/$lectureId/${lectureId}_slides.pdf';
 
-      final originalAudioPath =
-          hiveLecture.originalAudioPath ??
-          'assets/lectures/$lectureId/lecture_with_slides.m4a';
+      final originalAudioPath = hiveLecture.originalAudioPath;
 
-      final ttsAudioPath =
-          hiveLecture.ttsAudioPath ??
-          'assets/lectures/$lectureId/lecture_with_slides.opus';
+      final ttsAudioPath = hiveLecture.ttsAudioPath;
 
       // 6. Controller 초기화
       if (!mounted) {

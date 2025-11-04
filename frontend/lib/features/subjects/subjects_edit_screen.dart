@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
 
@@ -116,9 +116,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   @override
   Widget build(BuildContext context) {
     // 삭제되지 않은 과목 목록을 _workingSubjectOrder 순서대로 정렬
-    final subjectMap = {
-      for (var s in hive.getSubjects().map((s) => s.toSubject())) s.id: s,
-    };
+    final subjectMap = {for (var s in hive.getSubjects()) s.id: s};
 
     final subjects = _workingSubjectOrder
         .where(
@@ -173,7 +171,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
             }
 
             // subjects 리스트 기반으로 재정렬
-            final reorderedSubjects = List<Subject>.from(subjects);
+            final reorderedSubjects = List<HiveSubject>.from(subjects);
             final movedSubject = reorderedSubjects.removeAt(oldIndex);
             reorderedSubjects.insert(newIndex, movedSubject);
 
@@ -220,25 +218,26 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 패널 빌더
   ///
   /// 각 과목의 강의 목록을 표시하고 드래그 앤 드롭으로 순서를 재정렬할 수 있습니다.
-  Widget _buildSubjectPanel(Subject subject, int index) {
+  Widget _buildSubjectPanel(HiveSubject subject, int index) {
     final lectureIds = _workingLectureIds[subject.id]!;
     final isExpanded = hive.getSubjectExpandedState(subject.id);
 
     // 강의 리스트를 한 번만 가져와서 Map으로 변환
-    final allLectures = hive
-        .getLecturesBySubject(subject.id)
-        .map((l) => l.toLecture())
-        .toList();
+    final allLectures = hive.getLecturesBySubject(subject.id).toList();
     final lectureMap = {for (var lec in allLectures) lec.id: lec};
 
     // Map에서 O(1)로 조회
     final lectures = lectureIds.map((id) {
       return lectureMap[id] ??
-          Lecture(
+          HiveLecture(
             id: id,
             subjectId: subject.id,
             weekLabel: 'Week ?',
             title: 'Untitled',
+            originalAudioPath:
+                'assets/lectures/${subject.id}/${subject.id}_audio.m4a',
+            ttsAudioPath:
+                'assets/lectures/${subject.id}/${subject.id}_audio.opus', // 데모는 로컬 파일 사용
             duration: 0,
           );
     }).toList();
@@ -324,7 +323,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 편집 다이얼로그 표시
   ///
   /// 과목명 수정, 태그 선택, 과목 삭제 기능을 제공
-  Future<void> _showSubjectEditDialog(Subject subject) async {
+  Future<void> _showSubjectEditDialog(HiveSubject subject) async {
     // 미분류 과목은 편집 불가
     if (subject.isUncategorized) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -345,7 +344,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       builder: (context) => _SubjectEditDialog(
         subject: subject,
         initialTagIds: _workingTagIds[subject.id] ?? [],
-        allTags: hive.getTags().map((t) => t.toTag()).toList(),
+        allTags: hive.getTags(),
       ),
     );
 
@@ -378,7 +377,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   /// 과목 삭제 확인 다이얼로그
   ///
   /// 과목 삭제 시 해당 과목의 모든 강의도 함께 삭제됨을 경고
-  Future<bool?> _showDeleteConfirmationDialog(Subject subject) {
+  Future<bool?> _showDeleteConfirmationDialog(HiveSubject subject) {
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
@@ -492,9 +491,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   Future<void> _showCreateSubjectDialog(BuildContext context) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _CreateSubjectDialog(
-        allTags: hive.getTags().map((t) => t.toTag()).toList(),
-      ),
+      builder: (context) => _CreateSubjectDialog(allTags: hive.getTags()),
     );
 
     if (!mounted || result == null || result['action'] != 'create') {
@@ -529,7 +526,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 class _CreateSubjectDialog extends StatefulWidget {
   const _CreateSubjectDialog({required this.allTags});
 
-  final List<Tag> allTags;
+  final List<HiveTag> allTags;
 
   @override
   State<_CreateSubjectDialog> createState() => _CreateSubjectDialogState();
@@ -637,9 +634,9 @@ class _SubjectEditDialog extends StatefulWidget {
     required this.allTags,
   });
 
-  final Subject subject;
+  final HiveSubject subject;
   final List<String> initialTagIds;
-  final List<Tag> allTags;
+  final List<HiveTag> allTags;
 
   @override
   State<_SubjectEditDialog> createState() => _SubjectEditDialogState();
@@ -787,10 +784,10 @@ class _SubjectEditPanel extends StatefulWidget {
   });
 
   final int index;
-  final Subject subject;
+  final HiveSubject subject;
   final String? displayTitle;
   final bool isInitiallyExpanded;
-  final List<Lecture> lectures;
+  final List<HiveLecture> lectures;
   final void Function(int oldIndex, int newIndex) onReorder;
   final VoidCallback onLongPress;
   final ValueChanged<bool> onExpansionChanged;

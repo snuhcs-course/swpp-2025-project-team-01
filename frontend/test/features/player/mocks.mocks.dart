@@ -73,6 +73,15 @@ class MockAudioService extends _i1.Mock implements _i3.AudioService {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> switchAudio(String? newPath, int? targetPositionMs) =>
+      (super.noSuchMethod(
+            Invocation.method(#switchAudio, [newPath, targetPositionMs]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   _i4.Future<void> play() =>
       (super.noSuchMethod(
             Invocation.method(#play, []),
@@ -194,6 +203,14 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as bool);
 
   @override
+  bool get hasTutorialCompleted =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasTutorialCompleted),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   _i2.AppSettings get settings =>
       (super.noSuchMethod(
             Invocation.getter(#settings),
@@ -232,6 +249,14 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
             returnValue: <String, _i2.HiveLecture>{},
           )
           as Map<String, _i2.HiveLecture>);
+
+  @override
+  List<String> get subjectOrder =>
+      (super.noSuchMethod(
+            Invocation.getter(#subjectOrder),
+            returnValue: <String>[],
+          )
+          as List<String>);
 
   @override
   bool get hasListeners =>
@@ -292,9 +317,9 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> updateTts({String? gender, String? speed}) =>
+  _i4.Future<void> updateTts({String? gender}) =>
       (super.noSuchMethod(
-            Invocation.method(#updateTts, [], {#gender: gender, #speed: speed}),
+            Invocation.method(#updateTts, [], {#gender: gender}),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
@@ -404,6 +429,15 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
   _i4.Future<void> updateSubjectTags(String? id, List<String>? tagIds) =>
       (super.noSuchMethod(
             Invocation.method(#updateSubjectTags, [id, tagIds]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> updateSubjectOrder(List<String>? newOrder) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateSubjectOrder, [newOrder]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
@@ -526,6 +560,18 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> moveLectureToSubject(
+    String? lectureId,
+    String? newSubjectId,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#moveLectureToSubject, [lectureId, newSubjectId]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   _i4.Future<void> deleteLecture(String? lectureId) =>
       (super.noSuchMethod(
             Invocation.method(#deleteLecture, [lectureId]),
@@ -554,6 +600,24 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
   _i4.Future<void> close() =>
       (super.noSuchMethod(
             Invocation.method(#close, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> completeTutorial() =>
+      (super.noSuchMethod(
+            Invocation.method(#completeTutorial, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> resetTutorial() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetTutorial, []),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
