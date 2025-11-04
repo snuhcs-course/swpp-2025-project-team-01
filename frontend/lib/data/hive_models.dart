@@ -55,6 +55,7 @@ class AppSettings {
     this.ttsGender = '남성',
     this.tagColorTheme = '봄',
     this.hasCompletedTutorial = false,
+    this.hasCompletedPlayerTutorial = false,
   });
 
   @HiveField(0)
@@ -80,6 +81,9 @@ class AppSettings {
 
   @HiveField(7)
   bool hasCompletedTutorial;
+
+  @HiveField(8)
+  bool hasCompletedPlayerTutorial;
 }
 
 /// UI 상태 (과목 펼침/접힘, 최근 검색어 등)
