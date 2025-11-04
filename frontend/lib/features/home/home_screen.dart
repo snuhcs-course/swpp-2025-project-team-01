@@ -6,6 +6,7 @@ import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/features/home/custom_drawer.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 /// 메인 홈 화면
 class HomeScreen extends StatefulWidget {
@@ -184,27 +185,34 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             )
           else
-            SliverList.builder(
-              itemCount: subjects.length,
-              itemBuilder: (context, i) {
-                final HiveSubject s = subjects[i];
-                final List<HiveTag> subjectTags = s.tagIds
-                    .map((tid) {
-                      try {
-                        return tags.firstWhere((t) => t.id == tid);
-                      } catch (_) {
-                        return null;
-                      }
-                    })
-                    .whereType<HiveTag>()
-                    .toList();
-                // 태그 정렬: 숫자 > 한글 > 영어
-                subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              sliver: SliverMasonryGrid.count(
+                crossAxisCount: MediaQuery.of(context).size.width >
+                        MediaQuery.of(context).size.height
+                    ? 2
+                    : 1,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childCount: subjects.length,
+                itemBuilder: (context, i) {
+                  final HiveSubject s = subjects[i];
+                  final List<HiveTag> subjectTags = s.tagIds
+                      .map((tid) {
+                        try {
+                          return tags.firstWhere((t) => t.id == tid);
+                        } catch (_) {
+                          return null;
+                        }
+                      })
+                      .whereType<HiveTag>()
+                      .toList();
+                  // 태그 정렬: 숫자 > 한글 > 영어
+                  subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));
 
-                final lectures = _manager.getLecturesBySubject(s.id);
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(16, i == 0 ? 6 : 12, 16, 0),
-                  child: SubjectPanel(
+                  final lectures = _manager.getLecturesBySubject(s.id);
+                  return SubjectPanel(
+                    key: ValueKey(s.id),
                     subject: s,
                     tags: subjectTags,
                     lectures: lectures,
@@ -221,9 +229,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onLectureUpdated: () {
                       // Repository가 notifyListeners()를 호출하므로 setState 불필요
                     },
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],

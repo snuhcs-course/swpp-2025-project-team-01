@@ -338,26 +338,27 @@ class _SubjectPanelState extends State<SubjectPanel>
               sizeFactor: _expandAnimation,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: widget.lectures
-                      .map(
-                        (lec) => SizedBox(
-                          width:
-                              (MediaQuery.of(context).size.width -
-                                  32 -
-                                  28 -
-                                  12) /
-                              2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
-                          child: LectureCard(
-                            lec: lec,
-                            onTap: widget.onOpenLecture,
-                            onUpdated: widget.onLectureUpdated,
-                          ),
-                        ),
-                      )
-                      .toList(),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // 실제 SubjectPanel의 너비를 기준으로 계산
+                    final cardWidth = (constraints.maxWidth - 12) / 2;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: widget.lectures
+                          .map(
+                            (lec) => SizedBox(
+                              width: cardWidth,
+                              child: LectureCard(
+                                lec: lec,
+                                onTap: widget.onOpenLecture,
+                                onUpdated: widget.onLectureUpdated,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
                 ),
               ),
             ),

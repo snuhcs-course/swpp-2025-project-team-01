@@ -3,6 +3,7 @@ import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 const _editPanelRadius = 22.0;
 const _editPanelShadow = BoxShadow(
@@ -51,6 +52,10 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
 
   // 저장 중 플래그 (저장 중에는 Hive 변경 리스너를 무시)
   bool _isSaving = false;
+
+  // 드래그 앤 드롭 상태 추적
+  int? _draggingIndex; // 현재 드래그 중인 아이템의 인덱스
+  int? _hoveringIndex; // 현재 호버 중인 위치의 인덱스
 
   @override
   void initState() {
@@ -118,13 +123,21 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
     // 삭제되지 않은 과목 목록을 _workingSubjectOrder 순서대로 정렬
     final subjectMap = {for (var s in hive.getSubjects()) s.id: s};
 
-    final subjects = _workingSubjectOrder
+    var subjects = _workingSubjectOrder
         .where(
           (id) =>
               !_deletedSubjectIds.contains(id) && subjectMap.containsKey(id),
         )
         .map((id) => subjectMap[id]!)
         .toList();
+
+    // 드래그 중일 때 임시로 리스트 재배치
+    if (_draggingIndex != null && _hoveringIndex != null) {
+      subjects = List.from(subjects);
+      final draggedItem = subjects[_draggingIndex!];
+      subjects.removeAt(_draggingIndex!);
+      subjects.insert(_hoveringIndex!, draggedItem);
+    }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -143,62 +156,187 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
 
       // 과목 목록 (드래그앤드롭 가능)
-      body: ReorderableListView.builder(
-        buildDefaultDragHandles: false,
-        scrollController: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        itemCount: subjects.length,
-        onReorder: (oldIndex, newIndex) {
-          setState(() {
-            // 미분류 과목은 드래그 불가 (항상 마지막 위치 유지)
-            if (subjects[oldIndex].isUncategorized) {
-              return;
-            }
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isLandscape = constraints.maxWidth > constraints.maxHeight;
+          final crossAxisCount = isLandscape ? 2 : 1;
 
-            // 미분류 과목의 인덱스 찾기
-            final uncategorizedIndex = subjects.indexWhere(
-              (s) => s.isUncategorized,
-            );
+          return MasonryGridView.count(
+            controller: _scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            itemCount: subjects.length,
+            itemBuilder: (context, index) {
+              final subject = subjects[index];
 
-            // 미분류 과목이 있고, 그 위치나 그 뒤로 드래그하려는 경우 차단
-            if (uncategorizedIndex != -1 && newIndex >= uncategorizedIndex) {
-              return;
-            }
+              // 실제 인덱스 찾기 (드래그 중에는 임시 리스트 사용하므로)
+              final originalIndex = _workingSubjectOrder.indexOf(subject.id);
 
-            // 드래그앤드롭 인덱스 조정
-            if (newIndex > oldIndex) {
-              newIndex -= 1;
-            }
+              // 드래그 중이고, 재배치된 리스트에서 현재 위치가 새로운 드롭 위치인지 확인
+              final isDraggedItemAtNewPosition =
+                  _draggingIndex != null &&
+                  _hoveringIndex != null &&
+                  _hoveringIndex == index;
 
-            // subjects 리스트 기반으로 재정렬
-            final reorderedSubjects = List<HiveSubject>.from(subjects);
-            final movedSubject = reorderedSubjects.removeAt(oldIndex);
-            reorderedSubjects.insert(newIndex, movedSubject);
+              // 미분류 과목은 드래그 불가
+              if (subject.isUncategorized) {
+                return DragTarget<int>(
+                  onWillAcceptWithDetails: (details) => false,
+                  onAcceptWithDetails: (details) {},
+                  builder: (context, candidateData, rejectedData) {
+                    return _buildSubjectPanel(subject, index);
+                  },
+                );
+              }
 
-            // _workingSubjectOrder를 새 순서로 업데이트
-            _workingSubjectOrder = reorderedSubjects.map((s) => s.id).toList();
-          });
-        },
-        proxyDecorator: (child, index, animation) {
-          return AnimatedBuilder(
-            animation: animation,
-            builder: (context, child) {
-              return Material(
-                elevation: 8,
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(_editPanelRadius),
-                child: child,
+              // 드래그된 아이템이 새 위치에 있을 때 회색 플레이스홀더로 표시
+              if (isDraggedItemAtNewPosition) {
+                return DragTarget<int>(
+                  onWillAcceptWithDetails: (details) {
+                    final draggedSubject = subjects[details.data];
+                    if (draggedSubject.isUncategorized) {
+                      return false;
+                    }
+                    if (_hoveringIndex != index) {
+                      setState(() {
+                        _hoveringIndex = index;
+                      });
+                    }
+                    return details.data != index;
+                  },
+                  onLeave: (data) {
+                    if (_hoveringIndex == index) {
+                      setState(() {
+                        _hoveringIndex = null;
+                      });
+                    }
+                  },
+                  onAcceptWithDetails: (details) {
+                    setState(() {
+                      final oldIndex = details.data;
+                      final newIndex = index;
+
+                      final originalSubjects = _workingSubjectOrder
+                          .where(
+                            (id) =>
+                                !_deletedSubjectIds.contains(id) &&
+                                subjectMap.containsKey(id),
+                          )
+                          .map((id) => subjectMap[id]!)
+                          .toList();
+
+                      final movedSubject = originalSubjects.removeAt(oldIndex);
+                      originalSubjects.insert(newIndex, movedSubject);
+
+                      _workingSubjectOrder = originalSubjects
+                          .map((s) => s.id)
+                          .toList();
+
+                      _draggingIndex = null;
+                      _hoveringIndex = null;
+                    });
+                  },
+                  builder: (context, candidateData, rejectedData) {
+                    // 회색 플레이스홀더 (border 없이)
+                    return Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(_editPanelRadius),
+                        color: Colors.grey.withAlpha(80),
+                      ),
+                      child: Opacity(
+                        opacity: 0.5,
+                        child: _buildSubjectPanel(subject, index),
+                      ),
+                    );
+                  },
+                );
+              }
+
+              // 드래그 가능한 과목
+              return DragTarget<int>(
+                onWillAcceptWithDetails: (details) {
+                  final draggedSubject = subjects[details.data];
+                  if (draggedSubject.isUncategorized) {
+                    return false;
+                  }
+
+                  if (_hoveringIndex != index) {
+                    setState(() {
+                      _hoveringIndex = index;
+                    });
+                  }
+
+                  return details.data != index;
+                },
+                onLeave: (data) {
+                  if (_hoveringIndex == index) {
+                    setState(() {
+                      _hoveringIndex = null;
+                    });
+                  }
+                },
+                onAcceptWithDetails: (details) {
+                  setState(() {
+                    final oldIndex = details.data;
+                    final newIndex = index;
+
+                    final originalSubjects = _workingSubjectOrder
+                        .where(
+                          (id) =>
+                              !_deletedSubjectIds.contains(id) &&
+                              subjectMap.containsKey(id),
+                        )
+                        .map((id) => subjectMap[id]!)
+                        .toList();
+
+                    final movedSubject = originalSubjects.removeAt(oldIndex);
+                    originalSubjects.insert(newIndex, movedSubject);
+
+                    _workingSubjectOrder = originalSubjects
+                        .map((s) => s.id)
+                        .toList();
+
+                    _draggingIndex = null;
+                    _hoveringIndex = null;
+                  });
+                },
+                builder: (context, candidateData, rejectedData) {
+                  return Draggable<int>(
+                    data: index,
+                    onDragStarted: () {
+                      setState(() {
+                        _draggingIndex = originalIndex;
+                      });
+                    },
+                    onDragEnd: (details) {
+                      setState(() {
+                        _draggingIndex = null;
+                        _hoveringIndex = null;
+                      });
+                    },
+                    feedback: Material(
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(_editPanelRadius),
+                      child: Opacity(
+                        opacity: 0.8,
+                        child: SizedBox(
+                          width:
+                              (constraints.maxWidth -
+                                  32 -
+                                  (crossAxisCount - 1) * 12) /
+                              crossAxisCount,
+                          child: _buildSubjectPanel(subject, index),
+                        ),
+                      ),
+                    ),
+                    childWhenDragging: const SizedBox.shrink(),
+                    child: _buildSubjectPanel(subject, index),
+                  );
+                },
               );
             },
-            child: child,
-          );
-        },
-        itemBuilder: (_, index) {
-          final subject = subjects[index];
-          return Padding(
-            key: ValueKey(subject.id),
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildSubjectPanel(subject, index),
           );
         },
       ),
@@ -248,6 +386,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
         : _workingTitles[subject.id];
 
     return _SubjectEditPanel(
+      key: ValueKey(subject.id),
       index: index,
       subject: subject,
       displayTitle: displayTitle,
@@ -773,6 +912,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 /// - 롱프레스로 과목 편집 다이얼로그 열기
 class _SubjectEditPanel extends StatefulWidget {
   const _SubjectEditPanel({
+    super.key,
     required this.index,
     required this.subject,
     this.displayTitle,
