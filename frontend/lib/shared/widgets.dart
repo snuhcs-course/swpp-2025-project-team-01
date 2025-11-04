@@ -81,7 +81,10 @@ class TagPill extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
         chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(fontWeight: FontWeight.w600),
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontFamily: 'NanumSquare',
+          ),
           padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           side: BorderSide(color: Color(0x33000000), width: 1),
           shape: StadiumBorder(),
@@ -90,7 +93,7 @@ class TagPill extends StatelessWidget {
       child: Chip(
         label: Text(
           label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: textColor),
+          style: TextStyle(color: textColor, fontFamily: 'NanumSquare'),
         ),
         backgroundColor: color,
         elevation: 2,
@@ -128,7 +131,10 @@ class SelectableTagPill extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
         chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(fontWeight: FontWeight.w600),
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontFamily: 'NanumSquare',
+          ),
           padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           side: BorderSide(color: Color(0x33000000), width: 1),
           shape: StadiumBorder(),
@@ -137,7 +143,7 @@ class SelectableTagPill extends StatelessWidget {
       child: ChoiceChip(
         label: Text(
           label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: textColor),
+          style: TextStyle(color: textColor, fontFamily: 'NanumSquare'),
         ),
         selected: selected,
         onSelected: onSelected,
