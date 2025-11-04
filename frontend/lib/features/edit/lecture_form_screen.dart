@@ -58,16 +58,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 강의 생성 중 여부 (로딩 상태)
   bool _isCreating = false;
 
-  // HTTP 클라이언트 (취소를 위해)
-  http.Client? _httpClient;
-  bool _closeClientOnDispose = true;
-
   @override
   void dispose() {
-    // HTTP 클라이언트 정리
-    if (_closeClientOnDispose) {
-      _httpClient?.close();
-    }
 
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
@@ -940,9 +932,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       // Continue anyway - app will still work in foreground
     }
 
-    // HTTP 클라이언트 생성
-    _httpClient = http.Client();
-
     // 로딩 서비스 시작 및 취소 콜백 등록
     final effectiveAudios = _audioFiles
         .where((e) => (e.filePath ?? '').isNotEmpty)
@@ -956,8 +945,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       effectiveAudios.length,
     );
     LectureLoadingService.instance.setOnCancel(() {
-      _httpClient?.close();
-      _closeClientOnDispose = true;
+      for (int i = 0; i < effectiveAudios.length; i++) {
+        clients[i]?.close();
+      }
       if (mounted) {
         setState(() => _isCreating = false);
         _showToast(
@@ -978,7 +968,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
       if (mounted) {
-        _closeClientOnDispose = false;
         final navigator = Navigator.of(context);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           navigator.pushNamedAndRemoveUntil(
@@ -1141,9 +1130,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
     } finally {
       // 9. 로딩 종료 및 클라이언트 정리
-      _httpClient?.close();
-      _httpClient = null;
-      _closeClientOnDispose = true;
+      for (int i = 0; i < effectiveAudios.length; i++) {
+        clients[i]?.close();
+      }
 
       // Disable background execution when task completes
       if (backgroundEnabled) {
