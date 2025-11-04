@@ -58,6 +58,9 @@ class LectureLoadingService extends ChangeNotifier {
   bool _bubbleOnRight = true;
   double _bubbleX = 24.0; // X position from left edge
   double _bubbleY = 24.0; // Y position from bottom edge
+  bool _hasError = false; // 에러 발생 여부
+  String _errorTitle = ''; // 에러 제목
+  String _errorMessage = ''; // 에러 상세 메시지
 
   /// 현재 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -89,6 +92,15 @@ class LectureLoadingService extends ChangeNotifier {
   /// 버블의 Y 위치 (하단 가장자리로부터의 거리)
   double get bubbleY => _bubbleY;
 
+  /// 에러 발생 여부
+  bool get hasError => _hasError;
+
+  /// 에러 제목
+  String get errorTitle => _errorTitle;
+
+  /// 에러 상세 메시지
+  String get errorMessage => _errorMessage;
+
   /// 취소 콜백 등록
   void setOnCancel(VoidCallback? callback) {
     _onCancel = callback;
@@ -115,6 +127,9 @@ class LectureLoadingService extends ChangeNotifier {
     _isCancelled = false;
     _isCollapsed = false;
     _bubbleOnRight = true;
+    _hasError = false;
+    _errorTitle = '';
+    _errorMessage = '';
 
     // 주기적으로 메시지 변경 (3-5초마다)
     _startMessageTimer();
@@ -202,19 +217,32 @@ class LectureLoadingService extends ChangeNotifier {
     _onCancel = null;
     _isCollapsed = false;
     _bubbleOnRight = true;
+    _hasError = false;
+    _errorTitle = '';
+    _errorMessage = '';
     notifyListeners();
     _clearState();
   }
 
   /// 에러 발생 시
-  void setError(String errorMessage) {
+  void setError({String? errorTitle, String? errorMessage}) {
     _messageTimer?.cancel();
+    _hasError = true;
     final language = HiveManager.instance.settings.language;
-    _message = language == 'ko' ? '오류가 발생했어요' : 'An error occurred';
-    notifyListeners();
 
-    // 3초 후 자동으로 숨김
-    Future.delayed(const Duration(seconds: 3), hideLoading);
+    // 에러 제목 설정
+    _errorTitle =
+        errorTitle ?? (language == 'ko' ? '오류가 발생했습니다' : 'An error occurred');
+
+    // 에러 메시지 설정
+    _errorMessage =
+        errorMessage ??
+        (language == 'ko'
+            ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'
+            : 'Please check your network settings and try again later.');
+
+    notifyListeners();
+    _saveState();
   }
 
   /// 강의 생성 취소

@@ -171,61 +171,80 @@ Future<String?> requestLecture(
   }
 
   // Use the injected client to send
-  final streamed = await client
-      .send(req)
-      .timeout(
-        const Duration(minutes: 10),
-        onTimeout: () {
-          throw Exception(
-            'Server connection timeout - Please check if server is running',
-          );
-        },
-      );
-
-  // read chunked SSE-style body
-  final stream = streamed.stream.transform(utf8.decoder);
-
-  String? jobId;
   try {
-    await for (final chunk in stream) {
-      // 취소 확인
-      if (LectureLoadingService.instance.isCancelled) {
-        return null;
-      }
+    final streamed = await client
+        .send(req)
+        .timeout(
+          const Duration(minutes: 10),
+          onTimeout: () {
+            throw Exception(
+              'Server connection timeout - Please check if server is running',
+            );
+          },
+        );
 
-      final lines = chunk.split('\n');
-      for (final line in lines) {
-        if (line.startsWith('data: ')) {
-          final jsonData = line.substring(6);
-          final data = jsonDecode(jsonData) as Map<String, dynamic>;
+    // read chunked SSE-style body
+    final stream = streamed.stream
+        .transform(utf8.decoder)
+        .timeout(
+          const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
+          onTimeout: (sink) {
+            debugPrint(
+              'Stream timeout - No updates from server for 30 seconds',
+            );
+            sink.addError(Exception('서버로부터 응답이 없습니다'));
+          },
+        );
 
-          jobId = data['job_id'] as String;
+    String? jobId;
+    try {
+      await for (final chunk in stream) {
+        // 취소 확인
+        if (LectureLoadingService.instance.isCancelled) {
+          return null;
+        }
 
-          // 서버가 0-100 범위로 보낼 수 있으므로 변환
-          final rawProgress = data['progress'];
-          final progress = rawProgress is int
-              ? (rawProgress / 100.0)
-              : (rawProgress as double) > 1.0
-              ? rawProgress / 100.0
-              : rawProgress;
+        final lines = chunk.split('\n');
+        for (final line in lines) {
+          if (line.startsWith('data: ')) {
+            final jsonData = line.substring(6);
+            final data = jsonDecode(jsonData) as Map<String, dynamic>;
 
-          final message = data['message'] as String;
+            jobId = data['job_id'] as String;
 
-          await onProgress(progress, message, titleText, order, audioCount);
+            // 서버가 0-100 범위로 보낼 수 있으므로 변환
+            final rawProgress = data['progress'];
+            final progress = rawProgress is int
+                ? (rawProgress / 100.0)
+                : (rawProgress as double) > 1.0
+                ? rawProgress / 100.0
+                : rawProgress;
 
-          if (data['status'] == 'completed') {
-            return jobId;
-          } else if (data['status'] == 'failed') {
-            return null;
+            final message = data['message'] as String;
+
+            await onProgress(progress, message, titleText, order, audioCount);
+
+            if (data['status'] == 'completed') {
+              return jobId;
+            } else if (data['status'] == 'failed') {
+              LectureLoadingService.instance.setError();
+              return null;
+            }
           }
         }
       }
+    } catch (e) {
+      debugPrint('Error during lecture request stream processing: $e');
+      LectureLoadingService.instance.setError();
+      return null;
     }
-  } catch (_) {
+
+    return jobId;
+  } catch (e) {
+    debugPrint('Error during lecture request: $e');
+    LectureLoadingService.instance.setError();
     return null;
   }
-
-  return jobId;
 }
 
 Future<String?> downloadResult(
@@ -254,9 +273,13 @@ Future<String?> downloadResult(
 
       return savePath;
     } else {
+      debugPrint('Failed to download result: ${response.statusCode}');
+      LectureLoadingService.instance.setError();
       return null;
     }
-  } catch (_) {
+  } catch (e) {
+    debugPrint('Error during download: $e');
+    LectureLoadingService.instance.setError();
     return null;
   }
 }
@@ -367,13 +390,20 @@ Future<List<String>?> fetchLecture(
     return null;
   }
 
-  final filePaths = await unzipResult(zipPath, titleText, order);
+  try {
+    final filePaths = await unzipResult(zipPath, titleText, order);
 
-  if (filePaths == null) {
+    if (filePaths == null) {
+      LectureLoadingService.instance.setError();
+      return null;
+    }
+
+    return filePaths;
+  } catch (e) {
+    debugPrint('Error during unzip: $e');
+    LectureLoadingService.instance.setError();
     return null;
   }
-
-  return filePaths;
 }
 
 /// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.

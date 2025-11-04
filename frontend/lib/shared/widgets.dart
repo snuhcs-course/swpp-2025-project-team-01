@@ -205,6 +205,7 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext widgetContext) {
     final isCompleted = service.progress >= 1.0;
+    final hasError = service.hasError;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -225,7 +226,13 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
               duration: const Duration(milliseconds: 250),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
-              child: isCompleted
+              child: hasError
+                  ? _ErrorView(
+                      key: const ValueKey('error'),
+                      errorTitle: service.errorTitle,
+                      errorMessage: service.errorMessage,
+                    )
+                  : isCompleted
                   ? _CompletedView(
                       key: const ValueKey('completed'),
                       context: context,
@@ -618,6 +625,84 @@ class _CompletedView extends StatelessWidget {
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 에러 화면
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({
+    super.key,
+    required this.errorTitle,
+    required this.errorMessage,
+  });
+
+  final String errorTitle;
+  final String errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final service = LectureLoadingService.instance;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minHeight: 120),
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/loading_background.png'),
+          fit: BoxFit.cover,
+          opacity: 0.15,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _CharacterBlock(),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        errorTitle,
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFFF6B6B),
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: service.hideLoading,
+                      child: const Padding(
+                        padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
+                        child: Icon(Icons.close, color: Colors.grey, size: 22),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  errorMessage,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade300,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
