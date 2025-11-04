@@ -13,10 +13,14 @@ import threading
 from typing import Any, Callable
 from pathlib import Path
 
-# Global lock for ASR model initialization only
+# Global lock for ASR model initialization
 # Protects CUDA initialization during model loading when multiple pipelines start simultaneously
-# Inference is not locked since each pipeline has its own model instance
 _asr_init_lock = threading.Lock()
+
+# Global lock for ASR model inference
+# Protects inference operations when multiple pipelines run simultaneously
+# This prevents CUDA errors when the same model runs concurrent inference
+_asr_inference_lock = threading.Lock()
 
 
 class ASRProcessor:
@@ -276,87 +280,89 @@ class ASRProcessor:
         Returns:
             Dictionary with transcript, word_timestamps, and metadata
         """
-        # No lock during inference - each pipeline has its own model instance
-        # Only model loading is protected by _asr_init_lock
+        # Load model BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.model is None:
             self.load_model()
 
-        print("="*60)
-        print("ASR Transcription")
-        print("="*60)
-
-        if progress_callback:
-            progress_callback(0.0, "Loading audio file...")
-
-        # Try auto-split transcription
-        split_result = self._auto_split_transcribe(
-            audio_path,
-            chunk_seconds = chunk_seconds,
-            batch_size = batch_size,
-            progress_callback = progress_callback
-        )
-
-        segment_timestamps = []
-
-        if split_result is None:
-            # Process original file directly (short audio)
-            print("Processing original file directly:")
+        # Use inference lock to prevent concurrent inference on the same model
+        with _asr_inference_lock:
+            print("="*60)
+            print("ASR Transcription")
+            print("="*60)
 
             if progress_callback:
-                progress_callback(50.0, "Transcribing audio...")
+                progress_callback(0.0, "Loading audio file...")
 
-            with torch.no_grad():
-                output = self.model.transcribe([audio_path], timestamps = True)
-            transcript = output[0].text
+            # Try auto-split transcription
+            split_result = self._auto_split_transcribe(
+                audio_path,
+                chunk_seconds = chunk_seconds,
+                batch_size = batch_size,
+                progress_callback = progress_callback
+            )
 
-            # Extract segment-level timestamps
-            if hasattr(output[0], 'timestamp') and output[0].timestamp and 'segment' in output[0].timestamp:
-                segment_timestamps_raw = output[0].timestamp['segment']
-                segment_timestamps = [
-                    {
-                        'text': seg.get('segment', ''),
-                        'start': seg.get('start', 0.0),
-                        'end': seg.get('end', 0.0)
-                    }
-                    for seg in segment_timestamps_raw
-                ]
+            segment_timestamps = []
+
+            if split_result is None:
+                # Process original file directly (short audio)
+                print("Processing original file directly:")
+
+                if progress_callback:
+                    progress_callback(50.0, "Transcribing audio...")
+
+                with torch.no_grad():
+                    output = self.model.transcribe([audio_path], timestamps = True)
+                transcript = output[0].text
+
+                # Extract segment-level timestamps
+                if hasattr(output[0], 'timestamp') and output[0].timestamp and 'segment' in output[0].timestamp:
+                    segment_timestamps_raw = output[0].timestamp['segment']
+                    segment_timestamps = [
+                        {
+                            'text': seg.get('segment', ''),
+                            'start': seg.get('start', 0.0),
+                            'end': seg.get('end', 0.0)
+                        }
+                        for seg in segment_timestamps_raw
+                    ]
+
+                if progress_callback:
+                    progress_callback(95.0, "Transcription complete")
+            else:
+                # Use split result (already reported progress in _auto_split_transcribe)
+                transcript, segment_timestamps = split_result
 
             if progress_callback:
-                progress_callback(95.0, "Transcription complete")
-        else:
-            # Use split result (already reported progress in _auto_split_transcribe)
-            transcript, segment_timestamps = split_result
+                progress_callback(100.0, "Finalizing transcription...")
 
-        if progress_callback:
-            progress_callback(100.0, "Finalizing transcription...")
+            print()
+            print("="*60)
+            print("Transcription Result:")
+            print("="*60)
+            print(transcript)
 
-        print()
-        print("="*60)
-        print("Transcription Result:")
-        print("="*60)
-        print(transcript)
+            if torch.cuda.is_available():
+                max_memory = torch.cuda.max_memory_allocated() / 1024**3
+                print(f"\nMax GPU memory usage: {max_memory:.2f} GB")
 
-        if torch.cuda.is_available():
-            max_memory = torch.cuda.max_memory_allocated() / 1024**3
-            print(f"\nMax GPU memory usage: {max_memory:.2f} GB")
+            # Save to file if requested
+            if output_path:
+                Path(output_path).parent.mkdir(parents = True, exist_ok = True)
+                with open(output_path, "w", encoding = "utf-8") as f:
+                    f.write(transcript)
+                print(f"\nTranscript saved to: {output_path}")
 
-        # Save to file if requested
-        if output_path:
-            Path(output_path).parent.mkdir(parents = True, exist_ok = True)
-            with open(output_path, "w", encoding = "utf-8") as f:
-                f.write(transcript)
-            print(f"\nTranscript saved to: {output_path}")
+            result = {
+                "transcript": transcript,
+                "audio_path": audio_path,
+                "length": len(transcript),
+                "segment_timestamps": segment_timestamps  # Add segment-level timestamps (split by punctuation)
+            }
 
-        result = {
-            "transcript": transcript,
-            "audio_path": audio_path,
-            "length": len(transcript),
-            "segment_timestamps": segment_timestamps  # Add segment-level timestamps (split by punctuation)
-        }
+            print(f"\n✓ Extracted {len(segment_timestamps)} segment-level timestamps")
 
-        print(f"\n✓ Extracted {len(segment_timestamps)} segment-level timestamps")
-
-        return result
+            return result
 
 
 if __name__ == "__main__":

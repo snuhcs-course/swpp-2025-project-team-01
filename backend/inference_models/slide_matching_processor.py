@@ -14,10 +14,14 @@ import threading
 
 from transformers import AutoModel
 
-# Global lock for slide matching model initialization only
+# Global lock for slide matching model initialization
 # Protects CUDA initialization during model loading when multiple pipelines start simultaneously
-# Inference is not locked since each pipeline has its own model instance
 _matching_init_lock = threading.Lock()
+
+# Global lock for slide matching model inference
+# Protects inference operations when multiple pipelines run simultaneously
+# This prevents CUDA errors when the same model runs concurrent inference
+_matching_inference_lock = threading.Lock()
 
 
 class SlideMatchingProcessor:
@@ -173,42 +177,46 @@ class SlideMatchingProcessor:
         Returns:
             Tuple of (query_embeddings, image_embeddings)
         """
+        # Load model BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.model is None:
             self.load_model()
 
-        print('Computing embeddings...')
+        # Use inference lock to prevent concurrent inference on the same model
+        with _matching_inference_lock:
+            print('Computing embeddings...')
 
-        print('Processing text queries...')
-        with torch.no_grad():
-            query_embeddings = self.model.forward_queries(
-                queries,
-                batch_size = self.batch_size
-            )
+            print('Processing text queries...')
+            with torch.no_grad():
+                query_embeddings = self.model.forward_queries(
+                    queries,
+                    batch_size = self.batch_size
+                )
 
-        print('Processing page images...')
-        if self.use_image_batching:
-            # Process images in batches for faster processing
-            image_embeddings = []
-            num_images = len(images)
-            for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
-                batch = images[i:i + self.image_batch_size]
-                with torch.no_grad():
-                    emb = self.model.forward_passages(batch, batch_size = len(batch))
-                    image_embeddings.append(emb)
-            image_embeddings = torch.cat(image_embeddings, dim = 0)
-        else:
-            # Process images one by one to avoid shared memory errors
-            image_embeddings = []
-            for image in tqdm(images, desc = 'Processing images'):
-                with torch.no_grad():
-                    emb = self.model.forward_passages([image], batch_size = 1)
-                    image_embeddings.append(emb)
-            image_embeddings = torch.cat(image_embeddings, dim = 0)
+            print('Processing page images...')
+            if self.use_image_batching:
+                # Process images in batches for faster processing
+                image_embeddings = []
+                num_images = len(images)
+                for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
+                    batch = images[i:i + self.image_batch_size]
+                    with torch.no_grad():
+                        emb = self.model.forward_passages(batch, batch_size = len(batch))
+                        image_embeddings.append(emb)
+                image_embeddings = torch.cat(image_embeddings, dim = 0)
+            else:
+                # Process images one by one to avoid shared memory errors
+                image_embeddings = []
+                for image in tqdm(images, desc = 'Processing images'):
+                    with torch.no_grad():
+                        emb = self.model.forward_passages([image], batch_size = 1)
+                        image_embeddings.append(emb)
+                image_embeddings = torch.cat(image_embeddings, dim = 0)
 
-        print(f'Query embeddings shape: {query_embeddings.shape}')
-        print(f'Image embeddings shape: {image_embeddings.shape}')
+            print(f'Query embeddings shape: {query_embeddings.shape}')
+            print(f'Image embeddings shape: {image_embeddings.shape}')
 
-        return query_embeddings, image_embeddings
+            return query_embeddings, image_embeddings
 
     def match_with_dp(
         self,
@@ -349,8 +357,8 @@ class SlideMatchingProcessor:
         Returns:
             List of matching results with page numbers
         """
-        # No lock during inference - each pipeline has its own model instance
-        # Only model loading is protected by _matching_init_lock
+        # Load model BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.model is None:
             self.load_model()
 

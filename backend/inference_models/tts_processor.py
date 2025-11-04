@@ -14,10 +14,14 @@ import threading
 from typing import Any, Callable
 from pathlib import Path
 
-# Global lock for TTS pipeline initialization only
+# Global lock for TTS pipeline initialization
 # Protects pipeline loading when multiple pipelines start simultaneously
-# Inference is not locked since each pipeline has its own TTS instance
 _tts_init_lock = threading.Lock()
+
+# Global lock for TTS inference
+# Protects inference operations when multiple pipelines run simultaneously
+# This prevents errors when the same TTS pipeline runs concurrent inference
+_tts_inference_lock = threading.Lock()
 
 
 class TTSProcessor:
@@ -94,145 +98,147 @@ class TTSProcessor:
         Returns:
             Dictionary with metadata and timestamps
         """
-        # No lock during generation - each pipeline has its own TTS instance
-        # Only pipeline loading is protected by _tts_init_lock
+        # Load pipeline BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.pipeline is None:
             self.load_model()
 
-        print(f"Generating audio for {len(sentences)} sentences...")
-
-        if progress_callback:
-            progress_callback(0.0, "Starting TTS generation...")
-
-        # Result storage
-        all_audio = []
-        timestamp_data = []
-        current_time = 0.0
-
-        total_sentences = len(sentences)
-        for idx, sentence_info in enumerate(sentences):
-            text = sentence_info.get('text', '')
-            slide_number = sentence_info.get('slide_number', 1)
-
-            print(f"Processing: [{idx+1}/{len(sentences)}] [Slide {slide_number}] {text[:50]}...")
+        # Use inference lock to prevent concurrent inference on the same pipeline
+        with _tts_inference_lock:
+            print(f"Generating audio for {len(sentences)} sentences...")
 
             if progress_callback:
-                # Update progress for each sentence (0-80% of TTS stage)
-                sentence_progress = (idx / total_sentences) * 80.0
-                progress_callback(sentence_progress, f"Generating audio for sentence {idx+1}/{total_sentences}...")
+                progress_callback(0.0, "Starting TTS generation...")
 
-            try:
-                # TTS generation
-                generator = self.pipeline(text, voice = self.voice, speed = self.speed)
+            # Result storage
+            all_audio = []
+            timestamp_data = []
+            current_time = 0.0
 
-                # Collect audio segments
-                sentence_audio_parts = []
-                for graphemes, phonemes, audio in generator:
-                    sentence_audio_parts.append(audio)
+            total_sentences = len(sentences)
+            for idx, sentence_info in enumerate(sentences):
+                text = sentence_info.get('text', '')
+                slide_number = sentence_info.get('slide_number', 1)
 
-                # Merge segments
-                if sentence_audio_parts:
-                    sentence_audio = np.concatenate(sentence_audio_parts)
+                print(f"Processing: [{idx+1}/{len(sentences)}] [Slide {slide_number}] {text[:50]}...")
 
-                    # Calculate duration
-                    duration = len(sentence_audio) / self.sample_rate
-
-                    # Save timestamp info (convert to milliseconds as integer)
-                    timestamp_info = {
-                        "sentence_id": idx + 1,
-                        "text": text,
-                        "slide_number": slide_number,
-                        "start_time": int(round(current_time * 1000)),
-                        "end_time": int(round((current_time + duration) * 1000)),
-                        "duration": int(round(duration * 1000))
-                    }
-
-                    # Add Korean translation if available
-                    if 'text_kor' in sentence_info:
-                        timestamp_info['text_kor'] = sentence_info['text_kor']
-
-                    # Add original audio timestamps if available (in milliseconds)
-                    if 'original_start_time' in sentence_info:
-                        timestamp_info['original_start_time'] = int(round(sentence_info['original_start_time'] * 1000))
-                    if 'original_end_time' in sentence_info:
-                        timestamp_info['original_end_time'] = int(round(sentence_info['original_end_time'] * 1000))
-
-                    timestamp_data.append(timestamp_info)
-
-                    # Accumulate audio
-                    all_audio.append(sentence_audio)
-
-                    # Update time
-                    current_time += duration + self.silence_duration
-
-            except Exception as e:
-                print(f"Error processing sentence {idx+1}: {e}")
-                continue
-
-        # Merge all audio
-        if all_audio:
-            if progress_callback:
-                progress_callback(80.0, "Merging audio segments...")
-
-            # Add silence between sentences
-            silence = np.zeros(int(self.silence_duration * self.sample_rate))
-            merged_audio = []
-
-            for audio_segment in all_audio:
-                merged_audio.append(audio_segment)
-                merged_audio.append(silence)
-
-            # Remove last silence
-            if merged_audio:
-                merged_audio.pop()
-
-            final_audio = np.concatenate(merged_audio)
-
-            if progress_callback:
-                progress_callback(85.0, "Saving audio file...")
-
-            # Save WAV file
-            Path(output_audio_path).parent.mkdir(parents = True, exist_ok = True)
-            sf.write(output_audio_path, final_audio, self.sample_rate)
-            print(f"\n✓ Audio file saved: {output_audio_path}")
-            print(f"  - Total duration: {len(final_audio) / self.sample_rate:.2f}s")
-
-            # File size
-            wav_size = os.path.getsize(output_audio_path) / (1024 * 1024)  # MB
-            print(f"  - WAV file size: {wav_size:.2f} MB")
-
-            # Additional format conversion
-            if export_formats:
                 if progress_callback:
-                    progress_callback(90.0, "Converting audio formats...")
-                self._convert_formats(output_audio_path, export_formats, wav_size)
+                    # Update progress for each sentence (0-80% of TTS stage)
+                    sentence_progress = (idx / total_sentences) * 80.0
+                    progress_callback(sentence_progress, f"Generating audio for sentence {idx+1}/{total_sentences}...")
 
-        if progress_callback:
-            progress_callback(95.0, "Saving metadata...")
+                try:
+                    # TTS generation
+                    generator = self.pipeline(text, voice = self.voice, speed = self.speed)
 
-        # Save JSON metadata
-        output_data = {
-            "metadata": {
-                "total_sentences": len(timestamp_data),
-                "total_duration": int(round((current_time - self.silence_duration) * 1000)) if timestamp_data else 0,
-                "voice": self.voice,
-                "speed": self.speed,
-                "language_code": self.lang_code,
-                "sample_rate": self.sample_rate
-            },
-            "timestamps": timestamp_data
-        }
+                    # Collect audio segments
+                    sentence_audio_parts = []
+                    for graphemes, phonemes, audio in generator:
+                        sentence_audio_parts.append(audio)
 
-        if output_json_path:
-            Path(output_json_path).parent.mkdir(parents = True, exist_ok = True)
-            with open(output_json_path, 'w', encoding = 'utf-8') as f:
-                json.dump(output_data, f, ensure_ascii = False, indent = 2)
-            print(f"✓ Timestamp JSON saved: {output_json_path}")
+                    # Merge segments
+                    if sentence_audio_parts:
+                        sentence_audio = np.concatenate(sentence_audio_parts)
 
-        if progress_callback:
-            progress_callback(100.0, "TTS generation completed")
+                        # Calculate duration
+                        duration = len(sentence_audio) / self.sample_rate
 
-        return output_data
+                        # Save timestamp info (convert to milliseconds as integer)
+                        timestamp_info = {
+                            "sentence_id": idx + 1,
+                            "text": text,
+                            "slide_number": slide_number,
+                            "start_time": int(round(current_time * 1000)),
+                            "end_time": int(round((current_time + duration) * 1000)),
+                            "duration": int(round(duration * 1000))
+                        }
+
+                        # Add Korean translation if available
+                        if 'text_kor' in sentence_info:
+                            timestamp_info['text_kor'] = sentence_info['text_kor']
+
+                        # Add original audio timestamps if available (in milliseconds)
+                        if 'original_start_time' in sentence_info:
+                            timestamp_info['original_start_time'] = int(round(sentence_info['original_start_time'] * 1000))
+                        if 'original_end_time' in sentence_info:
+                            timestamp_info['original_end_time'] = int(round(sentence_info['original_end_time'] * 1000))
+
+                        timestamp_data.append(timestamp_info)
+
+                        # Accumulate audio
+                        all_audio.append(sentence_audio)
+
+                        # Update time
+                        current_time += duration + self.silence_duration
+
+                except Exception as e:
+                    print(f"Error processing sentence {idx+1}: {e}")
+                    continue
+
+            # Merge all audio
+            if all_audio:
+                if progress_callback:
+                    progress_callback(80.0, "Merging audio segments...")
+
+                # Add silence between sentences
+                silence = np.zeros(int(self.silence_duration * self.sample_rate))
+                merged_audio = []
+
+                for audio_segment in all_audio:
+                    merged_audio.append(audio_segment)
+                    merged_audio.append(silence)
+
+                # Remove last silence
+                if merged_audio:
+                    merged_audio.pop()
+
+                final_audio = np.concatenate(merged_audio)
+
+                if progress_callback:
+                    progress_callback(85.0, "Saving audio file...")
+
+                # Save WAV file
+                Path(output_audio_path).parent.mkdir(parents = True, exist_ok = True)
+                sf.write(output_audio_path, final_audio, self.sample_rate)
+                print(f"\n✓ Audio file saved: {output_audio_path}")
+                print(f"  - Total duration: {len(final_audio) / self.sample_rate:.2f}s")
+
+                # File size
+                wav_size = os.path.getsize(output_audio_path) / (1024 * 1024)  # MB
+                print(f"  - WAV file size: {wav_size:.2f} MB")
+
+                # Additional format conversion
+                if export_formats:
+                    if progress_callback:
+                        progress_callback(90.0, "Converting audio formats...")
+                    self._convert_formats(output_audio_path, export_formats, wav_size)
+
+            if progress_callback:
+                progress_callback(95.0, "Saving metadata...")
+
+            # Save JSON metadata
+            output_data = {
+                "metadata": {
+                    "total_sentences": len(timestamp_data),
+                    "total_duration": int(round((current_time - self.silence_duration) * 1000)) if timestamp_data else 0,
+                    "voice": self.voice,
+                    "speed": self.speed,
+                    "language_code": self.lang_code,
+                    "sample_rate": self.sample_rate
+                },
+                "timestamps": timestamp_data
+            }
+
+            if output_json_path:
+                Path(output_json_path).parent.mkdir(parents = True, exist_ok = True)
+                with open(output_json_path, 'w', encoding = 'utf-8') as f:
+                    json.dump(output_data, f, ensure_ascii = False, indent = 2)
+                print(f"✓ Timestamp JSON saved: {output_json_path}")
+
+            if progress_callback:
+                progress_callback(100.0, "TTS generation completed")
+
+            return output_data
 
     def _convert_formats(
         self,

@@ -14,10 +14,14 @@ from vllm import LLM, SamplingParams
 # This prevents the WARNING about overriding VLLM_WORKER_MULTIPROC_METHOD
 os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
 
-# Global lock for vLLM model initialization only
+# Global lock for vLLM model initialization
 # Protects vLLM initialization which can fail if multiple instances start simultaneously
-# Inference is not locked since each pipeline has its own vLLM instance
 _vllm_init_lock = threading.Lock()
+
+# Global lock for translation model inference
+# Protects inference operations when multiple pipelines run simultaneously
+# This prevents vLLM errors when the same model runs concurrent inference
+_translation_inference_lock = threading.Lock()
 
 
 class TranslationProcessor:
@@ -134,61 +138,63 @@ class TranslationProcessor:
         Returns:
             List of Korean translations
         """
-        # No lock during inference - each pipeline has its own vLLM instance
-        # Only model loading is protected by _vllm_init_lock
+        # Load model BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.model is None:
             self.load_model()
 
-        print(f"Translating {len(texts)} sentences to Korean...")
+        # Use inference lock to prevent concurrent inference on the same model
+        with _translation_inference_lock:
+            print(f"Translating {len(texts)} sentences to Korean...")
 
-        if progress_callback:
-            progress_callback(0.0, "Preparing translation prompts...")
+            if progress_callback:
+                progress_callback(0.0, "Preparing translation prompts...")
 
-        # Build chat prompts for all texts
-        chat_prompts = [self._build_translation_prompt(text) for text in texts]
+            # Build chat prompts for all texts
+            chat_prompts = [self._build_translation_prompt(text) for text in texts]
 
-        # Set up sampling parameters (using recommended parameters)
-        sampling_params = SamplingParams(
-            temperature = temperature,
-            top_p = top_p,
-            top_k = top_k,
-            repetition_penalty = repetition_penalty,
-            max_tokens = max_tokens,
-            stop_token_ids = [127960]
-        )
+            # Set up sampling parameters (using recommended parameters)
+            sampling_params = SamplingParams(
+                temperature = temperature,
+                top_p = top_p,
+                top_k = top_k,
+                repetition_penalty = repetition_penalty,
+                max_tokens = max_tokens,
+                stop_token_ids = [127960]
+            )
 
-        if progress_callback:
-            progress_callback(10.0, f"Translating {len(texts)} sentences...")
+            if progress_callback:
+                progress_callback(10.0, f"Translating {len(texts)} sentences...")
 
-        # Generate translations in parallel using chat format
-        # vLLM handles batching and parallelization automatically
-        # vLLM will apply the model's chat template automatically when given chat messages
-        outputs = self.model.chat(chat_prompts, sampling_params = sampling_params)
+            # Generate translations in parallel using chat format
+            # vLLM handles batching and parallelization automatically
+            # vLLM will apply the model's chat template automatically when given chat messages
+            outputs = self.model.chat(chat_prompts, sampling_params = sampling_params)
 
-        if progress_callback:
-            progress_callback(80.0, "Processing translation results...")
+            if progress_callback:
+                progress_callback(80.0, "Processing translation results...")
 
-        # Extract translations
-        translations = []
-        for idx, output in enumerate(outputs):
-            translation = output.outputs[0].text.strip()
-            translations.append(translation)
+            # Extract translations
+            translations = []
+            for idx, output in enumerate(outputs):
+                translation = output.outputs[0].text.strip()
+                translations.append(translation)
 
-            # Log progress
-            if (idx + 1) % 10 == 0 or idx == len(outputs) - 1:
-                print(f"Translated: {idx + 1}/{len(texts)} sentences")
+                # Log progress
+                if (idx + 1) % 10 == 0 or idx == len(outputs) - 1:
+                    print(f"Translated: {idx + 1}/{len(texts)} sentences")
 
-                if progress_callback:
-                    translation_progress = 80.0 + (idx + 1) / len(texts) * 20.0
-                    progress_callback(translation_progress, f"Processed {idx + 1}/{len(texts)} translations")
+                    if progress_callback:
+                        translation_progress = 80.0 + (idx + 1) / len(texts) * 20.0
+                        progress_callback(translation_progress, f"Processed {idx + 1}/{len(texts)} translations")
 
-        # Note: GPU memory usage is shown in vLLM's INFO logs
-        # torch.cuda.memory_allocated() shows 0 because vLLM uses separate processes
+            # Note: GPU memory usage is shown in vLLM's INFO logs
+            # torch.cuda.memory_allocated() shows 0 because vLLM uses separate processes
 
-        if progress_callback:
-            progress_callback(100.0, "Translation completed")
+            if progress_callback:
+                progress_callback(100.0, "Translation completed")
 
-        return translations
+            return translations
 
     def translate_matching_results(
         self,
