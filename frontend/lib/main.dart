@@ -152,22 +152,30 @@ class _ReViewAppState extends State<ReViewApp> {
         // NativeDeviceOrientationReader로 정확한 디바이스 방향 감지
         return NativeDeviceOrientationReader(
           builder: (context) {
-            final orientation = NativeDeviceOrientationReader.orientation(context);
+            final orientation = NativeDeviceOrientationReader.orientation(
+              context,
+            );
 
             // DeviceOrientation에 따라 카메라 위치 판단
             // - landscapeLeft: 카메라가 왼쪽
             // - landscapeRight: 카메라가 오른쪽
-            final cameraOnLeft = orientation == NativeDeviceOrientation.landscapeLeft;
-            final cameraOnRight = orientation == NativeDeviceOrientation.landscapeRight;
+            final cameraOnLeft =
+                orientation == NativeDeviceOrientation.landscapeLeft;
+            final cameraOnRight =
+                orientation == NativeDeviceOrientation.landscapeRight;
 
             Widget wrappedChild = child!;
 
             // 모든 화면에 SafeArea 적용 (가로 모드일 때는 카메라 있는 쪽만 SafeArea 비활성화)
             wrappedChild = Container(
-              color: isDark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
+              color: isDark
+                  ? Theme.of(context).scaffoldBackgroundColor
+                  : Colors.white,
               child: SafeArea(
-                left: !cameraOnLeft,   // landscapeLeft일 때 좌측 SafeArea 비활성화 (마진 제거)
-                right: !cameraOnRight, // landscapeRight일 때 우측 SafeArea 비활성화 (마진 제거)
+                left:
+                    !cameraOnLeft, // landscapeLeft일 때 좌측 SafeArea 비활성화 (마진 제거)
+                right:
+                    !cameraOnRight, // landscapeRight일 때 우측 SafeArea 비활성화 (마진 제거)
                 child: wrappedChild,
               ),
             );
