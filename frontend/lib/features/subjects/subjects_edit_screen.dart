@@ -116,6 +116,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   @override
   Widget build(BuildContext context) {
     // 삭제되지 않은 과목 목록을 _workingSubjectOrder 순서대로 정렬
+    final l10n = AppLocalizations.of(context);
     final subjectMap = {for (var s in hive.getSubjects()) s.id: s};
 
     final subjects = _workingSubjectOrder
@@ -136,7 +137,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _showCreateSubjectDialog(context),
-            tooltip: '과목 추가',
+            tooltip: l10n.addSubject,
           ),
         ],
       ),
@@ -378,6 +379,7 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
   ///
   /// 과목 삭제 시 해당 과목의 모든 강의도 함께 삭제됨을 경고
   Future<bool?> _showDeleteConfirmationDialog(HiveSubject subject) {
+    final l10n = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
@@ -396,9 +398,9 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                   color: Colors.black87,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    '경고',
+                    l10n.warning,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -418,8 +420,8 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      '과목 삭제 시\n해당 과목의 강의들까지 전부\n삭제됩니다.\n\n삭제하시겠습니까?',
+                    Text(
+                      l10n.deleteSubjectWarning,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.black,
@@ -440,8 +442,8 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                             ),
                             child: TextButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text(
-                                '예',
+                              child: Text(
+                                l10n.yes,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -462,8 +464,8 @@ class _SubjectsEditScreenState extends State<SubjectsEditScreen> {
                             ),
                             child: TextButton(
                               onPressed: () => Navigator.pop(context, false),
-                              child: const Text(
-                                '아니오',
+                              child: Text(
+                                l10n.no,
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontSize: 18,
@@ -550,6 +552,7 @@ class _CreateSubjectDialogState extends State<_CreateSubjectDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
       title: Text(AppLocalizations.of(context).addSubject),
       content: Column(
@@ -558,9 +561,9 @@ class _CreateSubjectDialogState extends State<_CreateSubjectDialog> {
         children: [
           TextField(
             controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: '과목명',
-              hintText: '예) 소프트웨어 개발의 원리와 실습',
+            decoration: InputDecoration(
+              labelText: l10n.subjectName,
+              hintText: l10n.isKorean ? '예) 소프트웨어 개발의 원리와 실습' : 'ex) Software Development Principles and Practice',
             ),
             autofocus: true,
           ),
@@ -661,8 +664,9 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('과목 수정'),
+      title: Text(l10n.editSubjects),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
       content: SingleChildScrollView(
         child: Column(
@@ -670,15 +674,15 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ========== 과목 이름 입력 ==========
-            const Text(
-              '과목 이름',
+            Text(
+              l10n.subjectName,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                hintText: '예) 소프트웨어 개발의 원리와 실습',
+              decoration: InputDecoration(
+                hintText: l10n.isKorean ? '예) 소프트웨어 개발의 원리와 실습' : 'ex) Software Development Principles and Practice',
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12,
@@ -688,8 +692,8 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
             ),
             const SizedBox(height: 16),
 
-            const Text(
-              '태그 수정',
+            Text(
+              l10n.editTags2,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
@@ -739,7 +743,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, null),
-          child: const Text('취소'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -747,7 +751,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
             if (newTitle.isEmpty) {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('과목명을 입력해주세요')));
+              ).showSnackBar(SnackBar(content: Text(l10n.pleaseEnterSubjectName)));
               return;
             }
             Navigator.pop(context, {
@@ -756,7 +760,7 @@ class _SubjectEditDialogState extends State<_SubjectEditDialog> {
               'tagIds': _selectedTagIds.toList(),
             });
           },
-          child: const Text('확인'),
+          child: Text(l10n.ok),
         ),
       ],
     );
