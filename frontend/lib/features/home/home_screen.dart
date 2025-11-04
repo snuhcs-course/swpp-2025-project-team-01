@@ -188,7 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               sliver: SliverMasonryGrid.count(
-                crossAxisCount: MediaQuery.of(context).size.width >
+                crossAxisCount:
+                    MediaQuery.of(context).size.width >
                         MediaQuery.of(context).size.height
                     ? 2
                     : 1,
