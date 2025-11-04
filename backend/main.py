@@ -209,20 +209,20 @@ def create_pipeline() -> LecturePipeline:
     """
     return LecturePipeline(
         # ASR settings
-        asr_chunk_seconds = 180,
+        asr_chunk_seconds = 300,
         asr_batch_size = 3,
 
         # Matching settings
-        jump_penalty = 0.2,
+        jump_penalty = 1.5,
         backward_weight = 2.0,
         use_exponential_scaling = True,
-        exponential_scale = 2.8,
+        exponential_scale = 2.79,
         use_confidence_boost = True,
-        confidence_threshold = 0.925,
-        confidence_weight = 2.25,
+        confidence_threshold = 0.9,
+        confidence_weight = 2.13,
         use_context_similarity = True,
-        context_weight = 0.05,
-        context_update_rate = 0.25,
+        context_weight = 0.047,
+        context_update_rate = 0.24,
 
         # Translation settings
         translation_model = "tencent/Hunyuan-MT-7B-fp8",
