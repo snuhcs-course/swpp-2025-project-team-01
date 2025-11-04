@@ -148,6 +148,9 @@ class _ReViewAppState extends State<ReViewApp> {
         // 모션 줄이기가 활성화되면 스크롤 물리 효과 제거
         Widget wrappedChild = child!;
 
+        // 모든 화면에 SafeArea 적용
+        wrappedChild = SafeArea(child: wrappedChild);
+
         if (reduceMotion) {
           wrappedChild = ScrollConfiguration(
             behavior: const _NoBouncingScrollBehavior(),
