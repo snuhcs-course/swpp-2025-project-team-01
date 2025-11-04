@@ -66,16 +66,20 @@ class TagPill extends StatelessWidget {
     required this.tag,
     this.labelPrefix = '#',
     this.label,
+    this.textColor,
   });
 
   final HiveTag tag;
   final String? label;
   final String labelPrefix;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
-    final Color textColor = getTextColorForBackground(tag.color);
+    final Color resolvedTextColor =
+        textColor ??
+        getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
     return Theme(
       data: ThemeData(
         useMaterial3: true,
@@ -93,7 +97,7 @@ class TagPill extends StatelessWidget {
       child: Chip(
         label: Text(
           label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: textColor, fontFamily: 'NanumSquare'),
+          style: TextStyle(color: resolvedTextColor, fontFamily: 'NanumSquare'),
         ),
         backgroundColor: color,
         elevation: 2,
@@ -113,6 +117,7 @@ class SelectableTagPill extends StatelessWidget {
     this.showCheckmark = true,
     this.labelPrefix = '#',
     this.label,
+    this.textColor,
   });
 
   final HiveTag tag;
@@ -121,11 +126,14 @@ class SelectableTagPill extends StatelessWidget {
   final bool showCheckmark;
   final String? label;
   final String labelPrefix;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
-    final Color textColor = getTextColorForBackground(tag.color);
+    final Color resolvedTextColor =
+        textColor ??
+        getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
     return Theme(
       data: ThemeData(
         useMaterial3: true,
@@ -143,7 +151,7 @@ class SelectableTagPill extends StatelessWidget {
       child: ChoiceChip(
         label: Text(
           label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: textColor, fontFamily: 'NanumSquare'),
+          style: TextStyle(color: resolvedTextColor, fontFamily: 'NanumSquare'),
         ),
         selected: selected,
         onSelected: onSelected,
@@ -152,7 +160,7 @@ class SelectableTagPill extends StatelessWidget {
         elevation: selected ? 4 : 2,
         side: const BorderSide(color: Color(0x1F000000), width: 0.5),
         showCheckmark: showCheckmark,
-        checkmarkColor: textColor,
+        checkmarkColor: resolvedTextColor,
       ),
     );
   }
