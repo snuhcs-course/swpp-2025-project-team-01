@@ -695,18 +695,12 @@ Future<void> onProgress(
     loadingService.startLoading(lectureTitle, audioCount);
   }
 
-  final currentProgress = loadingService.getProgress();
-  if (currentProgress >= 1.0) {
-    // Completed
-    loadingService.completeLoading();
-  } else {
-    // In progress
-    loadingService.updateProgress(progress, order, message);
-  }
+  // 진행도 갱신 (완료 위젯 노출은 마지막 단계에서 처리)
+  loadingService.updateProgress(progress, order, message);
 
   final updatedProgress = loadingService.getProgress();
   final pct = (updatedProgress * 100).round();
-  final isDone = updatedProgress >= 1.0;
+  final isDone = loadingService.isCompleted;
 
   // Always show notification during progress to keep background task alive
   // Only skip notification if completed and app is in foreground

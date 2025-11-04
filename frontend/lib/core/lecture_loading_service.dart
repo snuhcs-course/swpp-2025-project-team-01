@@ -61,6 +61,7 @@ class LectureLoadingService extends ChangeNotifier {
   bool _hasError = false; // 에러 발생 여부
   String _errorTitle = ''; // 에러 제목
   String _errorMessage = ''; // 에러 상세 메시지
+  bool _isCompleted = false; // 완료 뷰 표시 여부
 
   /// 현재 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -101,6 +102,9 @@ class LectureLoadingService extends ChangeNotifier {
   /// 에러 상세 메시지
   String get errorMessage => _errorMessage;
 
+  /// 완료 위젯 노출 여부
+  bool get isCompleted => _isCompleted;
+
   /// 취소 콜백 등록
   void setOnCancel(VoidCallback? callback) {
     _onCancel = callback;
@@ -130,6 +134,7 @@ class LectureLoadingService extends ChangeNotifier {
     _hasError = false;
     _errorTitle = '';
     _errorMessage = '';
+    _isCompleted = false;
 
     // 주기적으로 메시지 변경 (3-5초마다)
     _startMessageTimer();
@@ -201,6 +206,7 @@ class LectureLoadingService extends ChangeNotifier {
     final language = HiveManager.instance.settings.language;
     _message = language == 'ko' ? '강의 생성 완료!' : 'Lecture created!';
     _lectureId = lectureId;
+    _isCompleted = true;
     notifyListeners();
     _saveState();
   }
@@ -220,6 +226,7 @@ class LectureLoadingService extends ChangeNotifier {
     _hasError = false;
     _errorTitle = '';
     _errorMessage = '';
+    _isCompleted = false;
     notifyListeners();
     _clearState();
   }
@@ -304,6 +311,7 @@ class LectureLoadingService extends ChangeNotifier {
   static const _keyBubbleOnRight = 'lecture_loading_bubble_on_right';
   static const _keyBubbleX = 'lecture_loading_bubble_x';
   static const _keyBubbleY = 'lecture_loading_bubble_y';
+  static const _keyIsCompleted = 'lecture_loading_is_completed';
 
   /// 상태를 SharedPreferences에 저장
   Future<void> _saveState() async {
@@ -317,6 +325,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setBool(_keyBubbleOnRight, _bubbleOnRight);
       await prefs.setDouble(_keyBubbleX, _bubbleX);
       await prefs.setDouble(_keyBubbleY, _bubbleY);
+      await prefs.setBool(_keyIsCompleted, _isCompleted);
     } catch (e) {
       debugPrint('Failed to save loading state: $e');
     }
@@ -334,6 +343,7 @@ class LectureLoadingService extends ChangeNotifier {
       _bubbleOnRight = prefs.getBool(_keyBubbleOnRight) ?? true;
       _bubbleX = prefs.getDouble(_keyBubbleX) ?? 24.0;
       _bubbleY = prefs.getDouble(_keyBubbleY) ?? 24.0;
+      _isCompleted = prefs.getBool(_keyIsCompleted) ?? false;
 
       // 복원 후 UI 업데이트
       if (_isLoading) {
@@ -356,6 +366,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyBubbleOnRight);
       await prefs.remove(_keyBubbleX);
       await prefs.remove(_keyBubbleY);
+      await prefs.remove(_keyIsCompleted);
     } catch (e) {
       debugPrint('Failed to clear loading state: $e');
     }

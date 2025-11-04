@@ -204,7 +204,7 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext widgetContext) {
-    final isCompleted = service.progress >= 1.0;
+    final isCompleted = service.isCompleted;
     final hasError = service.hasError;
 
     return Align(
