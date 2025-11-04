@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/widgets.dart';
+import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -155,38 +156,39 @@ void main() {
       }
 
       // Act: call with injected client + endpointOverride so we don’t depend on host/port
-      await expectLater(
-        () async => requestLecture(
-          slide.path,
-          audioEntry,
-          'My Lecture',
-          0,
-          1,
-          '127.0.0.1',
-          '8080',
-          onProgress,
-          endpointOverride: Uri.parse(
-            'http://local.test/api/synchronize/stream',
-          ),
-        ),
-        throwsA(anything),
+      final service = LectureLoadingService.instance;
+
+      final resultSingle = await requestLecture(
+        slide.path,
+        audioEntry,
+        'My Lecture',
+        0,
+        1,
+        '127.0.0.1',
+        '8080',
+        onProgress,
+        endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
-      await expectLater(
-        () async => requestLecture(
-          slide.path,
-          audioEntry,
-          'My Lecture',
-          0,
-          2,
-          '127.0.0.1',
-          '8080',
-          onProgress,
-          endpointOverride: Uri.parse(
-            'http://local.test/api/synchronize/stream',
-          ),
-        ),
-        throwsA(anything),
+      expect(resultSingle, isNull);
+      expect(service.hasError, isTrue);
+      service.hideLoading();
+
+      final resultMulti = await requestLecture(
+        slide.path,
+        audioEntry,
+        'My Lecture',
+        0,
+        2,
+        '127.0.0.1',
+        '8080',
+        onProgress,
+        endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
+      expect(resultMulti, isNull);
+      expect(service.hasError, isTrue);
+      service.hideLoading();
+
+      expect(progressEvents, isEmpty);
 
       try {
         File(
