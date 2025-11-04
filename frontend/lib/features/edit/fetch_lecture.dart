@@ -336,11 +336,6 @@ Future<List<String>?> fetchLecture(
   http.Client? clientToClose, // client that can be closed externally
 }) async {
   debugPrint('🚀 Starting lecture request $order/$audioCount');
-  debugPrint('📤 Server: $serverAddress:$port');
-  debugPrint('📄 Slide: $slidePath');
-  debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
-  debugPrint('📝 Start page: "${audioFileEntry.startPageController.text}"');
-  debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
   final jobId = await requestLecture(
     slidePath,
     audioFileEntry,
@@ -378,7 +373,6 @@ Future<List<String>?> fetchLecture(
     return null;
   }
 
-  debugPrint('Finishing lecture request $order/$audioCount');
   return filePaths;
 }
 
@@ -609,7 +603,15 @@ Future<void> _ensureNotificationsInitialized() async {
   }
 
   const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const initSettings = InitializationSettings(android: androidInit);
+  const iosInit = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+  const initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit,
+  );
   await _notifier.initialize(initSettings);
 
   // Request notification permission for Android 13+ (API 33+)
@@ -701,8 +703,20 @@ Future<void> onProgress(
       category: AndroidNotificationCategory.progress,
     );
 
+    final iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: isDone,
+      subtitle: isDone
+          ? (message.isEmpty ? 'Completed' : message)
+          : '$message — $pct%',
+    );
+
     final title = 'Generating Lecture: $lectureTitle';
-    final details = NotificationDetails(android: androidDetails);
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _notifier.show(
       _progressNotificationId,

@@ -920,21 +920,23 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     final titleText = _titleController.text.trim();
 
     // Enable background execution
-    final androidConfig = FlutterBackgroundAndroidConfig(
-      notificationTitle: 'Generating Lecture',
-      notificationText: 'Processing: $titleText',
-      notificationImportance: AndroidNotificationImportance.high,
-      enableWifiLock: true,
-    );
-
     bool backgroundEnabled = false;
     try {
-      backgroundEnabled = await FlutterBackground.initialize(
-        androidConfig: androidConfig,
-      );
-      if (backgroundEnabled) {
-        await FlutterBackground.enableBackgroundExecution();
+      if (Platform.isAndroid) {
+        final androidConfig = FlutterBackgroundAndroidConfig(
+          notificationTitle: 'Generating Lecture',
+          notificationText: 'Processing: $titleText',
+          notificationImportance: AndroidNotificationImportance.high,
+          enableWifiLock: true,
+        );
+        backgroundEnabled = await FlutterBackground.initialize(
+          androidConfig: androidConfig,
+        );
+        if (backgroundEnabled) {
+          await FlutterBackground.enableBackgroundExecution();
+        }
       }
+      // iOS doesn't need FlutterBackground - background modes in Info.plist handle it
     } catch (e) {
       debugPrint('Failed to enable background execution: $e');
       // Continue anyway - app will still work in foreground
@@ -963,7 +965,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
       }
       // Disable background execution when cancelled
-      if (backgroundEnabled) {
+      if (backgroundEnabled && Platform.isAndroid) {
         FlutterBackground.disableBackgroundExecution();
       }
     });
@@ -1143,7 +1145,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // Disable background execution when task completes
-      if (backgroundEnabled) {
+      if (backgroundEnabled && Platform.isAndroid) {
         try {
           await FlutterBackground.disableBackgroundExecution();
         } catch (e) {
