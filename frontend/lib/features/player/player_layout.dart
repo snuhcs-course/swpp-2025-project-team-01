@@ -372,7 +372,9 @@ class VerticalToggleBar extends StatelessWidget {
       child: Container(
         width: double.infinity,
         height: 40,
-        color: isDark ? colorScheme.surfaceVariant : const Color(0xFFF5F5F5),
+        color: isDark
+            ? colorScheme.surfaceContainerHighest
+            : const Color(0xFFF5F5F5),
         child: Center(
           child: Icon(
             isPagesExpanded
@@ -479,7 +481,7 @@ class PagesListWidget extends StatelessWidget {
           return Container(
             height: 150,
             color: isDark
-                ? theme.colorScheme.surfaceVariant
+                ? theme.colorScheme.surfaceContainerHighest
                 : const Color(0xFFEEEEEE),
             child: slidesList,
           );
@@ -512,7 +514,7 @@ class TranslationButton extends StatelessWidget {
         final isActive = hasKorean && isKorean;
         final backgroundColor = !isEnabled
             ? (isDark
-                  ? colorScheme.surfaceVariant.withOpacity(0.6)
+                  ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
                   : Colors.grey.shade300)
             : (isActive
                   ? (isDark ? colorScheme.primary : Colors.blue.shade600)
@@ -521,7 +523,7 @@ class TranslationButton extends StatelessWidget {
                         : Colors.grey.shade400));
         final textColor = !isEnabled
             ? (isDark
-                  ? colorScheme.onSurfaceVariant.withOpacity(0.6)
+                  ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
                   : Colors.grey.shade500)
             : (isActive
                   ? (isDark ? colorScheme.onPrimary : Colors.white)
@@ -539,7 +541,7 @@ class TranslationButton extends StatelessWidget {
                   ? Border.all(
                       color: isActive
                           ? colorScheme.primary
-                          : colorScheme.outlineVariant.withOpacity(0.6),
+                          : colorScheme.outlineVariant.withValues(alpha: 0.6),
                     )
                   : null,
             ),
