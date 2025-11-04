@@ -224,6 +224,13 @@ class _PlayerScreenState extends State<PlayerScreen>
         setState(() {
           _isLoading = false;
         });
+
+        // OrientationBuilder와 PdfView가 완전히 mount된 후 재생 시작
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _controller.startPlayback();
+          }
+        });
       }
     } catch (e) {
       // 예상하지 못한 에러 처리
