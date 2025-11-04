@@ -149,10 +149,8 @@ class PlayerController extends ChangeNotifier {
     // 스크롤 리스너 설정
     _setupScrollListener();
 
-    // 오디오 로드 및 재생 (기본: TTS)
+    // 오디오 로드 (재생은 외부에서 startPlayback() 호출)
     await _audioService.loadAudio(audioPath);
-
-    _audioService.play(); // await 제거 - fire-and-forget
   }
 
   Future<void> _loadPdfDocument(
@@ -295,6 +293,11 @@ class PlayerController extends ChangeNotifier {
   }
 
   // ========== 재생 제어 메서드 ==========
+
+  /// 초기 재생 시작 (OrientationBuilder가 안정화된 후 호출)
+  Future<void> startPlayback() async {
+    await _audioService.play();
+  }
 
   Future<void> playPause() async {
     if (isPlaying.value) {
