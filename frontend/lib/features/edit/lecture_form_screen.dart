@@ -695,14 +695,23 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'flac'],
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
 
     if (result != null && result.files.single.path != null) {
+      final filePath = result.files.single.path!;
+
+      // m4a 파일만 허용
+      if (!filePath.toLowerCase().endsWith('.m4a')) {
+        _showToast(
+          l10n.isKorean
+              ? 'm4a 형식의 파일만 업로드 가능합니다'
+              : 'Only m4a files are allowed',
+        );
+        return;
+      }
+
       setState(() {
-        _audioFiles[index].filePath = result.files.single.path;
+        _audioFiles[index].filePath = filePath;
       });
     }
   }
