@@ -1,10 +1,10 @@
 """
 ASR Processor Module
-Automatic Speech Recognition using NVIDIA Parakeet TDT model
+Automatic Speech Recognition using OpenAI Whisper Turbo model
 """
 
 import torch
-import nemo.collections.asr as nemo_asr
+import whisper
 import librosa
 import soundfile as sf
 import os
@@ -26,22 +26,26 @@ _asr_inference_lock = threading.Lock()
 class ASRProcessor:
     """
     Automatic Speech Recognition processor with automatic chunking support.
+    Uses OpenAI Whisper Turbo for multilingual transcription.
     """
 
     def __init__(
         self,
-        model_name: str = "nvidia/parakeet-tdt-0.6b-v2",
-        device: str = "cuda"
+        model_name: str = "turbo",
+        device: str = "cuda",
+        language: str = "en"
     ):
         """
         Initialize ASR processor.
 
         Args:
-            model_name: Pretrained ASR model name
+            model_name: Whisper model name (turbo, large-v3, large-v2, etc.)
             device: Device to run on (cuda/cpu)
+            language: Language code for transcription ('en' for English, 'ko' for Korean)
         """
         self.model_name = model_name
         self.device = device
+        self.language = language
         self.model = None
 
     def load_model(self):
@@ -53,13 +57,11 @@ class ASRProcessor:
                 print("Model already loaded")
                 return
 
-            print(f"Loading ASR model: {self.model_name}")
+            print(f"Loading Whisper ASR model: {self.model_name} (language: {self.language})")
             if torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats()
 
-            self.model = nemo_asr.models.ASRModel.from_pretrained(
-                model_name = self.model_name
-            )
+            self.model = whisper.load_model(self.model_name, device=self.device)
             print("ASR model loaded successfully")
 
     def unload_model(self):
@@ -87,22 +89,22 @@ class ASRProcessor:
         Args:
             input_file: Input audio file path
             chunk_seconds: Chunk duration in seconds
-            batch_size: Batch size for processing
+            batch_size: Batch size for processing (Note: Whisper processes sequentially)
             temp_dir: Temporary directory for chunks (auto-generated if None)
             progress_callback: Optional callback function(progress: float, message: str)
 
         Returns:
             Tuple of (full transcript, segment timestamps) or None if no splitting needed
             Segment timestamps is a list of dicts with 'text', 'start', 'end' keys (times in seconds)
-            Segments are automatically split by punctuation marks
+            Segments are automatically split by Whisper's segmentation
         """
         print(f"Loading audio file: {input_file}")
 
         if progress_callback:
             progress_callback(5.0, "Loading audio file...")
 
-        # Load audio file as mono
-        audio, sr = librosa.load(input_file, sr = None, mono = True)
+        # Load audio file as mono and resample to 16kHz (Whisper requirement)
+        audio, sr = librosa.load(input_file, sr = 16000, mono = True)
         total_duration = len(audio) / sr
 
         print(f"Total duration: {total_duration:.1f}s ({total_duration/60:.1f}min)")
@@ -149,10 +151,7 @@ class ASRProcessor:
             print(f"Chunk {chunk_num}: {chunk_duration:.1f}s")
 
         print(f"Total {len(chunk_files)} chunks created")
-        print(f"Processing with batch size {batch_size}")
-
-        # Batch processing
-        print("Starting batch processing...")
+        print(f"Processing chunks sequentially...")
 
         if progress_callback:
             progress_callback(20.0, f"Transcribing {len(chunk_files)} chunks...")
@@ -164,45 +163,42 @@ class ASRProcessor:
         gc.collect()
 
         try:
-            # Process all chunks at once with batch_size and enable timestamps
-            with torch.no_grad():
-                outputs = self.model.transcribe(
-                    chunk_files,
-                    batch_size = batch_size,
-                    timestamps = True  # Enable word-level timestamps
-                )
-
-            if progress_callback:
-                progress_callback(70.0, "Processing transcription results...")
-
-            # Extract transcripts and timestamps
+            # Process chunks sequentially with Whisper
             transcripts = []
             all_segment_timestamps = []
             chunk_offset = 0.0  # Track cumulative time offset
 
-            for idx, output in enumerate(outputs, 1):
-                transcript = output.text if hasattr(output, 'text') else str(output)
+            for idx, chunk_file in enumerate(chunk_files, 1):
+                print(f"Processing chunk {idx}/{len(chunk_files)}...")
+
+                with torch.no_grad():
+                    # Transcribe with word-level timestamps
+                    result = self.model.transcribe(
+                        chunk_file,
+                        language=self.language,
+                        word_timestamps=True
+                    )
+
+                transcript = result['text']
                 transcripts.append(transcript)
                 print(f"Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
 
-                # Extract segment-level timestamps if available
-                if hasattr(output, 'timestamp') and output.timestamp and 'segment' in output.timestamp:
-                    segment_timestamps = output.timestamp['segment']
-                    # Adjust timestamps by chunk offset
-                    for seg_info in segment_timestamps:
+                # Extract segment-level timestamps
+                if 'segments' in result:
+                    for segment in result['segments']:
                         all_segment_timestamps.append({
-                            'text': seg_info.get('segment', ''),
-                            'start': seg_info.get('start', 0.0) + chunk_offset,
-                            'end': seg_info.get('end', 0.0) + chunk_offset
+                            'text': segment['text'].strip(),
+                            'start': segment['start'] + chunk_offset,
+                            'end': segment['end'] + chunk_offset
                         })
 
-                    # Update chunk offset for next chunk
-                    chunk_duration = len(audio[(idx - 1) * chunk_samples:idx * chunk_samples]) / sr
-                    chunk_offset += chunk_duration
+                # Update chunk offset for next chunk
+                chunk_duration = len(audio[(idx - 1) * chunk_samples:idx * chunk_samples]) / sr
+                chunk_offset += chunk_duration
 
                 # Report progress per chunk
                 if progress_callback:
-                    chunk_progress = 70.0 + (idx / len(chunk_files)) * 20.0
+                    chunk_progress = 20.0 + (idx / len(chunk_files)) * 70.0
                     progress_callback(chunk_progress, f"Processed chunk {idx}/{len(chunk_files)}")
 
             # Show GPU memory usage
@@ -312,19 +308,23 @@ class ASRProcessor:
                     progress_callback(50.0, "Transcribing audio...")
 
                 with torch.no_grad():
-                    output = self.model.transcribe([audio_path], timestamps = True)
-                transcript = output[0].text
+                    result = self.model.transcribe(
+                        audio_path,
+                        language=self.language,
+                        word_timestamps=True
+                    )
 
-                # Extract segment-level timestamps
-                if hasattr(output[0], 'timestamp') and output[0].timestamp and 'segment' in output[0].timestamp:
-                    segment_timestamps_raw = output[0].timestamp['segment']
+                transcript = result['text']
+
+                # Extract segment-level timestamps (Whisper automatically segments by natural speech boundaries)
+                if 'segments' in result:
                     segment_timestamps = [
                         {
-                            'text': seg.get('segment', ''),
-                            'start': seg.get('start', 0.0),
-                            'end': seg.get('end', 0.0)
+                            'text': seg['text'].strip(),
+                            'start': seg['start'],
+                            'end': seg['end']
                         }
-                        for seg in segment_timestamps_raw
+                        for seg in result['segments']
                     ]
 
                 if progress_callback:
@@ -367,14 +367,22 @@ class ASRProcessor:
 
 if __name__ == "__main__":
     # Example usage
-    processor = ASRProcessor()
-
-    # Example: transcribe a file
-    result = processor.transcribe(
+    # English transcription
+    processor_en = ASRProcessor(model_name="turbo", language="en")
+    result_en = processor_en.transcribe(
         audio_path = "lecture_recording.mp3",
         chunk_seconds = 300,
         batch_size = 4,
-        output_path = "transcript_result.txt"
+        output_path = "transcript_result_en.txt"
     )
+    print(f"\nEnglish transcript length: {result_en['length']} characters")
 
-    print(f"\nTotal transcript length: {result['length']} characters")
+    # Korean transcription
+    processor_ko = ASRProcessor(model_name="turbo", language="ko")
+    result_ko = processor_ko.transcribe(
+        audio_path = "lecture_recording_ko.mp3",
+        chunk_seconds = 300,
+        batch_size = 4,
+        output_path = "transcript_result_ko.txt"
+    )
+    print(f"\nKorean transcript length: {result_ko['length']} characters")
