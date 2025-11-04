@@ -211,6 +211,14 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as bool);
 
   @override
+  bool get hasPlayerTutorialCompleted =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasPlayerTutorialCompleted),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   _i2.AppSettings get settings =>
       (super.noSuchMethod(
             Invocation.getter(#settings),
@@ -618,6 +626,24 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
   _i4.Future<void> resetTutorial() =>
       (super.noSuchMethod(
             Invocation.method(#resetTutorial, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> completePlayerTutorial() =>
+      (super.noSuchMethod(
+            Invocation.method(#completePlayerTutorial, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> resetPlayerTutorial() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetPlayerTutorial, []),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
