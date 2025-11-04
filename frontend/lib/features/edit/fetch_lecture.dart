@@ -707,7 +707,9 @@ Future<void> onProgress(
       presentAlert: true,
       presentBadge: true,
       presentSound: isDone,
-      subtitle: isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
+      subtitle: isDone
+          ? (message.isEmpty ? 'Completed' : message)
+          : '$message — $pct%',
     );
 
     final title = 'Generating Lecture: $lectureTitle';
