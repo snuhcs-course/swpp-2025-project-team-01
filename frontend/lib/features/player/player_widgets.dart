@@ -416,12 +416,12 @@ class TopControlBar extends StatelessWidget {
         children: [
           BackButton(onPressed: onBack),
           const Spacer(),
+          AudioSourceButton(
+            isOriginalAudio: isOriginalAudio,
+            onPressed: onAudioToggle,
+          ),
+          const SizedBox(width: 8),
           if (!isVertical) ...[
-            AudioSourceButton(
-              isOriginalAudio: isOriginalAudio,
-              onPressed: onAudioToggle,
-            ),
-            const SizedBox(width: 8),
             CaptionButton(
               isEnabled: isCaptionEnabled,
               onPressed: onCaptionToggle,
