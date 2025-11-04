@@ -90,6 +90,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/images/app_icon.png
     - assets/images/logo.png
     - assets/images/loading_background.png
     - assets/images/loading_complete.png
