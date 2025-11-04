@@ -611,7 +611,7 @@ class _CompletedView extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: Text(isKorean ? '생성된 강의 바로가기' : 'Go to Lecture'),
+                    label: Text(isKorean ? '강의 바로가기' : 'Go to Lecture'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF7FAB0),
                       foregroundColor: Colors.black87,
