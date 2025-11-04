@@ -60,7 +60,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   @override
   void dispose() {
-
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
     _titleController.dispose();
