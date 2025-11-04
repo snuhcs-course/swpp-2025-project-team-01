@@ -64,7 +64,8 @@ class LecturePipeline:
     def __init__(
         self,
         # ASR settings
-        asr_model: str = "nvidia/parakeet-tdt-0.6b-v2",
+        asr_model: str = "turbo",
+        asr_language: str = "en",
         asr_chunk_seconds: int = 300,
         asr_batch_size: int = 4,
 
@@ -103,7 +104,8 @@ class LecturePipeline:
         Initialize the integrated lecture pipeline.
 
         Args:
-            asr_model: ASR model name
+            asr_model: Whisper model name (turbo, large-v3, etc.)
+            asr_language: Language code for ASR ('en' for English, 'ko' for Korean)
             asr_chunk_seconds: Chunk duration for long audio files
             asr_batch_size: ASR batch size
             matching_model: Multimodal matching model name
@@ -141,7 +143,8 @@ class LecturePipeline:
 
         self.asr = ASRProcessor(
             model_name = asr_model,
-            device = device
+            device = device,
+            language = asr_language
         )
         self.asr_chunk_seconds = asr_chunk_seconds
         self.asr_batch_size = asr_batch_size
@@ -490,9 +493,11 @@ def simple_sentence_splitter(text: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    # Example usage
+    # Example usage - English lecture
     pipeline = LecturePipeline(
         # ASR settings
+        asr_model = "turbo",
+        asr_language = "en",  # or "ko" for Korean
         asr_chunk_seconds = 300,
         asr_batch_size = 4,
 
