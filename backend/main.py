@@ -202,13 +202,18 @@ app.add_middleware(
     allow_headers = ["*"],
 )
 
-def create_pipeline() -> LecturePipeline:
+def create_pipeline(language: str = "en") -> LecturePipeline:
     """
     Create a new pipeline instance.
-    Called during server startup to create worker pool.
+    Called during server startup to create worker pool or on-demand for specific language.
+
+    Args:
+        language: Language code for ASR ('en' or 'ko')
     """
     return LecturePipeline(
         # ASR settings
+        asr_model = "turbo",
+        asr_language = language,
         asr_chunk_seconds = 300,
         asr_batch_size = 3,
 
@@ -308,7 +313,7 @@ async def cleanup_old_jobs():
         except Exception as e:
             print(f"⚠️  Error in cleanup task: {e}")
 
-async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str):
+async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str, language: str = "en"):
     """Background task to process a lecture synchronization job."""
     global jobs, pipeline_queue
     job_info = jobs[job_id]
@@ -319,6 +324,10 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
 
     # Acquire a pipeline from the queue (waits if none available)
     pipeline = await pipeline_queue.get()
+
+    # Update the ASR language for this specific job
+    pipeline.asr.language = language
+    print(f"Pipeline configured for language: {language}")
 
     try:
         # Update job status
@@ -418,7 +427,8 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
 @app.post('/api/synchronize/stream')
 async def synchronize_stream(
     audio: UploadFile = File(..., description = 'Lecture audio file (mp3, wav, etc.)'),
-    lecture_note: UploadFile = File(..., description = 'Lecture slides PDF')
+    lecture_note: UploadFile = File(..., description = 'Lecture slides PDF'),
+    lang: str = "en"
 ):
     """
     Synchronize lecture audio with slides with real-time progress updates via SSE.
@@ -429,6 +439,7 @@ async def synchronize_stream(
     Args:
         audio: Lecture audio file
         lecture_note: Lecture slides PDF file
+        lang: Language code for ASR transcription ('en' for English, 'ko' for Korean)
 
     Returns:
         SSE stream with progress updates and final job_id
@@ -437,6 +448,9 @@ async def synchronize_stream(
         - data: JSON object with {status, progress, message, job_id}
         - Final event includes job_id for downloading results
     """
+    # Validate lang parameter
+    if lang not in ["en", "ko"]:
+        raise HTTPException(status_code = 400, detail = 'Invalid lang parameter. Must be "en" or "ko"')
     # Generate unique job ID and lecture name using full UUID for uniqueness
     job_id = str(uuid.uuid4())
     lecture_name = f"lecture_{job_id}"
@@ -466,8 +480,8 @@ async def synchronize_stream(
             content = await lecture_note.read()
             await f.write(content)
 
-        # Start background processing
-        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name))
+        # Start background processing with language parameter
+        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name, language=lang))
 
         # SSE generator with disconnect detection
         async def event_generator():
