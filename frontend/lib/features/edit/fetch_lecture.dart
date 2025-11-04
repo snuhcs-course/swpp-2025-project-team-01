@@ -99,16 +99,12 @@ Future<String?> requestLecture(
   http.Client? clientToClose, // client that can be closed externally
 }) async {
   final http.Client client;
-  final bool shouldCloseClient;
   if (fakeClient != null) {
     client = fakeClient;
-    shouldCloseClient = false;
   } else if (clientToClose != null) {
     client = clientToClose;
-    shouldCloseClient = false;
   } else {
     client = http.Client();
-    shouldCloseClient = true;
   }
   final endpoint =
       endpointOverride ??
@@ -178,7 +174,7 @@ Future<String?> requestLecture(
   final streamed = await client
       .send(req)
       .timeout(
-        const Duration(seconds: 30),
+        const Duration(minutes: 10),
         onTimeout: () {
           throw Exception(
             'Server connection timeout - Please check if server is running',
@@ -225,10 +221,8 @@ Future<String?> requestLecture(
         }
       }
     }
-  } finally {
-    if (shouldCloseClient) {
-      client.close();
-    }
+  } catch (_) {
+    return null;
   }
 
   return jobId;
@@ -262,10 +256,8 @@ Future<String?> downloadResult(
     } else {
       return null;
     }
-  } finally {
-    if (fakeClient == null) {
-      client.close();
-    }
+  } catch (_) {
+    return null;
   }
 }
 
@@ -373,6 +365,7 @@ Future<List<String>?> fetchLecture(
     order,
     serverAddress,
     port,
+    fakeClient: clientToClose,
   );
 
   if (zipPath == null) {

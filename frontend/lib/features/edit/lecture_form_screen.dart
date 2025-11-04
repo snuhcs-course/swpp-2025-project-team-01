@@ -947,6 +947,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     final effectiveAudios = _audioFiles
         .where((e) => (e.filePath ?? '').isNotEmpty)
         .toList();
+    final clients = <http.Client?>[];
+    for (int i = 0; i < effectiveAudios.length; i++) {
+      clients.add(http.Client());
+    }
     LectureLoadingService.instance.startLoading(
       titleText,
       effectiveAudios.length,
@@ -994,19 +998,38 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final audioFileEntry = effectiveAudios[i - 1];
         originalAudioPaths.add(audioFileEntry.filePath!);
 
-        futures.add(
-          fetchLecture(
-            slidePath,
-            audioFileEntry,
-            titleText,
-            i,
-            effectiveAudios.length,
-            _serverAddress,
-            _port,
-            onProgress,
-            clientToClose: _httpClient,
-          ),
-        );
+        if (i == 1) {
+          futures.add(
+            fetchLecture(
+              slidePath,
+              audioFileEntry,
+              titleText,
+              i,
+              effectiveAudios.length,
+              _serverAddress,
+              _port,
+              onProgress,
+              clientToClose: http.Client(),
+            ),
+          );
+        } else {
+          futures.add(
+            Future.delayed(
+              Duration(seconds: 5),
+              () => fetchLecture(
+                slidePath,
+                audioFileEntry,
+                titleText,
+                i,
+                effectiveAudios.length,
+                _serverAddress,
+                _port,
+                onProgress,
+                clientToClose: clients[i - 1],
+              ),
+            ),
+          );
+        }
 
         // Add PDF ranges
         if (effectiveAudios.length >= 2) {
