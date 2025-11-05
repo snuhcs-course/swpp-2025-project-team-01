@@ -57,7 +57,6 @@ dependencies:
   ffmpeg_kit_flutter_new: ^4.0.0
   hive_generator: ^2.0.1
   flutter_staggered_grid_view: ^0.7.0
-  sensors_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -103,12 +102,21 @@ flutter:
     - assets/tutorial/initial/tutorial_step3.png
     - assets/tutorial/initial/tutorial_step4.png
     - assets/tutorial/initial/tutorial_step5.png
+    - assets/tutorial/initial/tutorial_landscape_step1.png
+    - assets/tutorial/initial/tutorial_landscape_step2.png
+    - assets/tutorial/initial/tutorial_landscape_step3.png
+    - assets/tutorial/initial/tutorial_landscape_step4.png
+    - assets/tutorial/initial/tutorial_landscape_step5.png
     - assets/tutorial/player/player_tutorial_character.png
+    - assets/tutorial/player/player_tutorial_character_landscape.png
     - assets/tutorial/player/player_tutorial_speech_bubble.png
     - assets/tutorial/player/player_tutorial_step1.png
     - assets/tutorial/player/player_tutorial_step2.png
     - assets/tutorial/player/player_tutorial_step3.png
     - assets/tutorial/player/player_tutorial_step4.png
+    - assets/tutorial/player/player_tutorial_landscape_step1.png
+    - assets/tutorial/player/player_tutorial_landscape_step2.png
+    - assets/tutorial/player/player_tutorial_landscape_step3.png
     - assets/lectures/lec_demo_001/
     - assets/lectures/lec_demo_002/
     - assets/lectures/lec_demo_003/
