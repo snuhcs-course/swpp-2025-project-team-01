@@ -113,6 +113,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
+        false,
         fakeClient: fakeClient,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
@@ -167,6 +168,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
+        false,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
       expect(resultSingle, isNull);
@@ -182,6 +184,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
+        false,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
       expect(resultMulti, isNull);

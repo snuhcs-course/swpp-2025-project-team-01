@@ -93,7 +93,8 @@ Future<String?> requestLecture(
   int audioCount,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String, int, int) onProgress, {
+  Future<void> Function(double, String, String, int, int) onProgress,
+  bool isRetry, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
@@ -171,18 +172,19 @@ Future<String?> requestLecture(
   }
 
   // Use the injected client to send
+  bool didArrive = false;
   try {
     final streamed = await client
         .send(req)
         .timeout(
-          const Duration(minutes: 10),
+          const Duration(minutes: 5),
           onTimeout: () {
             throw Exception(
               'Server connection timeout - Please check if server is running',
             );
           },
         );
-
+    didArrive = true;
     // read chunked SSE-style body
     final stream = streamed.stream
         .transform(utf8.decoder)
@@ -234,15 +236,72 @@ Future<String?> requestLecture(
         }
       }
     } catch (e) {
-      debugPrint('Error during lecture request stream processing: $e');
-      LectureLoadingService.instance.setError();
-      return null;
+      debugPrint('SSE issue triggered');
+      final client = http.Client();
+      if (jobId == null) {
+        return null;
+      }
+      while (true) {
+        final status = await getJobStatus(jobId, serverAddress, port, client);
+        if (status == null || status.$1 == 'failed') {
+          debugPrint('Error during lecture request stream processing: $e');
+          LectureLoadingService.instance.setError();
+          return null;
+        } else if (status.$1 == 'completed') {
+          return jobId;
+        }
+
+        await onProgress(status.$2, 'message', titleText, order, audioCount);
+      }
     }
 
     return jobId;
   } catch (e) {
     debugPrint('Error during lecture request: $e');
+    if (!didArrive && !isRetry) {
+      final jobId = await requestLecture(
+        slidePath,
+        audioFileEntry,
+        titleText,
+        order,
+        audioCount,
+        serverAddress,
+        port,
+        onProgress,
+        true,
+      );
+      return jobId;
+    }
     LectureLoadingService.instance.setError();
+    return null;
+  }
+}
+
+Future<(String, double)?> getJobStatus(
+  String jobId,
+  String serverAddress,
+  String port,
+  http.Client client,
+) async {
+  final statusEndpoint = Uri.parse(
+    'http://$serverAddress:$port/api/synchronize/status/$jobId',
+  );
+  final statusResponse = await client.get(statusEndpoint);
+  if (statusResponse.statusCode == 200) {
+    final jsonData = jsonDecode(statusResponse.body) as Map<String, dynamic>;
+    final String status = jsonData['status'] as String;
+    jobId = jsonData['job_id'] as String;
+
+    // 서버가 0-100 범위로 보낼 수 있으므로 변환
+    final rawProgress = jsonData['progress'];
+    final progress = rawProgress is int
+        ? (rawProgress / 100.0)
+        : (rawProgress as double) > 1.0
+        ? rawProgress / 100.0
+        : rawProgress;
+    await Future.delayed(const Duration(seconds: 2));
+    return (status, progress);
+  } else {
     return null;
   }
 }
@@ -368,6 +427,7 @@ Future<List<String>?> fetchLecture(
     serverAddress,
     port,
     onProgress,
+    false,
     fakeClient: fakeClient,
     endpointOverride: endpointOverride,
     clientToClose: clientToClose,
@@ -383,7 +443,6 @@ Future<List<String>?> fetchLecture(
     order,
     serverAddress,
     port,
-    fakeClient: clientToClose,
   );
 
   if (zipPath == null) {
@@ -700,7 +759,7 @@ Future<void> onProgress(
 
   final updatedProgress = loadingService.getProgress();
   final pct = (updatedProgress * 100).round();
-  final isDone = loadingService.isCompleted;
+  final isDone = (pct == 100);
 
   // Always show notification during progress to keep background task alive
   // Only skip notification if completed and app is in foreground
@@ -731,9 +790,7 @@ Future<void> onProgress(
       presentAlert: true,
       presentBadge: true,
       presentSound: isDone,
-      subtitle: isDone
-          ? (message.isEmpty ? 'Completed' : message)
-          : '$message — $pct%',
+      subtitle: isDone ? null : '${loadingService.message} — $pct%',
     );
 
     final title = 'Generating Lecture: $lectureTitle';
@@ -745,7 +802,7 @@ Future<void> onProgress(
     await _notifier.show(
       _progressNotificationId,
       isDone ? 'Lecture generation finished' : title,
-      isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
+      isDone ? null : '${loadingService.message} — $pct%',
       details,
     );
   } else {

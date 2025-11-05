@@ -16,11 +16,11 @@ void main() {
     });
 
     test('should have correct number of colors in each theme', () {
-      expect(tagColorThemes[0].colors.length, 10); // 봄
+      expect(tagColorThemes[0].colors.length, 7); // 봄
       expect(tagColorThemes[1].colors.length, 7); // 여름
-      expect(tagColorThemes[2].colors.length, 10); // 가을
+      expect(tagColorThemes[2].colors.length, 7); // 가을
       expect(tagColorThemes[3].colors.length, 4); // 겨울
-      expect(tagColorThemes[4].colors.length, 10); // 솜사탕
+      expect(tagColorThemes[4].colors.length, 7); // 솜사탕
       expect(tagColorThemes[5].colors.length, 7); // 비비드
       expect(tagColorThemes[6].colors.length, 7); // 바다
     });
@@ -43,7 +43,7 @@ void main() {
     test('should return correct theme by name', () {
       final springTheme = getTagColorTheme('봄');
       expect(springTheme.name, '봄');
-      expect(springTheme.colors.length, 10);
+      expect(springTheme.colors.length, 7);
 
       final summerTheme = getTagColorTheme('여름');
       expect(summerTheme.name, '여름');
@@ -53,7 +53,7 @@ void main() {
     test('should return first theme (봄) when theme not found', () {
       final unknownTheme = getTagColorTheme('존재하지않는테마');
       expect(unknownTheme.name, '봄');
-      expect(unknownTheme.colors.length, 10);
+      expect(unknownTheme.colors.length, 7);
     });
 
     test('should return first theme when empty string is provided', () {

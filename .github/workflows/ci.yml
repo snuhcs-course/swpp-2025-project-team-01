@@ -52,16 +52,22 @@ jobs:
       run: flutter pub get
     
     # Add necessary script executions accordingly.
+    - name: Run core unit tests
+      run: flutter test test/core/
+    
+    - name: Run data model unit tests
+      run: flutter test test/data/
+    
     - name: Run lecture fetch unit tests
       run: flutter test test/features/edit/lecture_fetch_test.dart
 
     - name: Run player unit tests
       run: flutter test test/features/player/
 
-    - name: Run search screen unit tests
+    - name: Run search unit tests
       run: flutter test test/features/search/search_screen_test.dart
 
-    - name: Run home screen unit tests
+    - name: Run home unit tests
       run: flutter test test/features/home/
 
   frontend-integration-test:
