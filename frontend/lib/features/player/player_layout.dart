@@ -66,114 +66,104 @@ class HorizontalPlayerLayout extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: controller.showTranscriptPanel,
       builder: (context, showTranscriptPanel, _) {
-        return Container(
-          color: Colors.black, // 마진 부분을 검은색으로 설정
-          child: SafeArea(
-            top: true,
-            bottom: true,
-            left: true,
-            right: true,
-            child: Stack(
+        return Stack(
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: controller.isPagesExpanded,
-                        builder: (context, isPagesExpanded, _) {
-                          return Stack(
-                            children: [
-                              PdfArea(
-                                isVertical: false,
-                                controller: controller,
-                                onBack: onBack,
+                Expanded(
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: controller.isPagesExpanded,
+                    builder: (context, isPagesExpanded, _) {
+                      return Stack(
+                        children: [
+                          PdfArea(
+                            isVertical: false,
+                            controller: controller,
+                            onBack: onBack,
+                          ),
+
+                          if (isPagesExpanded)
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: HorizontalToggleBar(
+                                onToggle: controller.togglePages,
+                                pagesList: PagesListWidget(
+                                  isVertical: false,
+                                  controller: controller,
+                                ),
                               ),
+                            ),
 
-                              if (isPagesExpanded)
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: HorizontalToggleBar(
-                                    onToggle: controller.togglePages,
-                                    pagesList: PagesListWidget(
-                                      isVertical: false,
-                                      controller: controller,
-                                    ),
-                                  ),
-                                ),
-
-                              if (isPagesExpanded)
-                                Positioned(
-                                  top: 12,
-                                  right: 16,
-                                  child: ValueListenableBuilder<bool>(
-                                    valueListenable: controller.isSynced,
-                                    builder: (context, isSynced, _) {
-                                      return SyncButton(
-                                        isSynced: isSynced,
-                                        onPressed: controller.toggleSync,
-                                        pageDifference:
-                                            controller.pageDifference,
-                                      );
-                                    },
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-
-                    if (showTranscriptPanel)
-                      Container(
-                        width: transcriptPanelWidth,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Theme.of(context).colorScheme.surface
-                            : const Color(0xFFFAFAFA),
-                        child: TranscriptArea(
-                          key: controller.transcriptAreaKey,
-                          controller: controller,
-                        ),
-                      ),
-                  ],
+                          if (isPagesExpanded)
+                            Positioned(
+                              top: 12,
+                              right: 16,
+                              child: ValueListenableBuilder<bool>(
+                                valueListenable: controller.isSynced,
+                                builder: (context, isSynced, _) {
+                                  return SyncButton(
+                                    isSynced: isSynced,
+                                    onPressed: controller.toggleSync,
+                                    pageDifference: controller.pageDifference,
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
 
-                Positioned(
-                  right: showTranscriptPanel ? transcriptPanelWidth : 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: controller.toggleTranscriptPanel,
-                      child: Container(
-                        width: 30,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: showTranscriptPanel
-                              ? Colors.black.withValues(alpha: 0.3)
-                              : Colors.black.withValues(alpha: 0.5),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            bottomLeft: Radius.circular(8),
-                            topRight: Radius.zero,
-                            bottomRight: Radius.zero,
-                          ),
-                        ),
-                        child: Icon(
-                          showTranscriptPanel
-                              ? Icons.chevron_right
-                              : Icons.chevron_left,
-                          color: Colors.white,
-                          size: 28,
-                        ),
+                if (showTranscriptPanel)
+                  Container(
+                    width: transcriptPanelWidth,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.surface
+                        : const Color(0xFFFAFAFA),
+                    child: TranscriptArea(
+                      key: controller.transcriptAreaKey,
+                      controller: controller,
+                    ),
+                  ),
+              ],
+            ),
+
+            Positioned(
+              right: showTranscriptPanel ? transcriptPanelWidth : 0,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: controller.toggleTranscriptPanel,
+                  child: Container(
+                    width: 30,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: showTranscriptPanel
+                          ? Colors.black.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.5),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        bottomLeft: Radius.circular(8),
+                        topRight: Radius.zero,
+                        bottomRight: Radius.zero,
                       ),
+                    ),
+                    child: Icon(
+                      showTranscriptPanel
+                          ? Icons.chevron_right
+                          : Icons.chevron_left,
+                      color: Colors.white,
+                      size: 28,
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         );
       },
     );
@@ -260,7 +250,10 @@ class PdfArea extends StatelessWidget {
 
         if (isVertical) {
           final screenWidth = MediaQuery.of(context).size.width;
-          final pdfHeight = screenWidth * 9 / 16;
+          // thumbnail 캐시에서 가져온 aspect ratio 사용 (width/height)
+          // 기본값: 16:9 = 1.778
+          final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
+          final pdfHeight = screenWidth / aspectRatio;
           return SizedBox(
             width: screenWidth,
             height: pdfHeight,

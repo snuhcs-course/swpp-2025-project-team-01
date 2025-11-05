@@ -49,6 +49,7 @@ class PlayerController extends ChangeNotifier {
   TranscriptData? transcriptData;
   double totalTime = 0.0;
   AutoScrollController? transcriptScrollController;
+  double? pdfAspectRatio; // PDF 페이지의 가로/세로 비율 (width/height)
 
   // PDF 뷰와 Transcript의 상태를 유지하기 위한 GlobalKey
   final GlobalKey pdfViewKey = GlobalKey();
@@ -170,7 +171,10 @@ class PlayerController extends ChangeNotifier {
 
     if (cachedThumbnail != null) {
       _pdfCacheService.setCachedImage(1, cachedThumbnail.image.bytes);
-      debugPrint('✅ First page pre-loaded from thumbnail cache for $lectureId');
+      pdfAspectRatio = cachedThumbnail.aspectRatio;
+      debugPrint(
+        '✅ First page pre-loaded from thumbnail cache for $lectureId (aspect ratio: $pdfAspectRatio)',
+      );
     }
 
     // PdfController 생성 시 초기 페이지 설정
