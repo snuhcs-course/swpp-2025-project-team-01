@@ -13,6 +13,10 @@ class TutorialScreen extends StatefulWidget {
 }
 
 class _TutorialScreenState extends State<TutorialScreen> {
+  // UI 스케일링을 위한 기준 화면 크기 (Medium Phone)
+  static const double _basePortraitHeight = 844.0;
+  static const double _baseLandscapeWidth = 844.0;
+
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _showCharacter = false; // 마지막 캐릭터 애니메이션 제어
@@ -122,6 +126,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
             ? const Center(child: CircularProgressIndicator())
             : OrientationBuilder(
                 builder: (context, orientation) {
+                  final size = MediaQuery.of(context).size;
+                  // 화면 방향에 따라 scaleFactor 계산
+                  final scaleFactor = orientation == Orientation.portrait
+                      ? size.height / _basePortraitHeight // 높이 비율
+                      : size.width / _baseLandscapeWidth; // 너비 비율
+
                   final pageView = PageView(
                     controller: _pageController,
                     onPageChanged: _onPageChanged,
@@ -135,14 +145,15 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         showCharacter: _showCharacter,
                         onDone: _completeTutorial,
                         orientation: orientation,
+                        scaleFactor: scaleFactor,
                       );
                     }).toList(),
                   );
 
                   if (orientation == Orientation.portrait) {
-                    return _buildPortraitLayout(pageView);
+                    return _buildPortraitLayout(pageView, scaleFactor);
                   } else {
-                    return _buildLandscapeLayout(pageView);
+                    return _buildLandscapeLayout(pageView, scaleFactor);
                   }
                 },
               ),
@@ -151,47 +162,19 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 
   // 세로 모드 레이아웃
-  Widget _buildPortraitLayout(Widget pageView) {
-    return Stack(
-      children: [
-        pageView,
-        if (_currentPage < _currentImages.length - 1) ...[
-          // _currentImages.length로 변경
-          Positioned(
-            bottom: 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: TutorialIndicators(
-                pageCount: _currentImages.length,
-                currentPage: _currentPage,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(child: _buildNextButton()),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // 가로 모드 레이아웃
-  Widget _buildLandscapeLayout(Widget pageView) {
+  Widget _buildPortraitLayout(Widget pageView, double scaleFactor) {
+    final screenHeight = MediaQuery.of(context).size.height;
     return Stack(
       children: [
         pageView,
         if (_currentPage < _currentImages.length - 1) ...[
           Positioned(
-            bottom: 43,
+            bottom: screenHeight * 0.1, // 100
             left: 0,
             right: 0,
             child: Center(
               child: Transform.scale(
-                scale: 0.7,
+                scale: scaleFactor * 1.1,
                 child: TutorialIndicators(
                   pageCount: _currentImages.length,
                   currentPage: _currentPage,
@@ -200,11 +183,43 @@ class _TutorialScreenState extends State<TutorialScreen> {
             ),
           ),
           Positioned(
-            bottom: 2,
+            bottom: screenHeight * 0.03, // 40
+            left: 0,
+            right: 0,
+            child: Center(child: _buildNextButton(scaleFactor: 1.1)), // 크기 10% 증가
+          ),
+        ],
+      ],
+    );
+  }
+
+  // 가로 모드 레이아웃
+  Widget _buildLandscapeLayout(Widget pageView, double scaleFactor) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Stack(
+      children: [
+        pageView,
+        if (_currentPage < _currentImages.length - 1) ...[
+          Positioned(
+            bottom: screenHeight * 0.11, // 43
             left: 0,
             right: 0,
             child: Center(
-              child: Transform.scale(scale: 0.7, child: _buildNextButton()),
+              child: Transform.scale(
+                scale: scaleFactor * 0.8,
+                child: TutorialIndicators(
+                  pageCount: _currentImages.length,
+                  currentPage: _currentPage,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: screenHeight * 0.008, // 2
+            left: 0,
+            right: 0,
+            child: Center(
+              child: _buildNextButton(scaleFactor: scaleFactor * 0.8),
             ),
           ),
         ],
@@ -213,10 +228,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 
   // NEXT 버튼 위젯
-  Widget _buildNextButton() {
+  Widget _buildNextButton({required double scaleFactor}) {
     return SizedBox(
-      width: 120,
-      height: 50,
+      width: 120 * scaleFactor,
+      height: 50 * scaleFactor,
       child: ElevatedButton(
         onPressed: _nextPage,
         style: ElevatedButton.styleFrom(
@@ -242,9 +257,14 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
 /// 세로 모드: 마지막 페이지 캐릭터 애니메이션
 class TutorialCharacterAnimation extends StatefulWidget {
-  const TutorialCharacterAnimation({super.key, required this.onDone});
+  const TutorialCharacterAnimation({
+    super.key,
+    required this.onDone,
+    required this.scaleFactor,
+  });
 
   final VoidCallback onDone;
+  final double scaleFactor;
 
   @override
   State<TutorialCharacterAnimation> createState() =>
@@ -296,8 +316,7 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
       alignment: Alignment.topCenter,
       child: Padding(
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).size.height * 0.25, // 화면 높이의 25% 지점
-        ),
+            top: MediaQuery.of(context).size.height * 0.15), // 화면 높이의 15% 지점
         child: SlideTransition(
           position: _slideAnimation,
           child: FadeTransition(
@@ -308,22 +327,22 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
                 // 캐릭터 이미지
                 Image.asset(
                   'assets/tutorial/initial/tutorial_character.png',
-                  width: 150,
+                  width: 150 * widget.scaleFactor,
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24 * widget.scaleFactor),
                 // 말풍선 이미지
                 Image.asset(
                   'assets/tutorial/initial/tutorial_speech_bubble.png',
-                  width: 300,
+                  width: 300 * widget.scaleFactor,
                 ),
 
-                const SizedBox(height: 12),
+                SizedBox(height: 12 * widget.scaleFactor),
 
                 // DONE 버튼
                 SizedBox(
-                  width: 120,
-                  height: 50,
+                  width: 120 * widget.scaleFactor,
+                  height: 50 * widget.scaleFactor,
                   child: ElevatedButton(
                     onPressed: widget.onDone,
                     style: ElevatedButton.styleFrom(
@@ -355,9 +374,14 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
 
 /// 가로 모드: 마지막 페이지 캐릭터 애니메이션
 class LandscapeTutorialCharacterAnimation extends StatefulWidget {
-  const LandscapeTutorialCharacterAnimation({super.key, required this.onDone});
+  const LandscapeTutorialCharacterAnimation({
+    super.key,
+    required this.onDone,
+    required this.scaleFactor,
+  });
 
   final VoidCallback onDone;
+  final double scaleFactor;
 
   @override
   State<LandscapeTutorialCharacterAnimation> createState() =>
@@ -408,55 +432,50 @@ class _LandscapeTutorialCharacterAnimationState
       top: 0,
       left: 0,
       right: 0,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: SlideTransition(
-          // SlideTransition을 Positioned 안으로 이동
-          position: _slideAnimation,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Align(
+            alignment: Alignment.topCenter,
             // 가로 모드에 맞게 전체적으로 크기 축소
-            child: Transform.scale(
-              scale: 0.7,
-              alignment: Alignment.topCenter,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    'assets/tutorial/initial/tutorial_character.png',
-                    width: 150,
-                  ),
-                  const SizedBox(height: 8), // 간격 축소
-                  Image.asset(
-                    'assets/tutorial/initial/tutorial_speech_bubble.png',
-                    width: 300,
-                  ),
-                  const SizedBox(height: 8), // 간격 축소
-                  SizedBox(
-                    width: 120,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: widget.onDone,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD4E8D4),
-                        foregroundColor: Colors.black,
-                        shape: const StadiumBorder(
-                          side: BorderSide(color: Colors.black, width: 2),
-                        ),
-                        elevation: 0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/tutorial/initial/tutorial_character.png',
+                  width: 150 * widget.scaleFactor * 0.9,
+                ),
+                SizedBox(height: 4 * widget.scaleFactor),
+                Image.asset(
+                  'assets/tutorial/initial/tutorial_speech_bubble.png',
+                  width: 300 * widget.scaleFactor * 0.9,
+                ),
+                SizedBox(height: 4 * widget.scaleFactor),
+                SizedBox(
+                  width: 120 * widget.scaleFactor * 0.9,
+                  height: 50 * widget.scaleFactor * 0.9,
+                  child: ElevatedButton(
+                    onPressed: widget.onDone,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4E8D4),
+                      foregroundColor: Colors.black,
+                      shape: const StadiumBorder(
+                        side: BorderSide(color: Colors.black, width: 2),
                       ),
-                      child: const Text(
-                        'DONE',
-                        style: TextStyle(
-                          fontFamily: 'NanumSquare',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'DONE',
+                      style: TextStyle(
+                        fontFamily: 'NanumSquare',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -479,7 +498,7 @@ class TutorialIndicators extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
@@ -505,12 +524,14 @@ class TutorialSlide extends StatelessWidget {
     required this.showCharacter,
     required this.onDone,
     required this.orientation,
+    required this.scaleFactor,
   });
 
   final String imagePath;
   final bool isLastSlide;
   final bool showCharacter;
   final Orientation orientation;
+  final double scaleFactor;
   final VoidCallback onDone;
 
   @override
@@ -523,9 +544,12 @@ class TutorialSlide extends StatelessWidget {
         // 마지막 슬라이드일 때 캐릭터 애니메이션
         if (isLastSlide && showCharacter) ...[
           if (orientation == Orientation.portrait)
-            TutorialCharacterAnimation(onDone: onDone)
+            TutorialCharacterAnimation(onDone: onDone, scaleFactor: scaleFactor)
           else
-            LandscapeTutorialCharacterAnimation(onDone: onDone),
+            LandscapeTutorialCharacterAnimation(
+              onDone: onDone,
+              scaleFactor: scaleFactor,
+            ),
         ],
       ],
     );
