@@ -457,7 +457,7 @@ class _LandscapeTutorialCharacterAnimationState
                 ),
                 SizedBox(height: 4 * widget.scaleFactor),
                 SizedBox(
-                  width: 100 * widget.scaleFactor * 0.7,
+                  width: 100 * widget.scaleFactor * 0.8,
                   height: 50 * widget.scaleFactor * 0.9,
                   child: ElevatedButton(
                     onPressed: widget.onDone,
