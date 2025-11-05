@@ -107,6 +107,7 @@ flutter:
     - assets/lectures/lec_demo_003/
     - assets/lectures/lec_demo_004/
     - assets/lectures/lec_demo_005/
+    - assets/lectures/lec_demo_006/
     - assets/data/subjects.json
     - assets/data/tags.json
 
