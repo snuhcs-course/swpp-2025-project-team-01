@@ -5,7 +5,7 @@ import 'package:re_view/app_router.dart';
 import 'package:re_view/data/hive_manager.dart';
 
 // 디버깅 시 튜토리얼을 계속 보기 위해 true로 전환.
-const bool kForceInitialTutorial = true;
+const bool kForceInitialTutorial = false;
 
 /// 앱 첫 진입 시 노출되는 스플래시 화면.
 class SplashScreen extends StatefulWidget {

@@ -350,7 +350,7 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
                   Flexible(
                     flex: 3,
                     child: Transform.scale(
-                      scale: widget.scaleFactor * 0.8,
+                      scale: widget.scaleFactor * 0.6,
                       child: Image.asset(
                         'assets/tutorial/player/player_tutorial_speech_bubble.png',
                         fit: BoxFit.contain,
@@ -430,6 +430,7 @@ class _LandscapeTutorialCharacterAnimationState
     super.dispose();
   }
 
+  // 가로모드 마지막 플레이어 애니메이션에 뜨는 놈
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -440,7 +441,7 @@ class _LandscapeTutorialCharacterAnimationState
           opacity: _fadeAnimation,
           child: Padding(
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).size.height * 0.02,
+              top: MediaQuery.of(context).size.height * 0.12, // 전체 위치 (높이)
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -449,9 +450,9 @@ class _LandscapeTutorialCharacterAnimationState
                   'assets/tutorial/player/player_tutorial_character_landscape.png',
                   width: 150 * widget.scaleFactor * 0.9,
                 ),
-                SizedBox(height: 4 * widget.scaleFactor),
+                SizedBox(height: 10 * widget.scaleFactor), // 패딩
                 SizedBox(
-                  height: 100 * widget.scaleFactor * 0.9,
+                  height: 100 * widget.scaleFactor * 0.6,
                   child: RotatedBox(
                     quarterTurns: 3,
                     child: Image.asset(
@@ -460,17 +461,17 @@ class _LandscapeTutorialCharacterAnimationState
                     ),
                   ),
                 ),
-                SizedBox(height: 4 * widget.scaleFactor),
+                SizedBox(height: 10 * widget.scaleFactor), // 패딩
                 SizedBox(
-                  width: 120 * widget.scaleFactor * 0.9,
-                  height: 50 * widget.scaleFactor * 0.9,
+                  width: 120 * widget.scaleFactor * 0.7,
+                  height: 50 * widget.scaleFactor * 0.8,
                   child: ElevatedButton(
                     onPressed: widget.onDone,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD4E8D4),
                       foregroundColor: Colors.black,
                       shape: const StadiumBorder(
-                        side: BorderSide(color: Colors.black, width: 2),
+                        side: BorderSide(color: Colors.black, width: 4),
                       ),
                       elevation: 0,
                     ),
