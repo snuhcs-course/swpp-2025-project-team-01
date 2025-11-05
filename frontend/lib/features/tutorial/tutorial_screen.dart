@@ -1,13 +1,37 @@
-// 튜토리얼 화면 - 앱 최초 실행 시 표시되는 5단계 가이드
+// 튜토리얼 화면 - 앱 최초 실행 및 플레이어 최초 진입 시 표시되는 가이드
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/tutorial/tutorial_common.dart';
 
-/// 앱 최초 실행 시 표시되는 튜토리얼 화면
+/// 통합 튜토리얼 화면 (Initial & Player)
 class TutorialScreen extends StatefulWidget {
-  const TutorialScreen({super.key});
+  const TutorialScreen._({
+    super.key,
+    required this.type,
+    this.initialOrientation,
+  });
+
+  /// 앱 최초 실행 시 표시되는 튜토리얼
+  factory TutorialScreen.initial({Key? key}) {
+    return TutorialScreen._(key: key, type: TutorialType.initial);
+  }
+
+  /// 플레이어 최초 진입 시 표시되는 튜토리얼
+  factory TutorialScreen.player({
+    Key? key,
+    required Orientation initialOrientation,
+  }) {
+    return TutorialScreen._(
+      key: key,
+      type: TutorialType.player,
+      initialOrientation: initialOrientation,
+    );
+  }
+
+  final TutorialType type;
+  final Orientation? initialOrientation;
 
   @override
   State<TutorialScreen> createState() => _TutorialScreenState();
@@ -19,28 +43,45 @@ class _TutorialScreenState extends State<TutorialScreen> {
   bool _showCharacter = false;
   Orientation? _initialOrientation;
 
-  List<String> get _currentImages =>
-      _initialOrientation == Orientation.landscape
+  List<String> get _currentImages {
+    if (widget.type == TutorialType.player) {
+      return _initialOrientation == Orientation.portrait
+          ? TutorialAssets.playerPortraitImages
+          : TutorialAssets.playerLandscapeImages;
+    } else {
+      return _initialOrientation == Orientation.landscape
           ? TutorialAssets.initialLandscapeImages
           : TutorialAssets.initialPortraitImages;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final orientation = MediaQuery.of(context).orientation;
-        setState(() {
-          _initialOrientation = orientation;
-        });
-        _lockOrientation(orientation);
-      }
-    });
+
+    // Player는 생성자에서 orientation을 받고, Initial은 MediaQuery에서 가져옴
+    if (widget.type == TutorialType.player) {
+      _initialOrientation = widget.initialOrientation;
+      _lockOrientation(widget.initialOrientation!);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final orientation = MediaQuery.of(context).orientation;
+          setState(() {
+            _initialOrientation = orientation;
+          });
+          _lockOrientation(orientation);
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    // Player의 경우에만 orientation 해제
+    if (widget.type == TutorialType.player) {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -71,7 +112,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     });
 
     if (page == _currentImages.length - 1 && !_showCharacter) {
-      Future.delayed(TutorialConstants.characterDelayShort, () {
+      Future.delayed(TutorialConstants.animationDuration, () {
         if (mounted) {
           setState(() {
             _showCharacter = true;
@@ -82,9 +123,16 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 
   Future<void> _completeTutorial() async {
-    await HiveManager.instance.completeTutorial();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, Routes.home);
+    if (widget.type == TutorialType.player) {
+      await HiveManager.instance.completePlayerTutorial();
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } else {
+      await HiveManager.instance.completeTutorial();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, Routes.home);
+      }
     }
   }
 
@@ -113,13 +161,15 @@ class _TutorialScreenState extends State<TutorialScreen> {
                         children: _currentImages.asMap().entries.map((entry) {
                           final index = entry.key;
                           final imagePath = entry.value;
-                          final isLastSlide = index == _currentImages.length - 1;
+                          final isLastSlide =
+                              index == _currentImages.length - 1;
 
                           return TutorialSlide(
                             imagePath: imagePath,
                             isLastSlide: isLastSlide,
                             showCharacter: _showCharacter,
-                            characterAnimation: InitialTutorialCharacterAnimation(
+                            characterAnimation: TutorialCharacterAnimation(
+                              type: widget.type,
                               onDone: _completeTutorial,
                               scaleFactor: scaleFactor,
                               orientation: orientation,
@@ -141,81 +191,6 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   );
                 },
               ),
-      ),
-    );
-  }
-}
-
-/// 마지막 페이지 캐릭터 애니메이션 (위에서 아래로)
-class InitialTutorialCharacterAnimation extends BaseTutorialCharacterAnimation {
-  const InitialTutorialCharacterAnimation({
-    super.key,
-    required super.onDone,
-    required super.scaleFactor,
-    required this.orientation,
-  }) : super(duration: TutorialConstants.animationDuration);
-
-  final Orientation orientation;
-
-  @override
-  State<InitialTutorialCharacterAnimation> createState() =>
-      _InitialTutorialCharacterAnimationState();
-}
-
-class _InitialTutorialCharacterAnimationState
-    extends BaseTutorialCharacterAnimationState<
-        InitialTutorialCharacterAnimation> {
-  @override
-  Animation<Offset> createSlideAnimation() {
-    return Tween<Offset>(
-      begin: const Offset(0, -0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeInOutSine),
-    );
-  }
-
-  @override
-  Widget buildContent(BuildContext context) {
-    final isPortrait = widget.orientation == Orientation.portrait;
-
-    final characterWidth = (isPortrait
-            ? TutorialConstants.characterImageWidth
-            : TutorialConstants.characterImageWidthLandscape) *
-        widget.scaleFactor;
-
-    final spacing1 = (isPortrait
-            ? TutorialConstants.spacingXLarge
-            : TutorialConstants.spacingSmall) *
-        widget.scaleFactor;
-
-    final spacing2 = (isPortrait
-            ? TutorialConstants.spacingLarge
-            : TutorialConstants.spacingSmall) *
-        widget.scaleFactor;
-
-    return Positioned.fill(
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              TutorialAssets.initialCharacter,
-              width: characterWidth,
-            ),
-            SizedBox(height: spacing1),
-            Image.asset(
-              TutorialAssets.initialSpeechBubble,
-              width: TutorialConstants.speechBubbleWidth * widget.scaleFactor,
-            ),
-            SizedBox(height: spacing2),
-            TutorialButton(
-              text: 'DONE',
-              onPressed: widget.onDone,
-              scaleFactor: widget.scaleFactor,
-            ),
-          ],
-        ),
       ),
     );
   }

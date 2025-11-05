@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 /// 튜토리얼 관련 모든 상수 정의
 class TutorialConstants {
   // 기준 화면 크기
-  static const double basePortraitHeight = 844.0;
-  static const double baseLandscapeWidth = 844.0;
+  static const double baseSize = 844.0;
 
   // 색상
-  static const Color backgroundColor = Color(0xFF656565);
+  static const Color backgroundColor = Color.fromARGB(255, 73, 73, 73);
   static const Color buttonColor = Color(0xFFD4E8D4);
   static const double indicatorBackgroundAlpha = 0.3;
 
@@ -22,16 +21,13 @@ class TutorialConstants {
   static const double indicatorFontSize = 15.0;
 
   // 애니메이션 시간
-  static const Duration characterDelayShort = Duration(milliseconds: 1000);
-  static const Duration characterDelayLong = Duration(milliseconds: 2400);
-  static const Duration animationDuration = Duration(milliseconds: 1000);
-  static const Duration animationDurationLong = Duration(milliseconds: 2400);
+  static const Duration animationDuration = Duration(milliseconds: 1400);
 
   // ScaleFactor 계산 - 화면 크기에 따른 반응형 배율
   static double calculateScaleFactor(Size size, Orientation orientation) {
     return orientation == Orientation.portrait
-        ? size.height / basePortraitHeight
-        : size.width / baseLandscapeWidth;
+        ? size.height / baseSize
+        : size.width / baseSize;
   }
 
   // Portrait 레이아웃 위치 비율
@@ -58,6 +54,9 @@ class TutorialConstants {
 
 /// 튜토리얼 관련 모든 애셋 경로
 class TutorialAssets {
+  static const String tutorialCharacter =
+      'assets/tutorial/tutorial_character.png';
+
   // Initial Tutorial 이미지
   static const List<String> initialPortraitImages = [
     'assets/tutorial/initial/tutorial_step1.png',
@@ -75,8 +74,6 @@ class TutorialAssets {
     'assets/tutorial/initial/tutorial_landscape_step5.png',
   ];
 
-  static const String initialCharacter =
-      'assets/tutorial/initial/tutorial_character.png';
   static const String initialSpeechBubble =
       'assets/tutorial/initial/tutorial_speech_bubble.png';
 
@@ -94,10 +91,6 @@ class TutorialAssets {
     'assets/tutorial/player/player_tutorial_landscape_step3.png',
   ];
 
-  static const String playerCharacter =
-      'assets/tutorial/player/player_tutorial_character.png';
-  static const String playerCharacterLandscape =
-      'assets/tutorial/player/player_tutorial_character_landscape.png';
   static const String playerSpeechBubble =
       'assets/tutorial/player/player_tutorial_speech_bubble.png';
 }
@@ -210,9 +203,7 @@ class TutorialSlide extends StatelessWidget {
     return Stack(
       children: [
         // 배경 이미지
-        Positioned.fill(
-          child: Image.asset(imagePath, fit: BoxFit.contain),
-        ),
+        Positioned.fill(child: Image.asset(imagePath, fit: BoxFit.contain)),
 
         // 마지막 슬라이드일 때 캐릭터 애니메이션
         if (isLastSlide && showCharacter) characterAnimation,
@@ -286,22 +277,95 @@ class TutorialNavigator extends StatelessWidget {
   }
 }
 
+/// 튜토리얼 타입
+enum TutorialType { initial, player }
+
+/// 튜토리얼 캐릭터 콘텐츠 (캐릭터 + 말풍선 + DONE 버튼)
+class TutorialCharacterContent extends StatelessWidget {
+  const TutorialCharacterContent({
+    super.key,
+    required this.type,
+    required this.orientation,
+    required this.onDone,
+    required this.scaleFactor,
+  });
+
+  final TutorialType type;
+  final Orientation orientation;
+  final VoidCallback onDone;
+  final double scaleFactor;
+
+  @override
+  Widget build(BuildContext context) {
+    // Player Portrait는 Column 전체를 회전시키므로 landscape 크기 사용
+    final effectiveOrientation =
+        (type == TutorialType.player && orientation == Orientation.portrait)
+        ? Orientation.landscape
+        : orientation;
+
+    final isPortrait = effectiveOrientation == Orientation.portrait;
+
+    final characterWidth =
+        (isPortrait
+            ? TutorialConstants.characterImageWidth
+            : TutorialConstants.characterImageWidthLandscape) *
+        scaleFactor;
+
+    final spacing1 =
+        (isPortrait
+            ? TutorialConstants.spacingXLarge
+            : TutorialConstants.spacingMedium) *
+        scaleFactor;
+
+    final spacing2 =
+        (isPortrait
+            ? TutorialConstants.spacingLarge
+            : TutorialConstants.spacingMedium) *
+        scaleFactor;
+
+    // 말풍선 이미지
+    final speechBubbleAsset = type == TutorialType.initial
+        ? TutorialAssets.initialSpeechBubble
+        : TutorialAssets.playerSpeechBubble;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(TutorialAssets.tutorialCharacter, width: characterWidth),
+        SizedBox(height: spacing1),
+        Image.asset(
+          speechBubbleAsset,
+          width: TutorialConstants.speechBubbleWidth * scaleFactor,
+        ),
+        SizedBox(height: spacing2),
+        TutorialButton(
+          text: 'DONE',
+          onPressed: onDone,
+          scaleFactor: scaleFactor,
+        ),
+      ],
+    );
+  }
+}
+
 /// 페이드 + 슬라이드 애니메이션 베이스
 abstract class BaseTutorialCharacterAnimation extends StatefulWidget {
   const BaseTutorialCharacterAnimation({
     super.key,
     required this.onDone,
     required this.scaleFactor,
-    required this.duration,
   });
 
   final VoidCallback onDone;
   final double scaleFactor;
-  final Duration duration;
+  final Duration duration = TutorialConstants.animationDuration;
 }
 
-abstract class BaseTutorialCharacterAnimationState<T extends BaseTutorialCharacterAnimation>
-    extends State<T> with SingleTickerProviderStateMixin {
+abstract class BaseTutorialCharacterAnimationState<
+  T extends BaseTutorialCharacterAnimation
+>
+    extends State<T>
+    with SingleTickerProviderStateMixin {
   late AnimationController controller;
   late Animation<double> fadeAnimation;
   late Animation<Offset> slideAnimation;
@@ -309,14 +373,12 @@ abstract class BaseTutorialCharacterAnimationState<T extends BaseTutorialCharact
   @override
   void initState() {
     super.initState();
-    controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    controller = AnimationController(duration: widget.duration, vsync: this);
 
-    fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeInOutSine),
-    );
+    fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOutSine));
 
     slideAnimation = createSlideAnimation();
     controller.forward();
@@ -341,5 +403,72 @@ abstract class BaseTutorialCharacterAnimationState<T extends BaseTutorialCharact
         child: buildContent(context),
       ),
     );
+  }
+}
+
+/// 통합 튜토리얼 캐릭터 애니메이션
+class TutorialCharacterAnimation extends BaseTutorialCharacterAnimation {
+  const TutorialCharacterAnimation({
+    super.key,
+    required super.onDone,
+    required super.scaleFactor,
+    required this.type,
+    required this.orientation,
+  });
+
+  final TutorialType type;
+  final Orientation orientation;
+
+  @override
+  State<TutorialCharacterAnimation> createState() =>
+      _TutorialCharacterAnimationState();
+}
+
+class _TutorialCharacterAnimationState
+    extends BaseTutorialCharacterAnimationState<TutorialCharacterAnimation> {
+  @override
+  Animation<Offset> createSlideAnimation() {
+    // Initial: 항상 위→아래
+    // Player Portrait: 오른쪽→왼쪽
+    // Player Landscape: 위→아래
+    return Tween<Offset>(
+      begin:
+          (widget.orientation == Orientation.portrait &&
+              widget.type == TutorialType.player)
+          ? const Offset(1.0, 0) // Portrait: 오른쪽에서 왼쪽으로
+          : const Offset(0, -0.3), // Landscape: 위에서 아래로
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOutSine));
+  }
+
+  @override
+  Widget buildContent(BuildContext context) {
+    final content = TutorialCharacterContent(
+      type: widget.type,
+      orientation: widget.orientation,
+      onDone: widget.onDone,
+      scaleFactor: widget.scaleFactor,
+    );
+
+    // Player Portrait: Column 전체를 회전하여 하단에 배치
+    if (widget.type == TutorialType.player &&
+        widget.orientation == Orientation.portrait) {
+      return Positioned.fill(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Transform.scale(
+              scale: 0.65,
+              alignment: Alignment.bottomCenter, // 아래를 중심으로 스케일
+              child: RotatedBox(quarterTurns: 1, child: content),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Initial & Player Landscape: 정중앙 배치
+    return Positioned.fill(child: Center(child: content));
   }
 }

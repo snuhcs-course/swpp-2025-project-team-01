@@ -45,7 +45,7 @@ class AppRouter {
       case Routes.onboarding:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case Routes.tutorial:
-        return MaterialPageRoute(builder: (_) => const TutorialScreen());
+        return MaterialPageRoute(builder: (_) => TutorialScreen.initial());
       case Routes.home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case Routes.search:
