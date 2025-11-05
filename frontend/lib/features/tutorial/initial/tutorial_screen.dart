@@ -433,7 +433,7 @@ class _LandscapeTutorialCharacterAnimationState
   Widget build(BuildContext context) {
     // 세로 모드와 동일한 레이아웃으로 변경
     return Positioned(
-      top: 0,
+      top: 70,
       left: 0,
       right: 0,
       child: SlideTransition(
@@ -457,7 +457,7 @@ class _LandscapeTutorialCharacterAnimationState
                 ),
                 SizedBox(height: 4 * widget.scaleFactor),
                 SizedBox(
-                  width: 120 * widget.scaleFactor * 0.9,
+                  width: 120 * widget.scaleFactor * 0.7,
                   height: 50 * widget.scaleFactor * 0.9,
                   child: ElevatedButton(
                     onPressed: widget.onDone,
@@ -465,7 +465,7 @@ class _LandscapeTutorialCharacterAnimationState
                       backgroundColor: const Color(0xFFD4E8D4),
                       foregroundColor: Colors.black,
                       shape: const StadiumBorder(
-                        side: BorderSide(color: Colors.black, width: 2),
+                        side: BorderSide(color: Colors.black, width: 4),
                       ),
                       elevation: 0,
                     ),
@@ -473,7 +473,7 @@ class _LandscapeTutorialCharacterAnimationState
                       'DONE',
                       style: TextStyle(
                         fontFamily: 'NanumSquare',
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
