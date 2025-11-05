@@ -197,69 +197,89 @@ Future<String?> requestLecture(
         );
 
     String? jobId;
-    while (true) {
-      try {
-        await for (final chunk in stream) {
-          // 취소 확인
-          if (LectureLoadingService.instance.isCancelled) {
-            return null;
-          }
-
-          final lines = chunk.split('\n');
-          for (final line in lines) {
-            if (line.startsWith('data: ')) {
-              final jsonData = line.substring(6);
-              final data = jsonDecode(jsonData) as Map<String, dynamic>;
-
-              jobId = data['job_id'] as String;
-
-              // 서버가 0-100 범위로 보낼 수 있으므로 변환
-              final rawProgress = data['progress'];
-              final progress = rawProgress is int
-                  ? (rawProgress / 100.0)
-                  : (rawProgress as double) > 1.0
-                  ? rawProgress / 100.0
-                  : rawProgress;
-
-              final message = data['message'] as String;
-
-              await onProgress(progress, message, titleText, order, audioCount);
-
-              if (data['status'] == 'completed') {
-                return jobId;
-              } else if (data['status'] == 'failed') {
-                LectureLoadingService.instance.setError();
-                return null;
-              }
-            }
-          }
+    try {
+      await for (final chunk in stream) {
+        // 취소 확인
+        if (LectureLoadingService.instance.isCancelled) {
+          return null;
         }
-      } catch (e) {
-        if (jobId != null) {
-          final statusEndpoint = Uri.parse(
-            'http://$serverAddress:$port/api/synchronize/status/$jobId',
-          );
-          final statusResponse = await client.get(statusEndpoint);
-          if (statusResponse.statusCode == 200) {
-            final jsonData =
-                jsonDecode(statusResponse.body) as Map<String, dynamic>;
-            final String status = jsonData['status'] as String;
-            if (status == 'failed') {
-              break;
+
+        final lines = chunk.split('\n');
+        for (final line in lines) {
+          if (line.startsWith('data: ')) {
+            final jsonData = line.substring(6);
+            final data = jsonDecode(jsonData) as Map<String, dynamic>;
+
+            jobId = data['job_id'] as String;
+
+            // 서버가 0-100 범위로 보낼 수 있으므로 변환
+            final rawProgress = data['progress'];
+            final progress = rawProgress is int
+                ? (rawProgress / 100.0)
+                : (rawProgress as double) > 1.0
+                ? rawProgress / 100.0
+                : rawProgress;
+
+            final message = data['message'] as String;
+
+            await onProgress(progress, message, titleText, order, audioCount);
+
+            if (data['status'] == 'completed') {
+              return jobId;
+            } else if (data['status'] == 'failed') {
+              LectureLoadingService.instance.setError();
+              return null;
             }
-          } else {
-            break;
           }
-        } else {
-          break;
         }
       }
+    } catch (e) {
+      debugPrint('SSE issue triggered');
+      final client = http.Client();
+      if (jobId == null) {
+        return null;
+      }
+      while (true) {
+        final status = await getJobStatus(jobId, serverAddress, port, client);
+        if (status == null || status.$1 == 'failed') {
+          debugPrint('Error during lecture request stream processing: $e');
+          LectureLoadingService.instance.setError();
+          return null;
+        } else if (status.$1 == 'completed') {
+          return jobId;
+        }
+
+        await onProgress(status.$2, 'message', titleText, order, audioCount);
+      }
     }
-    LectureLoadingService.instance.setError();
-    return null;
+
+    return jobId;
   } catch (e) {
     debugPrint('Error during lecture request: $e');
     LectureLoadingService.instance.setError();
+    return null;
+  }
+}
+
+Future<(String, double)?> getJobStatus(String jobId, String serverAddress, String port, http.Client client) async {
+  final statusEndpoint = Uri.parse('http://$serverAddress:$port/api/synchronize/status/$jobId');
+  final statusResponse = await client.get(statusEndpoint);
+  if (statusResponse.statusCode == 200) {
+    final jsonData =
+        jsonDecode(statusResponse.body) as Map<String, dynamic>;
+    final String status = jsonData['status'] as String;
+    jobId = jsonData['job_id'] as String;
+
+    // 서버가 0-100 범위로 보낼 수 있으므로 변환
+    final rawProgress = jsonData['progress'];
+    final progress = rawProgress is int
+        ? (rawProgress / 100.0)
+        : (rawProgress as double) > 1.0
+        ? rawProgress / 100.0
+        : rawProgress;
+    await Future.delayed(const Duration(seconds: 2));
+    return (status, progress);
+  } else {
     return null;
   }
 }
@@ -400,7 +420,6 @@ Future<List<String>?> fetchLecture(
     order,
     serverAddress,
     port,
-    fakeClient: clientToClose,
   );
 
   if (zipPath == null) {
