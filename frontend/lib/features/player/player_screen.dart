@@ -11,6 +11,9 @@ import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/tutorial/player/player_tutorial_screen.dart';
 
+// 디버깅 시 플레이어 튜토리얼을 강제로 띄우고 싶으면 true로 설정.
+const bool kForcePlayerTutorial = false;
+
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
     super.key,
@@ -63,7 +66,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   /// 플레이어 튜토리얼 체크 및 표시
   Future<void> _checkAndShowPlayerTutorial() async {
-    if (!_hiveManager.hasPlayerTutorialCompleted) {
+    final shouldShowTutorial =
+        kForcePlayerTutorial || !_hiveManager.hasPlayerTutorialCompleted;
+    if (shouldShowTutorial) {
       // 시스템 UI를 다시 보이도록 설정 (튜토리얼에서는 UI가 필요)
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
