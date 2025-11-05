@@ -93,7 +93,8 @@ Future<String?> requestLecture(
   int audioCount,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String, int, int) onProgress, {
+  Future<void> Function(double, String, String, int, int) onProgress,
+  bool isRetry, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
@@ -171,18 +172,19 @@ Future<String?> requestLecture(
   }
 
   // Use the injected client to send
+  bool didArrive = false;
   try {
     final streamed = await client
         .send(req)
         .timeout(
-          const Duration(minutes: 10),
+          const Duration(minutes: 5),
           onTimeout: () {
             throw Exception(
               'Server connection timeout - Please check if server is running',
             );
           },
         );
-
+    didArrive = true;
     // read chunked SSE-style body
     final stream = streamed.stream
         .transform(utf8.decoder)
@@ -256,17 +258,37 @@ Future<String?> requestLecture(
     return jobId;
   } catch (e) {
     debugPrint('Error during lecture request: $e');
+    if (!didArrive && !isRetry) {
+      final jobId = await requestLecture(
+        slidePath,
+        audioFileEntry,
+        titleText,
+        order,
+        audioCount,
+        serverAddress,
+        port,
+        onProgress,
+        true,
+      );
+      return jobId;
+    }
     LectureLoadingService.instance.setError();
     return null;
   }
 }
 
-Future<(String, double)?> getJobStatus(String jobId, String serverAddress, String port, http.Client client) async {
-  final statusEndpoint = Uri.parse('http://$serverAddress:$port/api/synchronize/status/$jobId');
+Future<(String, double)?> getJobStatus(
+  String jobId,
+  String serverAddress,
+  String port,
+  http.Client client,
+) async {
+  final statusEndpoint = Uri.parse(
+    'http://$serverAddress:$port/api/synchronize/status/$jobId',
+  );
   final statusResponse = await client.get(statusEndpoint);
   if (statusResponse.statusCode == 200) {
-    final jsonData =
-        jsonDecode(statusResponse.body) as Map<String, dynamic>;
+    final jsonData = jsonDecode(statusResponse.body) as Map<String, dynamic>;
     final String status = jsonData['status'] as String;
     jobId = jsonData['job_id'] as String;
 
@@ -405,6 +427,7 @@ Future<List<String>?> fetchLecture(
     serverAddress,
     port,
     onProgress,
+    false,
     fakeClient: fakeClient,
     endpointOverride: endpointOverride,
     clientToClose: clientToClose,
@@ -767,9 +790,7 @@ Future<void> onProgress(
       presentAlert: true,
       presentBadge: true,
       presentSound: isDone,
-      subtitle: isDone
-          ? (message.isEmpty ? 'Completed' : message)
-          : '$message — $pct%',
+      subtitle: isDone ? 'Completed' : '${loadingService.message} — $pct%',
     );
 
     final title = 'Generating Lecture: $lectureTitle';
@@ -781,7 +802,7 @@ Future<void> onProgress(
     await _notifier.show(
       _progressNotificationId,
       isDone ? 'Lecture generation finished' : title,
-      isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
+      isDone ? 'Completed' : '${loadingService.message} — $pct%',
       details,
     );
   } else {
