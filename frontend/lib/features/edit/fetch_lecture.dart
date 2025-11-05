@@ -311,7 +311,8 @@ Future<String?> downloadResult(
   String titleText,
   int order,
   String serverAddress,
-  String port, {
+  String port,
+  bool isRetry, {
   http.Client? fakeClient, // for testing
   Directory? tempDirOverride, // for testing
 }) async {
@@ -338,6 +339,17 @@ Future<String?> downloadResult(
     }
   } catch (e) {
     debugPrint('Error during download: $e');
+    if (!isRetry) {
+      final savePath = await downloadResult(
+        jobId,
+        titleText,
+        order,
+        serverAddress,
+        port,
+        true,
+      );
+      return savePath;
+    }
     LectureLoadingService.instance.setError();
     return null;
   }
@@ -346,6 +358,7 @@ Future<String?> downloadResult(
 Future<List<String>?> unzipResult(
   String zipPath,
   String titleText,
+  String lectureId,
   int order, {
   Directory? documentsDirOverride, // for testing
   bool deleteZip = true, // for test assertions
@@ -366,7 +379,7 @@ Future<List<String>?> unzipResult(
 
   for (final file in archive) {
     final extension = path.extension(file.name);
-    final filePath = '$outputDir/${titleText}_$order$extension';
+    final filePath = '$outputDir/$lectureId/${titleText}_$order$extension';
 
     if (file.isFile) {
       // Make sure the parent directory exists
@@ -408,6 +421,7 @@ Future<List<String>?> fetchLecture(
   String slidePath,
   AudioFileEntry audioFileEntry,
   String titleText,
+  String lectureId,
   int order,
   int audioCount,
   String serverAddress,
@@ -443,6 +457,7 @@ Future<List<String>?> fetchLecture(
     order,
     serverAddress,
     port,
+    false,
   );
 
   if (zipPath == null) {
@@ -450,7 +465,7 @@ Future<List<String>?> fetchLecture(
   }
 
   try {
-    final filePaths = await unzipResult(zipPath, titleText, order);
+    final filePaths = await unzipResult(zipPath, titleText, lectureId, order);
 
     if (filePaths == null) {
       LectureLoadingService.instance.setError();
@@ -468,7 +483,8 @@ Future<List<String>?> fetchLecture(
 /// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.
 Future<String?> concatenateAudioFiles(
   List<String> audioPaths,
-  String titleText, {
+  String titleText,
+  String lectureId, {
   Directory? dirOverride, // for testing
 }) async {
   final audioFileList = audioPaths.map((p) => "file '$p'").join('\n');
@@ -477,9 +493,9 @@ Future<String?> concatenateAudioFiles(
   final listFile = '$outputDir/tmp_audio_list.txt';
   String audioOutputPath;
   if (path.extension(audioPaths[0]) == '.opus') {
-    audioOutputPath = '$outputDir/$titleText.opus';
+    audioOutputPath = '$outputDir/$lectureId/$titleText.opus';
   } else {
-    audioOutputPath = '$outputDir/$titleText.m4a';
+    audioOutputPath = '$outputDir/$lectureId/$titleText.m4a';
   }
 
   // Concatenate the audio files
@@ -508,7 +524,8 @@ Future<String?> concatenateAudioFiles(
 Future<String?> concatenateJsonFiles(
   List<String> jsonPaths,
   List<int> pdfStarts,
-  String titleText, {
+  String titleText,
+  String lectureId, {
   Directory? dirOverride, // for testing
 }) async {
   const gapBetweenFiles = 5000;
@@ -521,7 +538,7 @@ Future<String?> concatenateJsonFiles(
     final documentsDir =
         dirOverride ?? await getApplicationDocumentsDirectory();
     final outputDir = documentsDir.path;
-    final jsonOutputPath = '$outputDir/$titleText.json';
+    final jsonOutputPath = '$outputDir/$lectureId/$titleText.json';
 
     final List<Map<String, dynamic>> mergedTimestamps = [];
     int runningSentenceId = 1;
