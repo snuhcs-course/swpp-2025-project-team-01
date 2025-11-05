@@ -236,10 +236,13 @@ Future<String?> requestLecture(
         }
       } catch (e) {
         if (jobId != null) {
-          final statusEndpoint = Uri.parse('http://$serverAddress:$port/api/synchronize/status/$jobId');
+          final statusEndpoint = Uri.parse(
+            'http://$serverAddress:$port/api/synchronize/status/$jobId',
+          );
           final statusResponse = await client.get(statusEndpoint);
           if (statusResponse.statusCode == 200) {
-            final jsonData = jsonDecode(statusResponse.body) as Map<String, dynamic>;
+            final jsonData =
+                jsonDecode(statusResponse.body) as Map<String, dynamic>;
             final String status = jsonData['status'] as String;
             if (status == 'failed') {
               break;
