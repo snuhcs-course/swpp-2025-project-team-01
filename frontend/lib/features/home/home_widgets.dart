@@ -686,22 +686,6 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _weekController,
-              decoration: InputDecoration(
-                labelText: l10n.week,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: l10n.lectureTitle,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
             // 과목 선택 드롭다운
             DropdownButtonFormField<String>(
               initialValue: _selectedSubjectId,
@@ -726,6 +710,22 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                   });
                 }
               },
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _weekController,
+              decoration: InputDecoration(
+                labelText: l10n.week,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: l10n.lectureTitle,
+                border: const OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 20),
             // 강의 시간 정보
