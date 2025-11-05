@@ -1,6 +1,5 @@
 // 앱 엔트리: 테마 + 라우터 연결
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:re_view/app_router.dart';
