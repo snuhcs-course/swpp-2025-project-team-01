@@ -172,8 +172,8 @@ class _TtsScreenState extends State<TtsScreen> {
         : (isSelected
               ? Colors.white
               : isEnabled
-                  ? const Color(0xFFE0E0E0)
-                  : const Color(0xFFE0E0E0).withValues(alpha: 0.6));
+              ? const Color(0xFFE0E0E0)
+              : const Color(0xFFE0E0E0).withValues(alpha: 0.6));
     final borderColor = isDark
         ? (isSelected ? colorScheme.primary : Colors.transparent)
         : (isSelected ? const Color(0xFF424242) : Colors.transparent);

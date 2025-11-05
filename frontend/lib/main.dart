@@ -21,9 +21,7 @@ void main() async {
   await HiveManager.instance.init();
 
   if (Platform.isAndroid) {
-    SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.immersiveSticky,
-    );
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   runApp(const ReViewApp());

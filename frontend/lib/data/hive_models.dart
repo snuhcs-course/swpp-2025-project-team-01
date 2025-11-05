@@ -51,7 +51,7 @@ class AppSettings {
     this.language = 'ko',
     this.accessibilityHighContrast = false,
     this.accessibilityReduceMotion = false,
-    this.accessibilityEmphasizeCaptions = true,
+    this.accessibilityEmphasizeCaptions = false,
     this.ttsGender = '남성',
     this.tagColorTheme = '봄',
     this.hasCompletedTutorial = false,
