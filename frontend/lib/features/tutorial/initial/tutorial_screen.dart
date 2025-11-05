@@ -129,7 +129,8 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   final size = MediaQuery.of(context).size;
                   // 화면 방향에 따라 scaleFactor 계산
                   final scaleFactor = orientation == Orientation.portrait
-                      ? size.height / _basePortraitHeight // 높이 비율
+                      ? size.height /
+                            _basePortraitHeight // 높이 비율
                       : size.width / _baseLandscapeWidth; // 너비 비율
 
                   final pageView = PageView(
@@ -186,7 +187,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
             bottom: screenHeight * 0.03, // 40
             left: 0,
             right: 0,
-            child: Center(child: _buildNextButton(scaleFactor: 1.1)), // 크기 10% 증가
+            child: Center(
+              child: _buildNextButton(scaleFactor: 1.1),
+            ), // 크기 10% 증가
           ),
         ],
       ],
@@ -316,7 +319,8 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
       alignment: Alignment.topCenter,
       child: Padding(
         padding: EdgeInsets.only(
-            top: MediaQuery.of(context).size.height * 0.15), // 화면 높이의 15% 지점
+          top: MediaQuery.of(context).size.height * 0.15,
+        ), // 화면 높이의 15% 지점
         child: SlideTransition(
           position: _slideAnimation,
           child: FadeTransition(

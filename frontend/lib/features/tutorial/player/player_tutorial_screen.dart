@@ -117,7 +117,8 @@ class _PlayerTutorialScreenState extends State<PlayerTutorialScreen> {
             final size = MediaQuery.of(context).size;
             // 화면 방향에 따라 scaleFactor 계산
             final scaleFactor = orientation == Orientation.portrait
-                ? size.height / _basePortraitHeight // 높이 비율
+                ? size.height /
+                      _basePortraitHeight // 높이 비율
                 : size.width / _baseLandscapeWidth; // 너비 비율
 
             // PageView는 공통으로 사용
@@ -307,8 +308,11 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
           opacity: _fadeAnimation,
           child: Align(
             alignment: Alignment.bottomCenter,
-            child: Padding( // 화면 높이에 비례하여 하단 여백 조정
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.03),
+            child: Padding(
+              // 화면 높이에 비례하여 하단 여백 조정
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height * 0.03,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -435,7 +439,9 @@ class _LandscapeTutorialCharacterAnimationState
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Padding(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.02),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).size.height * 0.02,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -547,8 +553,7 @@ class TutorialSlide extends StatelessWidget {
         // 마지막 슬라이드일 때 캐릭터 애니메이션
         if (isLastSlide && showCharacter) ...[
           if (orientation == Orientation.portrait)
-            TutorialCharacterAnimation(
-                onDone: onDone, scaleFactor: scaleFactor)
+            TutorialCharacterAnimation(onDone: onDone, scaleFactor: scaleFactor)
           else
             LandscapeTutorialCharacterAnimation(
               onDone: onDone,
