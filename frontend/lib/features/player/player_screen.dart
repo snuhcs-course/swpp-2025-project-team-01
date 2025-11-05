@@ -76,7 +76,10 @@ class _PlayerScreenState extends State<PlayerScreen>
 
       // 튜토리얼 화면으로 이동
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const PlayerTutorialScreen()),
+        MaterialPageRoute(builder: (context) {
+          final orientation = MediaQuery.of(context).orientation;
+          return PlayerTutorialScreen(initialOrientation: orientation);
+        }),
       );
 
       // 튜토리얼 완료 후 다시 시스템 UI 숨기기
