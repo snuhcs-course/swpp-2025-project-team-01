@@ -42,9 +42,6 @@ class _PlayerScreenState extends State<PlayerScreen>
   void initState() {
     super.initState();
 
-    // 시스템 UI 숨기기 (상태바, 네비게이션 바)
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-
     // 앱 라이프사이클 옵저버 등록
     WidgetsBinding.instance.addObserver(this);
 
@@ -98,8 +95,6 @@ class _PlayerScreenState extends State<PlayerScreen>
   void dispose() {
     // 앱 라이프사이클 옵저버 제거
     WidgetsBinding.instance.removeObserver(this);
-    // 시스템 UI 다시 보이기
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _controller.dispose();
     super.dispose();
   }
@@ -280,21 +275,26 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     final highContrast = _hiveManager.settings.accessibilityHighContrast;
 
-    final playerContent = OrientationBuilder(
-      builder: (_, orientation) {
-        final isVertical = orientation == Orientation.portrait;
-        if (isVertical) {
-          return VerticalPlayerLayout(
-            controller: _controller,
-            onBack: () => Navigator.pop(context),
-          );
-        } else {
-          return HorizontalPlayerLayout(
-            controller: _controller,
-            onBack: () => Navigator.pop(context),
-          );
-        }
-      },
+    final playerContent = Container(
+      color: Colors.black,
+      child: SafeArea(
+        child: OrientationBuilder(
+          builder: (_, orientation) {
+            final isVertical = orientation == Orientation.portrait;
+            if (isVertical) {
+              return VerticalPlayerLayout(
+                controller: _controller,
+                onBack: () => Navigator.pop(context),
+              );
+            } else {
+              return HorizontalPlayerLayout(
+                controller: _controller,
+                onBack: () => Navigator.pop(context),
+              );
+            }
+          },
+        ),
+      ),
     );
 
     return Scaffold(

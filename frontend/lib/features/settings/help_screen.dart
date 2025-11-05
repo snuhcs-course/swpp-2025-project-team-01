@@ -68,11 +68,13 @@ class HelpScreen extends StatelessWidget {
           l10n.isKorean
               ? _InfoCard(
                   title: '한국어 강의도 지원되나요?',
-                  body: '현재 개발 중에 있으며 11월 중으로 만나보실 수 있습니다! 기대해주세요 :)',
+                  body:
+                      '  현재 개발 중에 있으며 11월 중으로 만나보실 수 있습니다!\n'
+                      '  기대해주세요 :)',
                 )
               : _InfoCard(
                   title: l10n.buyCoffee,
-                  body: 'https://buymeacoffee.com',
+                  body: '  https://buymeacoffee.com',
                 ),
         ],
       ),
