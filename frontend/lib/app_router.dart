@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 // 화면들
-import 'package:re_view/features/tutorial/initial/tutorial_screen.dart';
+import 'package:re_view/features/tutorial/tutorial_screen.dart';
 import 'package:re_view/features/home/home_screen.dart';
 import 'package:re_view/features/search/search_screen.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
