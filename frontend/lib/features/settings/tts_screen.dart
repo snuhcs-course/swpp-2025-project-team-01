@@ -112,7 +112,7 @@ class _TtsScreenState extends State<TtsScreen> {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -172,8 +172,8 @@ class _TtsScreenState extends State<TtsScreen> {
         : (isSelected
               ? Colors.white
               : isEnabled
-              ? const Color(0xFFE0E0E0)
-              : const Color(0xFFE0E0E0).withOpacity(0.6));
+                  ? const Color(0xFFE0E0E0)
+                  : const Color(0xFFE0E0E0).withValues(alpha: 0.6));
     final borderColor = isDark
         ? (isSelected ? colorScheme.primary : Colors.transparent)
         : (isSelected ? const Color(0xFF424242) : Colors.transparent);
