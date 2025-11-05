@@ -100,11 +100,15 @@ class HorizontalPlayerLayout extends StatelessWidget {
                             Positioned(
                               top: 12,
                               right: 16,
-                              child: ValueListenableBuilder<bool>(
-                                valueListenable: controller.isSynced,
-                                builder: (context, isSynced, _) {
+                              // isSynced와 currentPage를 함께 감시하여 즉시 업데이트
+                              child: ListenableBuilder(
+                                listenable: Listenable.merge([
+                                  controller.isSynced,
+                                  controller.currentPage,
+                                ]),
+                                builder: (context, _) {
                                   return SyncButton(
-                                    isSynced: isSynced,
+                                    isSynced: controller.isSynced.value,
                                     onPressed: controller.toggleSync,
                                     pageDifference: controller.pageDifference,
                                   );
