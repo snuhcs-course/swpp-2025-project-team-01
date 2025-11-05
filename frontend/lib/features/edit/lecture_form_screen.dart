@@ -11,6 +11,7 @@ import 'package:re_view/features/edit/fetch_lecture.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_background/flutter_background.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:uuid/uuid.dart';
 
 const String _serverAddress = '147.46.78.61';
 const String _port = '8001';
@@ -995,8 +996,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
     });
 
+    // 3. 서버에 강의 생성 요청
+    final lectureId = Uuid().v4();
     try {
-      // 3. 백엔드로 전송
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
       final slidePath = _slidePdfPath!;
@@ -1022,38 +1024,23 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final audioFileEntry = effectiveAudios[i - 1];
         originalAudioPaths.add(audioFileEntry.filePath!);
 
-        if (i == 1) {
-          futures.add(
-            fetchLecture(
+        futures.add(
+          Future.delayed(
+            i == 1 ? Duration.zero : Duration(seconds: 10),
+            () => fetchLecture(
               slidePath,
               audioFileEntry,
               titleText,
+              lectureId,
               i,
               effectiveAudios.length,
               _serverAddress,
               _port,
               onProgress,
-              clientToClose: http.Client(),
+              clientToClose: clients[i - 1],
             ),
-          );
-        } else {
-          futures.add(
-            Future.delayed(
-              Duration(seconds: 5),
-              () => fetchLecture(
-                slidePath,
-                audioFileEntry,
-                titleText,
-                i,
-                effectiveAudios.length,
-                _serverAddress,
-                _port,
-                onProgress,
-                clientToClose: clients[i - 1],
-              ),
-            ),
-          );
-        }
+          ),
+        );
 
         // Add PDF ranges
         if (effectiveAudios.length >= 2) {
@@ -1065,16 +1052,23 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // Async calls in parallel
       final results = await Future.wait(futures);
-      for (int i = 0; i < effectiveAudios.length; i++) {
-        if (results[i] == null) {
-          _showToast(
-            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-          );
-          return;
-        } else {
+      final isSuccess = !results.contains(null);
+      if (isSuccess) {
+        for (int i = 0; i < results.length; i++) {
           ttsAudioPaths.add(results[i]![0]);
           jsonPaths.add(results[i]![1]);
         }
+      } else {
+        for (int i = 0; i < results.length; i++) {
+          if (results[i] != null) {
+            await File(results[i]![0]).delete();
+            await File(results[i]![1]).delete();
+          }
+        }
+        _showToast(
+          l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+        );
+        return;
       }
 
       // 4. 음성 파일이 여러 개일 경우 통합 처리
@@ -1087,9 +1081,19 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         originalAudioPath = await concatenateAudioFiles(
           originalAudioPaths,
           titleText,
+          lectureId,
         );
-        ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
-        jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
+        ttsAudioPath = await concatenateAudioFiles(
+          ttsAudioPaths,
+          titleText,
+          lectureId,
+        );
+        jsonPath = await concatenateJsonFiles(
+          jsonPaths,
+          pdfStarts,
+          titleText,
+          lectureId,
+        );
 
         if (originalAudioPath == null ||
             ttsAudioPath == null ||
@@ -1113,7 +1117,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(
-        id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
+        id: lectureId,
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,

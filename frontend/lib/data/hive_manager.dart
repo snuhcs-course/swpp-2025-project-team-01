@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -381,6 +382,10 @@ class HiveManager extends ChangeNotifier {
   }
 
   Future<void> deleteSubject(String id) async {
+    final subject = getSubject(id)!;
+    for (final lectureId in subject.lectureIds) {
+      await deleteLecture(lectureId);
+    }
     subjects.remove(id);
     subjectOrder.remove(id); // 순서 목록에서도 제거
     await _save();
@@ -587,6 +592,10 @@ class HiveManager extends ChangeNotifier {
     // 모든 과목에서 제거
     for (final subject in subjects.values) {
       if (subject.lectureIds.contains(lectureId)) {
+        final lecture = getLecture(lectureId)!;
+        await File(lecture.originalAudioPath).delete();
+        await File(lecture.ttsAudioPath).delete();
+        await File(lecture.jsonPath!).delete();
         final updatedIds = subject.lectureIds
             .where((id) => id != lectureId)
             .toList();
