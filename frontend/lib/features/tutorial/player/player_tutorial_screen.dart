@@ -318,7 +318,7 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
                   RotatedBox(
                     quarterTurns: 1, // 시계 방향으로 90도 회전
                     child: SizedBox(
-                      width: 120 * widget.scaleFactor * 0.7,
+                      width: 120 * widget.scaleFactor * 0.75,
                       height: 50 * widget.scaleFactor * 0.7,
                       child: ElevatedButton(
                         onPressed: widget.onDone,
