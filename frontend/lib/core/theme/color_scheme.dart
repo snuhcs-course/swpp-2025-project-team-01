@@ -144,13 +144,16 @@ Color getTextColorForBackground(int backgroundColor) {
 /// 태그에 적용할 수 있는 색상 테마를 정의합니다.
 /// 각 테마는 15개의 색상으로 구성되어 있으며, 태그가 15개를 초과하면 순환 방식으로 색상이 재사용됩니다.
 class TagColorTheme {
-  const TagColorTheme(this.name, this.colors);
+  const TagColorTheme(this.name, this.colors, {this.textColor = Colors.black});
 
   /// 테마 이름 (예: '봄', '여름', '가을')
   final String name;
 
   /// 테마에 포함된 색상 리스트 (ARGB 형식)
   final List<int> colors;
+
+  /// 태그 텍스트에 사용할 색상 (기본: 검정)
+  final Color textColor;
 }
 
 /// 사용 가능한 모든 태그 색상 테마
@@ -188,13 +191,7 @@ const List<TagColorTheme> tagColorThemes = [
     0xFFD1D9D7,
     0xFFA3C1D1,
   ]),
-  TagColorTheme('겨울', [
-    0xFF705C50,
-    0xFFCBDFEA,
-    0xFFC8C2BC,
-    0xFF4B3935,
-    0xFFFAF3E0,
-  ]),
+  TagColorTheme('겨울', [0xFFCBDFEA, 0xFFC8C2BC, 0xFF4B3935, 0xFFFAF3E0]),
   TagColorTheme('솜사탕', [
     0xFFDC97B4,
     0xFFC3E2F5,
@@ -224,7 +221,7 @@ const List<TagColorTheme> tagColorThemes = [
     0xFF405066,
     0xFF263C42,
     0xFF566C86,
-  ]),
+  ], textColor: Colors.white),
 ];
 
 /// 테마 이름으로 테마 객체 찾기
@@ -235,6 +232,11 @@ TagColorTheme getTagColorTheme(String name) {
     (t) => t.name == name,
     orElse: () => tagColorThemes[0],
   );
+}
+
+/// 태그 테마 이름으로 텍스트 색상을 반환
+Color getTagThemeTextColor(String name) {
+  return getTagColorTheme(name).textColor;
 }
 
 /// ThemeData 확장 - 라이트 색상 스킴 접근을 위한 확장

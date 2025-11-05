@@ -120,7 +120,9 @@ class HorizontalPlayerLayout extends StatelessWidget {
                 if (showTranscriptPanel)
                   Container(
                     width: transcriptPanelWidth,
-                    color: const Color(0xFFFAFAFA),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.surface
+                        : const Color(0xFFFAFAFA),
                     child: TranscriptArea(
                       key: controller.transcriptAreaKey,
                       controller: controller,
@@ -361,18 +363,24 @@ class VerticalToggleBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
     return GestureDetector(
       onTap: onToggle,
       child: Container(
         width: double.infinity,
         height: 40,
-        color: const Color(0xFFF5F5F5),
+        color: isDark
+            ? colorScheme.surfaceContainerHighest
+            : const Color(0xFFF5F5F5),
         child: Center(
           child: Icon(
             isPagesExpanded
                 ? Icons.keyboard_arrow_up
                 : Icons.keyboard_arrow_down,
-            color: Colors.grey[700],
+            color: isDark ? colorScheme.onSurfaceVariant : Colors.grey[700],
             size: 28,
           ),
         ),
@@ -468,9 +476,13 @@ class PagesListWidget extends StatelessWidget {
         );
 
         if (isVertical) {
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
           return Container(
             height: 150,
-            color: const Color(0xFFEEEEEE),
+            color: isDark
+                ? theme.colorScheme.surfaceContainerHighest
+                : const Color(0xFFEEEEEE),
             child: slidesList,
           );
         } else {
@@ -490,27 +502,55 @@ class TranslationButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return ValueListenableBuilder<bool>(
       valueListenable: controller.isKoreanLanguage,
       builder: (context, isKorean, _) {
         final hasKorean = controller.hasKoreanTranscript;
+        final isEnabled = hasKorean;
+        final isActive = hasKorean && isKorean;
+        final backgroundColor = !isEnabled
+            ? (isDark
+                  ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
+                  : Colors.grey.shade300)
+            : (isActive
+                  ? (isDark ? colorScheme.primary : Colors.blue.shade600)
+                  : (isDark
+                        ? colorScheme.secondaryContainer
+                        : Colors.grey.shade400));
+        final textColor = !isEnabled
+            ? (isDark
+                  ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
+                  : Colors.grey.shade500)
+            : (isActive
+                  ? (isDark ? colorScheme.onPrimary : Colors.white)
+                  : (isDark ? colorScheme.onSecondaryContainer : Colors.white));
+
         return GestureDetector(
           onTap: hasKorean ? controller.toggleTranscriptLanguage : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: hasKorean
-                  ? (isKorean ? Colors.blue[600] : Colors.grey[400])
-                  : Colors.grey[300],
+              color: backgroundColor,
               borderRadius: BorderRadius.circular(4),
+              border: isDark
+                  ? Border.all(
+                      color: isActive
+                          ? colorScheme.primary
+                          : colorScheme.outlineVariant.withValues(alpha: 0.6),
+                    )
+                  : null,
             ),
             child: Text(
               isKorean ? 'KOR' : 'ENG',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: hasKorean ? Colors.white : Colors.grey[500],
+                color: textColor,
               ),
             ),
           ),
@@ -529,11 +569,19 @@ class TranscriptArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     if (controller.transcriptData == null) {
       return Container(
         width: double.infinity,
-        color: const Color(0xFFFAFAFA),
-        child: const Center(child: CircularProgressIndicator()),
+        color: isDark ? colorScheme.surface : const Color(0xFFFAFAFA),
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+          ),
+        ),
       );
     }
 
@@ -542,7 +590,7 @@ class TranscriptArea extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      color: const Color(0xFFFAFAFA),
+      color: isDark ? colorScheme.surface : const Color(0xFFFAFAFA),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,7 +602,7 @@ class TranscriptArea extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+                  color: isDark ? colorScheme.onSurface : Colors.grey[800],
                 ),
               ),
               const SizedBox(width: 8),
@@ -594,11 +642,15 @@ class TranscriptArea extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: isCurrentSentence ? 18 : 14,
                                   fontWeight: isCurrentSentence
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
                                   color: isCurrentSentence
-                                      ? Colors.black
-                                      : Colors.grey[600],
+                                      ? (isDark
+                                            ? colorScheme.primary
+                                            : Colors.black)
+                                      : (isDark
+                                            ? colorScheme.onSurfaceVariant
+                                            : Colors.grey[600]),
                                   height: 1.6,
                                 ),
                               ),

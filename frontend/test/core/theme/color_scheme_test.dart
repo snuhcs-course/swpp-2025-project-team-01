@@ -19,7 +19,7 @@ void main() {
       expect(tagColorThemes[0].colors.length, 10); // 봄
       expect(tagColorThemes[1].colors.length, 7); // 여름
       expect(tagColorThemes[2].colors.length, 10); // 가을
-      expect(tagColorThemes[3].colors.length, 5); // 겨울
+      expect(tagColorThemes[3].colors.length, 4); // 겨울
       expect(tagColorThemes[4].colors.length, 10); // 솜사탕
       expect(tagColorThemes[5].colors.length, 7); // 비비드
       expect(tagColorThemes[6].colors.length, 7); // 바다
@@ -59,6 +59,19 @@ void main() {
     test('should return first theme when empty string is provided', () {
       final emptyTheme = getTagColorTheme('');
       expect(emptyTheme.name, '봄');
+    });
+  });
+
+  group('getTagThemeTextColor', () {
+    test('should return black for default themes', () {
+      expect(getTagThemeTextColor('봄'), Colors.black);
+      expect(getTagThemeTextColor('여름'), Colors.black);
+      expect(getTagThemeTextColor('비비드'), Colors.black);
+    });
+
+    test('should return theme-specific overrides', () {
+      expect(getTagThemeTextColor('겨울'), Colors.black);
+      expect(getTagThemeTextColor('바다'), Colors.white);
     });
   });
 

@@ -16,6 +16,7 @@ import 'package:re_view/features/settings/settings_screen.dart';
 import 'package:re_view/features/settings/tts_screen.dart';
 import 'package:re_view/features/subjects/subjects_edit_screen.dart';
 import 'package:re_view/features/tags/tags_edit_screen.dart';
+import 'package:re_view/features/splash/splash_screen.dart';
 
 /// 앱의 모든 라우트 경로를 정의하는 클래스
 class Routes {
@@ -42,6 +43,7 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings s) {
     switch (s.name) {
       case Routes.onboarding:
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
       case Routes.tutorial:
         return MaterialPageRoute(builder: (_) => const TutorialScreen());
       case Routes.home:
