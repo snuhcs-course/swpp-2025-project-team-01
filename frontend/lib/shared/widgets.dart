@@ -874,6 +874,7 @@ class SubjectPanelHeader extends StatelessWidget {
         : resolvedCollapsedRadius;
 
     return GestureDetector(
+      onTap: onToggleExpanded,
       onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
