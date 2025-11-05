@@ -7,7 +7,7 @@ import 'package:re_view/core/localization/app_localizations.dart';
 /// 이 화면은 텍스트 음성 변환 기능의 다양한 설정을 제공합니다.
 ///
 /// 제공 옵션:
-/// - 음성 성별: 남성/여성 (선택 시 "Hello, World!" 예시 음성 재생)
+/// - 음성 성별: 현재는 여성 음성만 지원 (선택 시 "Hello, World!" 예시 음성 재생)
 /// - TTS 음성 속도: 빠르게/보통/느리게 (선택 시 "Hello, World!" 예시 음성 재생)
 ///
 /// UI 구조:
@@ -28,7 +28,7 @@ class _TtsScreenState extends State<TtsScreen> {
   late final HiveManager _hiveManager;
 
   // TTS 설정 상태
-  String _gender = '남성'; // 음성 성별
+  String _gender = '여성'; // 음성 성별
 
   @override
   void initState() {
@@ -40,14 +40,25 @@ class _TtsScreenState extends State<TtsScreen> {
   /// HiveManager에서 저장된 TTS 설정 불러오기
   Future<void> _loadSettings() async {
     if (mounted) {
-      setState(() {
-        _gender = _hiveManager.settings.ttsGender;
-      });
+      final savedGender = _hiveManager.settings.ttsGender;
+      // 현재는 여성 음성만 지원되므로 저장된 값이 남성이면 여성으로 교체한다.
+      if (savedGender == '남성') {
+        await _hiveManager.updateTts(gender: '여성');
+      }
+      if (mounted) {
+        setState(() {
+          final updatedGender = _hiveManager.settings.ttsGender;
+          _gender = updatedGender == '남성' ? '여성' : updatedGender;
+        });
+      }
     }
   }
 
   /// 음성 성별 저장 및 예시 음성 재생
   Future<void> _saveGender(String value) async {
+    if (value == '남성' || value == 'Male') {
+      return;
+    }
     await _hiveManager.updateTts(gender: value);
     setState(() => _gender = value);
     _playPreviewTTS();
@@ -93,6 +104,17 @@ class _TtsScreenState extends State<TtsScreen> {
             _buildSectionTitle(isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender'),
             const SizedBox(height: 12),
             _buildGenderButtons(isKorean),
+            const SizedBox(height: 8),
+            Text(
+              isKorean
+                  ? '현재 여성 TTS 음성만 지원됩니다.'
+                  : 'Only female TTS voices are currently supported.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
           ],
         ),
       ),
@@ -117,6 +139,7 @@ class _TtsScreenState extends State<TtsScreen> {
             context,
             isKorean ? '남성' : 'Male',
             _gender == '남성',
+            false,
           ),
         ),
         const SizedBox(width: 12),
@@ -125,13 +148,19 @@ class _TtsScreenState extends State<TtsScreen> {
             context,
             isKorean ? '여성' : 'Female',
             _gender == '여성',
+            true,
           ),
         ),
       ],
     );
   }
 
-  Widget _genderButton(BuildContext context, String label, bool isSelected) {
+  Widget _genderButton(
+    BuildContext context,
+    String label,
+    bool isSelected,
+    bool isEnabled,
+  ) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
@@ -140,7 +169,11 @@ class _TtsScreenState extends State<TtsScreen> {
         ? (isSelected
               ? colorScheme.primaryContainer
               : colorScheme.surfaceContainerHighest)
-        : (isSelected ? Colors.white : const Color(0xFFE0E0E0));
+        : (isSelected
+              ? Colors.white
+              : isEnabled
+              ? const Color(0xFFE0E0E0)
+              : const Color(0xFFE0E0E0).withOpacity(0.6));
     final borderColor = isDark
         ? (isSelected ? colorScheme.primary : Colors.transparent)
         : (isSelected ? const Color(0xFF424242) : Colors.transparent);
@@ -148,7 +181,11 @@ class _TtsScreenState extends State<TtsScreen> {
         ? (isSelected
               ? colorScheme.onPrimaryContainer
               : colorScheme.onSurfaceVariant)
-        : (isSelected ? Colors.black : const Color(0xFF666666));
+        : (isSelected
+              ? Colors.black
+              : isEnabled
+              ? const Color(0xFF666666)
+              : const Color(0xFF999999));
 
     final actualValue = label == 'Male'
         ? '남성'
@@ -157,7 +194,7 @@ class _TtsScreenState extends State<TtsScreen> {
         : label;
 
     return GestureDetector(
-      onTap: () => _saveGender(actualValue),
+      onTap: isEnabled ? () => _saveGender(actualValue) : null,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
