@@ -759,7 +759,7 @@ Future<void> onProgress(
 
   final updatedProgress = loadingService.getProgress();
   final pct = (updatedProgress * 100).round();
-  final isDone = loadingService.isCompleted;
+  final isDone = (pct == 100);
 
   // Always show notification during progress to keep background task alive
   // Only skip notification if completed and app is in foreground
@@ -790,7 +790,7 @@ Future<void> onProgress(
       presentAlert: true,
       presentBadge: true,
       presentSound: isDone,
-      subtitle: isDone ? 'Completed' : '${loadingService.message} — $pct%',
+      subtitle: isDone ? null : '${loadingService.message} — $pct%',
     );
 
     final title = 'Generating Lecture: $lectureTitle';
@@ -802,7 +802,7 @@ Future<void> onProgress(
     await _notifier.show(
       _progressNotificationId,
       isDone ? 'Lecture generation finished' : title,
-      isDone ? 'Completed' : '${loadingService.message} — $pct%',
+      isDone ? null : '${loadingService.message} — $pct%',
       details,
     );
   } else {
