@@ -1,13 +1,13 @@
 // 플레이어 튜토리얼 화면 - 플레이어 최초 진입 시 표시되는 가이드
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:re_view/data/hive_manager.dart';
-import 'package:sensors_plus/sensors_plus.dart';
 
 /// 플레이어 최초 진입 시 표시되는 튜토리얼 화면
 class PlayerTutorialScreen extends StatefulWidget {
-  const PlayerTutorialScreen({super.key});
+  const PlayerTutorialScreen({super.key, required this.initialOrientation});
+
+  final Orientation initialOrientation;
 
   @override
   State<PlayerTutorialScreen> createState() => _PlayerTutorialScreenState();
@@ -16,48 +16,60 @@ class PlayerTutorialScreen extends StatefulWidget {
 class _PlayerTutorialScreenState extends State<PlayerTutorialScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  bool _showCharacter = false;
-  bool _isRotatedRight = false; // 오른쪽 회전 감지
-  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  bool _showCharacter = false; // 마지막 페이지 애니메이션 제어
 
-  final List<String> _tutorialImages = [
+  // 세로 모드 튜토리얼 이미지
+  final List<String> _portraitImages = [
     'assets/tutorial/player/player_tutorial_step1.png',
     'assets/tutorial/player/player_tutorial_step2.png',
     'assets/tutorial/player/player_tutorial_step3.png',
     'assets/tutorial/player/player_tutorial_step4.png',
   ];
 
+  // 가로 모드 튜토리얼 이미지
+  final List<String> _landscapeImages = [
+    'assets/tutorial/player/player_tutorial_landscape_step1.png',
+    'assets/tutorial/player/player_tutorial_landscape_step2.png',
+    'assets/tutorial/player/player_tutorial_landscape_step3.png',
+  ];
+
+  List<String> get _currentImages =>
+      widget.initialOrientation == Orientation.portrait
+      ? _portraitImages
+      : _landscapeImages;
+
   @override
   void initState() {
     super.initState();
-    // 세로 방향으로만 고정 (모든 페이지)
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
-    // 가속도계로 오른쪽 회전 감지
-    _accelerometerSubscription = accelerometerEventStream().listen((event) {
-      // 세로(정상): x≈0, y≈0, z≈-9.8
-      // 오른쪽 90도 회전: x≈-9.8, y≈0, z≈0
-      final isRightRotated =
-          event.x < -7.0 && event.y.abs() < 5.0 && event.z.abs() < 5.0;
-
-      if (isRightRotated != _isRotatedRight) {
-        setState(() {
-          _isRotatedRight = isRightRotated;
-        });
-      }
-    });
+    _lockOrientation();
   }
 
   @override
   void dispose() {
-    _accelerometerSubscription?.cancel();
+    // 튜토리얼이 끝나면 화면 방향 제한 해제
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     _pageController.dispose();
     super.dispose();
   }
 
+  // 튜토리얼 시작 시 화면 방향 고정
+  void _lockOrientation() {
+    if (widget.initialOrientation == Orientation.portrait) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    }
+  }
+
+  // 다음 페이지로 이동
   void _nextPage() {
-    if (_currentPage < _tutorialImages.length - 1) {
+    if (_currentPage < _currentImages.length - 1) {
       _pageController.jumpToPage(_currentPage + 1);
     }
   }
@@ -68,8 +80,12 @@ class _PlayerTutorialScreenState extends State<PlayerTutorialScreen> {
     });
 
     // 마지막 페이지에 도달 시 캐릭터 표시
-    if (page == _tutorialImages.length - 1 && !_showCharacter) {
-      Future.delayed(const Duration(milliseconds: 2400), () {
+    if (page == _currentImages.length - 1 && !_showCharacter) {
+      // 가로/세로 모드에 따라 애니메이션 시작 시간 조절
+      final delay = widget.initialOrientation == Orientation.portrait
+          ? const Duration(milliseconds: 2400)
+          : const Duration(milliseconds: 1000);
+      Future.delayed(delay, () {
         if (mounted) {
           setState(() {
             _showCharacter = true;
@@ -79,6 +95,7 @@ class _PlayerTutorialScreenState extends State<PlayerTutorialScreen> {
     }
   }
 
+  // 튜토리얼 완료 처리
   Future<void> _completeTutorial() async {
     await HiveManager.instance.completePlayerTutorial();
     if (mounted) {
@@ -88,80 +105,128 @@ class _PlayerTutorialScreenState extends State<PlayerTutorialScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 마지막 페이지 + 오른쪽 회전 시 180도 뒤집기
-    final shouldFlip =
-        _currentPage == _tutorialImages.length - 1 && _isRotatedRight;
-
     return Scaffold(
       backgroundColor: const Color(0xFF656565),
-      body: RotatedBox(
-        quarterTurns: shouldFlip ? 2 : 0,
-        child: SafeArea(
-          child: Stack(
-            children: [
-              PageView(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                physics: const NeverScrollableScrollPhysics(),
-                children: _tutorialImages.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final imagePath = entry.value;
-                  return TutorialSlide(
-                    imagePath: imagePath,
-                    isLastSlide: index == _tutorialImages.length - 1,
-                    showCharacter: _showCharacter,
-                    onDone: _completeTutorial,
-                  );
-                }).toList(),
+      body: SafeArea(
+        child: OrientationBuilder(
+          builder: (context, orientation) {
+            // PageView는 공통으로 사용
+            final pageView = PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              physics: const NeverScrollableScrollPhysics(),
+              children: _currentImages.asMap().entries.map((entry) {
+                final index = entry.key;
+                final imagePath = entry.value;
+                return TutorialSlide(
+                  imagePath: imagePath,
+                  isLastSlide: index == _currentImages.length - 1,
+                  showCharacter: _showCharacter,
+                  onDone: _completeTutorial,
+                  orientation: orientation,
+                );
+              }).toList(),
+            );
+
+            if (orientation == Orientation.portrait) {
+              return _buildPortraitLayout(pageView);
+            } else {
+              return _buildLandscapeLayout(pageView);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  // 세로 모드 레이아웃
+  Widget _buildPortraitLayout(Widget pageView) {
+    return Stack(
+      children: [
+        pageView,
+        if (_currentPage < _currentImages.length - 1) ...[
+          Positioned(
+            bottom: 80,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: TutorialIndicators(
+                pageCount: _currentImages.length,
+                currentPage: _currentPage,
               ),
+            ),
+          ),
+          Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: Center(child: _buildNextButton()),
+          ),
+        ],
+      ],
+    );
+  }
 
-              // 페이지 카운터
-              if (_currentPage < _tutorialImages.length - 1)
-                Positioned(
-                  bottom: 80,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: TutorialIndicators(
-                      pageCount: _tutorialImages.length,
-                      currentPage: _currentPage,
-                    ),
-                  ),
+  // 가로 모드 레이아웃
+  Widget _buildLandscapeLayout(Widget pageView) {
+    return Stack(
+      children: [
+        pageView,
+        if (_currentPage < _currentImages.length - 1) ...[
+          Positioned(
+            bottom: 43,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Transform.scale(
+                scale: 0.7,
+                child: TutorialIndicators(
+                  pageCount: _currentImages.length,
+                  currentPage: _currentPage,
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 2,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Transform.scale(
+                scale: 0.7,
+                child: _buildNextButton(
+                  key: const ValueKey('next-button-landscape'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 
-              // NEXT 버튼
-              if (_currentPage < _tutorialImages.length - 1)
-                Positioned(
-                  bottom: 20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: SizedBox(
-                      width: 120,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _nextPage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4E8D4),
-                          foregroundColor: Colors.black,
-                          shape: const StadiumBorder(
-                            side: BorderSide(color: Colors.black, width: 2),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'NEXT',
-                          style: TextStyle(
-                            fontFamily: 'NanumSquare',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+  // NEXT 버튼 위젯
+  Widget _buildNextButton({Key? key}) {
+    return SizedBox(
+      key: key,
+      width: 120,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: _nextPage,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFD4E8D4),
+          foregroundColor: Colors.black,
+          shape: const StadiumBorder(
+            side: BorderSide(color: Colors.black, width: 2),
+          ),
+          elevation: 0,
+        ),
+        child: const Text(
+          'NEXT',
+          style: TextStyle(
+            fontFamily: 'NanumSquare',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -169,7 +234,7 @@ class _PlayerTutorialScreenState extends State<PlayerTutorialScreen> {
   }
 }
 
-/// 마지막 페이지에서 나타나는 캐릭터와 말풍선 애니메이션
+/// 세로 모드: 마지막 페이지 캐릭터 애니메이션
 class TutorialCharacterAnimation extends StatefulWidget {
   const TutorialCharacterAnimation({super.key, required this.onDone});
 
@@ -189,22 +254,18 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
 
-    // 페이드 인 애니메이션 (0 -> 1)
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
     );
 
+    // 오른쪽에서 왼쪽으로 슬라이드
     _slideAnimation =
-        Tween<Offset>(
-          begin: const Offset(1.0, 0), // 화면 오른쪽 끝에서 시작
-          end: Offset.zero,
-        ).animate(
+        Tween<Offset>(begin: const Offset(1.0, 0), end: Offset.zero).animate(
           CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
         );
 
@@ -292,6 +353,122 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
   }
 }
 
+/// 가로 모드: 마지막 페이지 캐릭터 애니메이션
+class LandscapeTutorialCharacterAnimation extends StatefulWidget {
+  const LandscapeTutorialCharacterAnimation({super.key, required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  State<LandscapeTutorialCharacterAnimation> createState() =>
+      _LandscapeTutorialCharacterAnimationState();
+}
+
+class _LandscapeTutorialCharacterAnimationState
+    extends State<LandscapeTutorialCharacterAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    // initial 튜토리얼과 동일하게 위에서 아래로 슬라이드하도록 변경
+    _slideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, -0.3), // 위쪽에서 시작
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+        );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Transform.scale(
+              scale: 0.7,
+              alignment: Alignment.topCenter,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/tutorial/player/player_tutorial_character_landscape.png',
+                    width: 150,
+                  ),
+                  const SizedBox(height: 8), // 간격 축소
+                  SizedBox(
+                    height: 100, // 회전된 말풍선의 높이를 강제로 지정하여 간격 문제 해결
+                    child: RotatedBox(
+                      quarterTurns: 3, // 시계 반대 방향으로 90도 회전
+                      child: Image.asset(
+                        'assets/tutorial/player/player_tutorial_speech_bubble.png',
+                        width: 300,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 120,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: widget.onDone,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4E8D4),
+                        foregroundColor: Colors.black,
+                        shape: const StadiumBorder(
+                          side: BorderSide(color: Colors.black, width: 2),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'DONE',
+                        style: TextStyle(
+                          fontFamily: 'NanumSquare',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 현재 튜토리얼 페이지를 숫자로 표시 (예: 1/4)
 class TutorialIndicators extends StatelessWidget {
   const TutorialIndicators({
@@ -308,7 +485,7 @@ class TutorialIndicators extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withAlpha(80), // withValues는 deprecated
+        color: Colors.black.withAlpha(80),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -331,11 +508,13 @@ class TutorialSlide extends StatelessWidget {
     required this.isLastSlide,
     required this.showCharacter,
     required this.onDone,
+    required this.orientation,
   });
 
   final String imagePath;
   final bool isLastSlide;
   final bool showCharacter;
+  final Orientation orientation;
   final VoidCallback onDone;
 
   @override
@@ -343,11 +522,15 @@ class TutorialSlide extends StatelessWidget {
     return Stack(
       children: [
         // 메인 이미지 (화면 전체)
-        Positioned.fill(child: Image.asset(imagePath, fit: BoxFit.cover)),
+        Positioned.fill(child: Image.asset(imagePath, fit: BoxFit.contain)),
 
         // 마지막 슬라이드일 때 캐릭터 애니메이션
-        if (isLastSlide && showCharacter)
-          TutorialCharacterAnimation(onDone: onDone),
+        if (isLastSlide && showCharacter) ...[
+          if (orientation == Orientation.portrait)
+            TutorialCharacterAnimation(onDone: onDone)
+          else
+            LandscapeTutorialCharacterAnimation(onDone: onDone),
+        ],
       ],
     );
   }
