@@ -244,21 +244,26 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     final highContrast = _hiveManager.settings.accessibilityHighContrast;
 
-    final playerContent = OrientationBuilder(
-      builder: (_, orientation) {
-        final isVertical = orientation == Orientation.portrait;
-        if (isVertical) {
-          return VerticalPlayerLayout(
-            controller: _controller,
-            onBack: () => Navigator.pop(context),
-          );
-        } else {
-          return HorizontalPlayerLayout(
-            controller: _controller,
-            onBack: () => Navigator.pop(context),
-          );
-        }
-      },
+    final playerContent = Container(
+      color: Colors.black,
+      child: SafeArea(
+        child: OrientationBuilder(
+          builder: (_, orientation) {
+            final isVertical = orientation == Orientation.portrait;
+            if (isVertical) {
+              return VerticalPlayerLayout(
+                controller: _controller,
+                onBack: () => Navigator.pop(context),
+              );
+            } else {
+              return HorizontalPlayerLayout(
+                controller: _controller,
+                onBack: () => Navigator.pop(context),
+              );
+            }
+          },
+        ),
+      ),
     );
 
     return Scaffold(
