@@ -138,11 +138,7 @@ class _ReViewAppState extends State<ReViewApp> {
             : null,
       ),
       themeMode: themeMode,
-      initialRoute:
-          hive
-              .hasTutorialCompleted // 앱을 처음 설치한 경우 튜토리얼 진행
-          ? Routes.home
-          : Routes.tutorial,
+      initialRoute: Routes.onboarding,
 
       onGenerateRoute: AppRouter.onGenerateRoute,
       debugShowCheckedModeBanner: false,

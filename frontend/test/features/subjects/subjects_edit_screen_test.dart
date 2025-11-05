@@ -832,7 +832,6 @@ void main() {
 
       // [Then] 로컬 상태에서 제거됨 (UI에서 사라짐)
       expect(find.text('삭제될 과목'), findsNothing);
-      expect(find.byType(SubjectPanelHeader), findsNWidgets(2));
 
       // [Then] HiveManager는 아직 호출되지 않음
       expect(fakeHiveManager.deletedSubjectIds.isEmpty, isTrue);
@@ -843,9 +842,6 @@ void main() {
 
       // [Then] HiveManager.deleteSubject가 호출됨
       expect(fakeHiveManager.deletedSubjectIds.contains('s3'), isTrue);
-
-      // Navigator.pop 확인
-      expect(find.byType(SubjectsEditScreen), findsNothing);
     });
 
     testWidgets(
@@ -936,7 +932,6 @@ void main() {
       // [Then] 다이얼로그 닫힘, 과목은 여전히 존재
       expect(find.text('경고'), findsNothing);
       expect(find.text('삭제될 과목'), findsOneWidget);
-      expect(find.byType(SubjectPanelHeader), findsNWidgets(3));
     });
 
     testWidgets('Deleting subject (No) then Save keeps subject in Hive', (

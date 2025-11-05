@@ -32,6 +32,8 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
   late final HiveManager _hive;
   String _mode = 'system';
 
+  static const double _lightPreviewAspectRatio = 704 / 1494;
+
   @override
   void initState() {
     super.initState();
@@ -96,13 +98,21 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
               // 미니 프리뷰: 각 모드의 시각적 표현
               Row(
                 children: [
-                  _previewBox(dark: false, label: l10n.lightMode),
-                  const SizedBox(width: 8),
-                  _previewBox(dark: true, label: l10n.darkMode),
+                  _previewBox(
+                    label: l10n.lightMode,
+                    assetPath: 'assets/images/light_mode.png',
+                  ),
                   const SizedBox(width: 8),
                   _previewBox(
-                    dark: _isSystemDarkMode(),
+                    label: l10n.darkMode,
+                    assetPath: 'assets/images/dark_mode.png',
+                  ),
+                  const SizedBox(width: 8),
+                  _previewBox(
                     label: l10n.systemSettings,
+                    assetPath: _isSystemDarkMode()
+                        ? 'assets/images/dark_mode.png'
+                        : 'assets/images/light_mode.png',
                   ),
                 ],
               ),
@@ -133,26 +143,36 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
 
   /// 미니 프리뷰 박스 위젯
   ///
-  /// 각 디스플레이 모드의 시각적 미리보기를 제공합니다.
+  /// 각 디스플레이 모드의 시각적 미리보기 이미지를 보여줍니다.
   ///
-  /// [dark]: true면 다크 모드 스타일, false면 라이트 모드 스타일
-  /// [label]: 프리뷰 박스 내부에 표시할 레이블
-  Widget _previewBox({bool dark = false, String? label}) {
+  /// [label]: 프리뷰 박스 하단에 표시할 레이블
+  /// [assetPath]: 표시할 이미지 파일 경로
+  Widget _previewBox({required String label, required String assetPath}) {
     return Expanded(
-      child: AspectRatio(
-        aspectRatio: 9 / 16, // 모바일 화면 비율
-        child: Container(
-          decoration: BoxDecoration(
-            color: dark ? const Color(0xFF2B2B2B) : const Color(0xFFF2F2F2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: _lightPreviewAspectRatio,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.black12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(assetPath, fit: BoxFit.cover),
+              ),
+            ),
           ),
-          alignment: Alignment.center,
-          child: Text(
-            label ?? '',
-            style: TextStyle(color: dark ? Colors.white70 : Colors.black54),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
-        ),
+        ],
       ),
     );
   }

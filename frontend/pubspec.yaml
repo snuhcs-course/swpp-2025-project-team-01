@@ -57,6 +57,7 @@ dependencies:
   ffmpeg_kit_flutter_new: ^4.0.0
   hive_generator: ^2.0.1
   native_device_orientation: ^2.0.2
+  flutter_staggered_grid_view: ^0.7.0
 
 dev_dependencies:
   flutter_test:
@@ -91,10 +92,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/images/app_icon.png
     - assets/images/logo.png
     - assets/images/loading_background.png
     - assets/images/loading_complete.png
     - assets/images/loading_character.png
+    - assets/images/light_mode.png
+    - assets/images/dark_mode.png
     - assets/tutorial/tutorial_step1.png
     - assets/tutorial/tutorial_step2.png
     - assets/tutorial/tutorial_step3.png
