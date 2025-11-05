@@ -519,7 +519,7 @@ class _LectureCardState extends State<LectureCard> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -544,9 +544,13 @@ class _LectureCardState extends State<LectureCard> {
   }
 
   Widget _buildThumbnail() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AspectRatio(
       aspectRatio: 16 / 9,
-      child: Container(color: Colors.white, child: _buildThumbnailContent()),
+      child: Container(
+        color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+        child: _buildThumbnailContent(),
+      ),
     );
   }
 
