@@ -13,6 +13,7 @@ HiveSubject buildSubject({
   bool favorite = false,
   List<String>? tagIds,
   List<String>? lectureIds,
+  bool isUncategorized = false,
 }) {
   return HiveSubject(
     id: id,
@@ -20,6 +21,7 @@ HiveSubject buildSubject({
     favorite: favorite,
     tagIds: tagIds ?? const [],
     lectureIds: lectureIds ?? const [],
+    isUncategorized: isUncategorized,
   );
 }
 
@@ -98,6 +100,11 @@ void main() {
           favorite: false,
           tagIds: ['t3'],
           lectureIds: ['lec3'],
+        ),
+        'uncategorized': buildSubject(
+          id: 'uncategorized',
+          title: 'Uncategorized',
+          isUncategorized: true,
         ),
       };
 
@@ -209,10 +216,12 @@ void main() {
       final favorites = manager.getSubjects(favoritesOnly: true);
       expect(favorites, hasLength(1));
       expect(favorites.first.id, 's1');
+      expect(favorites.any((subject) => subject.isUncategorized), isFalse);
 
       final tagged = manager.getSubjects(filterTagIds: ['t2']);
       expect(tagged, hasLength(1));
       expect(tagged.first.id, 's1');
+      expect(tagged.any((subject) => subject.isUncategorized), isFalse);
 
       await manager.toggleSubjectFavorite('s2');
       expect(manager.getSubject('s2')?.favorite, isTrue);

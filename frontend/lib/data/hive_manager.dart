@@ -289,6 +289,7 @@ class HiveManager extends ChangeNotifier {
     List<String> filterTagIds = const [],
   }) {
     List<HiveSubject> list;
+    final hasActiveFilters = favoritesOnly || filterTagIds.isNotEmpty;
 
     // 미분류 과목과 일반 과목 분리
     final normalSubjects = subjects.values.where((s) => !s.isUncategorized);
@@ -327,8 +328,10 @@ class HiveManager extends ChangeNotifier {
           .toList();
     }
 
-    // 미분류 과목을 항상 마지막에 추가 (필터링 영향 받지 않음)
-    list.addAll(uncategorizedSubjects);
+    // 필터 미적용 시에만 미분류 과목을 마지막에 추가
+    if (!hasActiveFilters) {
+      list.addAll(uncategorizedSubjects);
+    }
 
     return list;
   }

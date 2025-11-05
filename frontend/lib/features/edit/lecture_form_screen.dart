@@ -499,30 +499,46 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final textColor = isDark ? Colors.white70 : Colors.grey.shade600;
 
+        const double pageFieldWidth = 70;
+
         return Padding(
           padding: const EdgeInsets.only(left: 40),
           child: Row(
             children: [
-              Text(
-                l10n.isKorean ? '페이지 설정' : 'Page Range',
-                style: TextStyle(fontSize: 14, color: textColor),
-              ),
-              const SizedBox(width: 16),
-              // 시작 페이지 입력
-              Expanded(child: _buildPageTextField(entry.startPageController)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  '-',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.isKorean ? '페이지 설정' : 'Page Range',
+                        style: TextStyle(fontSize: 14, color: textColor),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: pageFieldWidth,
+                        child: _buildPageTextField(entry.startPageController),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '-',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: pageFieldWidth,
+                        child: _buildPageTextField(entry.endPageController),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              // 끝 페이지 입력
-              Expanded(child: _buildPageTextField(entry.endPageController)),
             ],
           ),
         );
