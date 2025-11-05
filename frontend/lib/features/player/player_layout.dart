@@ -405,7 +405,7 @@ class HorizontalToggleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 150,
+      height: 170,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -433,7 +433,7 @@ class HorizontalToggleBar extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 110, child: pagesList),
+          SizedBox(height: 130, child: pagesList),
         ],
       ),
     );
@@ -457,7 +457,7 @@ class PagesListWidget extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: controller.currentPage,
       builder: (context, currentPage, _) {
-        final itemHeight = isVertical ? 120.0 : 80.0;
+        final itemHeight = isVertical ? 120.0 : 100.0;
         final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
         final calculatedWidth = itemHeight * aspectRatio;
 
