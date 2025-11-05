@@ -1,7 +1,11 @@
 // 앱 엔트리: 테마 + 라우터 연결
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
+
+import 'dart:io' show Platform;
+
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/app_theme.dart';
@@ -15,6 +19,13 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HiveManager.instance.init();
+
+  if (Platform.isAndroid) {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+    );
+  }
+
   runApp(const ReViewApp());
 }
 
