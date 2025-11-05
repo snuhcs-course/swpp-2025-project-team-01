@@ -121,16 +121,22 @@ class HiveManager extends ChangeNotifier {
     final tags = await _loadDefaultTags();
     final lectures = await _loadDemoLectures(subjects);
 
-    // 미분류 과목 자동 생성
-    final uncategorizedSubject = HiveSubject(
-      id: 'uncategorized',
-      title: 'Uncategorized', // UI에서 다국어 처리됨
-      favorite: false,
-      tagIds: [],
-      lectureIds: [],
-      isUncategorized: true,
-    );
-    subjects['uncategorized'] = uncategorizedSubject;
+    // 미분류 과목이 없으면 자동 생성
+    if (!subjects.containsKey('uncategorized')) {
+      final uncategorizedSubject = HiveSubject(
+        id: 'uncategorized',
+        title: 'Uncategorized', // UI에서 다국어 처리됨
+        favorite: false,
+        tagIds: [],
+        lectureIds: [],
+        isUncategorized: true,
+      );
+      subjects['uncategorized'] = uncategorizedSubject;
+    } else {
+      // subjects.json에 uncategorized가 있으면 isUncategorized 플래그 추가
+      final existing = subjects['uncategorized']!;
+      subjects['uncategorized'] = existing.copyWith(isUncategorized: true);
+    }
 
     _appData = AppData(
       settings: AppSettings(),

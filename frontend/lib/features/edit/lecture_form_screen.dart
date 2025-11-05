@@ -49,6 +49,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 업로드된 슬라이드 PDF 파일 경로
   String? _slidePdfPath;
 
+  // 업로드된 슬라이드의 총 페이지 수 (가능한 경우)
+  int? _pdfPageCount;
+
   // 오디오 파일 엔트리 리스트 (최소 1개 시작)
   final List<AudioFileEntry> _audioFiles = [AudioFileEntry()];
 
@@ -672,6 +675,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
         setState(() {
           _slidePdfPath = pdfPath;
+          _pdfPageCount = pageCount;
 
           // 첫 번째 오디오 파일의 페이지 범위를 자동으로 설정
           if (_audioFiles.isNotEmpty) {
@@ -683,6 +687,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         // PDF 로드 실패 시 경로만 저장
         setState(() {
           _slidePdfPath = pdfPath;
+          _pdfPageCount = null;
         });
         _showToast(
           l10n.isKorean
@@ -695,7 +700,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['m4a'],
+    );
 
     if (result != null && result.files.single.path != null) {
       final filePath = result.files.single.path!;
@@ -847,8 +855,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     }
 
     // 페이지 범위 검증
-    // 첫 번째 오디오의 끝 페이지 = PDF 전체 페이지 수
-    int? totalPdfPages;
+    final pdfTotalPages = _pdfPageCount;
+    int? fallbackTotalPages;
 
     for (int i = 0; i < _audioFiles.length; i++) {
       final entry = _audioFiles[i];
@@ -899,16 +907,32 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         return;
       }
 
-      // 첫 번째 오디오의 끝 페이지를 PDF 전체 페이지 수로 저장
-      if (i == 0) {
-        totalPdfPages = endPage;
-      } else {
-        // 두 번째 오디오부터는 PDF 전체 페이지 수를 초과하지 않는지 검증
-        if (totalPdfPages != null && endPage > totalPdfPages) {
+      if (pdfTotalPages != null) {
+        if (startPage > pdfTotalPages) {
           _showToast(
             l10n.isKorean
-                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($totalPdfPages)를 초과합니다'
-                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($totalPdfPages)',
+                ? '${i + 1}번째 오디오의 시작 페이지($startPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
+                : 'Start page ($startPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)',
+          );
+          return;
+        }
+        if (endPage > pdfTotalPages) {
+          _showToast(
+            l10n.isKorean
+                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
+                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)',
+          );
+          return;
+        }
+      } else {
+        // PDF 페이지 수를 확인하지 못했을 때는 첫 오디오의 설정 범위를 기준으로 검증
+        if (fallbackTotalPages == null) {
+          fallbackTotalPages = endPage;
+        } else if (endPage > fallbackTotalPages) {
+          _showToast(
+            l10n.isKorean
+                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($fallbackTotalPages)를 초과합니다'
+                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($fallbackTotalPages)',
           );
           return;
         }

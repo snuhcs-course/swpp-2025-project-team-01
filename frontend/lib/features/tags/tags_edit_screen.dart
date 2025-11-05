@@ -325,11 +325,13 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 각 태그를 칩 형태로 표시하며, 선택 시 체크마크와 그림자로 구분합니다.
   Widget _buildTagChip(int index) {
     final isSelected = _selected == index;
+    final Color textColor = getTagThemeTextColor(_currentTheme);
 
     return SelectableTagPill(
       tag: _tags[index],
       selected: isSelected,
       onSelected: (_) => _syncForm(index),
+      textColor: textColor,
     );
   }
 
