@@ -168,7 +168,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
-        false,
+        true,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
       expect(resultSingle, isNull);
@@ -184,14 +184,14 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
-        false,
+        true,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
       expect(resultMulti, isNull);
       expect(service.hasError, isTrue);
       service.hideLoading();
 
-      expect(progressEvents, isNotEmpty);
+      expect(progressEvents, isEmpty);
 
       try {
         File(
