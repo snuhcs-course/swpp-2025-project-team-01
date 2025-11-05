@@ -457,13 +457,15 @@ class PagesListWidget extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: controller.currentPage,
       builder: (context, currentPage, _) {
+        final itemHeight = isVertical ? 120.0 : 80.0;
+        final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
+        final calculatedWidth = itemHeight * aspectRatio;
+
         final slidesList = PdfSlidesList(
           pageCount: controller.pageCount,
           currentPage: currentPage,
-          itemWidth: isVertical ? 180 : 150,
-          padding: isVertical
-              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 16)
-              : const EdgeInsets.fromLTRB(12, 8, 12, 24),
+          itemWidth: calculatedWidth,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           getCachedOrRenderPage:
               controller.pdfCacheService.getCachedOrRenderPage,
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
