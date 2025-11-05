@@ -319,7 +319,7 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
       alignment: Alignment.topCenter,
       child: Padding(
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).size.height * 0.15,
+          top: MediaQuery.of(context).size.height * 0.3,
         ), // 화면 높이의 15% 지점
         child: SlideTransition(
           position: _slideAnimation,
@@ -331,7 +331,7 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
                 // 캐릭터 이미지
                 Image.asset(
                   'assets/tutorial/initial/tutorial_character.png',
-                  width: 150 * widget.scaleFactor,
+                  width: 120 * widget.scaleFactor,
                 ),
 
                 SizedBox(height: 24 * widget.scaleFactor),
@@ -353,7 +353,7 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
                       backgroundColor: const Color(0xFFD4E8D4),
                       foregroundColor: Colors.black,
                       shape: const StadiumBorder(
-                        side: BorderSide(color: Colors.black, width: 2),
+                        side: BorderSide(color: Colors.black, width: 4),
                       ),
                       elevation: 0,
                     ),
@@ -361,7 +361,7 @@ class _TutorialCharacterAnimationState extends State<TutorialCharacterAnimation>
                       'DONE',
                       style: TextStyle(
                         fontFamily: 'NanumSquare',
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -457,7 +457,7 @@ class _LandscapeTutorialCharacterAnimationState
                 ),
                 SizedBox(height: 4 * widget.scaleFactor),
                 SizedBox(
-                  width: 120 * widget.scaleFactor * 0.7,
+                  width: 100 * widget.scaleFactor * 0.8,
                   height: 50 * widget.scaleFactor * 0.9,
                   child: ElevatedButton(
                     onPressed: widget.onDone,
