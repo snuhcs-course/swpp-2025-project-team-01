@@ -100,11 +100,15 @@ class HorizontalPlayerLayout extends StatelessWidget {
                             Positioned(
                               top: 12,
                               right: 16,
-                              child: ValueListenableBuilder<bool>(
-                                valueListenable: controller.isSynced,
-                                builder: (context, isSynced, _) {
+                              // isSynced와 currentPage를 함께 감시하여 즉시 업데이트
+                              child: ListenableBuilder(
+                                listenable: Listenable.merge([
+                                  controller.isSynced,
+                                  controller.currentPage,
+                                ]),
+                                builder: (context, _) {
                                   return SyncButton(
-                                    isSynced: isSynced,
+                                    isSynced: controller.isSynced.value,
                                     onPressed: controller.toggleSync,
                                     pageDifference: controller.pageDifference,
                                   );
@@ -405,7 +409,7 @@ class HorizontalToggleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 150,
+      height: 170,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -433,7 +437,7 @@ class HorizontalToggleBar extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 110, child: pagesList),
+          SizedBox(height: 130, child: pagesList),
         ],
       ),
     );
@@ -457,13 +461,15 @@ class PagesListWidget extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: controller.currentPage,
       builder: (context, currentPage, _) {
+        final itemHeight = isVertical ? 120.0 : 100.0;
+        final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
+        final calculatedWidth = itemHeight * aspectRatio;
+
         final slidesList = PdfSlidesList(
           pageCount: controller.pageCount,
           currentPage: currentPage,
-          itemWidth: isVertical ? 180 : 150,
-          padding: isVertical
-              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 16)
-              : const EdgeInsets.fromLTRB(12, 8, 12, 24),
+          itemWidth: calculatedWidth,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           getCachedOrRenderPage:
               controller.pdfCacheService.getCachedOrRenderPage,
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
