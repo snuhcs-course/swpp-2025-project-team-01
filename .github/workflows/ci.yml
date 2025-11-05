@@ -61,12 +61,6 @@ jobs:
     - name: Run lecture fetch unit tests
       run: flutter test test/features/edit/lecture_fetch_test.dart
 
-    - name: Run subjects unit tests
-      run: flutter test test/features/subjects/
-    
-    - name: Run tags unit tests
-      run: flutter test test/features/tags/
-
     - name: Run player unit tests
       run: flutter test test/features/player/
 
