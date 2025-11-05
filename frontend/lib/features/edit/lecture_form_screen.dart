@@ -700,7 +700,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['m4a'],
+    );
 
     if (result != null && result.files.single.path != null) {
       final filePath = result.files.single.path!;

@@ -50,6 +50,8 @@ PODS:
   - just_audio (0.0.1):
     - Flutter
     - FlutterMacOS
+  - native_device_orientation (0.0.1):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -72,6 +74,7 @@ DEPENDENCIES:
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
+  - native_device_orientation (from `.symlinks/plugins/native_device_orientation/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - pdfx (from `.symlinks/plugins/pdfx/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -100,6 +103,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   just_audio:
     :path: ".symlinks/plugins/just_audio/darwin"
+  native_device_orientation:
+    :path: ".symlinks/plugins/native_device_orientation/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   pdfx:
@@ -118,6 +123,7 @@ SPEC CHECKSUMS:
   flutter_native_splash: df59bb2e1421aa0282cb2e95618af4dcb0c56c29
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
+  native_device_orientation: 348b10c346a60ebbc62fb235a4fdb5d1b61a8f55
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   pdfx: 7b876b09de8b7a0bf444a4f82b439ffcff4ee1ec
   SDWebImage: 16309af6d214ba3f77a7c6f6fdda888cb313a50a
