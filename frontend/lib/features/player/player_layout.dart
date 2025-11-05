@@ -250,7 +250,10 @@ class PdfArea extends StatelessWidget {
 
         if (isVertical) {
           final screenWidth = MediaQuery.of(context).size.width;
-          final pdfHeight = screenWidth * 9 / 16;
+          // thumbnail 캐시에서 가져온 aspect ratio 사용 (width/height)
+          // 기본값: 16:9 = 1.778
+          final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
+          final pdfHeight = screenWidth / aspectRatio;
           return SizedBox(
             width: screenWidth,
             height: pdfHeight,
