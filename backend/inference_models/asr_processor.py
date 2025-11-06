@@ -10,6 +10,7 @@ import soundfile as sf
 import os
 import gc
 import threading
+import re
 from typing import Any, Callable
 from pathlib import Path
 
@@ -21,6 +22,178 @@ _asr_init_lock = threading.Lock()
 # Protects inference operations when multiple pipelines run simultaneously
 # This prevents CUDA errors when the same model runs concurrent inference
 _asr_inference_lock = threading.Lock()
+
+
+def _merge_segments_by_punctuation(segments: list[dict[str, Any]], language: str = "en") -> list[dict[str, Any]]:
+    """
+    Merge Whisper segments into sentence-level segments based on punctuation.
+
+    Uses word-level timestamps from Whisper to accurately split text by sentence boundaries.
+
+    Simple rule: Split on punctuation (.!?。!?) UNLESS the next word starts with lowercase
+    (which indicates continuation like "tf.nn" or "Dr. Smith")
+
+    Args:
+        segments: List of Whisper segment dicts with 'text', 'start', 'end', and optionally 'words'
+        language: Language code (unused, kept for compatibility)
+
+    Returns:
+        List of sentence-level segments with 'text', 'start', 'end'
+    """
+    if not segments:
+        return []
+
+    # Sentence-ending punctuation marks (supports English, Korean, and other languages)
+    sentence_ending_pattern = re.compile(r'[.!?。!?]+\s*$')
+
+    sentence_segments = []
+    current_sentence = []
+    current_start = None
+    current_end = None
+
+    for segment in segments:
+        text = segment.get('text', '').strip()
+        if not text:
+            continue
+
+        # Get word-level timestamps if available
+        words = segment.get('words', [])
+
+        if words:
+            # Process each word with its timestamp
+            for idx, word_info in enumerate(words):
+                word_text = word_info.get('word', '').strip()
+                word_start = word_info.get('start', segment['start'])
+                word_end = word_info.get('end', segment['end'])
+
+                if not word_text:
+                    continue
+
+                # Initialize sentence start time
+                if current_start is None:
+                    current_start = word_start
+
+                current_sentence.append(word_text)
+                current_end = word_end
+
+                # Check if word ends with sentence-ending punctuation
+                if sentence_ending_pattern.search(word_text):
+                    # Get next word to check if it starts with lowercase
+                    next_word_text = None
+                    if idx + 1 < len(words):
+                        next_word_text = words[idx + 1].get('word', '').strip()
+
+                    # Determine if this is a real sentence boundary
+                    is_sentence_end = True
+                    if next_word_text:
+                        # If next word starts with lowercase, don't split (e.g., "tf.nn", "Dr. smith")
+                        # Strip leading punctuation/spaces to get the first actual character
+                        first_char = next_word_text.lstrip()
+                        if first_char and first_char[0].islower():
+                            is_sentence_end = False
+
+                    if is_sentence_end:
+                        # Complete current sentence
+                        sentence_text = ' '.join(current_sentence).strip()
+                        if sentence_text:
+                            sentence_segments.append({
+                                'text': sentence_text,
+                                'start': current_start,
+                                'end': current_end
+                            })
+
+                        # Reset for next sentence
+                        current_sentence = []
+                        current_start = None
+                        current_end = None
+
+        else:
+            # Fallback: No word-level timestamps, use simple splitting with estimation
+            segment_start = segment['start']
+            segment_end = segment['end']
+            segment_duration = segment_end - segment_start
+            text_length = len(text)
+            time_per_char = segment_duration / text_length if text_length > 0 else 0
+
+            # Split by punctuation with lookahead to check for lowercase continuation
+            # Pattern: punctuation followed by space and NOT followed by lowercase
+            sentence_split_pattern = re.compile(r'([.!?。!?]+)\s+(?![a-z])')
+
+            parts = sentence_split_pattern.split(text)
+
+            char_offset = 0
+            i = 0
+            while i < len(parts):
+                part = parts[i]
+                if not part.strip():
+                    char_offset += len(part)
+                    i += 1
+                    continue
+
+                # Check if this is punctuation or text
+                if sentence_ending_pattern.search(part):
+                    # This is punctuation, attach to current sentence
+                    if current_sentence:
+                        current_sentence[-1] += part
+                    char_offset += len(part)
+                    i += 1
+                    continue
+
+                # This is text content
+                sentence_text = part.strip()
+                if not sentence_text:
+                    char_offset += len(part)
+                    i += 1
+                    continue
+
+                # Calculate timestamps
+                sentence_start_idx = char_offset
+                sentence_end_idx = char_offset + len(part)
+
+                sentence_start_time = segment_start + (sentence_start_idx * time_per_char)
+                sentence_end_time = segment_start + (sentence_end_idx * time_per_char)
+
+                if current_start is None:
+                    current_start = sentence_start_time
+
+                current_sentence.append(sentence_text)
+                current_end = sentence_end_time
+
+                # Check if next part is punctuation (sentence end)
+                if i + 1 < len(parts) and sentence_ending_pattern.search(parts[i + 1]):
+                    # Complete sentence with punctuation
+                    punct = parts[i + 1]
+                    current_sentence[-1] += punct
+                    char_offset += len(part) + len(punct)
+
+                    # Add sentence
+                    final_text = ' '.join(current_sentence).strip()
+                    if final_text:
+                        sentence_segments.append({
+                            'text': final_text,
+                            'start': current_start,
+                            'end': current_end
+                        })
+
+                    current_sentence = []
+                    current_start = None
+                    current_end = None
+                    i += 2
+                else:
+                    char_offset += len(part)
+                    i += 1
+
+    # Add any remaining text as the last sentence
+    if current_sentence:
+        final_text = ' '.join(current_sentence).strip()
+        if final_text:
+            sentence_segments.append({
+                'text': final_text,
+                'start': current_start,
+                'end': current_end
+            })
+
+    return sentence_segments
 
 
 class ASRProcessor:
@@ -96,7 +269,7 @@ class ASRProcessor:
         Returns:
             Tuple of (full transcript, segment timestamps) or None if no splitting needed
             Segment timestamps is a list of dicts with 'text', 'start', 'end' keys (times in seconds)
-            Segments are automatically split by Whisper's segmentation
+            Segments are split by punctuation unless next word starts with lowercase
         """
         print(f"Loading audio file: {input_file}")
 
@@ -183,11 +356,15 @@ class ASRProcessor:
                 transcripts.append(transcript)
                 print(f"Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
 
-                # Extract segment-level timestamps
+                # Extract and merge segments by punctuation
                 if 'segments' in result:
-                    for segment in result['segments']:
+                    # Merge segments into sentence-level segments
+                    sentence_segments = _merge_segments_by_punctuation(result['segments'], language=self.language)
+
+                    # Add chunk offset to timestamps
+                    for segment in sentence_segments:
                         all_segment_timestamps.append({
-                            'text': segment['text'].strip(),
+                            'text': segment['text'],
                             'start': segment['start'] + chunk_offset,
                             'end': segment['end'] + chunk_offset
                         })
@@ -316,16 +493,9 @@ class ASRProcessor:
 
                 transcript = result['text']
 
-                # Extract segment-level timestamps (Whisper automatically segments by natural speech boundaries)
+                # Extract and merge segments by punctuation
                 if 'segments' in result:
-                    segment_timestamps = [
-                        {
-                            'text': seg['text'].strip(),
-                            'start': seg['start'],
-                            'end': seg['end']
-                        }
-                        for seg in result['segments']
-                    ]
+                    segment_timestamps = _merge_segments_by_punctuation(result['segments'], language=self.language)
 
                 if progress_callback:
                     progress_callback(95.0, "Transcription complete")
@@ -357,10 +527,10 @@ class ASRProcessor:
                 "transcript": transcript,
                 "audio_path": audio_path,
                 "length": len(transcript),
-                "segment_timestamps": segment_timestamps  # Add segment-level timestamps (split by punctuation)
+                "segment_timestamps": segment_timestamps  # Sentence-level timestamps (punctuation-based with lowercase check)
             }
 
-            print(f"\n✓ Extracted {len(segment_timestamps)} segment-level timestamps")
+            print(f"\n✓ Extracted {len(segment_timestamps)} sentence-level timestamps")
 
             return result
 
