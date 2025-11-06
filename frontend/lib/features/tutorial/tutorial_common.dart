@@ -453,22 +453,28 @@ class _TutorialCharacterAnimationState
     // Player Portrait: Column 전체를 회전하여 하단에 배치
     if (widget.type == TutorialType.player &&
         widget.orientation == Orientation.portrait) {
-      return Positioned.fill(
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: Transform.scale(
-              scale: 0.65,
-              alignment: Alignment.bottomCenter, // 아래를 중심으로 스케일
-              child: RotatedBox(quarterTurns: 1, child: content),
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Transform.scale(
+                  scale: 0.65,
+                  alignment: Alignment.bottomCenter, // 아래를 중심으로 스케일
+                  child: RotatedBox(quarterTurns: 1, child: content),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       );
     }
 
     // Initial & Player Landscape: 정중앙 배치
-    return Positioned.fill(child: Center(child: content));
+    return Stack(
+      children: [Positioned.fill(child: Center(child: content))],
+    );
   }
 }

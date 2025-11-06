@@ -807,7 +807,6 @@ Future<void> onProgress(
       presentAlert: true,
       presentBadge: true,
       presentSound: isDone,
-      subtitle: isDone ? null : '${loadingService.message} — $pct%',
     );
 
     final title = 'Generating Lecture: $lectureTitle';
