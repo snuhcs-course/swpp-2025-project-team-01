@@ -42,6 +42,7 @@ class HiveManager extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
 
   bool get hasTutorialCompleted => settings.hasCompletedTutorial;
+  bool get hasPlayerTutorialCompleted => settings.hasCompletedPlayerTutorial;
 
   // ========== 초기화 ==========
 
@@ -669,6 +670,20 @@ class HiveManager extends ChangeNotifier {
   // 개발/테스트용: 튜토리얼 리셋
   Future<void> resetTutorial() async {
     settings.hasCompletedTutorial = false;
+    await _save();
+    notifyListeners();
+  }
+
+  // 튜토리얼 완료 상태 업데이트
+  Future<void> completePlayerTutorial() async {
+    settings.hasCompletedPlayerTutorial = true;
+    await _save(); // Hive에 저장
+    notifyListeners(); // UI 업데이트 알림
+  }
+
+  // 개발/테스트용: 튜토리얼 리셋
+  Future<void> resetPlayerTutorial() async {
+    settings.hasCompletedPlayerTutorial = false;
     await _save();
     notifyListeners();
   }

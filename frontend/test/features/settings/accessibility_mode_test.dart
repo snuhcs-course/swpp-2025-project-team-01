@@ -23,6 +23,7 @@ class FakeAppSettings implements AppSettings {
     this.ttsGender = '남성',
     this.tagColorTheme = '파스텔',
     this.hasCompletedTutorial = true,
+    this.hasCompletedPlayerTutorial = true,
   });
 
   @override
@@ -48,6 +49,9 @@ class FakeAppSettings implements AppSettings {
 
   @override
   bool hasCompletedTutorial;
+
+  @override
+  bool hasCompletedPlayerTutorial;
 }
 
 /// HiveManager를 흉내내는 가짜 클래스
@@ -104,10 +108,20 @@ class FakeHiveManager extends Fake implements HiveManager {
   bool get hasTutorialCompleted => _fakeSettings.hasCompletedTutorial;
 
   @override
+  bool get hasPlayerTutorialCompleted =>
+      _fakeSettings.hasCompletedPlayerTutorial;
+
+  @override
   Future<void> completeTutorial() async {}
 
   @override
   Future<void> resetTutorial() async {}
+
+  @override
+  Future<void> completePlayerTutorial() async {}
+
+  @override
+  Future<void> resetPlayerTutorial() async {}
 
   /// 테스트를 위해 'setState'를 수동으로 트리거하는 함수
   void triggerNotifyListeners() {

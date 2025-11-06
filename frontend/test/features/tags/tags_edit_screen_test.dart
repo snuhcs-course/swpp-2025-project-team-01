@@ -22,7 +22,8 @@ class FakeAppSettings implements AppSettings {
     this.accessibilityEmphasizeCaptions = false,
     this.ttsGender = '남성',
     this.tagColorTheme = '봄', // 기본값 '봄'
-    this.hasCompletedTutorial = false,
+    this.hasCompletedTutorial = true,
+    this.hasCompletedPlayerTutorial = true,
   });
 
   @override
@@ -41,6 +42,8 @@ class FakeAppSettings implements AppSettings {
   String ttsGender;
   @override
   bool hasCompletedTutorial;
+  @override
+  bool hasCompletedPlayerTutorial;
 }
 
 /// HiveManager를 흉내내는 가짜 클래스

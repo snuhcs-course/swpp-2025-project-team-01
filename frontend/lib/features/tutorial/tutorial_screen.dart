@@ -1,13 +1,37 @@
-// 튜토리얼 화면 - 앱 최초 실행 시 표시되는 5단계 가이드
+// 튜토리얼 화면 - 앱 최초 실행 및 플레이어 최초 진입 시 표시되는 가이드
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/data/hive_manager.dart';
-import 'package:re_view/features/tutorial/widgets/tutorial_indicators.dart';
-import 'package:re_view/features/tutorial/widgets/tutorial_slide.dart';
+import 'package:re_view/features/tutorial/tutorial_common.dart';
 
-/// 앱 최초 실행 시 표시되는 튜토리얼 화면
+/// 통합 튜토리얼 화면 (Initial & Player)
 class TutorialScreen extends StatefulWidget {
-  const TutorialScreen({super.key});
+  const TutorialScreen._({
+    super.key,
+    required this.type,
+    this.initialOrientation,
+  });
+
+  /// 앱 최초 실행 시 표시되는 튜토리얼
+  factory TutorialScreen.initial({Key? key}) {
+    return TutorialScreen._(key: key, type: TutorialType.initial);
+  }
+
+  /// 플레이어 최초 진입 시 표시되는 튜토리얼
+  factory TutorialScreen.player({
+    Key? key,
+    required Orientation initialOrientation,
+  }) {
+    return TutorialScreen._(
+      key: key,
+      type: TutorialType.player,
+      initialOrientation: initialOrientation,
+    );
+  }
+
+  final TutorialType type;
+  final Orientation? initialOrientation;
 
   @override
   State<TutorialScreen> createState() => _TutorialScreenState();
@@ -16,40 +40,79 @@ class TutorialScreen extends StatefulWidget {
 class _TutorialScreenState extends State<TutorialScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  bool _showCharacter = false; // 마지막 캐릭터 애니메이션 제어
+  bool _showCharacter = false;
+  Orientation? _initialOrientation;
 
-  // 튜토리얼 이미지 경로
-  final List<String> _tutorialImages = [
-    'assets/tutorial/tutorial_step1.png',
-    'assets/tutorial/tutorial_step2.png',
-    'assets/tutorial/tutorial_step3.png',
-    'assets/tutorial/tutorial_step4.png',
-    'assets/tutorial/tutorial_step5.png',
-  ];
+  List<String> get _currentImages {
+    if (widget.type == TutorialType.player) {
+      return _initialOrientation == Orientation.portrait
+          ? TutorialAssets.playerPortraitImages
+          : TutorialAssets.playerLandscapeImages;
+    } else {
+      return _initialOrientation == Orientation.landscape
+          ? TutorialAssets.initialLandscapeImages
+          : TutorialAssets.initialPortraitImages;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Player는 생성자에서 orientation을 받고, Initial은 MediaQuery에서 가져옴
+    if (widget.type == TutorialType.player) {
+      _initialOrientation = widget.initialOrientation;
+      _lockOrientation(widget.initialOrientation!);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final orientation = MediaQuery.of(context).orientation;
+          setState(() {
+            _initialOrientation = orientation;
+          });
+          _lockOrientation(orientation);
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
+    // Player의 경우에만 orientation 해제
+    if (widget.type == TutorialType.player) {
+      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    }
     _pageController.dispose();
     super.dispose();
   }
 
-  // 다음 페이지로 이동 (즉시 전환, 애니메이션 없음)
+  void _lockOrientation(Orientation orientation) {
+    if (orientation == Orientation.portrait) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    }
+  }
+
   void _nextPage() {
-    if (_currentPage < _tutorialImages.length - 1) {
+    if (_currentPage < _currentImages.length - 1) {
       _pageController.jumpToPage(_currentPage + 1);
     }
   }
 
-  // 마지막 페이지 도달 시 캐릭터 애니메이션 시작
   void _onPageChanged(int page) {
     setState(() {
       _currentPage = page;
     });
 
-    // 마지막 페이지에 도달했을 때
-    if (page == _tutorialImages.length - 1 && !_showCharacter) {
-      // 1초 후 캐릭터 표시
-      Future.delayed(const Duration(milliseconds: 1000), () {
+    if (page == _currentImages.length - 1 && !_showCharacter) {
+      Future.delayed(TutorialConstants.animationDuration, () {
         if (mounted) {
           setState(() {
             _showCharacter = true;
@@ -59,86 +122,75 @@ class _TutorialScreenState extends State<TutorialScreen> {
     }
   }
 
-  // 튜토리얼 완료 및 홈으로 이동
   Future<void> _completeTutorial() async {
-    await HiveManager.instance.completeTutorial();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, Routes.home);
+    if (widget.type == TutorialType.player) {
+      await HiveManager.instance.completePlayerTutorial();
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } else {
+      await HiveManager.instance.completeTutorial();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, Routes.home);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF656565),
+      backgroundColor: TutorialConstants.backgroundColor,
       body: SafeArea(
-        child: Stack(
-          children: [
-            // 페이지뷰 (슬라이드) - 즉시 전환
-            PageView(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              physics: const NeverScrollableScrollPhysics(),
-              children: _tutorialImages.asMap().entries.map((entry) {
-                final index = entry.key;
-                final imagePath = entry.value;
-                return TutorialSlide(
-                  imagePath: imagePath,
-                  isLastSlide: index == _tutorialImages.length - 1,
-                  showCharacter: _showCharacter,
-                  onDone: _completeTutorial,
-                );
-              }).toList(),
-            ),
+        child: _initialOrientation == null
+            ? const Center(child: CircularProgressIndicator())
+            : OrientationBuilder(
+                builder: (context, orientation) {
+                  final size = MediaQuery.of(context).size;
+                  final scaleFactor = TutorialConstants.calculateScaleFactor(
+                    size,
+                    orientation,
+                  );
 
-            // 페이지 카운터 (NEXT 버튼 바로 위, 마지막 페이지 제외)
-            if (_currentPage < _tutorialImages.length - 1)
-              Positioned(
-                bottom: 100,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: TutorialIndicators(
-                    pageCount: _tutorialImages.length,
-                    currentPage: _currentPage,
-                  ),
-                ),
-              ),
+                  return Stack(
+                    children: [
+                      // Background - PageView with slides
+                      PageView(
+                        controller: _pageController,
+                        onPageChanged: _onPageChanged,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: _currentImages.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final imagePath = entry.value;
+                          final isLastSlide =
+                              index == _currentImages.length - 1;
 
-            // 다음 버튼 (마지막 페이지 제외)
-            if (_currentPage < _tutorialImages.length - 1)
-              Positioned(
-                bottom: 40,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: SizedBox(
-                    width: 120,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD4E8D4),
-                        foregroundColor: Colors.black,
-                        shape: const StadiumBorder(
-                          side: BorderSide(color: Colors.black, width: 2),
-                        ),
-                        elevation: 0,
+                          return TutorialSlide(
+                            imagePath: imagePath,
+                            isLastSlide: isLastSlide,
+                            showCharacter: _showCharacter,
+                            characterAnimation: TutorialCharacterAnimation(
+                              type: widget.type,
+                              onDone: _completeTutorial,
+                              scaleFactor: scaleFactor,
+                              orientation: orientation,
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      child: const Text(
-                        'NEXT',
-                        style: TextStyle(
-                          fontFamily: 'NanumSquare',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+
+                      // Navigator (Indicator + Next Button) - only show when not on last page
+                      if (_currentPage < _currentImages.length - 1)
+                        TutorialNavigator(
+                          pageCount: _currentImages.length,
+                          currentPage: _currentPage,
+                          onNext: _nextPage,
+                          scaleFactor: scaleFactor,
+                          orientation: orientation,
                         ),
-                      ),
-                    ),
-                  ),
-                ),
+                    ],
+                  );
+                },
               ),
-          ],
-        ),
       ),
     );
   }

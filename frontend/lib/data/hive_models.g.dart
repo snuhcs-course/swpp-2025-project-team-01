@@ -74,13 +74,14 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ttsGender: fields[5] as String,
       tagColorTheme: fields[6] as String,
       hasCompletedTutorial: fields[7] as bool,
+      hasCompletedPlayerTutorial: fields[8] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.theme)
       ..writeByte(1)
@@ -96,7 +97,9 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(6)
       ..write(obj.tagColorTheme)
       ..writeByte(7)
-      ..write(obj.hasCompletedTutorial);
+      ..write(obj.hasCompletedTutorial)
+      ..writeByte(8)
+      ..write(obj.hasCompletedPlayerTutorial);
   }
 
   @override
