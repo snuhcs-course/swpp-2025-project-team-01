@@ -9,7 +9,7 @@ import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
-import 'package:re_view/features/tutorial/player_tutorial_screen.dart';
+import 'package:re_view/features/tutorial/tutorial_screen.dart';
 
 // 디버깅 시 플레이어 튜토리얼을 강제로 띄우고 싶으면 true로 설정.
 const bool kForcePlayerTutorial = false;
@@ -81,7 +81,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         MaterialPageRoute(
           builder: (context) {
             final orientation = MediaQuery.of(context).orientation;
-            return PlayerTutorialScreen(initialOrientation: orientation);
+            return TutorialScreen.player(initialOrientation: orientation);
           },
         ),
       );

@@ -99,7 +99,7 @@ flutter:
     - assets/images/loading_character.png
     - assets/images/light_mode.png
     - assets/images/dark_mode.png
-    - assets/tutorial/initial/tutorial_character.png
+    - assets/tutorial/tutorial_character.png
     - assets/tutorial/initial/tutorial_speech_bubble.png
     - assets/tutorial/initial/tutorial_step1.png
     - assets/tutorial/initial/tutorial_step2.png
@@ -111,7 +111,6 @@ flutter:
     - assets/tutorial/initial/tutorial_landscape_step3.png
     - assets/tutorial/initial/tutorial_landscape_step4.png
     - assets/tutorial/initial/tutorial_landscape_step5.png
-    - assets/tutorial/player/player_tutorial_character.png
     - assets/tutorial/player/player_tutorial_character_landscape.png
     - assets/tutorial/player/player_tutorial_speech_bubble.png
     - assets/tutorial/player/player_tutorial_step1.png
