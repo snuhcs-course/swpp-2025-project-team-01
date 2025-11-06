@@ -72,7 +72,7 @@ class LecturePipeline:
         # Slide matching settings
         matching_model: str = 'nvidia/llama-nemoretriever-colembed-3b-v1',
         matching_batch_size: int = 4,
-        use_image_batching: bool = True,
+        use_image_batching: bool = False, # for stability
         image_batch_size: int = 4,
         jump_penalty: float = 0.2,
         backward_weight: float = 2.0,
