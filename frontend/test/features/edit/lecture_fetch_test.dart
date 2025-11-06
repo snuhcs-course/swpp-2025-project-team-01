@@ -168,7 +168,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
-        false,
+        true,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
       expect(resultSingle, isNull);
@@ -184,7 +184,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
-        false,
+        true,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
       expect(resultMulti, isNull);
@@ -230,6 +230,7 @@ void main() {
         2,
         'localhost',
         '8080',
+        false,
         fakeClient: mock,
         tempDirOverride: temp,
       );
@@ -255,6 +256,7 @@ void main() {
         0,
         'localhost',
         '8080',
+        false,
         fakeClient: mock,
         tempDirOverride: temp,
       );
@@ -289,14 +291,15 @@ void main() {
       await unzipResult(
         zipFile.path,
         'MyLecture',
+        'lecId',
         3,
         documentsDirOverride: docsDir,
         deleteZip: true,
       );
 
       // Assert: files are renamed to MyLecture_3.<ext> in docsDir
-      final outPdf = File('${docsDir.path}/MyLecture_3.pdf');
-      final outJson = File('${docsDir.path}/MyLecture_3.json');
+      final outPdf = File('${docsDir.path}/lecId/MyLecture_3.pdf');
+      final outJson = File('${docsDir.path}/lecId/MyLecture_3.json');
 
       expect(outPdf.existsSync(), isTrue);
       expect(outJson.existsSync(), isTrue);
@@ -310,7 +313,7 @@ void main() {
     test('Fail', () async {
       final missing = File('/does/not/exist.zip').path;
       await expectLater(
-        () => unzipResult(missing, 'A', 0, deleteZip: false),
+        () => unzipResult(missing, 'A', 'lecId', 0, deleteZip: false),
         throwsA(isA<Exception>()),
       );
     });
@@ -341,6 +344,7 @@ void main() {
       final result = await concatenateAudioFiles(
         [audio1, 'missing.opus'],
         title,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, isNull);
@@ -350,6 +354,7 @@ void main() {
       final result = await concatenateAudioFiles(
         [audio1, audio2],
         title,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, anyOf(isNull, isA<String>()));
@@ -438,6 +443,7 @@ void main() {
         [tmp1],
         [1],
         outputTitle,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, isNull);
@@ -448,6 +454,7 @@ void main() {
         [tmp1, tmp2],
         [1, 2],
         outputTitle,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, isNotNull);
@@ -572,6 +579,7 @@ void main() {
           [tmp1, tmpBadVoice],
           [1, 2],
           outputTitle,
+          'lecId',
           dirOverride: tempDir,
         ),
         throwsA(anything),
@@ -581,6 +589,7 @@ void main() {
           [tmp1, tmpBadSpeed],
           [1, 2],
           outputTitle,
+          'lecId',
           dirOverride: tempDir,
         ),
         throwsA(anything),
@@ -590,6 +599,7 @@ void main() {
           [tmp1, tmpBadLanguage],
           [1, 2],
           outputTitle,
+          'lecId',
           dirOverride: tempDir,
         ),
         throwsA(anything),
@@ -599,6 +609,7 @@ void main() {
           [tmp1, tmpBadSampleRate],
           [1, 2],
           outputTitle,
+          'lecId',
           dirOverride: tempDir,
         ),
         throwsA(anything),
@@ -611,6 +622,7 @@ void main() {
           [tmp1, '${tempDir.path}/noexist.json'],
           [1, 2],
           outputTitle,
+          'lecId',
           dirOverride: tempDir,
         ),
         throwsA(anything),
