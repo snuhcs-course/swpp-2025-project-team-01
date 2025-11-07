@@ -243,6 +243,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 태그 수정 섹션 (태그 칩 + 편집 폼 + 삭제 버튼)
   Widget _buildTagEditSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -250,7 +251,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context).editingTags,
+              l10n.editingTags,
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -259,7 +260,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
             TextField(
               controller: _nameC,
               decoration: InputDecoration(
-                labelText: AppLocalizations.of(context).tagName,
+                labelText: l10n.newTag,
                 border: const OutlineInputBorder(),
               ),
               enableIMEPersonalizedLearning: false,
@@ -270,7 +271,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                 Expanded(
                   child: FilledButton(
                     onPressed: _applyNameChange,
-                    child: Text(AppLocalizations.of(context).nameApply),
+                    child: Text(l10n.nameApply),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -283,7 +284,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                         foregroundColor: Colors.white,
                       ),
                       onPressed: _deleteSelectedTag,
-                      label: Text(AppLocalizations.of(context).deleteTag),
+                      label: Text(l10n.deleteTag),
                     ),
                   ),
               ],
@@ -340,17 +341,19 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 중복되지 않는 이름으로 새 태그를 생성하고 현재 테마의 다음 색상을 할당합니다.
   /// 최대 15개까지만 생성 가능합니다.
   void _addNewTag() {
+    final l10n = AppLocalizations.of(context);
+
     // 최대 개수 제한 체크
     if (_tags.length >= 15) {
-      _showSnackBar(AppLocalizations.of(context).maxTagsReached);
+      _showSnackBar(l10n.maxTagsReached);
       return;
     }
 
     // 중복되지 않는 이름 생성
-    String newName = '새 태그';
+    String newName = l10n.newTag;
     int counter = 1;
     while (_tags.any((tag) => tag.name == newName)) {
-      newName = '새 태그 ($counter)';
+      newName = '${l10n.newTag} ($counter)';
       counter++;
     }
 
@@ -506,15 +509,16 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 다이얼로그 헤더 빌드
   Widget _buildDialogHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: const BoxDecoration(
         color: Colors.black87,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
-          '경고',
+          l10n.warning,
           style: TextStyle(
             color: Colors.white,
             fontSize: 24,
@@ -527,6 +531,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 다이얼로그 본문 빌드
   Widget _buildDialogBody(String tagName, List<HiveSubject> usingSubjects) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: const BoxDecoration(
@@ -536,7 +541,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       child: Column(
         children: [
           Text(
-            '태그 "#$tagName"는\n다음 과목에서 사용 중입니다:\n\n${usingSubjects.map((s) => s.title).join('\n')}\n\n삭제하시겠습니까?',
+            l10n.tagDeleteWarning(tagName, usingSubjects.map((s) => s.title).toList()),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.black,
@@ -559,6 +564,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 다이얼로그 확인 버튼
   Widget _buildConfirmButton() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -567,8 +573,8 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       ),
       child: TextButton(
         onPressed: () => Navigator.pop(context, true),
-        child: const Text(
-          '예',
+        child: Text(
+          l10n.yes,
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -581,6 +587,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 다이얼로그 취소 버튼
   Widget _buildCancelButton() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -589,8 +596,8 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       ),
       child: TextButton(
         onPressed: () => Navigator.pop(context, false),
-        child: const Text(
-          '아니오',
+        child: Text(
+          l10n.no,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,

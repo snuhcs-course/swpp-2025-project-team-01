@@ -131,7 +131,7 @@ class AppLocalizations {
   String get subject => isKorean ? '과목' : 'Subject';
   String get subjects => isKorean ? '과목' : 'Subjects';
   String get uncategorized => isKorean ? '미분류' : 'Uncategorized';
-  String get editingSubjects => isKorean ? '과목 수정' : 'Editing Subjects';
+  String get editingSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get deleteSubject => isKorean ? '과목 삭제' : 'Delete Subject';
   String get deleteSubjectWarning => isKorean
       ? '과목 삭제 시\n해당 과목의 강의들까지 전부\n삭제됩니다.\n\n삭제하시겠습니까?'
@@ -152,7 +152,7 @@ class AppLocalizations {
   // 태그
   String get tag => isKorean ? '태그' : 'Tag';
   String get tags => isKorean ? '태그' : 'Tags';
-  String get editingTags => isKorean ? '태그 수정' : 'Editing Tags';
+  String get editingTags => isKorean ? '태그 수정' : 'Edit Tags';
   String get colorTheme => isKorean ? '색상 테마' : 'Color Theme';
   String get tagName => isKorean ? '이름' : 'Name';
   String get apply => isKorean ? '적용' : 'Apply';
@@ -168,8 +168,8 @@ class AppLocalizations {
       : 'This name is already in use. Please enter a different name.';
   String tagDeleteWarning(String tagName, List<String> subjectTitles) =>
       isKorean
-      ? '태그 "#$tagName"는\n다음 과목에서 사용 중입니다:\n\n${subjectTitles.join('\n')}\n\n삭제하시겠습니까?'
-      : 'Tag "#$tagName" is used by:\n\n${subjectTitles.join('\n')}\n\nDo you want to delete?';
+      ? '태그 "$tagName"는\n다음 과목에서 사용 중입니다:\n\n${subjectTitles.join('\n')}\n\n삭제하시겠습니까?'
+      : 'Tag "$tagName" is used in the following subjects:\n\n${subjectTitles.join('\n')}\n\Do you want to delete it?';
 
   // 강의
   String get lecture => isKorean ? '강의' : 'Lecture';
