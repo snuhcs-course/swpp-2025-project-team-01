@@ -30,13 +30,23 @@ import 'package:re_view/features/player/services/pdf_cache_service.dart' as _i6;
 // ignore_for_file: subtype_of_sealed_class
 
 class _FakeAppSettings_0 extends _i1.SmartFake implements _i2.AppSettings {
-  _FakeAppSettings_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+  _FakeAppSettings_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 class _FakeUiState_1 extends _i1.SmartFake implements _i2.UiState {
-  _FakeUiState_1(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
+  _FakeUiState_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
 }
 
 /// A class which mocks [AudioService].
@@ -48,83 +58,93 @@ class MockAudioService extends _i1.Mock implements _i3.AudioService {
   }
 
   @override
-  _i4.Stream<Duration> get positionStream =>
-      (super.noSuchMethod(
-            Invocation.getter(#positionStream),
-            returnValue: _i4.Stream<Duration>.empty(),
-          )
-          as _i4.Stream<Duration>);
+  _i4.Stream<Duration> get positionStream => (super.noSuchMethod(
+        Invocation.getter(#positionStream),
+        returnValue: _i4.Stream<Duration>.empty(),
+      ) as _i4.Stream<Duration>);
 
   @override
-  _i4.Stream<_i5.PlayerState> get stateStream =>
-      (super.noSuchMethod(
-            Invocation.getter(#stateStream),
-            returnValue: _i4.Stream<_i5.PlayerState>.empty(),
-          )
-          as _i4.Stream<_i5.PlayerState>);
+  _i4.Stream<_i5.PlayerState> get stateStream => (super.noSuchMethod(
+        Invocation.getter(#stateStream),
+        returnValue: _i4.Stream<_i5.PlayerState>.empty(),
+      ) as _i4.Stream<_i5.PlayerState>);
 
   @override
-  _i4.Future<void> loadAudio(String? path) =>
-      (super.noSuchMethod(
-            Invocation.method(#loadAudio, [path]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> loadAudio(String? path) => (super.noSuchMethod(
+        Invocation.method(
+          #loadAudio,
+          [path],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> switchAudio(String? newPath, int? targetPositionMs) =>
+  _i4.Future<void> switchAudio(
+    String? newPath,
+    int? targetPositionMs,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#switchAudio, [newPath, targetPositionMs]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #switchAudio,
+          [
+            newPath,
+            targetPositionMs,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> play() =>
-      (super.noSuchMethod(
-            Invocation.method(#play, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> play() => (super.noSuchMethod(
+        Invocation.method(
+          #play,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> pause() =>
-      (super.noSuchMethod(
-            Invocation.method(#pause, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> pause() => (super.noSuchMethod(
+        Invocation.method(
+          #pause,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> seek(Duration? position) =>
-      (super.noSuchMethod(
-            Invocation.method(#seek, [position]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> seek(Duration? position) => (super.noSuchMethod(
+        Invocation.method(
+          #seek,
+          [position],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> setSpeed(double? speed) =>
-      (super.noSuchMethod(
-            Invocation.method(#setSpeed, [speed]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> setSpeed(double? speed) => (super.noSuchMethod(
+        Invocation.method(
+          #setSpeed,
+          [speed],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> dispose() =>
-      (super.noSuchMethod(
-            Invocation.method(#dispose, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> dispose() => (super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 }
 
 /// A class which mocks [PdfCacheService].
@@ -137,56 +157,81 @@ class MockPdfCacheService extends _i1.Mock implements _i6.PdfCacheService {
 
   @override
   void setPdfDocument(_i7.PdfDocument? document) => super.noSuchMethod(
-    Invocation.method(#setPdfDocument, [document]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #setPdfDocument,
+          [document],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void cacheSinglePage(int? pageNumber) => super.noSuchMethod(
-    Invocation.method(#cacheSinglePage, [pageNumber]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #cacheSinglePage,
+          [pageNumber],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   _i4.Future<_i8.Uint8List> getCachedOrRenderPage(int? pageNumber) =>
       (super.noSuchMethod(
-            Invocation.method(#getCachedOrRenderPage, [pageNumber]),
-            returnValue: _i4.Future<_i8.Uint8List>.value(_i8.Uint8List(0)),
-          )
-          as _i4.Future<_i8.Uint8List>);
+        Invocation.method(
+          #getCachedOrRenderPage,
+          [pageNumber],
+        ),
+        returnValue: _i4.Future<_i8.Uint8List>.value(_i8.Uint8List(0)),
+      ) as _i4.Future<_i8.Uint8List>);
 
   @override
   _i8.Uint8List? getCachedImageDirect(int? pageNumber) =>
-      (super.noSuchMethod(
-            Invocation.method(#getCachedImageDirect, [pageNumber]),
-          )
-          as _i8.Uint8List?);
+      (super.noSuchMethod(Invocation.method(
+        #getCachedImageDirect,
+        [pageNumber],
+      )) as _i8.Uint8List?);
 
   @override
-  void setCachedImage(int? pageNumber, _i8.Uint8List? imageBytes) =>
+  void setCachedImage(
+    int? pageNumber,
+    _i8.Uint8List? imageBytes,
+  ) =>
       super.noSuchMethod(
-        Invocation.method(#setCachedImage, [pageNumber, imageBytes]),
+        Invocation.method(
+          #setCachedImage,
+          [
+            pageNumber,
+            imageBytes,
+          ],
+        ),
         returnValueForMissingStub: null,
       );
 
   @override
   void clearCache() => super.noSuchMethod(
-    Invocation.method(#clearCache, []),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #clearCache,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  int getCacheSize() =>
-      (super.noSuchMethod(Invocation.method(#getCacheSize, []), returnValue: 0)
-          as int);
+  int getCacheSize() => (super.noSuchMethod(
+        Invocation.method(
+          #getCacheSize,
+          [],
+        ),
+        returnValue: 0,
+      ) as int);
 
   @override
-  int getLoadingCount() =>
-      (super.noSuchMethod(
-            Invocation.method(#getLoadingCount, []),
-            returnValue: 0,
-          )
-          as int);
+  int getLoadingCount() => (super.noSuchMethod(
+        Invocation.method(
+          #getLoadingCount,
+          [],
+        ),
+        returnValue: 0,
+      ) as int);
 }
 
 /// A class which mocks [HiveManager].
@@ -198,114 +243,99 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
   }
 
   @override
-  bool get isInitialized =>
-      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
-          as bool);
+  bool get isInitialized => (super.noSuchMethod(
+        Invocation.getter(#isInitialized),
+        returnValue: false,
+      ) as bool);
 
   @override
-  bool get hasTutorialCompleted =>
-      (super.noSuchMethod(
-            Invocation.getter(#hasTutorialCompleted),
-            returnValue: false,
-          )
-          as bool);
+  _i2.AppSettings get settings => (super.noSuchMethod(
+        Invocation.getter(#settings),
+        returnValue: _FakeAppSettings_0(
+          this,
+          Invocation.getter(#settings),
+        ),
+      ) as _i2.AppSettings);
 
   @override
-  bool get hasPlayerTutorialCompleted =>
-      (super.noSuchMethod(
-            Invocation.getter(#hasPlayerTutorialCompleted),
-            returnValue: false,
-          )
-          as bool);
+  Map<String, _i2.HiveSubject> get subjects => (super.noSuchMethod(
+        Invocation.getter(#subjects),
+        returnValue: <String, _i2.HiveSubject>{},
+      ) as Map<String, _i2.HiveSubject>);
 
   @override
-  _i2.AppSettings get settings =>
-      (super.noSuchMethod(
-            Invocation.getter(#settings),
-            returnValue: _FakeAppSettings_0(this, Invocation.getter(#settings)),
-          )
-          as _i2.AppSettings);
+  Map<String, _i2.HiveTag> get tags => (super.noSuchMethod(
+        Invocation.getter(#tags),
+        returnValue: <String, _i2.HiveTag>{},
+      ) as Map<String, _i2.HiveTag>);
 
   @override
-  Map<String, _i2.HiveSubject> get subjects =>
-      (super.noSuchMethod(
-            Invocation.getter(#subjects),
-            returnValue: <String, _i2.HiveSubject>{},
-          )
-          as Map<String, _i2.HiveSubject>);
+  _i2.UiState get uiState => (super.noSuchMethod(
+        Invocation.getter(#uiState),
+        returnValue: _FakeUiState_1(
+          this,
+          Invocation.getter(#uiState),
+        ),
+      ) as _i2.UiState);
 
   @override
-  Map<String, _i2.HiveTag> get tags =>
-      (super.noSuchMethod(
-            Invocation.getter(#tags),
-            returnValue: <String, _i2.HiveTag>{},
-          )
-          as Map<String, _i2.HiveTag>);
+  Map<String, _i2.HiveLecture> get lectures => (super.noSuchMethod(
+        Invocation.getter(#lectures),
+        returnValue: <String, _i2.HiveLecture>{},
+      ) as Map<String, _i2.HiveLecture>);
 
   @override
-  _i2.UiState get uiState =>
-      (super.noSuchMethod(
-            Invocation.getter(#uiState),
-            returnValue: _FakeUiState_1(this, Invocation.getter(#uiState)),
-          )
-          as _i2.UiState);
+  List<String> get subjectOrder => (super.noSuchMethod(
+        Invocation.getter(#subjectOrder),
+        returnValue: <String>[],
+      ) as List<String>);
 
   @override
-  Map<String, _i2.HiveLecture> get lectures =>
-      (super.noSuchMethod(
-            Invocation.getter(#lectures),
-            returnValue: <String, _i2.HiveLecture>{},
-          )
-          as Map<String, _i2.HiveLecture>);
-
-  @override
-  List<String> get subjectOrder =>
-      (super.noSuchMethod(
-            Invocation.getter(#subjectOrder),
-            returnValue: <String>[],
-          )
-          as List<String>);
-
-  @override
-  bool get hasListeners =>
-      (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
-          as bool);
+  bool get hasListeners => (super.noSuchMethod(
+        Invocation.getter(#hasListeners),
+        returnValue: false,
+      ) as bool);
 
   @override
   _i4.Future<void> initForTesting(_i10.Box<_i2.AppData>? box) =>
       (super.noSuchMethod(
-            Invocation.method(#initForTesting, [box]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #initForTesting,
+          [box],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> init() =>
-      (super.noSuchMethod(
-            Invocation.method(#init, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> init() => (super.noSuchMethod(
+        Invocation.method(
+          #init,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> updateTheme(String? theme) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateTheme, [theme]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> updateTheme(String? theme) => (super.noSuchMethod(
+        Invocation.method(
+          #updateTheme,
+          [theme],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> updateLanguage(String? language) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateLanguage, [language]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> updateLanguage(String? language) => (super.noSuchMethod(
+        Invocation.method(
+          #updateLanguage,
+          [language],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<void> updateAccessibility({
@@ -314,33 +344,39 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
     bool? emphasizeCaptions,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#updateAccessibility, [], {
-              #highContrast: highContrast,
-              #reduceMotion: reduceMotion,
-              #emphasizeCaptions: emphasizeCaptions,
-            }),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateAccessibility,
+          [],
+          {
+            #highContrast: highContrast,
+            #reduceMotion: reduceMotion,
+            #emphasizeCaptions: emphasizeCaptions,
+          },
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> updateTts({String? gender}) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateTts, [], {#gender: gender}),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> updateTts({String? gender}) => (super.noSuchMethod(
+        Invocation.method(
+          #updateTts,
+          [],
+          {#gender: gender},
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> updateTagColorTheme(String? theme) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateTagColorTheme, [theme]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> updateTagColorTheme(String? theme) => (super.noSuchMethod(
+        Invocation.method(
+          #updateTagColorTheme,
+          [theme],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   List<_i2.HiveSubject> getSubjects({
@@ -348,27 +384,33 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
     List<String>? filterTagIds = const [],
   }) =>
       (super.noSuchMethod(
-            Invocation.method(#getSubjects, [], {
-              #favoritesOnly: favoritesOnly,
-              #filterTagIds: filterTagIds,
-            }),
-            returnValue: <_i2.HiveSubject>[],
-          )
-          as List<_i2.HiveSubject>);
+        Invocation.method(
+          #getSubjects,
+          [],
+          {
+            #favoritesOnly: favoritesOnly,
+            #filterTagIds: filterTagIds,
+          },
+        ),
+        returnValue: <_i2.HiveSubject>[],
+      ) as List<_i2.HiveSubject>);
 
   @override
   _i2.HiveSubject? getSubject(String? id) =>
-      (super.noSuchMethod(Invocation.method(#getSubject, [id]))
-          as _i2.HiveSubject?);
+      (super.noSuchMethod(Invocation.method(
+        #getSubject,
+        [id],
+      )) as _i2.HiveSubject?);
 
   @override
-  _i4.Future<void> toggleSubjectFavorite(String? id) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleSubjectFavorite, [id]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> toggleSubjectFavorite(String? id) => (super.noSuchMethod(
+        Invocation.method(
+          #toggleSubjectFavorite,
+          [id],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<void> updateSubject(
@@ -379,47 +421,63 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
     List<String>? lectureIds,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #updateSubject,
-              [id],
-              {
-                #title: title,
-                #favorite: favorite,
-                #tagIds: tagIds,
-                #lectureIds: lectureIds,
-              },
-            ),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateSubject,
+          [id],
+          {
+            #title: title,
+            #favorite: favorite,
+            #tagIds: tagIds,
+            #lectureIds: lectureIds,
+          },
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> createSubject(String? title, List<String>? tagIds) =>
+  _i4.Future<void> createSubject(
+    String? title,
+    List<String>? tagIds,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#createSubject, [title, tagIds]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #createSubject,
+          [
+            title,
+            tagIds,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> deleteSubject(String? id) =>
-      (super.noSuchMethod(
-            Invocation.method(#deleteSubject, [id]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> deleteSubject(String? id) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteSubject,
+          [id],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> updateSubjectTitle(String? id, String? title) =>
+  _i4.Future<void> updateSubjectTitle(
+    String? id,
+    String? title,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#updateSubjectTitle, [id, title]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateSubjectTitle,
+          [
+            id,
+            title,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<void> updateSubjectLectures(
@@ -427,128 +485,166 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
     List<String>? lectureIds,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#updateSubjectLectures, [id, lectureIds]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateSubjectLectures,
+          [
+            id,
+            lectureIds,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> updateSubjectTags(String? id, List<String>? tagIds) =>
+  _i4.Future<void> updateSubjectTags(
+    String? id,
+    List<String>? tagIds,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#updateSubjectTags, [id, tagIds]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateSubjectTags,
+          [
+            id,
+            tagIds,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<void> updateSubjectOrder(List<String>? newOrder) =>
       (super.noSuchMethod(
-            Invocation.method(#updateSubjectOrder, [newOrder]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateSubjectOrder,
+          [newOrder],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  List<_i2.HiveTag> getTags() =>
-      (super.noSuchMethod(
-            Invocation.method(#getTags, []),
-            returnValue: <_i2.HiveTag>[],
-          )
-          as List<_i2.HiveTag>);
+  List<_i2.HiveTag> getTags() => (super.noSuchMethod(
+        Invocation.method(
+          #getTags,
+          [],
+        ),
+        returnValue: <_i2.HiveTag>[],
+      ) as List<_i2.HiveTag>);
 
   @override
-  _i4.Future<void> saveTags(List<_i2.HiveTag>? newTags) =>
-      (super.noSuchMethod(
-            Invocation.method(#saveTags, [newTags]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> saveTags(List<_i2.HiveTag>? newTags) => (super.noSuchMethod(
+        Invocation.method(
+          #saveTags,
+          [newTags],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  bool getSubjectExpandedState(String? subjectId) =>
-      (super.noSuchMethod(
-            Invocation.method(#getSubjectExpandedState, [subjectId]),
-            returnValue: false,
-          )
-          as bool);
+  bool getSubjectExpandedState(String? subjectId) => (super.noSuchMethod(
+        Invocation.method(
+          #getSubjectExpandedState,
+          [subjectId],
+        ),
+        returnValue: false,
+      ) as bool);
 
   @override
-  _i4.Future<void> setSubjectExpandedState(String? subjectId, bool? expanded) =>
+  _i4.Future<void> setSubjectExpandedState(
+    String? subjectId,
+    bool? expanded,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#setSubjectExpandedState, [subjectId, expanded]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #setSubjectExpandedState,
+          [
+            subjectId,
+            expanded,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  List<String> getRecentSearches() =>
-      (super.noSuchMethod(
-            Invocation.method(#getRecentSearches, []),
-            returnValue: <String>[],
-          )
-          as List<String>);
+  List<String> getRecentSearches() => (super.noSuchMethod(
+        Invocation.method(
+          #getRecentSearches,
+          [],
+        ),
+        returnValue: <String>[],
+      ) as List<String>);
 
   @override
-  _i4.Future<void> addRecentSearch(String? query) =>
-      (super.noSuchMethod(
-            Invocation.method(#addRecentSearch, [query]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> addRecentSearch(String? query) => (super.noSuchMethod(
+        Invocation.method(
+          #addRecentSearch,
+          [query],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> removeRecentSearch(String? query) =>
-      (super.noSuchMethod(
-            Invocation.method(#removeRecentSearch, [query]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> removeRecentSearch(String? query) => (super.noSuchMethod(
+        Invocation.method(
+          #removeRecentSearch,
+          [query],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> addLecture(_i2.HiveLecture? lecture) =>
-      (super.noSuchMethod(
-            Invocation.method(#addLecture, [lecture]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> addLecture(_i2.HiveLecture? lecture) => (super.noSuchMethod(
+        Invocation.method(
+          #addLecture,
+          [lecture],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i2.HiveLecture? getLecture(String? id) =>
-      (super.noSuchMethod(Invocation.method(#getLecture, [id]))
-          as _i2.HiveLecture?);
+      (super.noSuchMethod(Invocation.method(
+        #getLecture,
+        [id],
+      )) as _i2.HiveLecture?);
 
   @override
   List<_i2.HiveLecture> getLecturesBySubject(String? subjectId) =>
       (super.noSuchMethod(
-            Invocation.method(#getLecturesBySubject, [subjectId]),
-            returnValue: <_i2.HiveLecture>[],
-          )
-          as List<_i2.HiveLecture>);
+        Invocation.method(
+          #getLecturesBySubject,
+          [subjectId],
+        ),
+        returnValue: <_i2.HiveLecture>[],
+      ) as List<_i2.HiveLecture>);
 
   @override
   List<_i2.HiveLecture> getLecturesByIds(List<String>? lectureIds) =>
       (super.noSuchMethod(
-            Invocation.method(#getLecturesByIds, [lectureIds]),
-            returnValue: <_i2.HiveLecture>[],
-          )
-          as List<_i2.HiveLecture>);
+        Invocation.method(
+          #getLecturesByIds,
+          [lectureIds],
+        ),
+        returnValue: <_i2.HiveLecture>[],
+      ) as List<_i2.HiveLecture>);
 
   @override
   _i4.Future<void> updateLecture(_i2.HiveLecture? lecture) =>
       (super.noSuchMethod(
-            Invocation.method(#updateLecture, [lecture]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateLecture,
+          [lecture],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<void> updateLectureMetadata(
@@ -557,15 +653,17 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
     String? title,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #updateLectureMetadata,
-              [id],
-              {#weekLabel: weekLabel, #title: title},
-            ),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #updateLectureMetadata,
+          [id],
+          {
+            #weekLabel: weekLabel,
+            #title: title,
+          },
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<void> moveLectureToSubject(
@@ -573,103 +671,90 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
     String? newSubjectId,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#moveLectureToSubject, [lectureId, newSubjectId]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+        Invocation.method(
+          #moveLectureToSubject,
+          [
+            lectureId,
+            newSubjectId,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i4.Future<void> deleteLecture(String? lectureId) =>
-      (super.noSuchMethod(
-            Invocation.method(#deleteLecture, [lectureId]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> deleteLecture(String? lectureId) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteLecture,
+          [lectureId],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  List<_i2.HiveLecture> searchLectures(String? query) =>
-      (super.noSuchMethod(
-            Invocation.method(#searchLectures, [query]),
-            returnValue: <_i2.HiveLecture>[],
-          )
-          as List<_i2.HiveLecture>);
+  List<_i2.HiveLecture> searchLectures(String? query) => (super.noSuchMethod(
+        Invocation.method(
+          #searchLectures,
+          [query],
+        ),
+        returnValue: <_i2.HiveLecture>[],
+      ) as List<_i2.HiveLecture>);
 
   @override
   List<_i2.HiveLecture> getAllLectures({bool? newestFirst = true}) =>
       (super.noSuchMethod(
-            Invocation.method(#getAllLectures, [], {#newestFirst: newestFirst}),
-            returnValue: <_i2.HiveLecture>[],
-          )
-          as List<_i2.HiveLecture>);
+        Invocation.method(
+          #getAllLectures,
+          [],
+          {#newestFirst: newestFirst},
+        ),
+        returnValue: <_i2.HiveLecture>[],
+      ) as List<_i2.HiveLecture>);
 
   @override
-  _i4.Future<void> close() =>
-      (super.noSuchMethod(
-            Invocation.method(#close, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> completeTutorial() =>
-      (super.noSuchMethod(
-            Invocation.method(#completeTutorial, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> resetTutorial() =>
-      (super.noSuchMethod(
-            Invocation.method(#resetTutorial, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> completePlayerTutorial() =>
-      (super.noSuchMethod(
-            Invocation.method(#completePlayerTutorial, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> resetPlayerTutorial() =>
-      (super.noSuchMethod(
-            Invocation.method(#resetPlayerTutorial, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
+  _i4.Future<void> close() => (super.noSuchMethod(
+        Invocation.method(
+          #close,
+          [],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   void addListener(_i11.VoidCallback? listener) => super.noSuchMethod(
-    Invocation.method(#addListener, [listener]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #addListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void removeListener(_i11.VoidCallback? listener) => super.noSuchMethod(
-    Invocation.method(#removeListener, [listener]),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #removeListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void notifyListeners() => super.noSuchMethod(
-    Invocation.method(#notifyListeners, []),
-    returnValueForMissingStub: null,
-  );
+        Invocation.method(
+          #notifyListeners,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

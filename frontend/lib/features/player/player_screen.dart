@@ -10,9 +10,6 @@ import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
 
-// 디버깅 시 플레이어 튜토리얼을 강제로 띄우고 싶으면 true로 설정.
-const bool kForcePlayerTutorial = true;
-
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
     super.key,
