@@ -541,7 +541,10 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       child: Column(
         children: [
           Text(
-            l10n.tagDeleteWarning(tagName, usingSubjects.map((s) => s.title).toList()),
+            l10n.tagDeleteWarning(
+              tagName,
+              usingSubjects.map((s) => s.title).toList(),
+            ),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.black,
