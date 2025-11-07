@@ -169,7 +169,7 @@ class AppLocalizations {
   String tagDeleteWarning(String tagName, List<String> subjectTitles) =>
       isKorean
       ? '태그 "$tagName"는\n다음 과목에서 사용 중입니다:\n\n${subjectTitles.join('\n')}\n\n삭제하시겠습니까?'
-      : 'Tag "$tagName" is used in the following subjects:\n\n${subjectTitles.join('\n')}\n\Do you want to delete it?';
+      : 'Tag "$tagName" is used in the following subjects:\n\n${subjectTitles.join('\n')}\n\nDo you want to delete it?';
 
   // 강의
   String get lecture => isKorean ? '강의' : 'Lecture';
