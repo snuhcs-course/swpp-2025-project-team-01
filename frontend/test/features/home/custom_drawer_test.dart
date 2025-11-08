@@ -24,8 +24,6 @@ void main() {
       routes: {
         Routes.lectureForm: (context) =>
             const Scaffold(body: Text('Lecture Form Screen')),
-        Routes.subjectsEdit: (context) =>
-            const Scaffold(body: Text('Subjects Edit Screen')),
         Routes.tagsEdit: (context) =>
             const Scaffold(body: Text('Tags Edit Screen')),
         Routes.settings: (context) =>

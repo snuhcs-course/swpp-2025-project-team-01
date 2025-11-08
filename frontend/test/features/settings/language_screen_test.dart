@@ -207,6 +207,9 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
 
   @override
   Future<void> close() async {}
+  
+  @override
+  Future<void> reorderLecture(String subjectId, int oldIndex, int newIndex) async {}
 }
 // --- End of Fakes ---
 
