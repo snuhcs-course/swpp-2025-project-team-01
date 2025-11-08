@@ -287,24 +287,10 @@ class _SkipButtonState extends State<SkipButton> {
               : Colors.transparent,
           shape: BoxShape.circle,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              widget.isForward ? Icons.arrow_forward : Icons.arrow_back,
-              color: Colors.white,
-              size: widget.isVertical ? 14 : 20,
-            ),
-            SizedBox(height: widget.isVertical ? 2 : 4),
-            Text(
-              '15',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: widget.isVertical ? 14 : 20,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        child: Icon(
+          widget.isForward ? Icons.forward_10 : Icons.replay_10,
+          color: Colors.white,
+          size: widget.isVertical ? 32 : 44,
         ),
       ),
     );

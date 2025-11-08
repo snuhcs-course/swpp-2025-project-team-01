@@ -371,12 +371,12 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> skipBackward() async {
-    final newTime = (currentTime.value - 15).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value - 10).clamp(0, totalTime).toDouble();
     await seek(newTime);
   }
 
   Future<void> skipForward() async {
-    final newTime = (currentTime.value + 15).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value + 10).clamp(0, totalTime).toDouble();
     await seek(newTime);
   }
 

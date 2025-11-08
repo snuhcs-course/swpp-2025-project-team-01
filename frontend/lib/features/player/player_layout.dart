@@ -265,48 +265,56 @@ class VideoControlsOverlay extends StatelessWidget {
     return Positioned.fill(
       child: Container(
         color: const Color(0x4D1D1D1D),
-        child: Column(
+        child: Stack(
           children: [
-            ValueListenableBuilder<bool>(
-              valueListenable: controller.isOriginalAudio,
-              builder: (context, isOriginalAudio, _) {
-                return ValueListenableBuilder<bool>(
-                  valueListenable: controller.isSynced,
-                  builder: (context, isSynced, _) {
-                    return TopControlBar(
-                      isVertical: isVertical,
-                      onBack: onBack,
-                      isOriginalAudio: isOriginalAudio,
-                      onAudioToggle: controller.toggleAudioSource,
-                      onSpeedChanged: controller.setPlaybackSpeed,
-                      isSynced: isSynced,
-                      onSyncToggle: controller.toggleSync,
-                      pageDifference: controller.pageDifference,
-                    );
-                  },
-                );
-              },
+            // Top control bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: controller.isOriginalAudio,
+                builder: (context, isOriginalAudio, _) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: controller.isSynced,
+                    builder: (context, isSynced, _) {
+                      return TopControlBar(
+                        isVertical: isVertical,
+                        onBack: onBack,
+                        isOriginalAudio: isOriginalAudio,
+                        onAudioToggle: controller.toggleAudioSource,
+                        onSpeedChanged: controller.setPlaybackSpeed,
+                        isSynced: isSynced,
+                        onSyncToggle: controller.toggleSync,
+                        pageDifference: controller.pageDifference,
+                      );
+                    },
+                  );
+                },
+              ),
             ),
 
-            const Spacer(),
-
-            ValueListenableBuilder<bool>(
-              valueListenable: controller.isPlaying,
-              builder: (context, isPlaying, _) {
-                return CenterPlayControls(
-                  isPlaying: isPlaying,
-                  onPlayPause: controller.playPause,
-                  onSkipBackward: controller.skipBackward,
-                  onSkipForward: controller.skipForward,
-                  isVertical: isVertical,
-                );
-              },
+            // Center play controls - always in the exact center
+            Center(
+              child: ValueListenableBuilder<bool>(
+                valueListenable: controller.isPlaying,
+                builder: (context, isPlaying, _) {
+                  return CenterPlayControls(
+                    isPlaying: isPlaying,
+                    onPlayPause: controller.playPause,
+                    onSkipBackward: controller.skipBackward,
+                    onSkipForward: controller.skipForward,
+                    isVertical: isVertical,
+                  );
+                },
+              ),
             ),
 
-            const Spacer(),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            // Bottom control bar
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: ListenableBuilder(
                 listenable: Listenable.merge([
                   controller.currentTime,
