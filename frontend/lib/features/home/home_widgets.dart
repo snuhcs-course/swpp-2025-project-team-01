@@ -52,11 +52,13 @@ class _PillButton extends StatelessWidget {
     required this.onTap,
     required this.active,
     required this.child,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   });
 
   final VoidCallback onTap;
   final bool active;
   final Widget child;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +82,7 @@ class _PillButton extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: child,
-          ),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
@@ -177,6 +176,7 @@ class FavoritePill extends StatelessWidget {
   }
 }
 
+// 수정 모드 pill 버튼 위젯
 class EditPill extends StatelessWidget {
   const EditPill({
     super.key,
@@ -213,6 +213,31 @@ class EditPill extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.w600, color: fg),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class AddPill extends StatelessWidget {
+  const AddPill({super.key, required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color fg = isDark ? Colors.white : Colors.black87;
+
+    return _PillButton(
+      onTap: onTap,
+      active: false,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [Icon(icon, size: 18, color: fg)],
       ),
     );
   }

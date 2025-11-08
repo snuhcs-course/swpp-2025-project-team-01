@@ -160,6 +160,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       editModeEnabled = !editModeEnabled;
                     }),
                   ),
+                  const SizedBox(width: 6),
+                  AddPill(
+                    icon: Icons.add,
+                    onTap: () =>
+                        Navigator.pushNamed(context, Routes.lectureForm),
+                  ),
                 ],
               ),
             ),
