@@ -204,10 +204,18 @@ class PdfArea extends StatelessWidget {
             children: [
               // PDF 내용
               if (controller.pdfController != null)
-                PdfView(
-                  key: controller.pdfViewKey,
-                  controller: controller.pdfController!,
-                  onPageChanged: controller.onPdfPageChanged,
+                ValueListenableBuilder<bool>(
+                  valueListenable: controller.isSynced,
+                  builder: (context, isSynced, _) {
+                    return PdfView(
+                      key: controller.pdfViewKey,
+                      controller: controller.pdfController!,
+                      onPageChanged: controller.onPdfPageChanged,
+                      physics: !isSynced
+                          ? const AlwaysScrollableScrollPhysics()
+                          : const NeverScrollableScrollPhysics(),
+                    );
+                  },
                 )
               else
                 Container(
