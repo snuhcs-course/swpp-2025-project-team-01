@@ -325,7 +325,10 @@ class _HomeScreenState extends State<HomeScreen>
                                     onOpenLecture: (_) {},
                                     onLectureUpdated: () {},
                                     showEdit: true,
-                                    onEditSubject: () async => _showSubjectEditDialog(_editingSubjects[i]),
+                                    onEditSubject: () async =>
+                                        _showSubjectEditDialog(
+                                          _editingSubjects[i],
+                                        ),
                                     reorderIndex:
                                         _editingSubjects[i].isUncategorized
                                         ? null

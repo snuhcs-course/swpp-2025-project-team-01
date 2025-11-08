@@ -329,7 +329,9 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
-                    final result = await showDeleteConfirmationDialog(widget.subject);
+                    final result = await showDeleteConfirmationDialog(
+                      widget.subject,
+                    );
                     if (result == true && context.mounted) {
                       Navigator.pop(context);
                     }
@@ -358,7 +360,11 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
               return;
             }
             final manager = HiveManager.instance;
-            manager.updateSubject(widget.subject.id, title: newTitle, tagIds: _selectedTagIds.toList());
+            manager.updateSubject(
+              widget.subject.id,
+              title: newTitle,
+              tagIds: _selectedTagIds.toList(),
+            );
             Navigator.pop(context, null);
           },
           child: Text(l10n.ok),
