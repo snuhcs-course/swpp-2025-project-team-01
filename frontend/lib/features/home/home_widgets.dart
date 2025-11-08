@@ -1,6 +1,7 @@
 // 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:reorderables/reorderables.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/core/thumbnail_cache_manager.dart';
@@ -305,6 +306,7 @@ class SubjectPanel extends StatefulWidget {
 
 class _SubjectPanelState extends State<SubjectPanel>
     with SingleTickerProviderStateMixin {
+  late List<HiveLecture> _lectures; // local mutable order
   late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
@@ -312,8 +314,9 @@ class _SubjectPanelState extends State<SubjectPanel>
   @override
   void initState() {
     super.initState();
-    // Repository에서 저장된 상태 로드
+    // 저장된 상태 로드
     expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
+    _lectures = List.of(widget.lectures);
 
     final reduceMotion =
         HiveManager.instance.settings.accessibilityReduceMotion;
@@ -333,6 +336,29 @@ class _SubjectPanelState extends State<SubjectPanel>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant SubjectPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If parent data changed (e.g., new lectures loaded), refresh local copy
+    if (oldWidget.lectures != widget.lectures) {
+      _lectures = List.of(widget.lectures);
+    }
+  }
+
+  void _onReorder(int oldIndex, int newIndex) async {
+    setState(() {
+      final item = _lectures.removeAt(oldIndex);
+      _lectures.insert(newIndex, item);
+    });
+    // persist the new order
+    await HiveManager.instance.reorderLecture(
+      widget.subject.id,
+      oldIndex,
+      newIndex,
+    );
+    widget.onLectureUpdated?.call();
   }
 
   void _toggleExpanded() {
@@ -416,24 +442,41 @@ class _SubjectPanelState extends State<SubjectPanel>
                   builder: (context, constraints) {
                     // 실제 SubjectPanel의 너비를 기준으로 계산
                     final cardWidth = (constraints.maxWidth - 12) / 2;
-                    return Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: widget.lectures
-                          .map(
-                            (lec) => SizedBox(
-                              width: cardWidth,
-                              child: LectureCard(
-                                lec: lec,
-                                onTap: widget.onOpenLecture,
-                                onUpdated: widget.onLectureUpdated,
-                                showEdit: widget.showEdit,
-                                onEditLecture: () => widget.onEditLecture,
-                              ),
-                            ),
+                    // build lecture tiles
+                    final children = [
+                      for (final lec in _lectures)
+                        SizedBox(
+                          key: ValueKey(lec.id),
+                          width: cardWidth,
+                          child: LectureCard(
+                            lec: lec,
+                            onTap: widget.showEdit
+                                ? (_) {}
+                                : widget.onOpenLecture,
+                            onUpdated: widget.onLectureUpdated,
+                            showEdit: widget.showEdit,
+                            onEditLecture: widget.onEditLecture,
+                          ),
+                        ),
+                    ];
+                    return widget.showEdit
+                        ? ReorderableWrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            needsLongPressDraggable: false,
+                            onReorder: _onReorder,
+                            buildDraggableFeedback:
+                                (context, constraints, child) {
+                                  // lifted feedback while dragging
+                                  return Material(
+                                    elevation: 6,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: child,
+                                  );
+                                },
+                            children: children,
                           )
-                          .toList(),
-                    );
+                        : Wrap(spacing: 12, runSpacing: 12, children: children);
                   },
                 ),
               ),
@@ -641,7 +684,7 @@ class _LectureCardState extends State<LectureCard> {
                               size: 20,
                               color: isDark ? Colors.white : Color(0xFF2D2D2D),
                             ),
-                            onPressed: () => widget.onEditLecture,
+                            onPressed: () => _showLectureDetailDialog(context),
                           ),
                         )
                       : SizedBox.shrink(),
