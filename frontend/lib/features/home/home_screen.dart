@@ -5,6 +5,7 @@ import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/features/home/add_pill.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/features/home/custom_drawer.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -16,14 +17,18 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   bool favoritesOnly = false;
   bool showTagFilter = false;
   bool editModeEnabled = false;
+  bool isAddMenuOpen = false;
   final Set<String> selectedTagIds = {};
   List<HiveSubject> _editingSubjects = [];
 
   late final HiveManager _manager = HiveManager.instance;
+  final GlobalKey _addPillKey = GlobalKey();
+  final LayerLink _addLink = LayerLink();
 
   @override
   void initState() {
@@ -157,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: reduceMotion ? null : const CustomDrawer(),
       body: CustomScrollView(
         slivers: [
-          // 상단 pill 두 개
+          // 상단 pill 네 개
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
@@ -195,10 +200,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     }),
                   ),
                   const SizedBox(width: 6),
-                  AddPill(
-                    icon: Icons.add,
-                    onTap: () =>
-                        Navigator.pushNamed(context, Routes.lectureForm),
+                  CompositedTransformTarget(
+                    link: _addLink,
+                    child: AddPill(
+                      key: _addPillKey,
+                      icon: Icons.add,
+                      link: _addLink,
+                    ),
                   ),
                 ],
               ),
@@ -291,6 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     onOpenLecture: (_) {},
                                     onLectureUpdated: () {},
                                     showEdit: true,
+                                    // onEditSubject: Subject Edit Dialog 표시
                                     reorderIndex: i, // drag handle index
                                   ),
                                 ),
