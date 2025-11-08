@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
@@ -129,12 +132,16 @@ class SubjectEditDialog extends StatefulWidget {
 }
 
 class _SubjectEditDialogState extends State<SubjectEditDialog> {
+  late TextEditingController _tagNameController;
   late TextEditingController _nameController;
   late Set<String> _selectedTagIds;
+  Completer<String?>? _tagCompleter;
+  bool _isCreatingTag = false;
 
   @override
   void initState() {
     super.initState();
+    _tagNameController = TextEditingController();
     _nameController = TextEditingController(text: widget.subject.title);
     _selectedTagIds = Set<String>.from(widget.initialTagIds);
   }
@@ -143,6 +150,12 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<bool?> showDeleteConfirmationDialog(HiveSubject subject) {
@@ -260,6 +273,65 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     );
   }
 
+  Future<void> _addNewTag() async {
+    final l10n = AppLocalizations.of(context);
+    final manager = HiveManager.instance;
+    final existingTags = manager.getTags();
+
+    // Avoid reentry
+    if (_isCreatingTag) {
+      return;
+    }
+    setState(() {
+      _isCreatingTag = true;
+    });
+
+    // 최대 개수 제한 체크
+    if (existingTags.length >= 15) {
+      _showSnackBar(l10n.maxTagsReached);
+      return;
+    }
+
+    // Create a completer to wait until user presses OK
+    _tagCompleter = Completer<String?>();
+
+    // 중복되지 않는 이름 생성
+    final newName = await _tagCompleter!.future;
+    // User canceled
+    if (newName == null) {
+      setState(() {
+        _isCreatingTag = false;
+      });
+      return;
+    }
+
+    // 현재 테마에서 다음 색상 할당
+    final theme = getTagColorTheme(manager.settings.tagColorTheme);
+    final colorIndex = existingTags.length % theme.colors.length;
+
+    setState(() {
+      existingTags.add(
+        HiveTag(
+          id: 'new_${DateTime.now().millisecondsSinceEpoch}',
+          name: newName,
+          color: theme.colors[colorIndex],
+        ),
+      );
+      manager.saveTags(existingTags);
+    });
+
+    setState(() {
+      _isCreatingTag = false;
+    });
+
+    // 입력창 초기화 (한글 입력 문제 방지를 위해 프레임 이후 실행)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _tagNameController.clear();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -317,7 +389,52 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            ActionChip(
+              label: const Text('+', style: TextStyle(color: Colors.black)),
+              onPressed: _addNewTag,
+              elevation: 2,
+              backgroundColor: Colors.white,
+              side: BorderSide.none,
+            ),
+            const SizedBox(height: 10),
+            if (_isCreatingTag)
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _tagNameController,
+                      decoration: InputDecoration(
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        labelText: l10n.tagName,
+                        hintText: l10n.newTag,
+                        border: const OutlineInputBorder(),
+                      ),
+                      enableIMEPersonalizedLearning: false,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  FilledButton(
+                    onPressed: () {
+                      final manager = HiveManager.instance;
+                      final newTitle = _tagNameController.text.trim();
+                      String newName = newTitle.isEmpty
+                          ? l10n.newTag
+                          : newTitle;
+                      int counter = 1;
+                      while (manager.getTags().any(
+                        (tag) => tag.name == newName,
+                      )) {
+                        newName = '${l10n.newTag} ($counter)';
+                        counter++;
+                      }
+                      // Complete the future that _addNewTag() is awaiting
+                      _tagCompleter?.complete(newName);
+                    },
+                    child: Text(l10n.nameApply),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 10),
 
             // ========== 과목 삭제 버튼 ==========
             Center(
