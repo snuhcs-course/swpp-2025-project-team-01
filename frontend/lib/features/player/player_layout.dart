@@ -134,39 +134,6 @@ class HorizontalPlayerLayout extends StatelessWidget {
                   ),
               ],
             ),
-
-            Positioned(
-              right: showTranscriptPanel ? transcriptPanelWidth : 0,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: controller.toggleTranscriptPanel,
-                  child: Container(
-                    width: 30,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: showTranscriptPanel
-                          ? Colors.black.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.5),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        bottomLeft: Radius.circular(8),
-                        topRight: Radius.zero,
-                        bottomRight: Radius.zero,
-                      ),
-                    ),
-                    child: Icon(
-                      showTranscriptPanel
-                          ? Icons.chevron_right
-                          : Icons.chevron_left,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         );
       },
@@ -304,24 +271,17 @@ class VideoControlsOverlay extends StatelessWidget {
               valueListenable: controller.isOriginalAudio,
               builder: (context, isOriginalAudio, _) {
                 return ValueListenableBuilder<bool>(
-                  valueListenable: controller.isCaptionEnabled,
-                  builder: (context, isCaptionEnabled, _) {
-                    return ValueListenableBuilder<bool>(
-                      valueListenable: controller.isSynced,
-                      builder: (context, isSynced, _) {
-                        return TopControlBar(
-                          isVertical: isVertical,
-                          onBack: onBack,
-                          isOriginalAudio: isOriginalAudio,
-                          onAudioToggle: controller.toggleAudioSource,
-                          isCaptionEnabled: isCaptionEnabled,
-                          onCaptionToggle: controller.toggleCaption,
-                          onSpeedChanged: controller.setPlaybackSpeed,
-                          isSynced: isSynced,
-                          onSyncToggle: controller.toggleSync,
-                          pageDifference: controller.pageDifference,
-                        );
-                      },
+                  valueListenable: controller.isSynced,
+                  builder: (context, isSynced, _) {
+                    return TopControlBar(
+                      isVertical: isVertical,
+                      onBack: onBack,
+                      isOriginalAudio: isOriginalAudio,
+                      onAudioToggle: controller.toggleAudioSource,
+                      onSpeedChanged: controller.setPlaybackSpeed,
+                      isSynced: isSynced,
+                      onSyncToggle: controller.toggleSync,
+                      pageDifference: controller.pageDifference,
                     );
                   },
                 );
@@ -338,6 +298,7 @@ class VideoControlsOverlay extends StatelessWidget {
                   onPlayPause: controller.playPause,
                   onSkipBackward: controller.skipBackward,
                   onSkipForward: controller.skipForward,
+                  isVertical: isVertical,
                 );
               },
             ),
@@ -346,13 +307,25 @@ class VideoControlsOverlay extends StatelessWidget {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ValueListenableBuilder<double>(
-                valueListenable: controller.currentTime,
-                builder: (context, currentTime, _) {
-                  return VideoTimelineSlider(
-                    currentTime: currentTime,
+              child: ListenableBuilder(
+                listenable: Listenable.merge([
+                  controller.currentTime,
+                  controller.isCaptionEnabled,
+                  controller.showTranscriptPanel,
+                  controller.isFullscreen,
+                ]),
+                builder: (context, _) {
+                  return BottomControlBar(
+                    isVertical: isVertical,
+                    currentTime: controller.currentTime.value,
                     totalTime: controller.totalTime,
-                    onChanged: controller.seek,
+                    onTimeChanged: controller.seek,
+                    isCaptionEnabled: controller.isCaptionEnabled.value,
+                    onCaptionToggle: controller.toggleCaption,
+                    showTranscriptPanel: controller.showTranscriptPanel.value,
+                    onTranscriptToggle: controller.toggleTranscriptPanel,
+                    isFullscreen: controller.isFullscreen.value,
+                    onFullscreenToggle: controller.toggleFullscreen,
                   );
                 },
               ),
@@ -624,6 +597,18 @@ class TranscriptArea extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               TranslationButton(controller: controller),
+              const Spacer(),
+              IconButton(
+                onPressed: controller.toggleTranscriptPanel,
+                icon: Icon(
+                  Icons.close,
+                  color: isDark ? colorScheme.onSurface : Colors.grey[700],
+                  size: 24,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                splashRadius: 20,
+              ),
             ],
           ),
           const SizedBox(height: 12),

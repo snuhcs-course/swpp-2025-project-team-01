@@ -449,7 +449,7 @@ void main() {
       expect(slider.max, equals(120.0));
     });
 
-    testWidgets('should display current time and remaining time', (
+    testWidgets('should display current time and total time', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -464,8 +464,7 @@ void main() {
         ),
       );
 
-      expect(find.text('1:05'), findsOneWidget);
-      expect(find.text('-1:00'), findsOneWidget);
+      expect(find.text('1:05 / 2:05'), findsOneWidget);
     });
 
     testWidgets('should call onChanged when slider is moved', (tester) async {
@@ -502,8 +501,7 @@ void main() {
         ),
       );
 
-      expect(find.text('0:00'), findsOneWidget);
-      expect(find.text('-1:40'), findsOneWidget);
+      expect(find.text('0:00 / 1:40'), findsOneWidget);
     });
 
     testWidgets('should handle end time correctly', (tester) async {
@@ -519,8 +517,7 @@ void main() {
         ),
       );
 
-      expect(find.text('1:40'), findsOneWidget);
-      expect(find.text('-0:00'), findsOneWidget);
+      expect(find.text('1:40 / 1:40'), findsOneWidget);
     });
   });
 
@@ -602,7 +599,7 @@ void main() {
   });
 
   group('TopControlBar', () {
-    testWidgets('should render all buttons in horizontal mode', (tester) async {
+    testWidgets('should render all buttons', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -611,8 +608,6 @@ void main() {
               onBack: () {},
               isOriginalAudio: false,
               onAudioToggle: () {},
-              isCaptionEnabled: false,
-              onCaptionToggle: () {},
               isSynced: true,
               onSyncToggle: () {},
               onSpeedChanged: (_) {},
@@ -622,31 +617,6 @@ void main() {
       );
 
       expect(find.byType(pw.BackButton), findsOneWidget);
-      expect(find.byType(pw.CaptionButton), findsOneWidget);
-      expect(find.byType(pw.SyncButton), findsOneWidget);
-    });
-
-    testWidgets('should hide caption button in vertical mode', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.TopControlBar(
-              isVertical: true,
-              onBack: () {},
-              isOriginalAudio: false,
-              onAudioToggle: () {},
-              isCaptionEnabled: false,
-              onCaptionToggle: () {},
-              isSynced: true,
-              onSyncToggle: () {},
-              onSpeedChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(pw.BackButton), findsOneWidget);
-      expect(find.byType(pw.CaptionButton), findsNothing);
       expect(find.byType(pw.SyncButton), findsOneWidget);
     });
 
@@ -654,7 +624,6 @@ void main() {
       tester,
     ) async {
       bool backPressed = false;
-      bool captionPressed = false;
       bool syncPressed = false;
 
       await tester.pumpWidget(
@@ -665,8 +634,6 @@ void main() {
               onBack: () => backPressed = true,
               isOriginalAudio: false,
               onAudioToggle: () {},
-              isCaptionEnabled: false,
-              onCaptionToggle: () => captionPressed = true,
               isSynced: true,
               onSyncToggle: () => syncPressed = true,
               onSpeedChanged: (_) {},
@@ -678,10 +645,6 @@ void main() {
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
       expect(backPressed, isTrue);
-
-      await tester.tap(find.byIcon(Icons.closed_caption_outlined));
-      await tester.pump();
-      expect(captionPressed, isTrue);
 
       await tester.tap(find.byIcon(Icons.sync));
       await tester.pump();
@@ -919,7 +882,6 @@ void main() {
       tester,
     ) async {
       bool backCalled = false;
-      bool captionCalled = false;
       bool syncCalled = false;
 
       await tester.pumpWidget(
@@ -930,8 +892,6 @@ void main() {
               onBack: () => backCalled = true,
               isOriginalAudio: false,
               onAudioToggle: () {},
-              isCaptionEnabled: true,
-              onCaptionToggle: () => captionCalled = true,
               isSynced: false,
               onSyncToggle: () => syncCalled = true,
               pageDifference: 3,
@@ -942,16 +902,11 @@ void main() {
       );
 
       expect(find.byType(pw.BackButton), findsOneWidget);
-      expect(find.byType(pw.CaptionButton), findsOneWidget);
       expect(find.byType(pw.SyncButton), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
       expect(backCalled, isTrue);
-
-      await tester.tap(find.byIcon(Icons.closed_caption));
-      await tester.pump();
-      expect(captionCalled, isTrue);
 
       await tester.tap(find.byIcon(Icons.sync_disabled));
       await tester.pump();
