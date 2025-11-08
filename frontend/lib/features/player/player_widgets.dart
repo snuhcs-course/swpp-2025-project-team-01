@@ -27,7 +27,7 @@ class BackButton extends StatelessWidget {
       icon: Icon(
         Icons.chevron_left,
         color: Colors.white,
-        size: isVertical ? 23 : 32,
+        size: isVertical ? 26 : 32,
       ),
     );
   }
@@ -73,7 +73,7 @@ class SyncButton extends StatelessWidget {
           icon: Icon(
             isSynced ? Icons.sync : Icons.sync_disabled,
             color: Colors.white,
-            size: isVertical ? 20 : 28,
+            size: isVertical ? 22 : 28,
           ),
         ),
         if (showDifference)
@@ -141,7 +141,7 @@ class _SpeedButtonState extends State<SpeedButton> {
         '${_speeds[_currentIndex]}x',
         style: TextStyle(
           color: Colors.white,
-          fontSize: widget.isVertical ? 11 : 16,
+          fontSize: widget.isVertical ? 13 : 16,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -175,7 +175,7 @@ class AudioSourceButton extends StatelessWidget {
           isOriginalAudio ? 'Rec' : 'TTS',
           style: TextStyle(
             color: Colors.white,
-            fontSize: isVertical ? 10 : 14,
+            fontSize: isVertical ? 12 : 14,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -473,7 +473,7 @@ class FullscreenButton extends StatelessWidget {
       icon: Icon(
         isEnabled ? Icons.fullscreen_exit : Icons.fullscreen,
         color: Colors.white,
-        size: isVertical ? 20 : 28,
+        size: isVertical ? 24 : 28,
       ),
     );
   }
