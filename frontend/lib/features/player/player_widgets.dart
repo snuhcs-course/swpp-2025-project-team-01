@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 // 시간 포맷 유틸 함수
 String formatDuration(int seconds) {
@@ -48,15 +49,16 @@ class SyncButton extends StatelessWidget {
   final int? pageDifference;
   final bool isVertical;
 
-  String _getDifferenceText(int difference) {
+  String _getDifferenceText(BuildContext context, int difference) {
+    final l10n = AppLocalizations.of(context);
     if (difference == 0) {
-      return '동기화됨';
+      return l10n.synchronized;
     }
     final absValue = difference.abs();
     if (difference < 0) {
-      return '$absValue 페이지 앞';
+      return l10n.pagesAhead(absValue);
     } else {
-      return '$absValue 페이지 뒤';
+      return l10n.pagesBehind(absValue);
     }
   }
 
@@ -92,12 +94,14 @@ class SyncButton extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Text(
-                _getDifferenceText(pageDifference!),
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              child: Builder(
+                builder: (context) => Text(
+                  _getDifferenceText(context, pageDifference!),
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
@@ -438,9 +442,10 @@ class CaptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return _IconTextButton(
       icon: isEnabled ? Icons.closed_caption : Icons.closed_caption_outlined,
-      label: '자막',
+      label: l10n.subtitle,
       onPressed: onPressed,
     );
   }
@@ -454,9 +459,10 @@ class TranscriptButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return _IconTextButton(
       icon: Icons.subject,
-      label: '대본',
+      label: l10n.transcript,
       onPressed: onPressed,
     );
   }

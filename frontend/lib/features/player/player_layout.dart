@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -590,8 +591,7 @@ class TranscriptArea extends StatelessWidget {
       );
     }
 
-    final language = HiveManager.instance.settings.language;
-    final transcriptLabel = language == 'ko' ? '대본' : 'Transcript';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       width: double.infinity,
@@ -603,7 +603,7 @@ class TranscriptArea extends StatelessWidget {
           Row(
             children: [
               Text(
-                transcriptLabel,
+                l10n.transcript,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

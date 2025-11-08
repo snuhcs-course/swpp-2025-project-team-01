@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/features/player/player_layout.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
@@ -141,10 +142,11 @@ class _PlayerScreenState extends State<PlayerScreen>
       final lectureId = map['lectureId'] as String?;
 
       if (lectureId == null || lectureId.isEmpty) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko' ? '강의 ID가 없습니다.' : 'Lecture ID is missing.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.lectureIdMissing);
         return;
       }
 
@@ -152,10 +154,11 @@ class _PlayerScreenState extends State<PlayerScreen>
       final hiveLecture = _hiveManager.getLecture(lectureId);
 
       if (hiveLecture == null) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko' ? '강의를 찾을 수 없습니다.' : 'Lecture not found.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.lectureNotFound);
         return;
       }
 
@@ -169,12 +172,11 @@ class _PlayerScreenState extends State<PlayerScreen>
             ? await rootBundle.loadString(transcriptPath)
             : await File(transcriptPath).readAsString();
       } catch (e) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko'
-              ? '자막 파일을 불러올 수 없습니다.'
-              : 'Failed to load transcript file.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.failedToLoadTranscript);
         return;
       }
 
@@ -185,12 +187,11 @@ class _PlayerScreenState extends State<PlayerScreen>
             json.decode(transcriptJson) as Map<String, dynamic>;
         transcriptData = TranscriptData.fromJson(transcriptJsonData);
       } catch (e) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko'
-              ? '자막 데이터 형식이 올바르지 않습니다.'
-              : 'Invalid transcript data format.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.invalidTranscriptFormat);
         return;
       }
 
@@ -218,12 +219,11 @@ class _PlayerScreenState extends State<PlayerScreen>
           originalAudioPath,
         );
       } catch (e) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko'
-              ? '플레이어 초기화에 실패했습니다.'
-              : 'Failed to initialize player.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.failedToInitializePlayer);
         return;
       }
 
@@ -241,10 +241,11 @@ class _PlayerScreenState extends State<PlayerScreen>
       }
     } catch (e) {
       // 예상하지 못한 에러 처리
-      final language = _hiveManager.settings.language;
-      _handleError(
-        language == 'ko' ? '알 수 없는 오류가 발생했습니다.' : 'An unknown error occurred.',
-      );
+      if (!mounted) {
+        return;
+      }
+      final l10n = AppLocalizations.of(context);
+      _handleError(l10n.unknownError);
     }
   }
 

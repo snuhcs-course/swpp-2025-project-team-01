@@ -221,6 +221,21 @@ class AppLocalizations {
         return koreanName;
     }
   }
+
+  // 플레이어
+  String get subtitle => isKorean ? '자막' : 'Subtitle';
+  String get transcript => isKorean ? '대본' : 'Transcript';
+  String get synchronized => isKorean ? '동기화됨' : 'Synchronized';
+  String pagesAhead(int pages) => isKorean ? '$pages 페이지 앞' : '$pages pages ahead';
+  String pagesBehind(int pages) => isKorean ? '$pages 페이지 뒤' : '$pages pages behind';
+
+  // 플레이어 에러 메시지
+  String get lectureIdMissing => isKorean ? '강의 ID가 없습니다.' : 'Lecture ID is missing.';
+  String get lectureNotFound => isKorean ? '강의를 찾을 수 없습니다.' : 'Lecture not found.';
+  String get failedToLoadTranscript => isKorean ? '자막 파일을 불러올 수 없습니다.' : 'Failed to load transcript file.';
+  String get invalidTranscriptFormat => isKorean ? '자막 데이터 형식이 올바르지 않습니다.' : 'Invalid transcript data format.';
+  String get failedToInitializePlayer => isKorean ? '플레이어 초기화에 실패했습니다.' : 'Failed to initialize player.';
+  String get unknownError => isKorean ? '알 수 없는 오류가 발생했습니다.' : 'An unknown error occurred.';
 }
 
 class _AppLocalizationsDelegate
