@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // Figma: 좌 햄버거, 중앙 타이틀, 우 검색
+        // 좌 햄버거, 중앙 타이틀, 우 검색
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: Builder(
@@ -157,6 +157,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.edit,
                     label: l10n.editMode,
                     onTap: () => setState(() {
+                      // Show all subjects on edit mode entrance
+                      favoritesOnly = false;
+                      showTagFilter = false;
+                      selectedTagIds.clear();
                       editModeEnabled = !editModeEnabled;
                     }),
                   ),
