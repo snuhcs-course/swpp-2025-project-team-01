@@ -392,21 +392,19 @@ class BottomControlBar extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 // 중앙
-                  Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CaptionButton(
-                          isEnabled: isCaptionEnabled,
-                          onPressed: onCaptionToggle,
-                        ),
-                        const SizedBox(width: 24),
-                        TranscriptButton(
-                          onPressed: onTranscriptToggle,
-                        ),
-                      ],
-                    ),
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CaptionButton(
+                        isEnabled: isCaptionEnabled,
+                        onPressed: onCaptionToggle,
+                      ),
+                      const SizedBox(width: 24),
+                      TranscriptButton(onPressed: onTranscriptToggle),
+                    ],
                   ),
+                ),
                 // 우측: 전체화면 버튼
                 Positioned(
                   right: 16,
@@ -441,9 +439,7 @@ class CaptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _IconTextButton(
-      icon: isEnabled
-          ? Icons.closed_caption
-          : Icons.closed_caption_outlined,
+      icon: isEnabled ? Icons.closed_caption : Icons.closed_caption_outlined,
       label: '자막',
       onPressed: onPressed,
     );
@@ -452,10 +448,7 @@ class CaptionButton extends StatelessWidget {
 
 // 대본 버튼
 class TranscriptButton extends StatelessWidget {
-  const TranscriptButton({
-    super.key,
-    required this.onPressed,
-  });
+  const TranscriptButton({super.key, required this.onPressed});
 
   final VoidCallback onPressed;
 
@@ -485,9 +478,7 @@ class FullscreenButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      padding: isVertical
-          ? const EdgeInsets.all(4)
-          : const EdgeInsets.all(8),
+      padding: isVertical ? const EdgeInsets.all(4) : const EdgeInsets.all(8),
       constraints: const BoxConstraints(),
       onPressed: onPressed,
       icon: Icon(
@@ -524,11 +515,7 @@ class _IconTextButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 24,
-              ),
+              Icon(icon, color: Colors.white, size: 24),
               const SizedBox(width: 6),
               Text(
                 label,
@@ -620,10 +607,7 @@ class TopControlBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          BackButton(
-            onPressed: onBack,
-            isVertical: isVertical,
-          ),
+          BackButton(onPressed: onBack, isVertical: isVertical),
           const Spacer(),
           AudioSourceButton(
             isOriginalAudio: isOriginalAudio,
@@ -631,10 +615,7 @@ class TopControlBar extends StatelessWidget {
             isVertical: isVertical,
           ),
           const SizedBox(width: 8),
-          SpeedButton(
-            onSpeedChanged: onSpeedChanged,
-            isVertical: isVertical,
-          ),
+          SpeedButton(onSpeedChanged: onSpeedChanged, isVertical: isVertical),
           const SizedBox(width: 8),
           SyncButton(
             isSynced: isSynced,

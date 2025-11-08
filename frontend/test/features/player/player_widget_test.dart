@@ -449,9 +449,7 @@ void main() {
       expect(slider.max, equals(120.0));
     });
 
-    testWidgets('should display current time and total time', (
-      tester,
-    ) async {
+    testWidgets('should display current time and total time', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
