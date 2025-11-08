@@ -177,6 +177,47 @@ class FavoritePill extends StatelessWidget {
   }
 }
 
+class EditPill extends StatelessWidget {
+  const EditPill({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color fg = active
+        ? (isDark ? Colors.black : Colors.white)
+        : (isDark ? Colors.white : Colors.black87);
+
+    return _PillButton(
+      onTap: onTap,
+      active: active,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 태그 칩 그리드 위젯
 class TagChips extends StatelessWidget {
   const TagChips({
@@ -218,6 +259,9 @@ class SubjectPanel extends StatefulWidget {
     required this.onToggleFavorite,
     required this.onOpenLecture,
     this.onLectureUpdated,
+    this.showEdit = false,
+    this.onEditSubject,
+    this.onEditLecture,
   });
 
   final HiveSubject subject;
@@ -226,6 +270,9 @@ class SubjectPanel extends StatefulWidget {
   final VoidCallback onToggleFavorite;
   final ValueChanged<HiveLecture> onOpenLecture;
   final VoidCallback? onLectureUpdated;
+  final bool showEdit;
+  final VoidCallback? onEditSubject;
+  final VoidCallback? onEditLecture;
 
   @override
   State<SubjectPanel> createState() => _SubjectPanelState();
@@ -330,6 +377,8 @@ class _SubjectPanelState extends State<SubjectPanel>
                 ? null // 미분류는 즐겨찾기 토글 불가
                 : widget.onToggleFavorite,
             favoriteIconColor: h.important,
+            showEdit: widget.showEdit,
+            onEditSubject: widget.onEditSubject,
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
@@ -353,6 +402,8 @@ class _SubjectPanelState extends State<SubjectPanel>
                                 lec: lec,
                                 onTap: widget.onOpenLecture,
                                 onUpdated: widget.onLectureUpdated,
+                                showEdit: widget.showEdit,
+                                onEditLecture: () => widget.onEditLecture,
                               ),
                             ),
                           )
@@ -376,11 +427,15 @@ class LectureCard extends StatefulWidget {
     required this.lec,
     required this.onTap,
     this.onUpdated,
+    this.showEdit = false,
+    this.onEditLecture,
   });
 
   final HiveLecture lec;
   final ValueChanged<HiveLecture> onTap;
   final VoidCallback? onUpdated;
+  final bool showEdit;
+  final VoidCallback? onEditLecture;
 
   @override
   State<LectureCard> createState() => _LectureCardState();
@@ -526,15 +581,46 @@ class _LectureCardState extends State<LectureCard> {
                 child: _buildThumbnail(),
               ),
               const SizedBox(height: 10),
-              Text(
-                widget.lec.weekLabel,
-                style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
-              ),
-              Text(
-                widget.lec.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: textColor),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.lec.weekLabel,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          widget.lec.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: textColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 수정 버튼 (수정 모드일 때)
+                  widget.showEdit
+                      ? Visibility(
+                          visible: widget.showEdit,
+                          maintainState: true,
+                          maintainAnimation: true,
+                          maintainSize: true,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.edit,
+                              size: 20,
+                              color: isDark ? Colors.white : Color(0xFF2D2D2D),
+                            ),
+                            onPressed: () => widget.onEditLecture,
+                          ),
+                        )
+                      : SizedBox.shrink(),
+                ],
               ),
             ],
           ),

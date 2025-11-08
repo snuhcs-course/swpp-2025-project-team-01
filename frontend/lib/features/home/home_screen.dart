@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool favoritesOnly = false;
   bool showTagFilter = false;
+  bool editModeEnabled = false;
   final Set<String> selectedTagIds = {};
 
   late final HiveManager _manager = HiveManager.instance;
@@ -150,6 +151,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => setState(() => favoritesOnly = !favoritesOnly),
                     label: l10n.favorites,
                   ),
+                  const Spacer(),
+                  EditPill(
+                    active: editModeEnabled,
+                    icon: Icons.edit,
+                    label: l10n.editMode,
+                    onTap: () => setState(() {
+                      editModeEnabled = !editModeEnabled;
+                    }),
+                  ),
                 ],
               ),
             ),
@@ -230,6 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onLectureUpdated: () {
                       // Repository가 notifyListeners()를 호출하므로 setState 불필요
                     },
+                    showEdit: editModeEnabled,
                   );
                 },
               ),

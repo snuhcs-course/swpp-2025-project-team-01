@@ -837,6 +837,8 @@ class SubjectPanelHeader extends StatelessWidget {
     this.favoriteIconColor,
     this.onLongPress,
     this.titleEndPadding = 0,
+    this.showEdit = false,
+    this.onEditSubject,
   });
 
   final String title;
@@ -851,6 +853,8 @@ class SubjectPanelHeader extends StatelessWidget {
   final Color? favoriteIconColor;
   final VoidCallback? onLongPress;
   final double titleEndPadding;
+  final bool showEdit;
+  final VoidCallback? onEditSubject;
 
   @override
   Widget build(BuildContext context) {
@@ -913,6 +917,17 @@ class SubjectPanelHeader extends StatelessWidget {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                ),
+                // 수정 버튼 (수정 모드일 때)
+                Visibility(
+                  visible: showEdit,
+                  maintainState: true,
+                  maintainAnimation: true,
+                  maintainSize: true,
+                  child: IconButton(
+                    icon: const Icon(Icons.edit, size: 20, color: Colors.white),
+                    onPressed: () => onEditSubject,
                   ),
                 ),
                 // 펼침/접기 버튼
