@@ -184,32 +184,6 @@ class AudioSourceButton extends StatelessWidget {
   }
 }
 
-// 자막 버튼
-class CaptionButton extends StatelessWidget {
-  const CaptionButton({
-    super.key,
-    required this.isEnabled,
-    required this.onPressed,
-    this.isVertical = false,
-  });
-
-  final bool isEnabled;
-  final VoidCallback onPressed;
-  final bool isVertical;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(
-        isEnabled ? Icons.closed_caption : Icons.closed_caption_outlined,
-        color: Colors.white,
-        size: isVertical ? 20 : 28,
-      ),
-    );
-  }
-}
-
 // 재생/정지 버튼
 class PlayPauseButton extends StatelessWidget {
   const PlayPauseButton({
@@ -391,48 +365,116 @@ class BottomControlBar extends StatelessWidget {
           totalTime: totalTime,
           onChanged: onTimeChanged,
         ),
-        const SizedBox(height: 4),
         // 버튼들
         SizedBox(
           height: isVertical ? 36 : 48,
-          child: Row(
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              const Spacer(),
               // 중앙: 자막/대본 버튼 (가로모드만)
-              if (!isVertical) ...[
-                _IconTextButton(
-                  icon: isCaptionEnabled
-                      ? Icons.closed_caption
-                      : Icons.closed_caption_outlined,
-                  label: '자막',
-                  onPressed: onCaptionToggle,
+              if (!isVertical)
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CaptionButton(
+                        isEnabled: isCaptionEnabled,
+                        onPressed: onCaptionToggle,
+                      ),
+                      const SizedBox(width: 24),
+                      TranscriptButton(
+                        onPressed: onTranscriptToggle,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 24),
-                _IconTextButton(
-                  icon: Icons.subject,
-                  label: '대본',
-                  onPressed: onTranscriptToggle,
-                ),
-              ],
-              const Spacer(),
               // 우측: 전체화면 버튼
-              IconButton(
-                padding: isVertical
-                    ? const EdgeInsets.all(4)
-                    : const EdgeInsets.all(8),
-                constraints: const BoxConstraints(),
-                onPressed: onFullscreenToggle,
-                icon: Icon(
-                  isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                  color: Colors.white,
-                  size: isVertical ? 20 : 28,
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: FullscreenButton(
+                  isEnabled: isFullscreen,
+                  onPressed: onFullscreenToggle,
+                  isVertical: isVertical,
                 ),
               ),
-              SizedBox(width: isVertical ? 8 : 16),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+// 자막 버튼
+class CaptionButton extends StatelessWidget {
+  const CaptionButton({
+    super.key,
+    required this.isEnabled,
+    required this.onPressed,
+  });
+
+  final bool isEnabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _IconTextButton(
+      icon: isEnabled
+          ? Icons.closed_caption
+          : Icons.closed_caption_outlined,
+      label: '자막',
+      onPressed: onPressed,
+    );
+  }
+}
+
+// 대본 버튼
+class TranscriptButton extends StatelessWidget {
+  const TranscriptButton({
+    super.key,
+    required this.onPressed,
+  });
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _IconTextButton(
+      icon: Icons.subject,
+      label: '대본',
+      onPressed: onPressed,
+    );
+  }
+}
+
+// 전체화면 버튼
+class FullscreenButton extends StatelessWidget {
+  const FullscreenButton({
+    super.key,
+    required this.isEnabled,
+    required this.onPressed,
+    required this.isVertical,
+  });
+
+  final bool isEnabled;
+  final VoidCallback onPressed;
+  final bool isVertical;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      padding: isVertical
+          ? const EdgeInsets.all(4)
+          : const EdgeInsets.all(8),
+      constraints: const BoxConstraints(),
+      onPressed: onPressed,
+      icon: Icon(
+        isEnabled ? Icons.fullscreen_exit : Icons.fullscreen,
+        color: Colors.white,
+        size: isVertical ? 20 : 28,
+      ),
     );
   }
 }
