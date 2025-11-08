@@ -39,6 +39,7 @@ class VerticalPlayerLayout extends StatelessWidget {
               child: TranscriptArea(
                 key: controller.transcriptAreaKey,
                 controller: controller,
+                isVertical: true,
               ),
             ),
           ],
@@ -130,6 +131,7 @@ class HorizontalPlayerLayout extends StatelessWidget {
                     child: TranscriptArea(
                       key: controller.transcriptAreaKey,
                       controller: controller,
+                      isVertical: false,
                     ),
                   ),
               ],
@@ -527,7 +529,7 @@ class TranslationButton extends StatelessWidget {
                   ? (isDark ? colorScheme.onPrimary : Colors.white)
                   : (isDark ? colorScheme.onSecondaryContainer : Colors.white));
 
-        return GestureDetector(
+        return InkWell(
           onTap: hasKorean ? controller.toggleTranscriptLanguage : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -561,9 +563,14 @@ class TranslationButton extends StatelessWidget {
 // ========== Transcript Area ==========
 
 class TranscriptArea extends StatelessWidget {
-  const TranscriptArea({super.key, required this.controller});
+  const TranscriptArea({
+    super.key,
+    required this.controller,
+    required this.isVertical,
+  });
 
   final PlayerController controller;
+  final bool isVertical;
 
   @override
   Widget build(BuildContext context) {
@@ -605,18 +612,20 @@ class TranscriptArea extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               TranslationButton(controller: controller),
-              const Spacer(),
-              IconButton(
-                onPressed: controller.toggleTranscriptPanel,
-                icon: Icon(
-                  Icons.close,
-                  color: isDark ? colorScheme.onSurface : Colors.grey[700],
-                  size: 24,
+              if (!isVertical) ...[
+                const Spacer(),
+                IconButton(
+                  onPressed: controller.toggleTranscriptPanel,
+                  icon: Icon(
+                    Icons.close,
+                    color: isDark ? colorScheme.onSurface : Colors.grey[700],
+                    size: 24,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 20,
                 ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                splashRadius: 20,
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 12),
