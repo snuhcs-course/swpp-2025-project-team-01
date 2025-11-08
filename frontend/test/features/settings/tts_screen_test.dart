@@ -171,9 +171,13 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
   List<HiveLecture> getAllLectures({bool newestFirst = true}) => [];
   @override
   Future<void> close() async {}
-  
+
   @override
-  Future<void> reorderLecture(String subjectId, int oldIndex, int newIndex) async {}
+  Future<void> reorderLecture(
+    String subjectId,
+    int oldIndex,
+    int newIndex,
+  ) async {}
 }
 
 class FakeNavigatorObserver extends NavigatorObserver {

@@ -408,7 +408,7 @@ class _SubjectPanelState extends State<SubjectPanel>
                 ? null // 미분류는 즐겨찾기 토글 불가
                 : widget.onToggleFavorite,
             favoriteIconColor: h.important,
-            showEdit: widget.showEdit,
+            showEdit: !widget.subject.isUncategorized && widget.showEdit,
             onEditSubject: widget.onEditSubject,
             reorderIndex: widget.reorderIndex,
           ),

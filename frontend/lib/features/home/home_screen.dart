@@ -55,6 +55,14 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _onReorderSubject(int oldIndex, int newIndex) async {
+    // no reordring for uncategorized
+    if (_editingSubjects[oldIndex].isUncategorized) {
+      return;
+    }
+    if (newIndex < _editingSubjects.length &&
+        _editingSubjects[newIndex].isUncategorized) {
+      return;
+    }
     setState(() {
       final item = _editingSubjects.removeAt(oldIndex);
       if (newIndex < 0) {
@@ -300,7 +308,10 @@ class _HomeScreenState extends State<HomeScreen>
                                     onLectureUpdated: () {},
                                     showEdit: true,
                                     // onEditSubject: Subject Edit Dialog 표시
-                                    reorderIndex: i, // drag handle index
+                                    reorderIndex:
+                                        _editingSubjects[i].isUncategorized
+                                        ? null
+                                        : i, // drag handle index
                                   ),
                                 ),
                             ],

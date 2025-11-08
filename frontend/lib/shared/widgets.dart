@@ -897,16 +897,16 @@ class SubjectPanelHeader extends StatelessWidget {
                 // 즐겨찾기 또는 드래그 아이콘
                 if (favoriteOrDrag != null)
                   favoriteOrDrag == Icons.drag_indicator
-                      ? ReorderableDelayedDragStartListener(
-                          index:
-                              reorderIndex ??
-                              0, // MUST be non-null in edit mode
-                          child: Icon(
-                            favoriteOrDrag,
-                            color: iconColor.withValues(alpha: 0.7),
-                            size: 22,
-                          ),
-                        )
+                      ? (reorderIndex != null
+                            ? ReorderableDelayedDragStartListener(
+                                index: reorderIndex!, // ← required
+                                child: Icon(
+                                  Icons.drag_indicator,
+                                  size: 22,
+                                  color: iconColor.withValues(alpha: 0.7),
+                                ),
+                              )
+                            : const SizedBox.shrink())
                       : IconButton(
                           icon: Icon(
                             favoriteOrDrag,
