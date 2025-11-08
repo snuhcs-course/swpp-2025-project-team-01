@@ -359,40 +359,18 @@ class BottomControlBar extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 슬라이더
-        VideoTimelineSlider(
-          currentTime: currentTime,
-          totalTime: totalTime,
-          onChanged: onTimeChanged,
-        ),
-        // 버튼들
-        SizedBox(
-          height: isVertical ? 36 : 48,
-          child: Stack(
-            alignment: Alignment.center,
+        // 슬라이더 (세로 모드일 때는 전체화면 버튼과 함께 Stack으로)
+        if (isVertical)
+          Stack(
             children: [
-              // 중앙: 자막/대본 버튼 (가로모드만)
-              if (!isVertical)
-                Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CaptionButton(
-                        isEnabled: isCaptionEnabled,
-                        onPressed: onCaptionToggle,
-                      ),
-                      const SizedBox(width: 24),
-                      TranscriptButton(
-                        onPressed: onTranscriptToggle,
-                      ),
-                    ],
-                  ),
-                ),
-              // 우측: 전체화면 버튼
+              VideoTimelineSlider(
+                currentTime: currentTime,
+                totalTime: totalTime,
+                onChanged: onTimeChanged,
+              ),
               Positioned(
-                right: 16,
-                top: 0,
-                bottom: 0,
+                bottom: 4,
+                right: 4,
                 child: FullscreenButton(
                   isEnabled: isFullscreen,
                   onPressed: onFullscreenToggle,
@@ -401,7 +379,49 @@ class BottomControlBar extends StatelessWidget {
               ),
             ],
           ),
-        ),
+        // 버튼들
+        if (!isVertical) ...[
+          VideoTimelineSlider(
+            currentTime: currentTime,
+            totalTime: totalTime,
+            onChanged: onTimeChanged,
+          ),
+          SizedBox(
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 중앙
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CaptionButton(
+                          isEnabled: isCaptionEnabled,
+                          onPressed: onCaptionToggle,
+                        ),
+                        const SizedBox(width: 24),
+                        TranscriptButton(
+                          onPressed: onTranscriptToggle,
+                        ),
+                      ],
+                    ),
+                  ),
+                // 우측: 전체화면 버튼
+                Positioned(
+                  right: 16,
+                  top: 0,
+                  bottom: 0,
+                  child: FullscreenButton(
+                    isEnabled: isFullscreen,
+                    onPressed: onFullscreenToggle,
+                    isVertical: isVertical,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
