@@ -940,7 +940,7 @@ class SubjectPanelHeader extends StatelessWidget {
                   maintainSize: true,
                   child: IconButton(
                     icon: const Icon(Icons.edit, size: 20, color: Colors.white),
-                    onPressed: () => onEditSubject,
+                    onPressed: () async => onEditSubject?.call(),
                   ),
                 ),
                 // 펼침/접기 버튼

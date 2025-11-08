@@ -8,6 +8,7 @@ import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/add_pill.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/features/home/custom_drawer.dart';
+import 'package:re_view/features/home/home_subject_widgets.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 /// 메인 홈 화면
@@ -78,6 +79,23 @@ class _HomeScreenState extends State<HomeScreen>
     await _manager.updateSubjectOrder(
       _editingSubjects.map((s) => s.id).toList(),
     );
+  }
+
+  Future<void> _showSubjectEditDialog(HiveSubject subject) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => SubjectEditDialog(
+        subject: subject,
+        initialTagIds: [],
+        allTags: _manager.getTags(),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      _refreshSubjects(_manager.getSubjects());
+      return;
+    }
   }
 
   /// 태그 이름의 타입을 반환 (정렬 우선순위: 숫자 > 한글 > 영어)
@@ -307,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     onOpenLecture: (_) {},
                                     onLectureUpdated: () {},
                                     showEdit: true,
-                                    // onEditSubject: Subject Edit Dialog 표시
+                                    onEditSubject: () async => _showSubjectEditDialog(_editingSubjects[i]),
                                     reorderIndex:
                                         _editingSubjects[i].isUncategorized
                                         ? null
