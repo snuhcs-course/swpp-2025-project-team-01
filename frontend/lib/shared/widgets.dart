@@ -832,13 +832,14 @@ class SubjectPanelHeader extends StatelessWidget {
     this.panelRadius = 22.0,
     this.collapsedRadius,
     this.expandedRadius,
-    this.favoriteIcon,
+    this.favoriteOrDrag,
     this.onToggleFavorite,
     this.favoriteIconColor,
     this.onLongPress,
     this.titleEndPadding = 0,
     this.showEdit = false,
     this.onEditSubject,
+    this.reorderIndex,
   });
 
   final String title;
@@ -848,13 +849,14 @@ class SubjectPanelHeader extends StatelessWidget {
   final double panelRadius;
   final BorderRadius? collapsedRadius;
   final BorderRadius? expandedRadius;
-  final IconData? favoriteIcon;
+  final IconData? favoriteOrDrag;
   final VoidCallback? onToggleFavorite;
   final Color? favoriteIconColor;
   final VoidCallback? onLongPress;
   final double titleEndPadding;
   final bool showEdit;
   final VoidCallback? onEditSubject;
+  final int? reorderIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -892,18 +894,29 @@ class SubjectPanelHeader extends StatelessWidget {
             // 제목 라인
             Row(
               children: [
-                // 즐겨찾기 아이콘 (선택사항)
-                if (favoriteIcon != null)
-                  IconButton(
-                    icon: Icon(
-                      favoriteIcon,
-                      color: favoriteIconColor ?? iconColor,
-                      size: 22,
-                    ),
-                    onPressed: onToggleFavorite,
-                    tooltip: '즐겨찾기',
-                  ),
-                if (favoriteIcon != null) const SizedBox(width: 2),
+                // 즐겨찾기 또는 드래그 아이콘
+                if (favoriteOrDrag != null)
+                  favoriteOrDrag == Icons.drag_indicator
+                      ? ReorderableDelayedDragStartListener(
+                          index:
+                              reorderIndex ??
+                              0, // MUST be non-null in edit mode
+                          child: Icon(
+                            favoriteOrDrag,
+                            color: iconColor.withValues(alpha: 0.7),
+                            size: 22,
+                          ),
+                        )
+                      : IconButton(
+                          icon: Icon(
+                            favoriteOrDrag,
+                            color: favoriteIconColor ?? iconColor,
+                            size: 22,
+                          ),
+                          onPressed: onToggleFavorite,
+                          tooltip: '즐겨찾기',
+                        ),
+                if (favoriteOrDrag != null) const SizedBox(width: 2),
                 // 제목
                 Expanded(
                   child: Padding(
@@ -947,7 +960,7 @@ class SubjectPanelHeader extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.only(
                   top: 4,
-                  left: favoriteIcon != null ? 40 : 0,
+                  left: favoriteOrDrag != null ? 40 : 0,
                 ),
                 child: Wrap(
                   spacing: 8,

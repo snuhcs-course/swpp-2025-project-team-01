@@ -288,6 +288,7 @@ class SubjectPanel extends StatefulWidget {
     this.showEdit = false,
     this.onEditSubject,
     this.onEditLecture,
+    this.reorderIndex,
   });
 
   final HiveSubject subject;
@@ -299,6 +300,7 @@ class SubjectPanel extends StatefulWidget {
   final bool showEdit;
   final VoidCallback? onEditSubject;
   final VoidCallback? onEditLecture;
+  final int? reorderIndex;
 
   @override
   State<SubjectPanel> createState() => _SubjectPanelState();
@@ -421,8 +423,10 @@ class _SubjectPanelState extends State<SubjectPanel>
                 : widget.tags, // 미분류는 태그 숨김
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
-            favoriteIcon: widget.subject.isUncategorized
+            favoriteOrDrag: widget.subject.isUncategorized
                 ? null // 미분류는 즐겨찾기 아이콘 숨김
+                : widget.showEdit
+                ? Icons.drag_indicator
                 : (widget.subject.favorite ? Icons.star : Icons.star_border),
             onToggleFavorite: widget.subject.isUncategorized
                 ? null // 미분류는 즐겨찾기 토글 불가
@@ -430,6 +434,7 @@ class _SubjectPanelState extends State<SubjectPanel>
             favoriteIconColor: h.important,
             showEdit: widget.showEdit,
             onEditSubject: widget.onEditSubject,
+            reorderIndex: widget.reorderIndex,
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
