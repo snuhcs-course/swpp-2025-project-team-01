@@ -255,17 +255,25 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> toggleFullscreen() async {
-    isFullscreen.value = !isFullscreen.value;
-    if (isFullscreen.value) {
+    final willBeFullscreen = !isFullscreen.value;
+
+    // 방향을 먼저 설정한 후 상태 변경
+    if (willBeFullscreen) {
       // 가로모드 강제
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
     } else {
-      // 모든 방향 허용
-      await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+      // 세로모드 강제
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
     }
+
+    // 방향 설정이 완료된 후 상태 변경
+    isFullscreen.value = willBeFullscreen;
   }
 
   /// 오디오 소스 전환 (Original ↔ TTS)

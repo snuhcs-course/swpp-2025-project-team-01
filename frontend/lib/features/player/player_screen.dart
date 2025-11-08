@@ -44,6 +44,12 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 앱 라이프사이클 옵저버 등록
     WidgetsBinding.instance.addObserver(this);
 
+    // 세로 방향으로 고정
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
     // 의존성 주입
     final audioService = widget._audioService ?? AudioService();
     final pdfCacheService = widget._pdfCacheService ?? PdfCacheService();
@@ -66,6 +72,10 @@ class _PlayerScreenState extends State<PlayerScreen>
   void dispose() {
     // 앱 라이프사이클 옵저버 제거
     WidgetsBinding.instance.removeObserver(this);
+
+    // 방향 제한 해제
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+
     _controller.dispose();
     super.dispose();
   }
@@ -249,16 +259,16 @@ class _PlayerScreenState extends State<PlayerScreen>
     final playerContent = Container(
       color: Colors.black,
       child: SafeArea(
-        child: OrientationBuilder(
-          builder: (_, orientation) {
-            final isVertical = orientation == Orientation.portrait;
-            if (isVertical) {
-              return VerticalPlayerLayout(
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _controller.isFullscreen,
+          builder: (_, isFullscreen, __) {
+            if (isFullscreen) {
+              return HorizontalPlayerLayout(
                 controller: _controller,
                 onBack: () => Navigator.pop(context),
               );
             } else {
-              return HorizontalPlayerLayout(
+              return VerticalPlayerLayout(
                 controller: _controller,
                 onBack: () => Navigator.pop(context),
               );
