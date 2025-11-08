@@ -18,8 +18,6 @@ class FakeAppSettings implements AppSettings {
     this.accessibilityEmphasizeCaptions = true,
     this.ttsGender = '남성',
     this.tagColorTheme = '파스텔',
-    this.hasCompletedTutorial = true,
-    this.hasCompletedPlayerTutorial = true,
   });
 
   @override
@@ -42,12 +40,6 @@ class FakeAppSettings implements AppSettings {
 
   @override
   String tagColorTheme;
-
-  @override
-  bool hasCompletedTutorial;
-
-  @override
-  bool hasCompletedPlayerTutorial;
 }
 
 /// HiveManager 인터페이스를 구현하는 Fake 클래스
@@ -70,26 +62,6 @@ class FakeHiveManager with ChangeNotifier implements HiveManager {
     _fakeSettings.language = language;
     notifyListeners();
   }
-
-  // Tutorial methods (not used in this test)
-  @override
-  bool get hasTutorialCompleted => _fakeSettings.hasCompletedTutorial;
-
-  @override
-  bool get hasPlayerTutorialCompleted =>
-      _fakeSettings.hasCompletedPlayerTutorial;
-
-  @override
-  Future<void> completeTutorial() async {}
-
-  @override
-  Future<void> resetTutorial() async {}
-
-  @override
-  Future<void> completePlayerTutorial() async {}
-
-  @override
-  Future<void> resetPlayerTutorial() async {}
 
   // --- 2. HiveManager의 나머지 모든 멤버 (빈 구현) ---
 

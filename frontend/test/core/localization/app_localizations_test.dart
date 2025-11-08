@@ -240,7 +240,7 @@ void main() {
 
       test('editingSubjects returns correct translation', () {
         expect(koreanLocalizations.editingSubjects, '과목 수정');
-        expect(englishLocalizations.editingSubjects, 'Editing Subjects');
+        expect(englishLocalizations.editingSubjects, 'Edit Subjects');
       });
 
       test('deleteSubject returns correct translation', () {
@@ -312,7 +312,7 @@ void main() {
 
       test('editingTags returns correct translation', () {
         expect(koreanLocalizations.editingTags, '태그 수정');
-        expect(englishLocalizations.editingTags, 'Editing Tags');
+        expect(englishLocalizations.editingTags, 'Edit Tags');
       });
 
       test('colorTheme returns correct translation', () {
@@ -371,11 +371,11 @@ void main() {
         final subjects = ['과목1', '과목2'];
         expect(
           koreanLocalizations.tagDeleteWarning('테스트', subjects),
-          '태그 "#테스트"는\n다음 과목에서 사용 중입니다:\n\n과목1\n과목2\n\n삭제하시겠습니까?',
+          '태그 "테스트"는\n다음 과목에서 사용 중입니다:\n\n과목1\n과목2\n\n삭제하시겠습니까?',
         );
         expect(
           englishLocalizations.tagDeleteWarning('test', subjects),
-          'Tag "#test" is used by:\n\n과목1\n과목2\n\nDo you want to delete?',
+          'Tag "test" is used by:\n\n과목1\n과목2\n\nDo you want to delete it?',
         );
       });
     });

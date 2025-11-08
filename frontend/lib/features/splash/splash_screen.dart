@@ -2,10 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
-import 'package:re_view/data/hive_manager.dart';
-
-// 디버깅 시 튜토리얼을 계속 보기 위해 true로 전환.
-const bool kForceInitialTutorial = false;
 
 /// 앱 첫 진입 시 노출되는 스플래시 화면.
 class SplashScreen extends StatefulWidget {
@@ -46,14 +42,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateNext() async {
-    final manager = HiveManager.instance;
-    final shouldShowTutorial =
-        kForceInitialTutorial || !manager.hasTutorialCompleted;
-    final nextRoute = shouldShowTutorial ? Routes.tutorial : Routes.home;
     if (!mounted) {
       return;
     }
-    Navigator.of(context).pushReplacementNamed(nextRoute);
+    Navigator.of(context).pushReplacementNamed(Routes.home);
   }
 
   @override

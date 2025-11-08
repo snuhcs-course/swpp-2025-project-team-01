@@ -9,10 +9,6 @@ import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
-import 'package:re_view/features/tutorial/tutorial_screen.dart';
-
-// 디버깅 시 플레이어 튜토리얼을 강제로 띄우고 싶으면 true로 설정.
-const bool kForcePlayerTutorial = false;
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
@@ -60,40 +56,10 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     // 프레임이 빌드된 이후에 실행
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndShowPlayerTutorial();
-    });
-  }
-
-  /// 플레이어 튜토리얼 체크 및 표시
-  Future<void> _checkAndShowPlayerTutorial() async {
-    final shouldShowTutorial =
-        kForcePlayerTutorial || !_hiveManager.hasPlayerTutorialCompleted;
-    if (shouldShowTutorial) {
-      // 시스템 UI를 다시 보이도록 설정 (튜토리얼에서는 UI가 필요)
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-      if (!mounted) {
-        return;
+      if (mounted) {
+        _loadLectureData();
       }
-
-      // 튜토리얼 화면으로 이동
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) {
-            final orientation = MediaQuery.of(context).orientation;
-            return TutorialScreen.player(initialOrientation: orientation);
-          },
-        ),
-      );
-
-      // 튜토리얼 완료 후 다시 시스템 UI 숨기기
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-    }
-
-    // 튜토리얼 완료 여부와 관계없이 강의 데이터 로드
-    if (mounted) {
-      _loadLectureData();
-    }
+    });
   }
 
   @override
