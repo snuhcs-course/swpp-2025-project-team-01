@@ -31,10 +31,7 @@ void main() {
   // 1개일 경우를 대비해 안전장치 추가
   final thirdTheme = tagColorThemes.length > 2 ? tagColorThemes[2] : firstTheme;
 
-  // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 7: Static Class
-  // (위젯과 관련 없는 순수 유닛 테스트)
-  // ------------------------------------------------------------------
+  // 위젯과 관련 없는 순수 유닛 테스트
   group('7. Static Class (TagColorTheme)', () {
     test('getTagColorTheme works correctly', () {
       // [Given]
@@ -116,9 +113,6 @@ void main() {
     return pills.firstWhere((pill) => pill.tag.name == name);
   }
 
-  // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 1: UI Initial State Verification
-  // ------------------------------------------------------------------
   group('1. UI Initial State Verification', () {
     testWidgets('Verify initial UI elements are rendered correctly', (
       WidgetTester tester,
@@ -158,9 +152,6 @@ void main() {
     });
   });
 
-  // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 2: User Interaction - Theme Selection
-  // ------------------------------------------------------------------
   group('2. User Interaction - Theme Selection', () {
     testWidgets('Tapping theme chip updates theme and tag colors', (
       WidgetTester tester,
@@ -342,9 +333,6 @@ void main() {
     });
   });
 
-  // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 3: User Interaction - Tag Selection & Editing
-  // ------------------------------------------------------------------
   group('3. User Interaction - Tag Selection & Editing', () {
     testWidgets('Tapping tag chip updates form', (tester) async {
       await pumpScreen(tester);
@@ -421,9 +409,6 @@ void main() {
     });
   });
 
-  // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 4: User Interaction - Tag Creation
-  // ------------------------------------------------------------------
   group('4. User Interaction - Tag Creation', () {
     testWidgets('Add tag button creates new tag', (tester) async {
       await pumpScreen(tester);
@@ -552,9 +537,6 @@ void main() {
     });
   });
 
-  // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 5: User Interaction - Tag Deletion
-  // ------------------------------------------------------------------
   group('5. User Interaction - Tag Deletion', () {
     testWidgets('Delete tag (no warning) works', (tester) async {
       // [Given]
@@ -676,9 +658,6 @@ void main() {
     });
   });
 
-  // ------------------------------------------------------------------
-  // 테스트 케이스 그룹 6: Data Persistence & Navigation
-  // ------------------------------------------------------------------
   group('6. Data Persistence & Navigation', () {
     testWidgets('Popping screen saves data via _onWillPop (PopScope)', (
       WidgetTester tester,
