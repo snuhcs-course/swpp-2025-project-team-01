@@ -282,12 +282,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               value: _selectedLanguage,
               isExpanded: true,
               icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
-              hint: Text(
-                l10n.isKorean
-                    ? '강의자의 언어를 선택해주세요.'
-                    : 'Select the spoken language.',
-                style: TextStyle(fontSize: 16, color: textColor),
-              ),
               dropdownColor: cardColor,
               items: (l10n.isKorean ? ['ko', 'en'] : ['en', 'ko'])
                   .map(
