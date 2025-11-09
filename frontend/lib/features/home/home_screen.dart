@@ -56,23 +56,27 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _onReorderSubject(int oldIndex, int newIndex) async {
-    // no reordring for uncategorized
-    if (_editingSubjects[oldIndex].isUncategorized) {
-      return;
-    }
-    if (newIndex < _editingSubjects.length &&
-        _editingSubjects[newIndex].isUncategorized) {
-      return;
-    }
     setState(() {
-      final item = _editingSubjects.removeAt(oldIndex);
+      // 미분류가 아닌 과목들만 재정렬
+      final categorizedSubjects = _editingSubjects
+          .where((s) => !s.isUncategorized)
+          .toList();
+      final uncategorizedSubjects = _editingSubjects
+          .where((s) => s.isUncategorized)
+          .toList();
+
+      // categorizedSubjects 내에서 재정렬
+      final item = categorizedSubjects.removeAt(oldIndex);
       if (newIndex < 0) {
         newIndex = 0;
       }
-      if (newIndex > _editingSubjects.length) {
-        newIndex = _editingSubjects.length;
+      if (newIndex > categorizedSubjects.length) {
+        newIndex = categorizedSubjects.length;
       }
-      _editingSubjects.insert(newIndex, item);
+      categorizedSubjects.insert(newIndex, item);
+
+      // _editingSubjects 재구성 (일반 과목 + 미분류)
+      _editingSubjects = [...categorizedSubjects, ...uncategorizedSubjects];
     });
 
     // persist the new subject order in Hive
@@ -285,54 +289,108 @@ class _HomeScreenState extends State<HomeScreen>
                           final tileWidth =
                               (totalWidth - (cols - 1) * spacing) / cols;
 
-                          return ReorderableWrap(
-                            spacing: spacing,
-                            runSpacing: spacing,
-                            needsLongPressDraggable: false,
-                            onReorder: _onReorderSubject,
-                            buildDraggableFeedback:
-                                (context, constraints, child) => Material(
-                                  elevation: 6,
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: child,
-                                ),
+                          // 미분류와 일반 과목 분리
+                          final categorizedSubjects = _editingSubjects
+                              .where((s) => !s.isUncategorized)
+                              .toList();
+                          final uncategorizedSubjects = _editingSubjects
+                              .where((s) => s.isUncategorized)
+                              .toList();
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              for (int i = 0; i < _editingSubjects.length; i++)
-                                SizedBox(
-                                  key: ValueKey(_editingSubjects[i].id),
-                                  width: tileWidth,
-                                  child: SubjectPanel(
-                                    subject: _editingSubjects[i],
-                                    tags: _editingSubjects[i].tagIds
-                                        .map((tid) {
-                                          try {
-                                            return tags.firstWhere(
-                                              (t) => t.id == tid,
-                                            );
-                                          } catch (_) {
-                                            return null;
-                                          }
-                                        })
-                                        .whereType<HiveTag>()
-                                        .toList(),
-                                    lectures: _manager.getLecturesBySubject(
-                                      _editingSubjects[i].id,
-                                    ),
-                                    onToggleFavorite: () async =>
-                                        _manager.toggleSubjectFavorite(
-                                          _editingSubjects[i].id,
+                              // 일반 과목들 (드래그 가능)
+                              if (categorizedSubjects.isNotEmpty)
+                                ReorderableWrap(
+                                  spacing: spacing,
+                                  runSpacing: spacing,
+                                  needsLongPressDraggable: false,
+                                  onReorder: _onReorderSubject,
+                                  buildDraggableFeedback:
+                                      (context, constraints, child) => Material(
+                                        elevation: 6,
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: child,
+                                      ),
+                                  children: [
+                                    for (
+                                      int i = 0;
+                                      i < categorizedSubjects.length;
+                                      i++
+                                    )
+                                      SizedBox(
+                                        key: ValueKey(
+                                          categorizedSubjects[i].id,
                                         ),
-                                    onOpenLecture: (_) {},
-                                    onLectureUpdated: () {},
-                                    showEdit: true,
-                                    onEditSubject: () async =>
-                                        _showSubjectEditDialog(
-                                          _editingSubjects[i],
+                                        width: tileWidth,
+                                        child: SubjectPanel(
+                                          subject: categorizedSubjects[i],
+                                          tags: categorizedSubjects[i].tagIds
+                                              .map((tid) {
+                                                try {
+                                                  return tags.firstWhere(
+                                                    (t) => t.id == tid,
+                                                  );
+                                                } catch (_) {
+                                                  return null;
+                                                }
+                                              })
+                                              .whereType<HiveTag>()
+                                              .toList(),
+                                          lectures: _manager
+                                              .getLecturesBySubject(
+                                                categorizedSubjects[i].id,
+                                              ),
+                                          onToggleFavorite: () async =>
+                                              _manager.toggleSubjectFavorite(
+                                                categorizedSubjects[i].id,
+                                              ),
+                                          onOpenLecture: (_) {},
+                                          onLectureUpdated: () {},
+                                          showEdit: true,
+                                          onEditSubject: () async =>
+                                              _showSubjectEditDialog(
+                                                categorizedSubjects[i],
+                                              ),
+                                          reorderIndex: i,
                                         ),
-                                    reorderIndex:
-                                        _editingSubjects[i].isUncategorized
-                                        ? null
-                                        : i, // drag handle index
+                                      ),
+                                  ],
+                                ),
+                              // 미분류 과목들 (드래그 불가능)
+                              if (uncategorizedSubjects.isNotEmpty)
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    top: categorizedSubjects.isNotEmpty
+                                        ? spacing
+                                        : 0,
+                                  ),
+                                  child: Wrap(
+                                    spacing: spacing,
+                                    runSpacing: spacing,
+                                    children: [
+                                      for (final subject
+                                          in uncategorizedSubjects)
+                                        SizedBox(
+                                          key: ValueKey(subject.id),
+                                          width: tileWidth,
+                                          child: SubjectPanel(
+                                            subject: subject,
+                                            tags: const [], // 미분류는 태그 없음
+                                            lectures: _manager
+                                                .getLecturesBySubject(
+                                                  subject.id,
+                                                ),
+                                            onToggleFavorite: () async {},
+                                            onOpenLecture: (_) {},
+                                            onLectureUpdated: () {},
+                                            showEdit: true,
+                                            onEditSubject: null, // 미분류는 편집 불가
+                                            reorderIndex: null, // 드래그 핸들 없음
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                             ],
