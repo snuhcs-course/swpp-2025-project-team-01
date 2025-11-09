@@ -113,6 +113,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
+        'ko',
         false,
         fakeClient: fakeClient,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
@@ -168,6 +169,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
+        'ko',
         true,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
@@ -184,6 +186,7 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
+        'ko',
         true,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
