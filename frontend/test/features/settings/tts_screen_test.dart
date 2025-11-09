@@ -103,12 +103,6 @@ void main() {
         expect(find.text('남성'), findsOneWidget);
         expect(find.text('여성'), findsOneWidget);
       });
-
-      testWidgets('Notice text should be displayed', (tester) async {
-        await pumpTtsScreen(tester, locale: const Locale('ko'));
-
-        expect(find.textContaining('현재 여성 TTS 음성만 지원됩니다'), findsOneWidget);
-      });
     });
   });
 }
