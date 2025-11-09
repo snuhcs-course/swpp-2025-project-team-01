@@ -1,6 +1,7 @@
 // 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:reorderables/reorderables.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/core/thumbnail_cache_manager.dart';
@@ -47,16 +48,19 @@ class EmptyStateMessage extends StatelessWidget {
 }
 
 /// 공통 Pill 버튼 위젯 (FilterPill, FavoritePill의 베이스)
-class _PillButton extends StatelessWidget {
-  const _PillButton({
+class PillButton extends StatelessWidget {
+  const PillButton({
+    super.key,
     required this.onTap,
     required this.active,
     required this.child,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   });
 
   final VoidCallback onTap;
   final bool active;
   final Widget child;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +84,7 @@ class _PillButton extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: child,
-          ),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
@@ -112,7 +113,7 @@ class FilterPill extends StatelessWidget {
         ? (isDark ? Colors.black : Colors.white)
         : (isDark ? Colors.white : Colors.black87);
 
-    return _PillButton(
+    return PillButton(
       onTap: onTap,
       active: active,
       child: Row(
@@ -157,7 +158,7 @@ class FavoritePill extends StatelessWidget {
         : (isDark ? Colors.white : Colors.black87);
     final IconData starIcon = active ? Icons.star : Icons.star_border;
 
-    return _PillButton(
+    return PillButton(
       onTap: onTap,
       active: active,
       child: Row(
@@ -166,6 +167,48 @@ class FavoritePill extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(starIcon, size: 18, color: starColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 수정 모드 pill 버튼 위젯
+class EditPill extends StatelessWidget {
+  const EditPill({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color fg = active
+        ? (isDark ? Colors.black : Colors.white)
+        : (isDark ? Colors.white : Colors.black87);
+
+    return PillButton(
+      onTap: onTap,
+      active: active,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: fg),
           const SizedBox(width: 6),
           Text(
             label,
@@ -218,6 +261,10 @@ class SubjectPanel extends StatefulWidget {
     required this.onToggleFavorite,
     required this.onOpenLecture,
     this.onLectureUpdated,
+    this.showEdit = false,
+    this.onEditSubject,
+    this.onEditLecture,
+    this.reorderIndex,
   });
 
   final HiveSubject subject;
@@ -226,6 +273,10 @@ class SubjectPanel extends StatefulWidget {
   final VoidCallback onToggleFavorite;
   final ValueChanged<HiveLecture> onOpenLecture;
   final VoidCallback? onLectureUpdated;
+  final bool showEdit;
+  final VoidCallback? onEditSubject;
+  final VoidCallback? onEditLecture;
+  final int? reorderIndex;
 
   @override
   State<SubjectPanel> createState() => _SubjectPanelState();
@@ -233,6 +284,7 @@ class SubjectPanel extends StatefulWidget {
 
 class _SubjectPanelState extends State<SubjectPanel>
     with SingleTickerProviderStateMixin {
+  late List<HiveLecture> _lectures; // local mutable order
   late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
@@ -240,8 +292,9 @@ class _SubjectPanelState extends State<SubjectPanel>
   @override
   void initState() {
     super.initState();
-    // Repository에서 저장된 상태 로드
+    // 저장된 상태 로드
     expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
+    _lectures = List.of(widget.lectures);
 
     final reduceMotion =
         HiveManager.instance.settings.accessibilityReduceMotion;
@@ -261,6 +314,29 @@ class _SubjectPanelState extends State<SubjectPanel>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant SubjectPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If parent data changed (e.g., new lectures loaded), refresh local copy
+    if (oldWidget.lectures != widget.lectures) {
+      _lectures = List.of(widget.lectures);
+    }
+  }
+
+  void _onReorder(int oldIndex, int newIndex) async {
+    setState(() {
+      final item = _lectures.removeAt(oldIndex);
+      _lectures.insert(newIndex, item);
+    });
+    // persist the new order
+    await HiveManager.instance.reorderLecture(
+      widget.subject.id,
+      oldIndex,
+      newIndex,
+    );
+    widget.onLectureUpdated?.call();
   }
 
   void _toggleExpanded() {
@@ -323,13 +399,18 @@ class _SubjectPanelState extends State<SubjectPanel>
                 : widget.tags, // 미분류는 태그 숨김
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
-            favoriteIcon: widget.subject.isUncategorized
+            favoriteOrDrag: widget.subject.isUncategorized
                 ? null // 미분류는 즐겨찾기 아이콘 숨김
+                : widget.showEdit
+                ? Icons.drag_indicator
                 : (widget.subject.favorite ? Icons.star : Icons.star_border),
             onToggleFavorite: widget.subject.isUncategorized
                 ? null // 미분류는 즐겨찾기 토글 불가
                 : widget.onToggleFavorite,
             favoriteIconColor: h.important,
+            showEdit: !widget.subject.isUncategorized && widget.showEdit,
+            onEditSubject: widget.onEditSubject,
+            reorderIndex: widget.reorderIndex,
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
@@ -342,22 +423,41 @@ class _SubjectPanelState extends State<SubjectPanel>
                   builder: (context, constraints) {
                     // 실제 SubjectPanel의 너비를 기준으로 계산
                     final cardWidth = (constraints.maxWidth - 12) / 2;
-                    return Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: widget.lectures
-                          .map(
-                            (lec) => SizedBox(
-                              width: cardWidth,
-                              child: LectureCard(
-                                lec: lec,
-                                onTap: widget.onOpenLecture,
-                                onUpdated: widget.onLectureUpdated,
-                              ),
-                            ),
+                    // build lecture tiles
+                    final children = [
+                      for (final lec in _lectures)
+                        SizedBox(
+                          key: ValueKey(lec.id),
+                          width: cardWidth,
+                          child: LectureCard(
+                            lec: lec,
+                            onTap: widget.showEdit
+                                ? (_) {}
+                                : widget.onOpenLecture,
+                            onUpdated: widget.onLectureUpdated,
+                            showEdit: widget.showEdit,
+                            onEditLecture: widget.onEditLecture,
+                          ),
+                        ),
+                    ];
+                    return widget.showEdit
+                        ? ReorderableWrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            needsLongPressDraggable: false,
+                            onReorder: _onReorder,
+                            buildDraggableFeedback:
+                                (context, constraints, child) {
+                                  // lifted feedback while dragging
+                                  return Material(
+                                    elevation: 6,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: child,
+                                  );
+                                },
+                            children: children,
                           )
-                          .toList(),
-                    );
+                        : Wrap(spacing: 12, runSpacing: 12, children: children);
                   },
                 ),
               ),
@@ -376,11 +476,15 @@ class LectureCard extends StatefulWidget {
     required this.lec,
     required this.onTap,
     this.onUpdated,
+    this.showEdit = false,
+    this.onEditLecture,
   });
 
   final HiveLecture lec;
   final ValueChanged<HiveLecture> onTap;
   final VoidCallback? onUpdated;
+  final bool showEdit;
+  final VoidCallback? onEditLecture;
 
   @override
   State<LectureCard> createState() => _LectureCardState();
@@ -526,15 +630,46 @@ class _LectureCardState extends State<LectureCard> {
                 child: _buildThumbnail(),
               ),
               const SizedBox(height: 10),
-              Text(
-                widget.lec.weekLabel,
-                style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
-              ),
-              Text(
-                widget.lec.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: textColor),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.lec.weekLabel,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          widget.lec.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: textColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 수정 버튼 (수정 모드일 때)
+                  widget.showEdit
+                      ? Visibility(
+                          visible: widget.showEdit,
+                          maintainState: true,
+                          maintainAnimation: true,
+                          maintainSize: true,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.edit,
+                              size: 20,
+                              color: isDark ? Colors.white : Color(0xFF2D2D2D),
+                            ),
+                            onPressed: () => _showLectureDetailDialog(context),
+                          ),
+                        )
+                      : SizedBox.shrink(),
+                ],
               ),
             ],
           ),

@@ -412,6 +412,38 @@ class HiveManager extends ChangeNotifier {
     await _save();
   }
 
+  /// 과목 내 강의 순서 변경
+  Future<void> reorderLecture(
+    String subjectId,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final subject = getSubject(subjectId)!;
+
+    // Make a mutable copy of the current order
+    final ids = List<String>.from(subject.lectureIds);
+    if (ids.isEmpty) {
+      return;
+    }
+
+    if (oldIndex < 0 || oldIndex >= ids.length) {
+      return;
+    }
+
+    final moved = ids.removeAt(oldIndex);
+    if (newIndex < 0) {
+      newIndex = 0;
+    }
+    if (newIndex > ids.length) {
+      newIndex = ids.length;
+    }
+
+    ids.insert(newIndex, moved);
+    subject.lectureIds = ids;
+
+    await _save();
+  }
+
   // ========== 태그 관련 ==========
 
   List<HiveTag> getTags() {
