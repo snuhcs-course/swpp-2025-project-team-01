@@ -49,7 +49,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   String? _selectedSubjectId;
 
   // 선택된 강의 언어
-  late String _selectedLanguage = AppLocalizations.of(context).isKorean ? 'ko' : 'en';
+  late String _selectedLanguage = AppLocalizations.of(context).isKorean
+      ? 'ko'
+      : 'en';
 
   // 업로드된 슬라이드 PDF 파일 경로
   String? _slidePdfPath;
@@ -281,17 +283,23 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               isExpanded: true,
               icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
               hint: Text(
-                l10n.isKorean ? '강의자의 언어를 선택해주세요.' : 'Select the spoken language.',
+                l10n.isKorean
+                    ? '강의자의 언어를 선택해주세요.'
+                    : 'Select the spoken language.',
                 style: TextStyle(fontSize: 16, color: textColor),
               ),
               dropdownColor: cardColor,
               items: (l10n.isKorean ? ['ko', 'en'] : ['en', 'ko'])
-                .map((code) => DropdownMenuItem<String>(
+                  .map(
+                    (code) => DropdownMenuItem<String>(
                       value: code,
-                      child: Text(labelFor(code),
-                          style: TextStyle(fontSize: 16, color: textColor)),
-                    ))
-                .toList(),
+                      child: Text(
+                        labelFor(code),
+                        style: TextStyle(fontSize: 16, color: textColor),
+                      ),
+                    ),
+                  )
+                  .toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedLanguage = value!;
@@ -1067,11 +1075,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       // Disable background execution when cancelled
       if (backgroundEnabled && Platform.isAndroid) {
-        unawaited(Future.delayed(const Duration(seconds: 1), () async {
-          if (FlutterBackground.isBackgroundExecutionEnabled) {
+        unawaited(
+          Future.delayed(const Duration(seconds: 1), () async {
+            if (FlutterBackground.isBackgroundExecutionEnabled) {
               await FlutterBackground.disableBackgroundExecution();
-          }
-        }));
+            }
+          }),
+        );
       }
     });
 

@@ -244,7 +244,7 @@ Future<String?> requestLecture(
         await Future.delayed(Duration(seconds: 1));
         return null;
       }
-      
+
       debugPrint('SSE issue triggered');
       final client = http.Client();
       if (jobId == null) {
@@ -437,7 +437,7 @@ Future<List<String>?> fetchLecture(
   int order,
   int audioCount,
   String serverAddress,
-  String port, 
+  String port,
   String langCode, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
