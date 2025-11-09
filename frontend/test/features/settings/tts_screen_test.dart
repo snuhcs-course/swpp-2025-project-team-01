@@ -80,7 +80,6 @@ void main() {
       ) async {
         await pumpTtsScreen(tester, locale: const Locale('ko'));
 
-        // 한국어 라벨이 표시되어야 함
         expect(find.text('TTS 음성 성별'), findsOneWidget);
         expect(find.text('남성'), findsOneWidget);
         expect(find.text('여성'), findsOneWidget);
@@ -91,7 +90,6 @@ void main() {
       ) async {
         await pumpTtsScreen(tester, locale: const Locale('en'));
 
-        // 영어 라벨이 표시되어야 함
         expect(find.text('TTS Voice Gender'), findsOneWidget);
         expect(find.text('Male'), findsOneWidget);
         expect(find.text('Female'), findsOneWidget);
@@ -102,7 +100,6 @@ void main() {
       ) async {
         await pumpTtsScreen(tester, locale: const Locale('ko'));
 
-        // 남성/여성 버튼이 렌더링되어야 함
         expect(find.text('남성'), findsOneWidget);
         expect(find.text('여성'), findsOneWidget);
       });
@@ -110,7 +107,6 @@ void main() {
       testWidgets('Notice text should be displayed', (tester) async {
         await pumpTtsScreen(tester, locale: const Locale('ko'));
 
-        // 안내 문구가 표시되어야 함
         expect(find.textContaining('현재 여성 TTS 음성만 지원됩니다'), findsOneWidget);
       });
     });

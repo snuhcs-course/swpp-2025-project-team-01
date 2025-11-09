@@ -46,7 +46,7 @@ void main() {
           tester.element(find.byType(HelpScreen)),
         );
 
-        // [Then] - FAQ 질문들이 표시되어야 함
+        // [Then]
         expect(find.text(l10n.howToFindLecture), findsOneWidget);
         expect(find.text(l10n.howToDeleteLecture), findsOneWidget);
         expect(find.text(l10n.howToEditSubjectTag), findsOneWidget);
@@ -66,7 +66,7 @@ void main() {
           tester.element(find.byType(HelpScreen)),
         );
 
-        // [Then] - 영어 로케일에서는 isKorean이 false여야 함
+        // [Then]
         expect(l10n.isKorean, false);
 
         // ExpansionTile이 렌더링되어야 함
@@ -80,7 +80,7 @@ void main() {
         await pumpHelpScreen(tester, locale: const Locale('ko'));
         await tester.pumpAndSettle();
 
-        // [Then] - 카드가 표시되어야 함
+        // [Then]
         expect(find.byType(Card), findsWidgets);
 
         // [Given] - 영어 로케일
@@ -88,7 +88,7 @@ void main() {
         await pumpHelpScreen(tester, locale: const Locale('en', 'US'));
         await tester.pumpAndSettle();
 
-        // [Then] - 카드가 표시되어야 함
+        // [Then]
         expect(find.byType(Card), findsWidgets);
       });
 
@@ -98,7 +98,7 @@ void main() {
         await pumpHelpScreen(tester, locale: const Locale('ko'));
         await tester.pumpAndSettle();
 
-        // [Then] - 7개의 ExpansionTile이 있어야 함 (7개 FAQ 항목)
+        // [Then]
         expect(find.byType(ExpansionTile), findsNWidgets(7));
       });
     });
@@ -114,14 +114,14 @@ void main() {
           tester.element(find.byType(HelpScreen)),
         );
 
-        // [Given] - 초기에는 답변이 보이지 않아야 함
+        // [Given]
         expect(find.text(l10n.deleteLectureAtHome), findsNothing);
 
-        // [When] - 질문을 탭하여 펼치기
+        // [When]
         await tester.tap(find.text(l10n.howToDeleteLecture));
         await tester.pumpAndSettle();
 
-        // [Then] - 이제 답변이 보여야 함
+        // [Then]
         expect(find.text(l10n.deleteLectureAtHome), findsOneWidget);
       });
 
@@ -135,16 +135,16 @@ void main() {
           tester.element(find.byType(HelpScreen)),
         );
 
-        // [Given] - 탭하여 펼치기
+        // [Given]
         await tester.tap(find.text(l10n.howToEditSubjectTag));
         await tester.pumpAndSettle();
         expect(find.text(l10n.editTagAtSubjectEdit), findsOneWidget);
 
-        // [When] - 다시 탭하여 접기
+        // [When]
         await tester.tap(find.text(l10n.howToEditSubjectTag));
         await tester.pumpAndSettle();
 
-        // [Then] - 답변이 다시 숨겨져야 함
+        // [Then]
         expect(find.text(l10n.editTagAtSubjectEdit), findsNothing);
       });
 
@@ -158,15 +158,13 @@ void main() {
           tester.element(find.byType(HelpScreen)),
         );
 
-        // [When] - 첫 번째 FAQ 펼치기
+        // [When]
         await tester.tap(find.text(l10n.howToDeleteLecture));
         await tester.pumpAndSettle();
-
-        // 두 번째 FAQ 펼치기
         await tester.tap(find.text(l10n.howToEditSubjectTag));
         await tester.pumpAndSettle();
 
-        // [Then] - 두 답변 모두 보여야 함
+        // [Then]
         expect(find.text(l10n.deleteLectureAtHome), findsOneWidget);
         expect(find.text(l10n.editTagAtSubjectEdit), findsOneWidget);
       });
@@ -179,7 +177,7 @@ void main() {
         await pumpHelpScreen(tester, locale: const Locale('ko'));
         await tester.pumpAndSettle();
 
-        // [Then] - 특정 아이콘들이 있는지 확인
+        // [Then]
         expect(find.byIcon(Icons.search), findsOneWidget);
         expect(find.byIcon(Icons.delete), findsOneWidget);
         expect(find.byIcon(Icons.tag), findsOneWidget);
