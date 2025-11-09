@@ -295,7 +295,6 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     // Create a completer to wait until user presses OK
     _tagCompleter = Completer<String?>();
 
-    // 중복되지 않는 이름 생성
     final newName = await _tagCompleter!.future;
     // User canceled
     if (newName == null) {
@@ -420,12 +419,19 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                       String newName = newTitle.isEmpty
                           ? l10n.newTag
                           : newTitle;
-                      int counter = 1;
-                      while (manager.getTags().any(
-                        (tag) => tag.name == newName,
-                      )) {
-                        newName = '${l10n.newTag} ($counter)';
-                        counter++;
+                      if (newName == l10n.newTag) {
+                        int counter = 1;
+                        while (manager.getTags().any(
+                          (tag) => tag.name == newName,
+                        )) {
+                          newName = '${l10n.newTag} ($counter)';
+                          counter++;
+                        }
+                      }
+                      // Avoid duplicates
+                      if (manager.getTags().map((t) => t.name).contains(newName)) {
+                        _showSnackBar(l10n.duplicateTagName);
+                        _tagCompleter?.complete(null);
                       }
                       // Complete the future that _addNewTag() is awaiting
                       _tagCompleter?.complete(newName);
