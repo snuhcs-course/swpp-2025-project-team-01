@@ -118,6 +118,9 @@ class PlayerController extends ChangeNotifier {
   int _currentOriginalStartTime = 0;
   int _currentStartTime = 0;
 
+  // 더블탭 위치 저장
+  double _doubleTapX = 0;
+
   // ========== 초기화 메서드 ==========
 
   Future<void> initialize(
@@ -310,6 +313,18 @@ class PlayerController extends ChangeNotifier {
     } else {
       // 컨트롤 토글
       toggleControls();
+    }
+  }
+
+  void saveDoubleTapPosition(double x) {
+    _doubleTapX = x;
+  }
+
+  void handleDoubleTapSkip(double screenWidth) {
+    if (_doubleTapX < screenWidth / 2) {
+      skipBackward();
+    } else {
+      skipForward();
     }
   }
 
