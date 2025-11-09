@@ -13,7 +13,6 @@ import 'package:re_view/features/settings/help_screen.dart';
 import 'package:re_view/features/settings/language_screen.dart';
 import 'package:re_view/features/settings/settings_screen.dart';
 import 'package:re_view/features/settings/tts_screen.dart';
-import 'package:re_view/features/subjects/subjects_edit_screen.dart';
 import 'package:re_view/features/tags/tags_edit_screen.dart';
 import 'package:re_view/features/splash/splash_screen.dart';
 
@@ -32,7 +31,6 @@ class Routes {
   static const settingsAccessibility = '/settings/accessibility';
   static const settingsLanguage = '/settings/language';
   static const settingsHelp = '/settings/help';
-  static const subjectsEdit = '/subjects/edit';
   static const tagsEdit = '/tags/edit';
 }
 
@@ -66,8 +64,6 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const LanguageScreen());
       case Routes.settingsHelp:
         return MaterialPageRoute(builder: (_) => const HelpScreen());
-      case Routes.subjectsEdit:
-        return MaterialPageRoute(builder: (_) => const SubjectsEditScreen());
       case Routes.tagsEdit:
         return MaterialPageRoute(builder: (_) => const TagsEditScreen());
       default:

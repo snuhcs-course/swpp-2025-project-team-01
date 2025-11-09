@@ -64,13 +64,6 @@ class _DrawerContent extends StatelessWidget {
           },
         ),
         ListTile(
-          title: Text(l10n.editSubjects),
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.pushNamed(context, Routes.subjectsEdit);
-          },
-        ),
-        ListTile(
           title: Text(l10n.editTags),
           onTap: () {
             Navigator.pop(context);

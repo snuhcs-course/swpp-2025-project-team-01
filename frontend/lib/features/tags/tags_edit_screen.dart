@@ -260,7 +260,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
             TextField(
               controller: _nameC,
               decoration: InputDecoration(
-                labelText: l10n.newTag,
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                labelText: l10n.tagName,
+                hintText: l10n.newTag,
                 border: const OutlineInputBorder(),
               ),
               enableIMEPersonalizedLearning: false,
