@@ -898,12 +898,15 @@ class SubjectPanelHeader extends StatelessWidget {
                 if (favoriteOrDrag != null)
                   favoriteOrDrag == Icons.drag_indicator
                       ? (reorderIndex != null
-                            ? ReorderableDelayedDragStartListener(
-                                index: reorderIndex!, // ← required
-                                child: Icon(
-                                  Icons.drag_indicator,
-                                  size: 22,
-                                  color: iconColor.withValues(alpha: 0.7),
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 10),
+                                child: ReorderableDelayedDragStartListener(
+                                  index: reorderIndex!, // ← required
+                                  child: Icon(
+                                    Icons.drag_indicator,
+                                    size: 22,
+                                    color: iconColor.withValues(alpha: 0.7),
+                                  ),
                                 ),
                               )
                             : const SizedBox.shrink())
@@ -916,7 +919,10 @@ class SubjectPanelHeader extends StatelessWidget {
                           onPressed: onToggleFavorite,
                           tooltip: '즐겨찾기',
                         ),
-                if (favoriteOrDrag != null) const SizedBox(width: 2),
+                if (favoriteOrDrag != null)
+                  SizedBox(
+                    width: favoriteOrDrag == Icons.drag_indicator ? 18 : 2,
+                  ),
                 // 제목
                 Expanded(
                   child: Padding(
