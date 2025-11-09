@@ -48,16 +48,19 @@ class EmptyStateMessage extends StatelessWidget {
 }
 
 /// 공통 Pill 버튼 위젯 (FilterPill, FavoritePill의 베이스)
-class _PillButton extends StatelessWidget {
-  const _PillButton({
+class PillButton extends StatelessWidget {
+  const PillButton({
+    super.key,
     required this.onTap,
     required this.active,
     required this.child,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   });
 
   final VoidCallback onTap;
   final bool active;
   final Widget child;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
@@ -81,10 +84,7 @@ class _PillButton extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: child,
-          ),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
@@ -113,7 +113,7 @@ class FilterPill extends StatelessWidget {
         ? (isDark ? Colors.black : Colors.white)
         : (isDark ? Colors.white : Colors.black87);
 
-    return _PillButton(
+    return PillButton(
       onTap: onTap,
       active: active,
       child: Row(
@@ -158,7 +158,7 @@ class FavoritePill extends StatelessWidget {
         : (isDark ? Colors.white : Colors.black87);
     final IconData starIcon = active ? Icons.star : Icons.star_border;
 
-    return _PillButton(
+    return PillButton(
       onTap: onTap,
       active: active,
       child: Row(
@@ -200,7 +200,7 @@ class EditPill extends StatelessWidget {
         ? (isDark ? Colors.black : Colors.white)
         : (isDark ? Colors.white : Colors.black87);
 
-    return _PillButton(
+    return PillButton(
       onTap: onTap,
       active: active,
       child: Row(

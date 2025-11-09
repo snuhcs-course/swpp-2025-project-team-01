@@ -3,55 +3,7 @@ import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/home_subject_widgets.dart';
-
-const _pillShadow = BoxShadow(
-  color: Color(0x1A000000),
-  blurRadius: 4,
-  offset: Offset(0, 2),
-);
-
-/// 공통 Pill 버튼 위젯 (FilterPill, FavoritePill의 베이스)
-class _PillButton extends StatelessWidget {
-  const _PillButton({
-    required this.onTap,
-    required this.active,
-    required this.child,
-    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-  });
-
-  final VoidCallback onTap;
-  final bool active;
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bg = active
-        ? (isDark ? Colors.white : Colors.black87)
-        : (isDark ? const Color(0xFF2D2D2D) : Colors.white);
-    final Color borderColor = isDark
-        ? const Color(0xFF404040)
-        : const Color(0xFFE0E0E0);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: const [_pillShadow],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Padding(padding: padding, child: child),
-        ),
-      ),
-    );
-  }
-}
+import 'package:re_view/features/home/home_widgets.dart';
 
 class AddPill extends StatefulWidget {
   const AddPill({super.key, required this.icon, required this.link});
@@ -97,7 +49,7 @@ class _AddPillState extends State<AddPill> with SingleTickerProviderStateMixin {
         ? (isDark ? Colors.black : Colors.white)
         : (isDark ? Colors.white : Colors.black87);
 
-    return _PillButton(
+    return PillButton(
       onTap: onTap,
       active: active,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
