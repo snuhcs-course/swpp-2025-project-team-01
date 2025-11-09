@@ -209,7 +209,7 @@ class PlayPauseButton extends StatelessWidget {
       icon: Icon(
         isPlaying ? Icons.pause : Icons.play_arrow,
         color: Colors.white,
-        size: isVertical ? 40 : 56,
+        size: isVertical ? 50 : 72,
       ),
     );
   }
@@ -258,7 +258,7 @@ class _SkipButtonState extends State<SkipButton> {
       onTap: _handleTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.all(widget.isVertical ? 6 : 8),
+        padding: EdgeInsets.all(widget.isVertical ? 8 : 10),
         decoration: BoxDecoration(
           color: _showBackground
               ? Colors.white.withValues(alpha: 0.3)
@@ -268,7 +268,7 @@ class _SkipButtonState extends State<SkipButton> {
         child: Icon(
           widget.isForward ? Icons.forward_10 : Icons.replay_10,
           color: Colors.white,
-          size: widget.isVertical ? 32 : 44,
+          size: widget.isVertical ? 42 : 56,
         ),
       ),
     );
@@ -566,13 +566,13 @@ class CenterPlayControls extends StatelessWidget {
           onPressed: onSkipBackward,
           isVertical: isVertical,
         ),
-        SizedBox(width: isVertical ? 28 : 40),
+        SizedBox(width: isVertical ? 56 : 80),
         PlayPauseButton(
           isPlaying: isPlaying,
           onPressed: onPlayPause,
           isVertical: isVertical,
         ),
-        SizedBox(width: isVertical ? 28 : 40),
+        SizedBox(width: isVertical ? 56 : 80),
         SkipButton(
           isForward: true,
           onPressed: onSkipForward,
