@@ -94,6 +94,7 @@ Future<String?> requestLecture(
   String serverAddress,
   String port,
   Future<void> Function(double, String, String, int, int) onProgress,
+  String langCode,
   bool isRetry, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
@@ -169,6 +170,8 @@ Future<String?> requestLecture(
         contentType: MediaType('audio', 'm4a'),
       ),
     );
+
+    req.fields['lang'] = langCode;
   }
 
   // Use the injected client to send
@@ -241,7 +244,7 @@ Future<String?> requestLecture(
         await Future.delayed(Duration(seconds: 1));
         return null;
       }
-      
+
       debugPrint('SSE issue triggered');
       final client = http.Client();
       if (jobId == null) {
@@ -276,6 +279,7 @@ Future<String?> requestLecture(
         serverAddress,
         port,
         onProgress,
+        langCode,
         true,
       );
       return jobId;
@@ -434,7 +438,7 @@ Future<List<String>?> fetchLecture(
   int audioCount,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String, int, int) onProgress, {
+  String langCode, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
@@ -449,6 +453,7 @@ Future<List<String>?> fetchLecture(
     serverAddress,
     port,
     onProgress,
+    langCode,
     false,
     fakeClient: fakeClient,
     endpointOverride: endpointOverride,
