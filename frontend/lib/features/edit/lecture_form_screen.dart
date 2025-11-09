@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -1008,7 +1009,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       // Disable background execution when cancelled
       if (backgroundEnabled && Platform.isAndroid) {
-        FlutterBackground.disableBackgroundExecution();
+        unawaited(Future.delayed(const Duration(seconds: 1), () async {
+          if (FlutterBackground.isBackgroundExecutionEnabled) {
+              await FlutterBackground.disableBackgroundExecution();
+          }
+        }));
       }
     });
 

@@ -236,6 +236,12 @@ Future<String?> requestLecture(
         }
       }
     } catch (e) {
+      // 취소 확인
+      if (LectureLoadingService.instance.isCancelled) {
+        await Future.delayed(Duration(seconds: 1));
+        return null;
+      }
+      
       debugPrint('SSE issue triggered');
       final client = http.Client();
       if (jobId == null) {
@@ -246,8 +252,10 @@ Future<String?> requestLecture(
         if (status == null || status.$1 == 'failed') {
           debugPrint('Error during lecture request stream processing: $e');
           LectureLoadingService.instance.setError();
+          client.close();
           return null;
         } else if (status.$1 == 'completed') {
+          client.close();
           return jobId;
         }
 
