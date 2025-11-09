@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -26,6 +27,7 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<bool> showControls = ValueNotifier(false);
   final ValueNotifier<bool> isPagesExpanded = ValueNotifier(false);
   final ValueNotifier<bool> showTranscriptPanel = ValueNotifier(false);
+  final ValueNotifier<bool> isFullscreen = ValueNotifier(false);
 
   /// 재생 상태
   final ValueNotifier<bool> isPlaying = ValueNotifier(false);
@@ -252,6 +254,28 @@ class PlayerController extends ChangeNotifier {
     }
   }
 
+  Future<void> toggleFullscreen() async {
+    final willBeFullscreen = !isFullscreen.value;
+
+    // 방향을 먼저 설정한 후 상태 변경
+    if (willBeFullscreen) {
+      // 가로모드 강제
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      // 세로모드 강제
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+
+    // 방향 설정이 완료된 후 상태 변경
+    isFullscreen.value = willBeFullscreen;
+  }
+
   /// 오디오 소스 전환 (Original ↔ TTS)
   Future<void> toggleAudioSource() async {
     if (_originalAudioPath == null || _audioPath == null) {
@@ -355,12 +379,12 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> skipBackward() async {
-    final newTime = (currentTime.value - 15).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value - 10).clamp(0, totalTime).toDouble();
     await seek(newTime);
   }
 
   Future<void> skipForward() async {
-    final newTime = (currentTime.value + 15).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value + 10).clamp(0, totalTime).toDouble();
     await seek(newTime);
   }
 
@@ -542,9 +566,13 @@ class PlayerController extends ChangeNotifier {
     }
     _isDisposed = true;
 
+    // Orientation 복원
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+
     showControls.dispose();
     isPagesExpanded.dispose();
     showTranscriptPanel.dispose();
+    isFullscreen.dispose();
     isPlaying.dispose();
     isSynced.dispose();
     isCaptionEnabled.dispose();

@@ -777,7 +777,7 @@ void main() {
       controller.transcriptData = null;
 
       await tester.pumpWidget(
-        buildTestApp(TranscriptArea(controller: controller)),
+        buildTestApp(TranscriptArea(controller: controller, isVertical: false)),
       );
 
       await tester.pump();
@@ -787,7 +787,7 @@ void main() {
 
     testWidgets('renders English transcript title', (tester) async {
       await tester.pumpWidget(
-        buildTestApp(TranscriptArea(controller: controller)),
+        buildTestApp(TranscriptArea(controller: controller, isVertical: false)),
       );
 
       await tester.pump();
@@ -800,7 +800,7 @@ void main() {
       HiveManager.instance.settings.language = 'ko';
 
       await tester.pumpWidget(
-        buildTestApp(TranscriptArea(controller: controller)),
+        buildTestApp(TranscriptArea(controller: controller, isVertical: false)),
       );
 
       await tester.pump();

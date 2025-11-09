@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -39,6 +40,7 @@ class VerticalPlayerLayout extends StatelessWidget {
               child: TranscriptArea(
                 key: controller.transcriptAreaKey,
                 controller: controller,
+                isVertical: true,
               ),
             ),
           ],
@@ -130,42 +132,10 @@ class HorizontalPlayerLayout extends StatelessWidget {
                     child: TranscriptArea(
                       key: controller.transcriptAreaKey,
                       controller: controller,
+                      isVertical: false,
                     ),
                   ),
               ],
-            ),
-
-            Positioned(
-              right: showTranscriptPanel ? transcriptPanelWidth : 0,
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: controller.toggleTranscriptPanel,
-                  child: Container(
-                    width: 30,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: showTranscriptPanel
-                          ? Colors.black.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.5),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        bottomLeft: Radius.circular(8),
-                        topRight: Radius.zero,
-                        bottomRight: Radius.zero,
-                      ),
-                    ),
-                    child: Icon(
-                      showTranscriptPanel
-                          ? Icons.chevron_right
-                          : Icons.chevron_left,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
             ),
           ],
         );
@@ -204,10 +174,18 @@ class PdfArea extends StatelessWidget {
             children: [
               // PDF 내용
               if (controller.pdfController != null)
-                PdfView(
-                  key: controller.pdfViewKey,
-                  controller: controller.pdfController!,
-                  onPageChanged: controller.onPdfPageChanged,
+                ValueListenableBuilder<bool>(
+                  valueListenable: controller.isSynced,
+                  builder: (context, isSynced, _) {
+                    return PdfView(
+                      key: controller.pdfViewKey,
+                      controller: controller.pdfController!,
+                      onPageChanged: controller.onPdfPageChanged,
+                      physics: !isSynced
+                          ? const AlwaysScrollableScrollPhysics()
+                          : const NeverScrollableScrollPhysics(),
+                    );
+                  },
                 )
               else
                 Container(
@@ -290,61 +268,75 @@ class VideoControlsOverlay extends StatelessWidget {
     return Positioned.fill(
       child: Container(
         color: const Color(0x4D1D1D1D),
-        child: Column(
+        child: Stack(
           children: [
-            ValueListenableBuilder<bool>(
-              valueListenable: controller.isOriginalAudio,
-              builder: (context, isOriginalAudio, _) {
-                return ValueListenableBuilder<bool>(
-                  valueListenable: controller.isCaptionEnabled,
-                  builder: (context, isCaptionEnabled, _) {
-                    return ValueListenableBuilder<bool>(
-                      valueListenable: controller.isSynced,
-                      builder: (context, isSynced, _) {
-                        return TopControlBar(
-                          isVertical: isVertical,
-                          onBack: onBack,
-                          isOriginalAudio: isOriginalAudio,
-                          onAudioToggle: controller.toggleAudioSource,
-                          isCaptionEnabled: isCaptionEnabled,
-                          onCaptionToggle: controller.toggleCaption,
-                          onSpeedChanged: controller.setPlaybackSpeed,
-                          isSynced: isSynced,
-                          onSyncToggle: controller.toggleSync,
-                          pageDifference: controller.pageDifference,
-                        );
-                      },
-                    );
-                  },
-                );
-              },
+            // Top control bar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: controller.isOriginalAudio,
+                builder: (context, isOriginalAudio, _) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: controller.isSynced,
+                    builder: (context, isSynced, _) {
+                      return TopControlBar(
+                        isVertical: isVertical,
+                        onBack: onBack,
+                        isOriginalAudio: isOriginalAudio,
+                        onAudioToggle: controller.toggleAudioSource,
+                        onSpeedChanged: controller.setPlaybackSpeed,
+                        isSynced: isSynced,
+                        onSyncToggle: controller.toggleSync,
+                        pageDifference: controller.pageDifference,
+                      );
+                    },
+                  );
+                },
+              ),
             ),
 
-            const Spacer(),
-
-            ValueListenableBuilder<bool>(
-              valueListenable: controller.isPlaying,
-              builder: (context, isPlaying, _) {
-                return CenterPlayControls(
-                  isPlaying: isPlaying,
-                  onPlayPause: controller.playPause,
-                  onSkipBackward: controller.skipBackward,
-                  onSkipForward: controller.skipForward,
-                );
-              },
+            // Center play controls - always in the exact center
+            Center(
+              child: ValueListenableBuilder<bool>(
+                valueListenable: controller.isPlaying,
+                builder: (context, isPlaying, _) {
+                  return CenterPlayControls(
+                    isPlaying: isPlaying,
+                    onPlayPause: controller.playPause,
+                    onSkipBackward: controller.skipBackward,
+                    onSkipForward: controller.skipForward,
+                    isVertical: isVertical,
+                  );
+                },
+              ),
             ),
 
-            const Spacer(),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ValueListenableBuilder<double>(
-                valueListenable: controller.currentTime,
-                builder: (context, currentTime, _) {
-                  return VideoTimelineSlider(
-                    currentTime: currentTime,
+            // Bottom control bar
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: ListenableBuilder(
+                listenable: Listenable.merge([
+                  controller.currentTime,
+                  controller.isCaptionEnabled,
+                  controller.showTranscriptPanel,
+                  controller.isFullscreen,
+                ]),
+                builder: (context, _) {
+                  return BottomControlBar(
+                    isVertical: isVertical,
+                    currentTime: controller.currentTime.value,
                     totalTime: controller.totalTime,
-                    onChanged: controller.seek,
+                    onTimeChanged: controller.seek,
+                    isCaptionEnabled: controller.isCaptionEnabled.value,
+                    onCaptionToggle: controller.toggleCaption,
+                    showTranscriptPanel: controller.showTranscriptPanel.value,
+                    onTranscriptToggle: controller.toggleTranscriptPanel,
+                    isFullscreen: controller.isFullscreen.value,
+                    onFullscreenToggle: controller.toggleFullscreen,
                   );
                 },
               ),
@@ -538,7 +530,7 @@ class TranslationButton extends StatelessWidget {
                   ? (isDark ? colorScheme.onPrimary : Colors.white)
                   : (isDark ? colorScheme.onSecondaryContainer : Colors.white));
 
-        return GestureDetector(
+        return InkWell(
           onTap: hasKorean ? controller.toggleTranscriptLanguage : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -572,9 +564,14 @@ class TranslationButton extends StatelessWidget {
 // ========== Transcript Area ==========
 
 class TranscriptArea extends StatelessWidget {
-  const TranscriptArea({super.key, required this.controller});
+  const TranscriptArea({
+    super.key,
+    required this.controller,
+    required this.isVertical,
+  });
 
   final PlayerController controller;
+  final bool isVertical;
 
   @override
   Widget build(BuildContext context) {
@@ -594,8 +591,7 @@ class TranscriptArea extends StatelessWidget {
       );
     }
 
-    final language = HiveManager.instance.settings.language;
-    final transcriptLabel = language == 'ko' ? '대본' : 'Transcript';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       width: double.infinity,
@@ -607,7 +603,7 @@ class TranscriptArea extends StatelessWidget {
           Row(
             children: [
               Text(
-                transcriptLabel,
+                l10n.transcript,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -616,6 +612,20 @@ class TranscriptArea extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               TranslationButton(controller: controller),
+              if (!isVertical) ...[
+                const Spacer(),
+                IconButton(
+                  onPressed: controller.toggleTranscriptPanel,
+                  icon: Icon(
+                    Icons.close,
+                    color: isDark ? colorScheme.onSurface : Colors.grey[700],
+                    size: 24,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 20,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 12),
