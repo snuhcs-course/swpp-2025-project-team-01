@@ -18,6 +18,8 @@ class AppTheme {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        scrolledUnderElevation: 0, // 스크롤 시에도 elevation 유지
+        surfaceTintColor: Colors.transparent, // 스크롤 시 색상 변화 방지
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
@@ -67,6 +69,8 @@ class AppTheme {
         backgroundColor: Colors.transparent, // 투명한 헤더
         foregroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0, // 스크롤 시에도 elevation 유지
+        surfaceTintColor: Colors.transparent, // 스크롤 시 색상 변화 방지
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
@@ -122,6 +126,8 @@ class AppTheme {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 2,
+        scrolledUnderElevation: 2, // 스크롤 시에도 elevation 유지
+        surfaceTintColor: Colors.transparent, // 스크롤 시 색상 변화 방지
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
@@ -211,6 +217,8 @@ class AppTheme {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         elevation: 2,
+        scrolledUnderElevation: 2, // 스크롤 시에도 elevation 유지
+        surfaceTintColor: Colors.transparent, // 스크롤 시 색상 변화 방지
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontSize: 20,
