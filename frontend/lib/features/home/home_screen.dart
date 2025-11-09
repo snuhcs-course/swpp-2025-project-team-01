@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen>
       barrierDismissible: false,
       builder: (context) => SubjectEditDialog(
         subject: subject,
-        initialTagIds: [],
+        initialTagIds: subject.tagIds,
         allTags: _manager.getTags(),
       ),
     );

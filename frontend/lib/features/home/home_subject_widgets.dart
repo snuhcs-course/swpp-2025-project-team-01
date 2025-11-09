@@ -429,7 +429,10 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                         }
                       }
                       // Avoid duplicates
-                      if (manager.getTags().map((t) => t.name).contains(newName)) {
+                      if (manager
+                          .getTags()
+                          .map((t) => t.name)
+                          .contains(newName)) {
                         _showSnackBar(l10n.duplicateTagName);
                         _tagCompleter?.complete(null);
                       }
@@ -477,9 +480,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
           onPressed: () {
             final newTitle = _nameController.text.trim();
             if (newTitle.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.pleaseEnterSubjectName)),
-              );
+              _showSnackBar(l10n.pleaseEnterSubjectName);
               return;
             }
             final manager = HiveManager.instance;
