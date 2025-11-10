@@ -47,10 +47,10 @@ echo ""
 conda run -n "$ENV_NAME" pip install cuda-python==12.9.4
 
 echo ""
-echo -e "${GREEN}📦 Step 4/8: Installing NeMo Toolkit and Kokoro${NC}"
+echo -e "${GREEN}📦 Step 4/8: Installing OpenAI Whisper and Kokoro${NC}"
 echo "   This will install ASR models and TTS dependencies..."
 echo ""
-conda run -n "$ENV_NAME" pip install 'nemo_toolkit[asr]==2.4.1' kokoro==0.9.4
+conda run -n "$ENV_NAME" pip install openai-whisper kokoro==0.9.4 librosa==0.11.0
 
 echo ""
 echo -e "${GREEN}📦 Step 5/8: Installing document processing libraries${NC}"

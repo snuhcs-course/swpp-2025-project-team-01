@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
@@ -14,6 +14,13 @@ from contextlib import asynccontextmanager
 from typing import Callable
 from enum import Enum
 import uuid
+import os
+
+# Disable tokenizers parallelism to avoid fork-related warnings
+# This must be set before importing any transformers/tokenizers code
+# Note: This only affects tokenization speed (1-2% of total pipeline time)
+# The main GPU-accelerated operations (ASR, Translation, TTS) are unaffected
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
 # Import from inference_models subdirectory
 from inference_models.lecture_pipeline import LecturePipeline, PipelineOutput, simple_sentence_splitter
@@ -206,9 +213,12 @@ def create_pipeline() -> LecturePipeline:
     """
     Create a new pipeline instance.
     Called during server startup to create worker pool.
+    The pipeline will be reused for both Korean and English lectures.
+    Language will be specified per request.
     """
     return LecturePipeline(
         # ASR settings
+        asr_model = "turbo",
         asr_chunk_seconds = 300,
         asr_batch_size = 3,
 
@@ -230,6 +240,7 @@ def create_pipeline() -> LecturePipeline:
         enable_translation = True,
 
         # TTS settings
+        enable_tts = True,
         tts_voice = 'af_heart',
         tts_speed = 1.0,
 
@@ -243,6 +254,7 @@ async def run_pipeline_in_executor(
     audio_path: str,
     pdf_path: str,
     lecture_name: str,
+    language: str = "en",
     progress_callback: Callable[[JobStatus, float, str], None] | None = None
 ) -> PipelineOutput:
     """
@@ -254,6 +266,7 @@ async def run_pipeline_in_executor(
         audio_path: Path to audio file
         pdf_path: Path to PDF file
         lecture_name: Name for this lecture
+        language: Language code for ASR transcription ('en' for English, 'ko' for Korean)
         progress_callback: Optional callback to report progress (status, progress, message)
     """
 
@@ -275,6 +288,7 @@ async def run_pipeline_in_executor(
         pipeline_instance.run,
         audio_path = audio_path,
         pdf_path = pdf_path,
+        language = language,
         lecture_name = lecture_name,
         sentence_splitter = simple_sentence_splitter,
         save_intermediate = False,
@@ -308,7 +322,7 @@ async def cleanup_old_jobs():
         except Exception as e:
             print(f"⚠️  Error in cleanup task: {e}")
 
-async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str):
+async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str, language: str = "en"):
     """Background task to process a lecture synchronization job."""
     global jobs, pipeline_queue
     job_info = jobs[job_id]
@@ -319,6 +333,8 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
 
     # Acquire a pipeline from the queue (waits if none available)
     pipeline = await pipeline_queue.get()
+
+    print(f"Processing job with language: {language}")
 
     try:
         # Update job status
@@ -339,17 +355,23 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
             audio_path = str(audio_path),
             pdf_path = str(pdf_path),
             lecture_name = lecture_name,
+            language = language,
             progress_callback = update_progress
         )
 
         # Verify output files exist
-        audio_file_path = Path(output.audio_file)
         timestamps_file_path = Path(output.timestamps_file)
-
-        if not audio_file_path.exists():
-            raise Exception('Audio file generation failed')
         if not timestamps_file_path.exists():
             raise Exception('Timestamps file generation failed')
+
+        # For English lectures, verify audio file exists
+        # For Korean lectures, audio_file will be empty string
+        if output.audio_file:
+            audio_file_path = Path(output.audio_file)
+            if not audio_file_path.exists():
+                raise Exception('Audio file generation failed')
+        else:
+            audio_file_path = None
 
         # Create ZIP file
         job_info.status = JobStatus.CREATING_OUTPUT
@@ -359,7 +381,7 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
         zip_path = OUTPUT_DIR / f"{job_id}.zip"
         await asyncio.to_thread(
             create_zip_file_to_disk,
-            str(audio_file_path),
+            str(audio_file_path) if audio_file_path else None,
             str(timestamps_file_path),
             str(zip_path)
         )
@@ -418,7 +440,8 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
 @app.post('/api/synchronize/stream')
 async def synchronize_stream(
     audio: UploadFile = File(..., description = 'Lecture audio file (mp3, wav, etc.)'),
-    lecture_note: UploadFile = File(..., description = 'Lecture slides PDF')
+    lecture_note: UploadFile = File(..., description = 'Lecture slides PDF'),
+    lang: str = Form('en')
 ):
     """
     Synchronize lecture audio with slides with real-time progress updates via SSE.
@@ -429,6 +452,7 @@ async def synchronize_stream(
     Args:
         audio: Lecture audio file
         lecture_note: Lecture slides PDF file
+        lang: Language code for ASR transcription ('en' for English, 'ko' for Korean)
 
     Returns:
         SSE stream with progress updates and final job_id
@@ -437,6 +461,9 @@ async def synchronize_stream(
         - data: JSON object with {status, progress, message, job_id}
         - Final event includes job_id for downloading results
     """
+    # Validate lang parameter
+    if lang not in ["en", "ko"]:
+        raise HTTPException(status_code = 400, detail = 'Invalid lang parameter. Must be "en" or "ko"')
     # Generate unique job ID and lecture name using full UUID for uniqueness
     job_id = str(uuid.uuid4())
     lecture_name = f"lecture_{job_id}"
@@ -466,8 +493,8 @@ async def synchronize_stream(
             content = await lecture_note.read()
             await f.write(content)
 
-        # Start background processing
-        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name))
+        # Start background processing with language parameter
+        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name, language=lang))
 
         # SSE generator with disconnect detection
         async def event_generator():
@@ -545,15 +572,24 @@ def create_zip_file(audio_file: str, timestamp_file: str) -> io.BytesIO:
     """Create ZIP file with audio and timestamps in memory. Run in executor."""
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.write(audio_file, arcname = 'audio.opus')
+        if audio_file:
+            zip_file.write(audio_file, arcname = 'audio.opus')
         zip_file.write(timestamp_file, arcname = 'timestamps.json')
     zip_buffer.seek(0)
     return zip_buffer
 
-def create_zip_file_to_disk(audio_file: str, timestamp_file: str, output_path: str) -> None:
-    """Create ZIP file with audio and timestamps to disk. Run in executor."""
+def create_zip_file_to_disk(audio_file: str | None, timestamp_file: str, output_path: str) -> None:
+    """
+    Create ZIP file with timestamps and optional audio to disk. Run in executor.
+
+    Args:
+        audio_file: Path to audio file (None for Korean lectures)
+        timestamp_file: Path to timestamps.json
+        output_path: Output ZIP file path
+    """
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.write(audio_file, arcname = 'audio.opus')
+        if audio_file:
+            zip_file.write(audio_file, arcname = 'audio.opus')
         zip_file.write(timestamp_file, arcname = 'timestamps.json')
 
 @app.get('/api/synchronize/status/{job_id}')
