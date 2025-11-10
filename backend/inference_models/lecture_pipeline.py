@@ -481,34 +481,33 @@ class LecturePipeline:
                 progress_callback = tts_progress_callback
             )
 
-            # Post-process TTS result to add consistent field structure
-            # For English lectures: text_eng and text_kor are already in matching_results
+            # Post-process TTS result to standardize timestamp format
+            # TTS processor now generates timestamps with text_eng/text_kor and all timing fields
             with open(output_json_path, 'r', encoding='utf-8') as f:
                 tts_output = json.load(f)
 
             # Extract timestamps array from TTS output
             tts_timestamps = tts_output.get('timestamps', [])
 
-            # Reconstruct with consistent field names (remove sentence_id, duration, rename fields)
+            # Rename TTS time fields to follow naming convention
             timestamps_data = []
-            for i, entry in enumerate(tts_timestamps):
-                if i < len(matching_results):
-                    timestamp_entry = {
-                        'text_eng': matching_results[i].get('text_eng', ''),
-                        'text_kor': matching_results[i].get('text_kor', ''),
-                        'slide_number': entry.get('slide_number', matching_results[i]['matched_page']),
-                        'tts_start_time': entry.get('start_time', 0),  # TTS start time (ms)
-                        'tts_end_time': entry.get('end_time', 0),  # TTS end time (ms)
-                        'original_start_time': entry.get('original_start_time', 0),  # Original audio start time (ms)
-                        'original_end_time': entry.get('original_end_time', 0)  # Original audio end time (ms)
-                    }
-                    timestamps_data.append(timestamp_entry)
+            for entry in tts_timestamps:
+                timestamp_entry = {
+                    'text_eng': entry.get('text_eng', ''),
+                    'text_kor': entry.get('text_kor', ''),
+                    'slide_number': entry.get('slide_number', 1),
+                    'tts_start_time': entry.get('start_time', 0),  # Rename: start_time -> tts_start_time (ms)
+                    'tts_end_time': entry.get('end_time', 0),  # Rename: end_time -> tts_end_time (ms)
+                    'original_start_time': entry.get('original_start_time', 0),  # Original audio start time (ms)
+                    'original_end_time': entry.get('original_end_time', 0)  # Original audio end time (ms)
+                }
+                timestamps_data.append(timestamp_entry)
 
-            # Save updated timestamps.json
+            # Save updated timestamps.json with standardized field names
             with open(output_json_path, 'w', encoding='utf-8') as f:
                 json.dump(timestamps_data, f, ensure_ascii=False, indent=2)
 
-            print(f"\n✓ TTS Complete: {tts_result['metadata']['total_duration']:.2f}s audio generated")
+            print(f"\n✓ TTS Complete: {tts_result['metadata']['total_duration']}ms audio generated")
 
             if progress_callback:
                 progress_callback("processing_tts", 95.0, "TTS generation completed")

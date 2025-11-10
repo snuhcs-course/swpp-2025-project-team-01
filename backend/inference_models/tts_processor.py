@@ -89,7 +89,8 @@ class TTSProcessor:
         Generate audio from sentences with slide alignment.
 
         Args:
-            sentences: List of dicts with 'text' and 'slide_number' keys
+            sentences: List of dicts with 'text_eng' and 'slide_number' keys
+                      (TTS only processes English text for English lectures)
             output_audio_path: Output WAV file path
             output_json_path: Optional JSON metadata output path
             export_formats: Optional list of additional formats ['opus', 'aac']
@@ -117,7 +118,8 @@ class TTSProcessor:
 
             total_sentences = len(sentences)
             for idx, sentence_info in enumerate(sentences):
-                text = sentence_info.get('text', '')
+                # TTS uses English text (text_eng) for English lectures
+                text = sentence_info.get('text_eng', '')
                 slide_number = sentence_info.get('slide_number', 1)
 
                 print(f"Processing: [{idx+1}/{len(sentences)}] [Slide {slide_number}] {text[:50]}...")
@@ -145,22 +147,23 @@ class TTSProcessor:
 
                         # Save timestamp info (convert to milliseconds as integer)
                         timestamp_info = {
-                            "sentence_id": idx + 1,
-                            "text": text,
                             "slide_number": slide_number,
                             "start_time": int(round(current_time * 1000)),
-                            "end_time": int(round((current_time + duration) * 1000)),
-                            "duration": int(round(duration * 1000))
+                            "end_time": int(round((current_time + duration) * 1000))
                         }
 
-                        # Add Korean translation if available
+                        # Add text fields (text_eng and text_kor)
+                        if 'text_eng' in sentence_info:
+                            timestamp_info['text_eng'] = sentence_info['text_eng']
                         if 'text_kor' in sentence_info:
                             timestamp_info['text_kor'] = sentence_info['text_kor']
 
-                        # Add original audio timestamps if available (in milliseconds)
+                        # Add original audio timestamps if available (convert to milliseconds as integer)
                         if 'original_start_time' in sentence_info:
+                            # original_start_time is in seconds, convert to milliseconds
                             timestamp_info['original_start_time'] = int(round(sentence_info['original_start_time'] * 1000))
                         if 'original_end_time' in sentence_info:
+                            # original_end_time is in seconds, convert to milliseconds
                             timestamp_info['original_end_time'] = int(round(sentence_info['original_end_time'] * 1000))
 
                         timestamp_data.append(timestamp_info)
@@ -303,10 +306,10 @@ class TTSProcessor:
         progress_callback: Callable[[float, str], None] | None = None
     ) -> dict[str, Any]:
         """
-        Generate audio from slide matching results.
+        Generate audio from slide matching results (English lectures only).
 
         Args:
-            matching_results: Results from SlideMatchingProcessor
+            matching_results: Results from SlideMatchingProcessor with text_eng and text_kor fields
             output_audio_path: Output WAV file path
             output_json_path: Optional JSON metadata output path
             export_formats: Optional list of additional formats
@@ -315,19 +318,17 @@ class TTSProcessor:
         Returns:
             Dictionary with metadata and timestamps
         """
-        # Convert matching results to sentence format
+        # Convert matching results to sentence format for TTS
+        # TTS only processes English text (text_eng)
         sentences = []
         for result in matching_results:
             sentence_info = {
-                'text': result['text'],
+                'text_eng': result.get('text_eng', ''),
+                'text_kor': result.get('text_kor', ''),
                 'slide_number': result['matched_page']
             }
 
-            # Include Korean translation if available
-            if 'text_kor' in result:
-                sentence_info['text_kor'] = result['text_kor']
-
-            # Include original audio timestamps if available
+            # Include original audio timestamps if available (already in seconds from ASR)
             if 'original_start_time' in result:
                 sentence_info['original_start_time'] = result['original_start_time']
             if 'original_end_time' in result:
@@ -353,11 +354,13 @@ if __name__ == "__main__":
         silence_duration = 0.2
     )
 
-    # Example sentences with slide numbers
+    # Example sentences with slide numbers (English lectures)
+    # text_eng: English text for TTS generation
+    # text_kor: Korean translation (optional)
     sentences = [
-        {"text": "Welcome to this lecture on deep learning.", "slide_number": 1},
-        {"text": "Today we will discuss neural networks.", "slide_number": 1},
-        {"text": "Let's start with the basics.", "slide_number": 2},
+        {"text_eng": "Welcome to this lecture on deep learning.", "text_kor": "딥러닝 강의에 오신 것을 환영합니다.", "slide_number": 1},
+        {"text_eng": "Today we will discuss neural networks.", "text_kor": "오늘은 신경망에 대해 논의할 것입니다.", "slide_number": 1},
+        {"text_eng": "Let's start with the basics.", "text_kor": "기본부터 시작해봅시다.", "slide_number": 2},
     ]
 
     result = processor.generate_audio(
@@ -368,4 +371,4 @@ if __name__ == "__main__":
     )
 
     print(f"\nGenerated {result['metadata']['total_sentences']} sentences")
-    print(f"Total duration: {result['metadata']['total_duration']}s")
+    print(f"Total duration: {result['metadata']['total_duration']}ms")
