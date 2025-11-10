@@ -4,10 +4,10 @@ An integrated AI pipeline that reconstructs lectures from audio recordings and P
 
 ## Features
 
-- **Automatic Speech Recognition**: Transcribe lecture audio using NVIDIA Parakeet TDT 0.6B model with segment-level timestamps
+- **Automatic Speech Recognition**: Transcribe lecture audio (English/Korean) using OpenAI Whisper with segment-level timestamps
 - **Intelligent Slide Matching**: Align transcript to PDF slides using multimodal vision-text embeddings
-- **English-to-Korean Translation**: Translate transcripts using Tencent Hunyuan-MT-7B with vLLM
-- **Text-to-Speech Synthesis**: Generate reconstructed audio with precise slide timing using Kokoro TTS
+- **Bidirectional Translation**: Translate transcripts (English↔Korean) using Tencent Hunyuan-MT-7B with vLLM
+- **Text-to-Speech Synthesis**: Generate reconstructed audio with precise slide timing using Kokoro TTS (English lectures only)
 - **Original Audio Timestamps**: Preserve timing information from original lecture audio for each sentence
 - **Memory-Efficient Design**: Automatic model loading/unloading between stages for optimal GPU usage
 - **Flexible Architecture**: Use the complete pipeline or individual processors independently
@@ -43,7 +43,7 @@ conda activate swpp-ai
 
 The setup script installs:
 - PyTorch 2.8.0 with CUDA 12.9
-- Transformers, NeMo Toolkit (ASR)
+- Transformers, Whisper (ASR)
 - vLLM 0.10.2 (for translation inference)
 - Kokoro TTS
 - Flash Attention 2 (optional, GPU required)
@@ -56,10 +56,11 @@ from lecture_pipeline import LecturePipeline
 # Initialize pipeline
 pipeline = LecturePipeline(device='cuda', output_dir='./output')
 
-# Process lecture
+# Process English lecture
 results = pipeline.run(
     audio_path='lecture_recording.mp3',
     pdf_path='lecture_slides.pdf',
+    language='en',  # 'en' for English, 'ko' for Korean
     lecture_name='my_lecture'
 )
 ```
@@ -103,9 +104,10 @@ pipeline = LecturePipeline(
     # Translation settings
     translation_model='tencent/Hunyuan-MT-7B',  # Translation model name
     translation_tensor_parallel_size=1,  # Number of GPUs for tensor parallelism
-    enable_translation=True,  # Enable English-to-Korean translation (default: True)
+    enable_translation=True,  # Enable translation (default: True)
 
     # TTS settings
+    enable_tts=True,          # Enable TTS generation (default: True, only for English lectures)
     tts_voice='af_heart',     # Voice style (af_heart, af_bella, af_sarah, am_adam, am_michael)
     tts_speed=1.0,           # Playback speed
     tts_silence_duration=0.2,  # Silence between sentences (seconds)
@@ -115,10 +117,11 @@ pipeline = LecturePipeline(
     output_dir='./pipeline_output'
 )
 
-# Run complete pipeline
+# Run complete pipeline for English lecture
 results = pipeline.run(
     audio_path='lecture_recording.mp3',
     pdf_path='lecture_slides.pdf',
+    language='en',            # 'en' for English, 'ko' for Korean
     lecture_name='my_lecture',
     sentence_splitter=simple_sentence_splitter,  # Split transcript into sentences (or None for full transcript)
     save_intermediate=True                 # Save intermediate results
@@ -137,8 +140,10 @@ from asr_processor import ASRProcessor
 asr = ASRProcessor(device='cuda')
 asr.load_model()
 
+# Transcribe English lecture
 result = asr.transcribe(
     audio_path='lecture_recording.mp3',
+    language='en',        # 'en' for English, 'ko' for Korean
     chunk_seconds=300,    # Auto-split long files (default: 300)
     batch_size=4,         # Batch processing for memory efficiency (default: 4)
     output_path='transcript.txt'
@@ -180,13 +185,13 @@ translator = TranslationProcessor(
     model_name='tencent/Hunyuan-MT-7B',
     device='cuda',
     tensor_parallel_size=1,
-    max_model_len=1024,
+    max_model_len=2048,
     gpu_memory_utilization=0.35
 )
 translator.load_model()
 
-# Translate matching results
-matching_results = [
+# Example 1: Translate English to Korean
+matching_results_en = [
     {
         'text': 'Welcome to the lecture.',
         'matched_page': 1,
@@ -199,15 +204,36 @@ matching_results = [
     }
 ]
 
-# Add Korean translations
-translated_results = translator.translate_matching_results(
-    matching_results=matching_results
+translated_results_en = translator.translate_matching_results(
+    matching_results=matching_results_en,
+    source_lang='en',
+    target_lang='ko'
 )
 
-# Each result now has 'text_kor' field
-for result in translated_results:
-    print(f"EN: {result['text']}")
-    print(f"KO: {result['text_kor']}")
+# Original 'text' field is removed and reorganized into text_eng/text_kor
+for result in translated_results_en:
+    print(f"EN: {result['text_eng']}")  # Original English text
+    print(f"KO: {result['text_kor']}")  # Korean translation
+
+# Example 2: Translate Korean to English
+matching_results_ko = [
+    {
+        'text': '강의에 오신 것을 환영합니다.',
+        'matched_page': 1,
+        'confidence_score': 0.95
+    }
+]
+
+translated_results_ko = translator.translate_matching_results(
+    matching_results=matching_results_ko,
+    source_lang='ko',
+    target_lang='en'
+)
+
+# Original 'text' field is removed and reorganized into text_eng/text_kor
+for result in translated_results_ko:
+    print(f"KO: {result['text_kor']}")  # Original Korean text
+    print(f"EN: {result['text_eng']}")  # English translation
 
 translator.unload_model()
 ```
@@ -247,11 +273,13 @@ tts.unload_model()
 The system consists of four independent processors orchestrated by `LecturePipeline`:
 
 ### 1. ASR Stage (Speech → Text)
-- **Model**: NVIDIA Parakeet TDT 0.6B via NeMo Toolkit
+- **Model**: OpenAI Whisper (turbo by default)
 - **Features**:
+  - Supports English and Korean transcription
   - Automatic audio chunking for long files (>5 minutes)
   - Batch processing to optimize GPU memory
-  - Segment-level timestamp extraction (auto-split by punctuation)
+  - Segment-level timestamp extraction (punctuation-based split)
+  - Special handling for Korean sentence endings (니다, 요)
 - **Output**: Full transcript text + segment timestamps with original audio timing
 
 ### 2. Slide Matching Stage (Text → Slides)
@@ -264,14 +292,19 @@ The system consists of four independent processors orchestrated by `LecturePipel
   - Optional exponential scaling and confidence boosting
 - **Output**: Sentence-to-slide alignment with confidence scores + original audio timestamps
 
-### 3. Translation Stage (English → Korean)
+### 3. Translation Stage (Bidirectional: English ↔ Korean)
 - **Model**: Tencent Hunyuan-MT-7B via vLLM
 - **Features**:
+  - Bidirectional translation support (English↔Korean)
   - Fast parallel translation inference using vLLM
   - Batch processing for efficiency
   - Configurable GPU memory utilization
   - Optional: can be disabled via `enable_translation=False`
-- **Output**: Korean translations added to matching results
+  - Translation direction determined per request based on lecture language
+  - Automatic field reorganization: removes `text` field and creates `text_eng`/`text_kor` fields
+- **Output**: Matching results with bilingual text fields
+  - English lectures: `text` → `text_eng` (original), translation → `text_kor`
+  - Korean lectures: `text` → `text_kor` (original), translation → `text_eng`
 
 ### 4. TTS Stage (Text + Slides → Audio)
 - **Model**: Kokoro TTS pipeline
@@ -280,7 +313,8 @@ The system consists of four independent processors orchestrated by `LecturePipel
   - Precise timing generation for each sentence
   - Automatic silence insertion between sentences
   - Multi-format export (WAV, Opus, AAC)
-- **Output**: Reconstructed audio with timestamp metadata (including translations)
+  - **Only runs for English lectures** (Korean lectures use original audio)
+- **Output**: Reconstructed audio with timestamp metadata (English lectures only)
 
 ### Memory Management
 
@@ -301,9 +335,11 @@ The `LecturePipeline` automatically unloads models between stages to prevent VRA
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `asr_model` | `nvidia/parakeet-tdt-0.6b-v2` | ASR model name |
+| `asr_model` | `turbo` | Whisper model name (turbo, large-v3, etc.) |
 | `asr_chunk_seconds` | `300` | Chunk duration for long audio (seconds) |
 | `asr_batch_size` | `4` | Batch size (adjust based on VRAM) |
+
+**Note**: The `language` parameter is passed per request to the `pipeline.run()` or `asr.transcribe()` method, not during initialization.
 
 ### Slide Matching Parameters
 
@@ -328,12 +364,13 @@ The `LecturePipeline` automatically unloads models between stages to prevent VRA
 |-----------|---------|-------------|
 | `translation_model` | `tencent/Hunyuan-MT-7B` | Translation model name |
 | `translation_tensor_parallel_size` | `1` | Number of GPUs for tensor parallelism |
-| `enable_translation` | `True` | Enable English-to-Korean translation |
+| `enable_translation` | `True` | Enable translation (direction determined per request) |
 
 ### TTS Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
+| `enable_tts` | `True` | Enable TTS generation (only for English lectures) |
 | `tts_voice` | `af_heart` | Voice style |
 | `tts_speed` | `1.0` | Playback speed multiplier |
 | `tts_lang_code` | `a` | Language code ('a' = American English) |
@@ -341,16 +378,20 @@ The `LecturePipeline` automatically unloads models between stages to prevent VRA
 
 **Available TTS voices**: `af_heart`, `af_bella`, `af_sarah`, `am_adam`, `am_michael`
 
+**Note**: TTS is only used for English lectures. Korean lectures skip TTS and use original audio timestamps.
+
 ## Output Formats
 
 ### Transcript File (`.txt`)
 Plain text transcription of the lecture audio.
 
 ### Matching Results (`.json`)
+
+**After Translation (Both English and Korean Lectures):**
 ```json
 [
   {
-    "text": "Welcome to the lecture.",
+    "text_eng": "Welcome to the lecture.",
     "text_kor": "강의에 오신 것을 환영합니다.",
     "matched_page": 1,
     "confidence_score": 0.95,
@@ -358,7 +399,7 @@ Plain text transcription of the lecture audio.
     "original_end_time": 3.45
   },
   {
-    "text": "Today we discuss AI.",
+    "text_eng": "Today we discuss AI.",
     "text_kor": "오늘 우리는 AI에 대해 논의합니다.",
     "matched_page": 2,
     "confidence_score": 0.92,
@@ -369,39 +410,50 @@ Plain text transcription of the lecture audio.
 ```
 
 **Notes:**
-- `text_kor` field is added when translation is enabled
+- For **English lectures**: `text_eng` is the original ASR output, `text_kor` is the Korean translation
+- For **Korean lectures**: `text_kor` is the original ASR output, `text_eng` is the English translation
+- The original `text` field is removed by the translation processor and reorganized into `text_eng`/`text_kor` fields
 - `original_start_time` and `original_end_time` are in seconds (float), extracted from ASR segment timestamps
 
 ### Timestamps File (`.json`)
+
+**For English Lectures:**
 ```json
-{
-  "metadata": {
-    "total_sentences": 150,
-    "total_duration": 3600500,
-    "voice": "af_heart",
-    "speed": 1.0
+[
+  {
+    "text_eng": "Welcome to the lecture.",
+    "text_kor": "강의에 오신 것을 환영합니다.",
+    "slide_number": 1,
+    "tts_start_time": 0,
+    "tts_end_time": 2500,
+    "original_start_time": 120,
+    "original_end_time": 3450
   },
-  "timestamps": [
-    {
-      "sentence_id": 1,
-      "text": "Welcome to the lecture.",
-      "text_kor": "강의에 오신 것을 환영합니다.",
-      "slide_number": 1,
-      "start_time": 0,
-      "end_time": 2500,
-      "duration": 2500,
-      "original_start_time": 120,
-      "original_end_time": 3450
-    },
-    ...
-  ]
-}
+  ...
+]
+```
+
+**For Korean Lectures:**
+```json
+[
+  {
+    "text_eng": "Welcome to the lecture.",
+    "text_kor": "강의에 오신 것을 환영합니다.",
+    "slide_number": 1,
+    "tts_start_time": 0,
+    "tts_end_time": 0,
+    "original_start_time": 120,
+    "original_end_time": 3450
+  },
+  ...
+]
 ```
 
 **Notes:**
-- All time values for **reconstructed audio** (`total_duration`, `start_time`, `end_time`, `duration`) are in milliseconds as integers
-- `original_start_time` and `original_end_time` are timestamps from the **original lecture audio** in milliseconds (integer)
-- `text_kor` field contains Korean translation (added when translation is enabled)
+- For **English lectures**: `text_eng` is the original ASR output, `text_kor` is the Korean translation
+- For **Korean lectures**: `text_kor` is the original ASR output, `text_eng` is the English translation
+- `tts_start_time` and `tts_end_time` are timestamps for **reconstructed TTS audio** in milliseconds (0 for Korean lectures)
+- `original_start_time` and `original_end_time` are timestamps from the **original lecture audio** in milliseconds
 
 ### Audio Files
 - **WAV** (`.wav`): Uncompressed audio, 24kHz sample rate
