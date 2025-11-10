@@ -163,71 +163,112 @@ class PdfArea extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: controller.currentPage,
       builder: (context, currentPage, _) {
-        final content = GestureDetector(
-          onVerticalDragUpdate: isVertical
-              ? null
-              : (details) {
-                  controller.handleVerticalDrag(details);
-                },
-          onTap: () => controller.handlePdfTap(isVertical),
-          child: Stack(
-            children: [
-              // PDF 내용
-              if (controller.pdfController != null)
-                ValueListenableBuilder<bool>(
-                  valueListenable: controller.isSynced,
-                  builder: (context, isSynced, _) {
-                    return PdfView(
-                      key: controller.pdfViewKey,
-                      controller: controller.pdfController!,
-                      onPageChanged: controller.onPdfPageChanged,
-                      physics: !isSynced
-                          ? const AlwaysScrollableScrollPhysics()
-                          : const NeverScrollableScrollPhysics(),
-                    );
-                  },
-                )
-              else
-                Container(
-                  color: Colors.black87,
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                ),
-
-              // 자막 오버레이 (가로 모드 + 자막 활성화)
-              if (!isVertical)
-                ValueListenableBuilder<bool>(
-                  valueListenable: controller.isCaptionEnabled,
-                  builder: (context, isCaptionEnabled, _) {
-                    if (!isCaptionEnabled) {
-                      return const SizedBox.shrink();
-                    }
-                    return CaptionOverlay(controller: controller);
-                  },
-                ),
-
-              // 비디오 컨트롤 오버레이
+        final content = Stack(
+          children: [
+            // PDF 내용
+            if (controller.pdfController != null)
               ValueListenableBuilder<bool>(
-                valueListenable: controller.showControls,
-                builder: (context, showControls, _) {
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: controller.isPagesExpanded,
-                    builder: (context, isPagesExpanded, _) {
-                      if (!showControls || (isPagesExpanded && !isVertical)) {
-                        return const SizedBox.shrink();
-                      }
-                      return VideoControlsOverlay(
-                        isVertical: isVertical,
-                        controller: controller,
-                        onBack: onBack,
-                      );
-                    },
+                valueListenable: controller.isSynced,
+                builder: (context, isSynced, _) {
+                  return PdfView(
+                    key: controller.pdfViewKey,
+                    controller: controller.pdfController!,
+                    onPageChanged: controller.onPdfPageChanged,
+                    physics: !isSynced
+                        ? const AlwaysScrollableScrollPhysics()
+                        : const NeverScrollableScrollPhysics(),
                   );
                 },
+              )
+            else
+              Container(
+                color: Colors.black87,
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
               ),
-            ],
-          ),
+
+            // 투명 제스처 레이어 - 컨트롤이 없을 때만 활성화
+            ValueListenableBuilder<bool>(
+              valueListenable: controller.showControls,
+              builder: (context, showControls, _) {
+                if (showControls) {
+                  return const SizedBox.shrink();
+                }
+                return Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragUpdate: isVertical
+                        ? null
+                        : (details) {
+                            controller.handleVerticalDrag(details);
+                          },
+                    onTap: () => controller.handlePdfTap(isVertical),
+                    onDoubleTapDown: (TapDownDetails details) {
+                      controller.saveDoubleTapPosition(
+                        details.localPosition.dx,
+                      );
+                    },
+                    onDoubleTap: () {
+                      controller.handleDoubleTapSkip(
+                        MediaQuery.of(context).size.width,
+                      );
+                    },
+                    // Sync off일 때 horizontal swipe로 페이지 전환
+                    onHorizontalDragEnd: controller.isSynced.value
+                        ? null
+                        : (details) {
+                            final velocity = details.primaryVelocity ?? 0;
+                            if (velocity < -300) {
+                              // 왼쪽 스와이프 → 다음 페이지
+                              if (currentPage < controller.pageCount) {
+                                controller.jumpToPage(currentPage + 1);
+                              }
+                            } else if (velocity > 300) {
+                              // 오른쪽 스와이프 → 이전 페이지
+                              if (currentPage > 1) {
+                                controller.jumpToPage(currentPage - 1);
+                              }
+                            }
+                          },
+                    child: Container(color: Colors.transparent),
+                  ),
+                );
+              },
+            ),
+
+            // 자막 오버레이 (가로 모드 + 자막 활성화)
+            if (!isVertical)
+              ValueListenableBuilder<bool>(
+                valueListenable: controller.isCaptionEnabled,
+                builder: (context, isCaptionEnabled, _) {
+                  if (!isCaptionEnabled) {
+                    return const SizedBox.shrink();
+                  }
+                  return CaptionOverlay(controller: controller);
+                },
+              ),
+
+            // 비디오 컨트롤 오버레이
+            ValueListenableBuilder<bool>(
+              valueListenable: controller.showControls,
+              builder: (context, showControls, _) {
+                return ValueListenableBuilder<bool>(
+                  valueListenable: controller.isPagesExpanded,
+                  builder: (context, isPagesExpanded, _) {
+                    if (!showControls || (isPagesExpanded && !isVertical)) {
+                      return const SizedBox.shrink();
+                    }
+                    return VideoControlsOverlay(
+                      isVertical: isVertical,
+                      controller: controller,
+                      onBack: onBack,
+                    );
+                  },
+                );
+              },
+            ),
+          ],
         );
 
         if (isVertical) {
@@ -266,82 +307,85 @@ class VideoControlsOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: Container(
-        color: const Color(0x4D1D1D1D),
-        child: Stack(
-          children: [
-            // Top control bar
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: ValueListenableBuilder<bool>(
-                valueListenable: controller.isOriginalAudio,
-                builder: (context, isOriginalAudio, _) {
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: controller.isSynced,
-                    builder: (context, isSynced, _) {
-                      return TopControlBar(
-                        isVertical: isVertical,
-                        onBack: onBack,
-                        isOriginalAudio: isOriginalAudio,
-                        onAudioToggle: controller.toggleAudioSource,
-                        onSpeedChanged: controller.setPlaybackSpeed,
-                        isSynced: isSynced,
-                        onSyncToggle: controller.toggleSync,
-                        pageDifference: controller.pageDifference,
-                      );
-                    },
-                  );
-                },
+      child: GestureDetector(
+        onTap: controller.toggleControls,
+        child: Container(
+          color: const Color(0x4D1D1D1D),
+          child: Stack(
+            children: [
+              // Top control bar
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: controller.isOriginalAudio,
+                  builder: (context, isOriginalAudio, _) {
+                    return ValueListenableBuilder<bool>(
+                      valueListenable: controller.isSynced,
+                      builder: (context, isSynced, _) {
+                        return TopControlBar(
+                          isVertical: isVertical,
+                          onBack: onBack,
+                          isOriginalAudio: isOriginalAudio,
+                          onAudioToggle: controller.toggleAudioSource,
+                          onSpeedChanged: controller.setPlaybackSpeed,
+                          isSynced: isSynced,
+                          onSyncToggle: controller.toggleSync,
+                          pageDifference: controller.pageDifference,
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
 
-            // Center play controls - always in the exact center
-            Center(
-              child: ValueListenableBuilder<bool>(
-                valueListenable: controller.isPlaying,
-                builder: (context, isPlaying, _) {
-                  return CenterPlayControls(
-                    isPlaying: isPlaying,
-                    onPlayPause: controller.playPause,
-                    onSkipBackward: controller.skipBackward,
-                    onSkipForward: controller.skipForward,
-                    isVertical: isVertical,
-                  );
-                },
+              // Center play controls - always in the exact center
+              Center(
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: controller.isPlaying,
+                  builder: (context, isPlaying, _) {
+                    return CenterPlayControls(
+                      isPlaying: isPlaying,
+                      onPlayPause: controller.playPause,
+                      onSkipBackward: controller.skipBackward,
+                      onSkipForward: controller.skipForward,
+                      isVertical: isVertical,
+                    );
+                  },
+                ),
               ),
-            ),
 
-            // Bottom control bar
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ListenableBuilder(
-                listenable: Listenable.merge([
-                  controller.currentTime,
-                  controller.isCaptionEnabled,
-                  controller.showTranscriptPanel,
-                  controller.isFullscreen,
-                ]),
-                builder: (context, _) {
-                  return BottomControlBar(
-                    isVertical: isVertical,
-                    currentTime: controller.currentTime.value,
-                    totalTime: controller.totalTime,
-                    onTimeChanged: controller.seek,
-                    isCaptionEnabled: controller.isCaptionEnabled.value,
-                    onCaptionToggle: controller.toggleCaption,
-                    showTranscriptPanel: controller.showTranscriptPanel.value,
-                    onTranscriptToggle: controller.toggleTranscriptPanel,
-                    isFullscreen: controller.isFullscreen.value,
-                    onFullscreenToggle: controller.toggleFullscreen,
-                  );
-                },
+              // Bottom control bar
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: ListenableBuilder(
+                  listenable: Listenable.merge([
+                    controller.currentTime,
+                    controller.isCaptionEnabled,
+                    controller.showTranscriptPanel,
+                    controller.isFullscreen,
+                  ]),
+                  builder: (context, _) {
+                    return BottomControlBar(
+                      isVertical: isVertical,
+                      currentTime: controller.currentTime.value,
+                      totalTime: controller.totalTime,
+                      onTimeChanged: controller.seek,
+                      isCaptionEnabled: controller.isCaptionEnabled.value,
+                      onCaptionToggle: controller.toggleCaption,
+                      showTranscriptPanel: controller.showTranscriptPanel.value,
+                      onTranscriptToggle: controller.toggleTranscriptPanel,
+                      isFullscreen: controller.isFullscreen.value,
+                      onFullscreenToggle: controller.toggleFullscreen,
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

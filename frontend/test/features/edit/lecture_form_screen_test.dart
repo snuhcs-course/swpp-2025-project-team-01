@@ -103,7 +103,7 @@ void main() {
     int totalParts,
     String serverAddress,
     String port,
-    Future<void> Function(double, String, String, int, int) onProgress, {
+    String langCode, {
     http.Client? clientToClose,
   }) async {
     final fakeTtsPath = '/fake/tts_${lectureId}_$part.opus';
@@ -375,6 +375,8 @@ void main() {
       final titleField = find.byType(TextField).at(1);
       await tester.enterText(titleField, 'Test Title');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -431,6 +433,8 @@ void main() {
       final titleField = find.byType(TextField).at(1);
       await tester.enterText(titleField, 'Test Title');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -513,7 +517,7 @@ void main() {
         int totalParts,
         String serverAddress,
         String port,
-        Future<void> Function(double, String, String, int, int) onProgress, {
+        String langCode, {
         http.Client? clientToClose,
       }) async {
         called = true;
@@ -526,7 +530,7 @@ void main() {
           totalParts,
           serverAddress,
           port,
-          onProgress,
+          langCode,
           clientToClose: clientToClose,
         );
       }
@@ -708,6 +712,8 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
         expect(find.text('Page Range'), findsNWidgets(2));
 
+        await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+        await tester.pumpAndSettle();
         final addButtons = find.widgetWithText(OutlinedButton, 'Add');
         await tester.tap(addButtons.last);
 
@@ -767,6 +773,8 @@ void main() {
 
       await pumpScreen(tester, pdfDocumentFactory: mockPdfFactory);
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -796,6 +804,8 @@ void main() {
 
       await pumpScreen(tester);
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -825,6 +835,8 @@ void main() {
 
       await pumpScreen(tester, pdfDocumentFactory: errorPdfFactory);
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -852,6 +864,8 @@ void main() {
 
       await pumpScreen(tester);
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       final addButtons = find.widgetWithText(OutlinedButton, 'Add');
 
       await tester.ensureVisible(addButtons.last);
@@ -885,6 +899,8 @@ void main() {
 
       await pumpScreen(tester);
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       final addButtons = find.widgetWithText(OutlinedButton, 'Add');
       await tester.ensureVisible(addButtons.last);
       await tester.pumpAndSettle();
@@ -905,6 +921,8 @@ void main() {
 
       await pumpScreen(tester);
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       final addButtons = find.widgetWithText(OutlinedButton, 'Add');
       await tester.ensureVisible(addButtons.last);
       await tester.pumpAndSettle();
@@ -977,6 +995,8 @@ void main() {
 
       expect(find.text('slides.pdf'), findsOneWidget);
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       final addButtons = find.widgetWithText(OutlinedButton, 'Add');
 
       await tester.ensureVisible(addButtons.last);
@@ -1069,6 +1089,8 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(1), 'Multi Audio Test');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -1088,6 +1110,8 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       addButtons = find.widgetWithText(OutlinedButton, 'Add');
 
       await tester.ensureVisible(addButtons.last);
@@ -1154,6 +1178,8 @@ void main() {
       );
       mockFileReadingService.onReadAsBytes(pdfPath, Uint8List(0));
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -1214,6 +1240,8 @@ void main() {
       );
       mockFileReadingService.onReadAsBytes(pdfPath, Uint8List(0));
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -1245,10 +1273,9 @@ void main() {
         int totalParts,
         String serverAddress,
         String port,
-        Future<void> Function(double, String, String, int, int) onProgress, {
+        String langCode, {
         http.Client? clientToClose,
       }) async {
-        await onProgress(0.1, 'Starting...', titleText, part, totalParts);
         return null;
       }
 
@@ -1285,6 +1312,8 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(1), 'Test');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -1349,6 +1378,8 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(1), 'Test');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -1409,6 +1440,8 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(1), 'Test');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -1471,6 +1504,8 @@ void main() {
       );
       await tester.enterText(find.byType(TextField).at(1), 'Test');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 
@@ -1530,6 +1565,8 @@ void main() {
         );
         await tester.enterText(find.byType(TextField).at(1), 'Test');
 
+        await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+        await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
         await tester.pumpAndSettle();
 
@@ -1606,6 +1643,8 @@ void main() {
         );
         await tester.enterText(find.byType(TextField).at(1), 'Test');
 
+        await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+        await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
         await tester.pumpAndSettle();
 
@@ -1623,6 +1662,8 @@ void main() {
         await tester.tap(find.byIcon(Icons.add_circle_outline));
         await tester.pump(const Duration(seconds: 1));
 
+        await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+        await tester.pumpAndSettle();
         addButtons = find.widgetWithText(OutlinedButton, 'Add');
         await tester.ensureVisible(addButtons.last);
         await tester.pumpAndSettle();
@@ -1699,6 +1740,8 @@ void main() {
       final titleField = find.byType(TextField).at(1);
       await tester.enterText(titleField, 'Test Lecture');
 
+      await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Add').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, 'Add').first);
       await tester.pumpAndSettle();
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -46,7 +47,7 @@ typedef FetchLectureCallback =
       int totalParts,
       String serverAddress,
       String port,
-      Future<void> Function(double, String, String, int, int) onProgress, {
+      String langCode, {
       http.Client? clientToClose,
     });
 
@@ -173,6 +174,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 선택된 과목 ID (null = 선택 안 함)
   String? _selectedSubjectId;
 
+  // 선택된 강의 언어
+  late String _selectedLanguage = AppLocalizations.of(context).isKorean
+      ? 'ko'
+      : 'en';
+
   // 업로드된 슬라이드 PDF 파일 경로
   String? _slidePdfPath;
 
@@ -239,6 +245,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 _buildSectionTitle(l10n.isKorean ? '과목 선택' : 'Select Subject'),
                 const SizedBox(height: 8),
                 _buildSubjectDropdown(l10n, subjects),
+                const SizedBox(height: 20),
+
+                // ========== 강의 언어 선택 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '강의 언어' : 'Spoken Language'),
+                const SizedBox(height: 8),
+                _buildLanguageDropdown(l10n, subjects),
                 const SizedBox(height: 20),
 
                 // ========== 강의 주차 입력 섹션 ==========
@@ -362,6 +374,55 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               onChanged: (value) {
                 setState(() {
                   _selectedSubjectId = value;
+                });
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 언어 선택 드롭다운 위젯
+  Widget _buildLanguageDropdown(AppLocalizations l10n, List<dynamic> subjects) {
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+        final borderColor = isDark
+            ? Colors.grey.shade700
+            : Colors.grey.shade300;
+        final textColor = isDark ? Colors.white : Colors.black87;
+
+        String labelFor(String code) => (code == 'ko' ? '한국어' : 'English');
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedLanguage,
+              isExpanded: true,
+              icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
+              dropdownColor: cardColor,
+              items: (l10n.isKorean ? ['ko', 'en'] : ['en', 'ko'])
+                  .map(
+                    (code) => DropdownMenuItem<String>(
+                      value: code,
+                      child: Text(
+                        labelFor(code),
+                        style: TextStyle(fontSize: 16, color: textColor),
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedLanguage = value!;
                 });
               },
             ),
@@ -1174,7 +1235,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               effectiveAudios.length,
               _serverAddress,
               _port,
-              onProgress,
+              _selectedLanguage,
               clientToClose: clients[i - 1],
             ),
           ),
