@@ -69,6 +69,12 @@ def _merge_segments_by_punctuation(segments: list[dict[str, Any]], language: str
                 if not word_text:
                     continue
 
+                if word_text.endswith('니다'):
+                    word_text += '.'
+                
+                if word_text.endswith('요') and len(word_text) >= 3:
+                    word_text += '.'
+
                 # Initialize sentence start time
                 if current_start is None:
                     current_start = word_start
@@ -205,8 +211,7 @@ class ASRProcessor:
     def __init__(
         self,
         model_name: str = "turbo",
-        device: str = "cuda",
-        language: str = "en"
+        device: str = "cuda"
     ):
         """
         Initialize ASR processor.
@@ -214,11 +219,9 @@ class ASRProcessor:
         Args:
             model_name: Whisper model name (turbo, large-v3, large-v2, etc.)
             device: Device to run on (cuda/cpu)
-            language: Language code for transcription ('en' for English, 'ko' for Korean)
         """
         self.model_name = model_name
         self.device = device
-        self.language = language
         self.model = None
 
     def load_model(self):
@@ -230,7 +233,7 @@ class ASRProcessor:
                 print("Model already loaded")
                 return
 
-            print(f"Loading Whisper ASR model: {self.model_name} (language: {self.language})")
+            print(f"Loading Whisper ASR model: {self.model_name}")
             if torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats()
 
@@ -251,6 +254,7 @@ class ASRProcessor:
     def _auto_split_transcribe(
         self,
         input_file: str,
+        language: str = "en",
         chunk_seconds: int = 300,
         batch_size: int = 3,
         temp_dir: str | None = None,
@@ -261,6 +265,7 @@ class ASRProcessor:
 
         Args:
             input_file: Input audio file path
+            language: Language code for transcription ('en' for English, 'ko' for Korean)
             chunk_seconds: Chunk duration in seconds
             batch_size: Batch size for processing (Note: Whisper processes sequentially)
             temp_dir: Temporary directory for chunks (auto-generated if None)
@@ -348,7 +353,7 @@ class ASRProcessor:
                     # Transcribe with word-level timestamps
                     result = self.model.transcribe(
                         chunk_file,
-                        language=self.language,
+                        language=language,
                         word_timestamps=True
                     )
 
@@ -359,7 +364,7 @@ class ASRProcessor:
                 # Extract and merge segments by punctuation
                 if 'segments' in result:
                     # Merge segments into sentence-level segments
-                    sentence_segments = _merge_segments_by_punctuation(result['segments'], language=self.language)
+                    sentence_segments = _merge_segments_by_punctuation(result['segments'], language=language)
 
                     # Add chunk offset to timestamps
                     for segment in sentence_segments:
@@ -434,6 +439,7 @@ class ASRProcessor:
     def transcribe(
         self,
         audio_path: str,
+        language: str = "en",
         chunk_seconds: int = 300,
         batch_size: int = 4,
         output_path: str | None = None,
@@ -444,6 +450,7 @@ class ASRProcessor:
 
         Args:
             audio_path: Path to audio file
+            language: Language code for transcription ('en' for English, 'ko' for Korean)
             chunk_seconds: Chunk duration for long files
             batch_size: Batch size for processing (adjust based on VRAM)
             output_path: Optional path to save transcript
@@ -461,7 +468,7 @@ class ASRProcessor:
         # Use inference lock to prevent concurrent inference on the same model
         with _asr_inference_lock:
             print("="*60)
-            print("ASR Transcription")
+            print(f"ASR Transcription (language: {language})")
             print("="*60)
 
             if progress_callback:
@@ -470,6 +477,7 @@ class ASRProcessor:
             # Try auto-split transcription
             split_result = self._auto_split_transcribe(
                 audio_path,
+                language = language,
                 chunk_seconds = chunk_seconds,
                 batch_size = batch_size,
                 progress_callback = progress_callback
@@ -487,7 +495,7 @@ class ASRProcessor:
                 with torch.no_grad():
                     result = self.model.transcribe(
                         audio_path,
-                        language=self.language,
+                        language=language,
                         word_timestamps=True
                     )
 
@@ -495,7 +503,7 @@ class ASRProcessor:
 
                 # Extract and merge segments by punctuation
                 if 'segments' in result:
-                    segment_timestamps = _merge_segments_by_punctuation(result['segments'], language=self.language)
+                    segment_timestamps = _merge_segments_by_punctuation(result['segments'], language=language)
 
                 if progress_callback:
                     progress_callback(95.0, "Transcription complete")
