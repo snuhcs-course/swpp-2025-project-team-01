@@ -906,8 +906,10 @@ class SubjectPanelHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final Color headerColor = isDark
-        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
         : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+
+    // 여기 아래 두 줄 redundant한 조건문 맞는데, 헤더 색 또 바뀔때 커스텀하기 쉽게 이대로 유지합시다
     final Color textColor = isDark ? Colors.white : Colors.white;
     final Color iconColor = isDark ? Colors.white : Colors.white;
 
@@ -990,7 +992,7 @@ class SubjectPanelHeader extends StatelessWidget {
                   maintainAnimation: true,
                   maintainSize: true,
                   child: IconButton(
-                    icon: const Icon(Icons.edit, size: 20, color: Colors.white),
+                    icon: Icon(Icons.edit, size: 20, color: iconColor),
                     onPressed: () async => onEditSubject?.call(),
                   ),
                 ),
