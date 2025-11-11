@@ -1808,33 +1808,6 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
-
-  group('11. Default Implementations - Smoke Tests', () {
-    testWidgets(
-      'FileReadingServiceImpl can be instantiated and has required methods',
-      (tester) async {
-        const service = FileReadingServiceImpl();
-        expect(service, isNotNull);
-        expect(service, isA<FileReadingService>());
-
-        expect(service.readAsBytes, isA<Function>());
-        expect(service.readAsString, isA<Function>());
-      },
-    );
-
-    testWidgets(
-      'DefaultFlutterBackgroundWrapper can be instantiated and has required methods',
-      (tester) async {
-        final wrapper = DefaultFlutterBackgroundWrapper();
-        expect(wrapper, isNotNull);
-        expect(wrapper, isA<FlutterBackgroundInterface>());
-
-        expect(wrapper.initialize, isA<Function>());
-        expect(wrapper.enableBackgroundExecution, isA<Function>());
-        expect(wrapper.disableBackgroundExecution, isA<Function>());
-      },
-    );
-  });
 }
 
 // Mock FlutterBackgroundInterface

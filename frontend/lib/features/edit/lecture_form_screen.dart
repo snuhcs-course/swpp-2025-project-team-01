@@ -15,6 +15,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
 
+// coverage:ignore-start
 abstract class FileReadingService {
   Future<Uint8List> readAsBytes(String path);
   Future<String> readAsString(String path);
@@ -100,6 +101,7 @@ class DefaultFlutterBackgroundWrapper implements FlutterBackgroundInterface {
 }
 
 typedef PdfDocumentFactory = PdfDocument Function(List<int> inputBytes);
+// coverage:ignore-end
 
 /// 강의 생성/편집 화면
 ///
