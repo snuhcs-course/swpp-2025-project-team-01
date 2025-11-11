@@ -63,7 +63,6 @@ void main() {
     });
 
     group('fromJson - Invalid Data', () {
-
       test('should throw when eng text is missing', () {
         final json = {
           'text_kor': '더미',

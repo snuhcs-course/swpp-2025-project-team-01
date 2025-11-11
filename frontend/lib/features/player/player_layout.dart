@@ -374,7 +374,9 @@ class VideoControlsOverlay extends StatelessWidget {
                     return BottomControlBar(
                       isVertical: isVertical,
                       currentTime: controller.currentTime.value,
-                      totalTime: controller.isOriginalAudio.value ? controller.originalTotalDuration : controller.ttsTotalDuration,
+                      totalTime: controller.isOriginalAudio.value
+                          ? controller.originalTotalDuration
+                          : controller.ttsTotalDuration,
                       onTimeChanged: (seconds) {
                         // 슬라이더 움직일 때 즉시 PDF 페이지 업데이트
                         controller.seek(seconds);
@@ -559,18 +561,14 @@ class TranslationButton extends StatelessWidget {
 
     return ValueListenableBuilder<bool>(
       valueListenable: controller.isKoreanLanguage,
-      builder: (context, isKorean, _) { 
+      builder: (context, isKorean, _) {
         final isActive = isKorean;
-        final backgroundColor = 
-            (isActive
-              ? (isDark ? colorScheme.primary : Colors.blue.shade600)
-              : (isDark
-                  ? colorScheme.secondaryContainer
-                  : Colors.grey.shade400));
-        final textColor =
-            isActive
-              ? (isDark ? colorScheme.onPrimary : Colors.white)
-              : (isDark ? colorScheme.onSecondaryContainer : Colors.white);
+        final backgroundColor = (isActive
+            ? (isDark ? colorScheme.primary : Colors.blue.shade600)
+            : (isDark ? colorScheme.secondaryContainer : Colors.grey.shade400));
+        final textColor = isActive
+            ? (isDark ? colorScheme.onPrimary : Colors.white)
+            : (isDark ? colorScheme.onSecondaryContainer : Colors.white);
 
         return InkWell(
           onTap: controller.toggleTranscriptLanguage,
@@ -685,8 +683,7 @@ class TranscriptArea extends StatelessWidget {
                         final sentence =
                             controller.transcriptData!.timestamps[index];
                         final isCurrentSentence = currentSentenceIndex == index;
-                        final displayText =
-                            isKorean
+                        final displayText = isKorean
                             ? sentence.textKor
                             : sentence.textEng;
 

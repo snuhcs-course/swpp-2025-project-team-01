@@ -124,7 +124,8 @@ class PlayerController extends ChangeNotifier {
   ) async {
     this.transcriptData = transcriptData;
     ttsTotalDuration = transcriptData.ttsTotalDuration.toDouble() / 1000;
-    originalTotalDuration = transcriptData.originalTotalDuration.toDouble() / 1000;
+    originalTotalDuration =
+        transcriptData.originalTotalDuration.toDouble() / 1000;
 
     // 오디오 경로 저장
     _audioPath = audioPath;
@@ -384,12 +385,22 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> skipBackward() async {
-    final newTime = (currentTime.value - 10).clamp(0, isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration).toDouble();
+    final newTime = (currentTime.value - 10)
+        .clamp(
+          0,
+          isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration,
+        )
+        .toDouble();
     await seek(newTime);
   }
 
   Future<void> skipForward() async {
-    final newTime = (currentTime.value + 10).clamp(0, isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration).toDouble();
+    final newTime = (currentTime.value + 10)
+        .clamp(
+          0,
+          isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration,
+        )
+        .toDouble();
     await seek(newTime);
   }
 
@@ -509,7 +520,13 @@ class PlayerController extends ChangeNotifier {
     _isForcedMove = true;
     isAutoScrolling.value = true;
 
-    await _audioService.seek(Duration(milliseconds: isOriginalAudio.value ? sentence.originalStartTime : sentence.ttsStartTime));
+    await _audioService.seek(
+      Duration(
+        milliseconds: isOriginalAudio.value
+            ? sentence.originalStartTime
+            : sentence.ttsStartTime,
+      ),
+    );
 
     _setCurrentSentenceAndPage(
       index,
@@ -543,7 +560,13 @@ class PlayerController extends ChangeNotifier {
       if (sentence.slideNumber == slideNumber) {
         _isForcedMove = true;
 
-        await _audioService.seek(Duration(milliseconds: isOriginalAudio.value ? sentence.originalStartTime : sentence.ttsStartTime));
+        await _audioService.seek(
+          Duration(
+            milliseconds: isOriginalAudio.value
+                ? sentence.originalStartTime
+                : sentence.ttsStartTime,
+          ),
+        );
 
         _scrollTimer?.cancel();
         isAutoScrolling.value = true;

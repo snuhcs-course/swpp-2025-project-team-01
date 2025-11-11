@@ -35,7 +35,11 @@ class TranscriptSentence {
 }
 
 class TranscriptData {
-  TranscriptData({required this.ttsTotalDuration, required this.originalTotalDuration, required this.timestamps});
+  TranscriptData({
+    required this.ttsTotalDuration,
+    required this.originalTotalDuration,
+    required this.timestamps,
+  });
 
   factory TranscriptData.fromJson(dynamic json) {
     final List<dynamic> data = json as List<dynamic>;
@@ -48,7 +52,8 @@ class TranscriptData {
       );
     }
 
-    final Map<String, dynamic> lastItem = data[data.length - 1] as Map<String, dynamic>;
+    final Map<String, dynamic> lastItem =
+        data[data.length - 1] as Map<String, dynamic>;
 
     return TranscriptData(
       ttsTotalDuration: lastItem['tts_end_time'] as int,
