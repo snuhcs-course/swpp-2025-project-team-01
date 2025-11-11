@@ -208,9 +208,7 @@ void main() {
       final mockOnTap = MockVoidCallback();
 
       await tester.pumpWidget(
-        wrapWithMaterialApp(
-          FavoritePill(active: true, onTap: mockOnTap.call),
-        ),
+        wrapWithMaterialApp(FavoritePill(active: true, onTap: mockOnTap.call)),
       );
 
       expect(find.byIcon(Icons.star), findsOneWidget);
@@ -225,9 +223,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        wrapWithMaterialApp(
-          FavoritePill(active: false, onTap: () {}),
-        ),
+        wrapWithMaterialApp(FavoritePill(active: false, onTap: () {})),
       );
 
       expect(find.byIcon(Icons.star_border), findsOneWidget);

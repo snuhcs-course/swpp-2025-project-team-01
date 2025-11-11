@@ -135,11 +135,7 @@ class FilterPill extends StatelessWidget {
 
 /// 즐겨찾기 pill 버튼 위젯
 class FavoritePill extends StatelessWidget {
-  const FavoritePill({
-    super.key,
-    required this.active,
-    required this.onTap,
-  });
+  const FavoritePill({super.key, required this.active, required this.onTap});
 
   final bool active;
   final VoidCallback onTap;

@@ -728,7 +728,8 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
     final viewportWidth = _scrollController.position.viewportDimension;
 
     // 페이지를 중앙에 배치하기 위한 오프셋 계산
-    final targetOffset = (pageNumber - 1) * itemTotalWidth -
+    final targetOffset =
+        (pageNumber - 1) * itemTotalWidth -
         (viewportWidth - widget.itemWidth) / 2 +
         widget.padding.left;
 

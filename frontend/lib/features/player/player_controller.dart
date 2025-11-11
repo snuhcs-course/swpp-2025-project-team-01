@@ -436,8 +436,7 @@ class PlayerController extends ChangeNotifier {
           ? sentence.originalEndTime
           : sentence.endTime;
 
-      if (seconds * 1000 >= startTime &&
-          seconds * 1000 < endTime + 0.2) {
+      if (seconds * 1000 >= startTime && seconds * 1000 < endTime + 0.2) {
         // 4개의 타이밍 모두 별도 변수에 저장
         _currentOriginalStartTime = sentence.originalStartTime;
         _currentStartTime = sentence.startTime;
@@ -570,7 +569,7 @@ class PlayerController extends ChangeNotifier {
       }
     }
   }
-  
+
   // ========== Dispose ==========
 
   @override
