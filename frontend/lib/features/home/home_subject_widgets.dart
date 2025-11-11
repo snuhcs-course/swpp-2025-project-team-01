@@ -36,14 +36,22 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return AlertDialog(
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: AppLocalizations.of(context).addSubject),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: screenHeight * 0.7 - keyboardHeight,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
             controller: _titleController,
             decoration: InputDecoration(
               labelText: l10n.subjectName,
@@ -82,7 +90,9 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
               }).toList(),
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
       actions: [
         TextButton(
@@ -335,12 +345,19 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return AlertDialog(
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: l10n.editSubjects),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      content: SingleChildScrollView(
-        child: Column(
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: screenHeight * 0.7 - keyboardHeight,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -447,6 +464,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
               ),
             const SizedBox(height: 10),
           ],
+        ),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

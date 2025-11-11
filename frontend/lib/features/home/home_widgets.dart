@@ -780,6 +780,8 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final manager = HiveManager.instance;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     // 모든 과목 가져오기 (미분류 포함)
     final allSubjects = manager.getSubjects().toList();
@@ -787,8 +789,12 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     return AlertDialog(
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: l10n.lectureDetails),
-      content: SingleChildScrollView(
-        child: Column(
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: screenHeight * 0.7 - keyboardHeight,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -868,6 +874,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
               ),
             ),
           ],
+        ),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
