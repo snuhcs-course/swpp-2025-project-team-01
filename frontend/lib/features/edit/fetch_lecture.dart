@@ -592,7 +592,8 @@ Future<String?> concatenateJsonFiles(
         final textKor = ts['text_kor'] as String? ?? '';
         final slideNumber = (ts['slide_number'] as num?)?.toInt() ?? 0;
         final ttsStartTime = (ts['tts_start_time'] as num?)?.toInt() ?? 0;
-        final ttsEndTime = (ts['tts_end_time'] as num?)?.toInt() ?? ttsStartTime;
+        final ttsEndTime =
+            (ts['tts_end_time'] as num?)?.toInt() ?? ttsStartTime;
         final originalStartTime =
             (ts['original_start_time'] as num?)?.toInt() ?? 0;
         final originalEndTime = (ts['original_end_time'] as num?)?.toInt() ?? 0;
