@@ -181,6 +181,7 @@ class HiveLecture {
     required this.ttsAudioPath,
     this.thumbnailUrl,
     this.jsonPath,
+    this.langCode,
     this.createdAt,
     this.updatedAt,
   });
@@ -216,9 +217,12 @@ class HiveLecture {
   String? jsonPath; // 자막/스크립트 JSON 경로
 
   @HiveField(10)
-  DateTime? createdAt;
+  String? langCode; // 자막/스크립트 JSON 경로
 
   @HiveField(11)
+  DateTime? createdAt;
+
+  @HiveField(12)
   DateTime? updatedAt;
 
   HiveLecture copyWith({
@@ -232,6 +236,7 @@ class HiveLecture {
     String? ttsAudioPath,
     String? thumbnailUrl,
     String? jsonPath,
+    String? langCode,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -246,6 +251,7 @@ class HiveLecture {
       ttsAudioPath: ttsAudioPath ?? this.ttsAudioPath,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       jsonPath: jsonPath ?? this.jsonPath,
+      langCode: langCode ?? this.langCode,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -271,6 +277,7 @@ class HiveLecture {
             'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
+        langCode: 'en',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

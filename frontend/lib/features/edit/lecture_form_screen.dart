@@ -1148,6 +1148,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     // 2. 로딩 시작
     setState(() => _isCreating = true);
     final titleText = _titleController.text.trim();
+    final langCode = _selectedLanguage;
 
     // Enable background execution
     bool backgroundEnabled = false;
@@ -1237,7 +1238,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               effectiveAudios.length,
               _serverAddress,
               _port,
-              _selectedLanguage,
+              langCode,
               clientToClose: clients[i - 1],
             ),
           ),
@@ -1327,6 +1328,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         originalAudioPath: originalAudioPath,
         ttsAudioPath: ttsAudioPath,
         jsonPath: jsonPath,
+        langCode: langCode,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
