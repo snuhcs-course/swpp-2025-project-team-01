@@ -80,29 +80,27 @@ class TagPill extends StatelessWidget {
     final Color resolvedTextColor =
         textColor ??
         getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontFamily: 'NanumSquare',
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          side: BorderSide(color: Color(0x33000000), width: 1),
-          shape: StadiumBorder(),
+
+    // Use theme's chip settings for high contrast mode
+    final chipTheme = Theme.of(context).chipTheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Chip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: TextStyle(
+          color: resolvedTextColor,
+          fontFamily: 'NanumSquare',
+          fontWeight: textTheme.bodyMedium?.fontWeight ?? FontWeight.w600,
         ),
       ),
-      child: Chip(
-        label: Text(
-          label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: resolvedTextColor, fontFamily: 'NanumSquare'),
-        ),
-        backgroundColor: color,
-        elevation: 2,
-        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-      ),
+      backgroundColor: color,
+      elevation: chipTheme.elevation ?? 2,
+      side: chipTheme.side,
+      shape: chipTheme.shape ?? const StadiumBorder(),
+      padding:
+          chipTheme.padding ??
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     );
   }
 }
@@ -134,34 +132,34 @@ class SelectableTagPill extends StatelessWidget {
     final Color resolvedTextColor =
         textColor ??
         getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontFamily: 'NanumSquare',
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          side: BorderSide(color: Color(0x33000000), width: 1),
-          shape: StadiumBorder(),
+
+    // Use theme's chip settings for high contrast mode
+    final chipTheme = Theme.of(context).chipTheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return ChoiceChip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: TextStyle(
+          color: resolvedTextColor,
+          fontFamily: 'NanumSquare',
+          fontWeight: textTheme.bodyMedium?.fontWeight ?? FontWeight.w600,
         ),
       ),
-      child: ChoiceChip(
-        label: Text(
-          label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: resolvedTextColor, fontFamily: 'NanumSquare'),
-        ),
-        selected: selected,
-        onSelected: onSelected,
-        backgroundColor: color,
-        selectedColor: color,
-        elevation: selected ? 4 : 2,
-        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-        showCheckmark: showCheckmark,
-        checkmarkColor: resolvedTextColor,
-      ),
+      selected: selected,
+      onSelected: onSelected,
+      backgroundColor: color,
+      selectedColor: color,
+      elevation: selected
+          ? (chipTheme.elevation ?? 4)
+          : (chipTheme.elevation ?? 2),
+      side: chipTheme.side,
+      shape: chipTheme.shape ?? const StadiumBorder(),
+      padding:
+          chipTheme.padding ??
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      showCheckmark: showCheckmark,
+      checkmarkColor: resolvedTextColor,
     );
   }
 }
@@ -819,6 +817,56 @@ class _FancyProgressBar extends StatelessWidget {
   }
 }
 
+/// 다이얼로그 헤더 위젯 (공통 스타일)
+///
+/// 검은 배경의 다이얼로그 헤더로 제목과 닫기 버튼을 표시합니다.
+class DialogHeaderTitle extends StatelessWidget {
+  const DialogHeaderTitle({super.key, required this.title, this.onClose});
+
+  final String title;
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final Color headerColor = isDark
+        ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
+        : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+    final Color textColor = isDark ? Colors.white : Colors.white;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: headerColor,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: textColor,
+              fontSize: 18,
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, color: textColor),
+            onPressed: onClose ?? () => Navigator.pop(context),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 과목 패널 헤더 위젯 (홈 화면 & 과목 수정 화면 공통)
 ///
 /// 검은 배경의 헤더로 과목 제목, 태그, 펼침/접기 버튼을 표시합니다.
@@ -860,10 +908,13 @@ class SubjectPanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final Color headerColor = isDark
-        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
         : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+
+    // 여기 아래 두 줄 redundant한 조건문 맞는데, 헤더 색 또 바뀔때 커스텀하기 쉽게 이대로 유지합시다
     final Color textColor = isDark ? Colors.white : Colors.white;
     final Color iconColor = isDark ? Colors.white : Colors.white;
 
@@ -893,6 +944,7 @@ class SubjectPanelHeader extends StatelessWidget {
           children: [
             // 제목 라인
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 즐겨찾기 또는 드래그 아이콘
                 if (favoriteOrDrag != null)
@@ -914,7 +966,7 @@ class SubjectPanelHeader extends StatelessWidget {
                           icon: Icon(
                             favoriteOrDrag,
                             color: favoriteIconColor ?? iconColor,
-                            size: 22,
+                            size: 24,
                           ),
                           onPressed: onToggleFavorite,
                           tooltip: '즐겨찾기',
@@ -929,9 +981,8 @@ class SubjectPanelHeader extends StatelessWidget {
                     padding: EdgeInsets.only(right: titleEndPadding),
                     child: Text(
                       title,
-                      style: TextStyle(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         color: textColor,
-                        fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -945,7 +996,7 @@ class SubjectPanelHeader extends StatelessWidget {
                   maintainAnimation: true,
                   maintainSize: true,
                   child: IconButton(
-                    icon: const Icon(Icons.edit, size: 20, color: Colors.white),
+                    icon: Icon(Icons.edit, size: 20, color: iconColor),
                     onPressed: () async => onEditSubject?.call(),
                   ),
                 ),

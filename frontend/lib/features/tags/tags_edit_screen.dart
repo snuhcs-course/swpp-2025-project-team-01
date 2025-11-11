@@ -59,8 +59,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 초기 데이터 로드
-  ///
-  /// 저장소에서 태그 목록과 테마를 불러오고 색상을 할당합니다.
+
   void _loadData() {
     _tags = _manager.getTags();
     _currentTheme = _manager.settings.tagColorTheme;
@@ -72,9 +71,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 폼 데이터와 선택된 태그 동기화
-  ///
-  /// 태그를 선택하면 해당 태그의 이름을 입력 필드에 표시합니다.
-  /// 한글 입력 문제 방지를 위해 setState 외부에서 TextEditingController를 업데이트합니다.
+
   void _syncForm(int index) {
     setState(() {
       _selected = index;
@@ -88,9 +85,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 선택된 테마에 따라 모든 태그에 색상 할당
-  ///
-  /// 각 태그는 테마의 색상 배열에서 순환하며 색상을 부여받습니다.
-  /// 예: 15개 색상 테마에서 16번째 태그는 첫 번째 색상을 받습니다.
   void _assignColors() {
     final theme = getTagColorTheme(_currentTheme);
     final newTags = <HiveTag>[];
@@ -339,9 +333,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 새 태그 추가
-  ///
-  /// 중복되지 않는 이름으로 새 태그를 생성하고 현재 테마의 다음 색상을 할당합니다.
-  /// 최대 15개까지만 생성 가능합니다.
   void _addNewTag() {
     final l10n = AppLocalizations.of(context);
 
@@ -383,8 +374,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 태그 이름 변경 적용
-  ///
-  /// 입력된 이름의 유효성을 검사하고 중복이 없으면 태그를 업데이트합니다.
   void _applyNameChange() {
     final newName = _nameC.text.trim();
 
@@ -421,9 +410,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 선택된 태그 삭제
-  ///
-  /// 태그가 과목에서 사용 중이면 경고 다이얼로그를 표시합니다.
-  /// 삭제 후에는 색상을 재할당하고 이전 태그를 선택합니다.
   Future<void> _deleteSelectedTag() async {
     if (_tags.isEmpty) {
       return;

@@ -70,7 +70,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
       // 언어 선택 라디오 버튼 목록
       body: Padding(
-        padding: const EdgeInsets.only(top: 32),
+        padding: const EdgeInsets.only(top: 16),
         child: Column(
           children: [
             // 1. 한국어 선택
