@@ -893,6 +893,7 @@ class SubjectPanelHeader extends StatelessWidget {
           children: [
             // 제목 라인
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 즐겨찾기 또는 드래그 아이콘
                 if (favoriteOrDrag != null)
@@ -914,7 +915,7 @@ class SubjectPanelHeader extends StatelessWidget {
                           icon: Icon(
                             favoriteOrDrag,
                             color: favoriteIconColor ?? iconColor,
-                            size: 22,
+                            size: 24,
                           ),
                           onPressed: onToggleFavorite,
                           tooltip: '즐겨찾기',

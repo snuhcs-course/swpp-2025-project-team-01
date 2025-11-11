@@ -166,7 +166,7 @@ class FavoritePill extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(starIcon, size: 18, color: starColor),
+          Icon(starIcon, size: 20, color: starColor),
           const SizedBox(width: 6),
           Text(
             label,
