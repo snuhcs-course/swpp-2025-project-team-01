@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:re_view/app_router.dart';
@@ -14,8 +15,93 @@ import 'package:flutter_background/flutter_background.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:uuid/uuid.dart';
 
+// coverage:ignore-start
+abstract class FileReadingService {
+  Future<Uint8List> readAsBytes(String path);
+  Future<String> readAsString(String path);
+}
+
+class FileReadingServiceImpl implements FileReadingService {
+  const FileReadingServiceImpl();
+
+  @override
+  Future<Uint8List> readAsBytes(String path) {
+    return File(path).readAsBytes();
+  }
+
+  @override
+  Future<String> readAsString(String path) {
+    return File(path).readAsString();
+  }
+}
+
 const String _serverAddress = '147.46.78.61';
 const String _port = '8001';
+
+typedef FetchLectureCallback =
+    Future<List<String>?> Function(
+      String slidePath,
+      AudioFileEntry audioFileEntry,
+      String titleText,
+      String lectureId,
+      int part,
+      int totalParts,
+      String serverAddress,
+      String port,
+      String langCode, {
+      http.Client? clientToClose,
+    });
+
+typedef ConcatenateAudioFilesCallback =
+    Future<String?> Function(
+      List<String> audioPaths,
+      String titleText,
+      String lectureId, {
+      Directory? dirOverride,
+    });
+
+typedef ConcatenateJsonFilesCallback =
+    Future<String?> Function(
+      List<String> jsonPaths,
+      List<int> pdfStarts,
+      String titleText,
+      String lectureId, {
+      Directory? dirOverride,
+    });
+
+typedef HttpClientFactory = http.Client Function();
+
+typedef FlutterBackgroundWrapper = FlutterBackgroundInterface;
+
+abstract class FlutterBackgroundInterface {
+  Future<bool> initialize({
+    required FlutterBackgroundAndroidConfig androidConfig,
+  });
+  Future<bool> enableBackgroundExecution();
+  Future<bool> disableBackgroundExecution();
+}
+
+class DefaultFlutterBackgroundWrapper implements FlutterBackgroundInterface {
+  @override
+  Future<bool> initialize({
+    required FlutterBackgroundAndroidConfig androidConfig,
+  }) {
+    return FlutterBackground.initialize(androidConfig: androidConfig);
+  }
+
+  @override
+  Future<bool> enableBackgroundExecution() {
+    return FlutterBackground.enableBackgroundExecution();
+  }
+
+  @override
+  Future<bool> disableBackgroundExecution() {
+    return FlutterBackground.disableBackgroundExecution();
+  }
+}
+
+typedef PdfDocumentFactory = PdfDocument Function(List<int> inputBytes);
+// coverage:ignore-end
 
 /// 강의 생성/편집 화면
 ///
@@ -28,7 +114,32 @@ const String _port = '8001';
 /// - 강의 녹음 파일(들) 업로드 (단일 또는 다중)
 /// - 다중 오디오 파일 모드에서 각 파일별 페이지 범위 설정
 class LectureFormScreen extends StatefulWidget {
-  const LectureFormScreen({super.key});
+  const LectureFormScreen({
+    super.key,
+    this.hiveManager,
+    this.lectureLoadingService,
+    this.fetchLectureCallback,
+    this.filePicker,
+    this.uuid,
+    this.concatenateAudioFilesCallback,
+    this.concatenateJsonFilesCallback,
+    this.httpClientFactory,
+    this.flutterBackground,
+    this.pdfDocumentFactory,
+    this.fileReadingService,
+  });
+
+  final HiveManager? hiveManager;
+  final LectureLoadingService? lectureLoadingService;
+  final FetchLectureCallback? fetchLectureCallback;
+  final FilePicker? filePicker;
+  final Uuid? uuid;
+  final ConcatenateAudioFilesCallback? concatenateAudioFilesCallback;
+  final ConcatenateJsonFilesCallback? concatenateJsonFilesCallback;
+  final HttpClientFactory? httpClientFactory;
+  final FlutterBackgroundInterface? flutterBackground;
+  final PdfDocumentFactory? pdfDocumentFactory;
+  final FileReadingService? fileReadingService;
 
   @override
   State<LectureFormScreen> createState() => _LectureFormScreenState();
@@ -36,7 +147,24 @@ class LectureFormScreen extends StatefulWidget {
 
 class _LectureFormScreenState extends State<LectureFormScreen> {
   // 데이터 저장소 인스턴스
-  final _hive = HiveManager.instance;
+  late final _hive = widget.hiveManager ?? HiveManager.instance;
+  late final _loadingService =
+      widget.lectureLoadingService ?? LectureLoadingService.instance;
+  late final _fetchLecture = widget.fetchLectureCallback ?? fetchLecture;
+  late final _filePicker = widget.filePicker ?? FilePicker.platform;
+  late final _uuid = widget.uuid ?? const Uuid();
+  late final _concatenateAudioFiles =
+      widget.concatenateAudioFilesCallback ?? concatenateAudioFiles;
+  late final _concatenateJsonFiles =
+      widget.concatenateJsonFilesCallback ?? concatenateJsonFiles;
+  late final _httpClientFactory =
+      widget.httpClientFactory ?? (() => http.Client());
+  late final _flutterBackground =
+      widget.flutterBackground ?? DefaultFlutterBackgroundWrapper();
+  late final _pdfDocumentFactory =
+      widget.pdfDocumentFactory ?? ((bytes) => PdfDocument(inputBytes: bytes));
+  late final _fileReadingService =
+      widget.fileReadingService ?? const FileReadingServiceImpl();
 
   // 텍스트 입력 컨트롤러
   final _weekController = TextEditingController();
@@ -605,7 +733,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 슬라이드 PDF 파일 선택
   Future<void> _pickSlidePdf() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await _filePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
@@ -615,9 +743,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // PDF 페이지 수 확인
       try {
-        final pdfFile = File(pdfPath);
-        final bytes = await pdfFile.readAsBytes();
-        final document = PdfDocument(inputBytes: bytes);
+        final bytes = await _fileReadingService.readAsBytes(pdfPath);
+        final document = _pdfDocumentFactory(bytes);
         final pageCount = document.pages.count;
         document.dispose();
 
@@ -648,7 +775,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await _filePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['m4a', 'm4b'],
       allowMultiple: false,
@@ -903,11 +1030,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           notificationImportance: AndroidNotificationImportance.high,
           enableWifiLock: true,
         );
-        backgroundEnabled = await FlutterBackground.initialize(
+        backgroundEnabled = await _flutterBackground.initialize(
           androidConfig: androidConfig,
         );
         if (backgroundEnabled) {
-          await FlutterBackground.enableBackgroundExecution();
+          await _flutterBackground.enableBackgroundExecution();
         }
       }
       // iOS doesn't need FlutterBackground - background modes in Info.plist handle it
@@ -922,13 +1049,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         .toList();
     final clients = <http.Client?>[];
     for (int i = 0; i < effectiveAudios.length; i++) {
-      clients.add(http.Client());
+      clients.add(_httpClientFactory());
     }
-    LectureLoadingService.instance.startLoading(
+    _loadingService.startLoading(
       titleText,
       effectiveAudios.length,
     );
-    LectureLoadingService.instance.setOnCancel(() {
+    _loadingService.setOnCancel(() {
       for (int i = 0; i < effectiveAudios.length; i++) {
         clients[i]?.close();
       }
@@ -940,18 +1067,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       // Disable background execution when cancelled
       if (backgroundEnabled && Platform.isAndroid) {
-        unawaited(
-          Future.delayed(const Duration(seconds: 1), () async {
-            if (FlutterBackground.isBackgroundExecutionEnabled) {
-              await FlutterBackground.disableBackgroundExecution();
-            }
-          }),
-        );
+        unawaited(Future.delayed(const Duration(seconds: 1), () async {
+          await _flutterBackground.disableBackgroundExecution();
+        }));
       }
     });
 
     // 3. 서버에 강의 생성 요청
-    final lectureId = Uuid().v4();
+    final lectureId = _uuid.v4();
     try {
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
@@ -981,7 +1104,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         futures.add(
           Future.delayed(
             i == 1 ? Duration.zero : Duration(seconds: 10),
-            () => fetchLecture(
+            () => _fetchLecture(
               slidePath,
               audioFileEntry,
               titleText,
@@ -1032,17 +1155,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       int? duration;
 
       if (effectiveAudios.length > 1) {
-        originalAudioPath = await concatenateAudioFiles(
+        originalAudioPath = await _concatenateAudioFiles(
           originalAudioPaths,
           titleText,
           lectureId,
         );
-        ttsAudioPath = await concatenateAudioFiles(
+        ttsAudioPath = await _concatenateAudioFiles(
           ttsAudioPaths,
           titleText,
           lectureId,
         );
-        jsonPath = await concatenateJsonFiles(
+        jsonPath = await _concatenateJsonFiles(
           jsonPaths,
           pdfStarts,
           titleText,
@@ -1104,7 +1227,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // 강의 생성 완료 - lectureId 전달
-      LectureLoadingService.instance.completeLoading(
+      _loadingService.completeLoading(
         lectureId: generatedLecture.id,
       );
 
@@ -1114,7 +1237,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       );
     } catch (e) {
       // 8. 에러 처리
-      LectureLoadingService.instance.hideLoading();
+      _loadingService.hideLoading();
       if (mounted) {
         _showToast(
           l10n.isKorean
@@ -1131,7 +1254,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       // Disable background execution when task completes
       if (backgroundEnabled && Platform.isAndroid) {
         try {
-          await FlutterBackground.disableBackgroundExecution();
+          await _flutterBackground.disableBackgroundExecution();
         } catch (e) {
           debugPrint('Failed to disable background execution: $e');
         }
