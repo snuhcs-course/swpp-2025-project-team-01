@@ -252,19 +252,24 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 // ========== 강의 언어 선택 섹션 ==========
                 _buildSectionTitle(l10n.isKorean ? '강의 언어' : 'Spoken Language'),
                 const SizedBox(height: 8),
-                _buildLanguageDropdown(l10n, subjects),
+                _buildLanguageDropdown(l10n),
                 const SizedBox(height: 20),
 
                 // ========== 강의 주차 입력 섹션 ==========
                 _buildSectionTitle(l10n.isKorean ? '강의 주차' : 'Lecture Week'),
                 const SizedBox(height: 8),
-                _buildWeekTextField(),
+                _buildTextField(
+                  _weekController,
+                  4,
+                  hintText: 'Ex. Week 1-1',
+                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                ),
                 const SizedBox(height: 20),
 
                 // ========== 강의 제목 입력 섹션 ==========
                 _buildSectionTitle(l10n.isKorean ? '강의 제목' : 'Lecture Title'),
                 const SizedBox(height: 8),
-                _buildTitleTextField(),
+                _buildTextField(_titleController, 4),
                 const SizedBox(height: 20),
 
                 // ========== 강의 슬라이드 업로드 섹션 ==========
@@ -386,7 +391,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   }
 
   /// 언어 선택 드롭다운 위젯
-  Widget _buildLanguageDropdown(AppLocalizations l10n, List<dynamic> subjects) {
+  Widget _buildLanguageDropdown(AppLocalizations l10n) {
     return Builder(
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -435,7 +440,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   }
 
   /// 강의 주차 입력 텍스트 필드
-  Widget _buildWeekTextField() {
+  Widget _buildTextField(
+    TextEditingController controller,
+    double borderRadius, {
+    String? hintText,
+    TextStyle? hintStyle,
+    TextInputType? keyboardType,
+    TextAlign textAlign = TextAlign.start,
+    EdgeInsetsGeometry? padding,
+  }) {
     return Builder(
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -445,13 +458,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             : Colors.grey.shade400;
         final focusColor = isDark ? Colors.white : Colors.black87;
         final textColor = isDark ? Colors.white : Colors.black87;
+        final contentPadding =
+            padding ?? EdgeInsets.symmetric(horizontal: 12, vertical: 12);
 
         return TextField(
-          controller: _weekController,
+          controller: controller,
+          keyboardType: keyboardType,
+          textAlign: textAlign,
           style: TextStyle(color: textColor),
           decoration: InputDecoration(
-            hintText: 'Ex. Week 1-1',
-            hintStyle: TextStyle(color: Colors.grey.shade600),
+            hintText: hintText,
+            hintStyle: hintStyle,
             filled: true,
             fillColor: cardColor,
             border: OutlineInputBorder(
@@ -466,50 +483,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               borderRadius: BorderRadius.circular(4),
               borderSide: BorderSide(color: focusColor, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// 강의 제목 입력 텍스트 필드
-  Widget _buildTitleTextField() {
-    return Builder(
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade400;
-        final focusColor = isDark ? Colors.white : Colors.black87;
-        final textColor = isDark ? Colors.white : Colors.black87;
-
-        return TextField(
-          controller: _titleController,
-          style: TextStyle(color: textColor),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: focusColor, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
+            contentPadding: contentPadding,
           ),
         );
       },
@@ -668,7 +642,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           icon: Icons.attach_file,
           label: entry.filePath != null
               ? _getFileName(entry.filePath!)
-              : (l10n.isKorean ? '...' : '...'),
+              : '...',
           onTap: () => _pickAudioFile(index),
         ),
 
@@ -708,7 +682,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       const SizedBox(width: 16),
                       SizedBox(
                         width: pageFieldWidth,
-                        child: _buildPageTextField(entry.startPageController),
+                        child: _buildTextField(
+                          entry.startPageController,
+                          6,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 12,
+                          ),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -723,54 +706,22 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       ),
                       SizedBox(
                         width: pageFieldWidth,
-                        child: _buildPageTextField(entry.endPageController),
+                        child: _buildTextField(
+                          entry.endPageController,
+                          6,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 12,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// 페이지 번호 입력 텍스트 필드
-  Widget _buildPageTextField(TextEditingController controller) {
-    return Builder(
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade300;
-        final focusColor = isDark ? Colors.white : Colors.blue;
-
-        return TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: focusColor, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 12,
-            ),
           ),
         );
       },
