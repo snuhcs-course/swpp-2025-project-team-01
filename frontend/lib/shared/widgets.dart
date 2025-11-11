@@ -830,12 +830,17 @@ class DialogHeaderTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color headerColor = isDark
+        ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
+        : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1D1D1D),
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: headerColor,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(28),
           topRight: Radius.circular(28),
         ),

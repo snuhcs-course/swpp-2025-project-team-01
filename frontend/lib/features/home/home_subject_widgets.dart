@@ -38,8 +38,13 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
     final l10n = AppLocalizations.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor = isDark
+        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        : Colors.white; // 라이트모드: 흰색
 
     return AlertDialog(
+      backgroundColor: backgroundColor,
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: AppLocalizations.of(context).addSubject),
       content: ConstrainedBox(
@@ -350,8 +355,13 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     final l10n = AppLocalizations.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor = isDark
+        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        : Colors.white; // 라이트모드: 흰색
 
     return AlertDialog(
+      backgroundColor: backgroundColor,
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: l10n.editSubjects),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),

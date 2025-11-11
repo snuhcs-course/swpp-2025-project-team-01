@@ -782,11 +782,16 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     final manager = HiveManager.instance;
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor = isDark
+        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        : Colors.white; // 라이트모드: 흰색
 
     // 모든 과목 가져오기 (미분류 포함)
     final allSubjects = manager.getSubjects().toList();
 
     return AlertDialog(
+      backgroundColor: backgroundColor,
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: l10n.lectureDetails),
       content: ConstrainedBox(
