@@ -1,7 +1,7 @@
 class TranscriptSentence {
   TranscriptSentence({
     required this.textEng,
-    this.textKor,
+    required this.textKor,
     required this.slideNumber,
     required this.ttsStartTime,
     required this.ttsEndTime,
@@ -16,7 +16,7 @@ class TranscriptSentence {
   factory TranscriptSentence.fromJson(Map<String, dynamic> json) {
     return TranscriptSentence(
       textEng: json['text_eng'] as String,
-      textKor: json['text_kor'] as String?,
+      textKor: json['text_kor'] as String,
       slideNumber: json['slide_number'] as int,
       ttsStartTime: json['tts_start_time'] as int,
       ttsEndTime: json['tts_end_time'] as int,
@@ -26,7 +26,7 @@ class TranscriptSentence {
   }
 
   final String textEng;
-  final String? textKor;
+  final String textKor;
   final int slideNumber;
   final int ttsStartTime; // TTS audio timing
   final int ttsEndTime; // TTS audio timing
@@ -39,6 +39,15 @@ class TranscriptData {
 
   factory TranscriptData.fromJson(dynamic json) {
     final List<dynamic> data = json as List<dynamic>;
+
+    if (data.isEmpty) {
+      return TranscriptData(
+        ttsTotalDuration: 0,
+        originalTotalDuration: 0,
+        timestamps: [],
+      );
+    }
+
     final Map<String, dynamic> lastItem = data[data.length - 1] as Map<String, dynamic>;
 
     return TranscriptData(

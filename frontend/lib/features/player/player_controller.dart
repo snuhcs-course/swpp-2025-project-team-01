@@ -86,20 +86,10 @@ class PlayerController extends ChangeNotifier {
       return '';
     }
     final sentence = transcriptData!.timestamps[currentSentenceIndex.value!];
-    if (isKoreanLanguage.value && sentence.textKor != null) {
-      return sentence.textKor!;
+    if (isKoreanLanguage.value) {
+      return sentence.textKor;
     }
     return sentence.textEng;
-  }
-
-  /// 한국어 transcript가 있는지 확인
-  bool get hasKoreanTranscript {
-    if (transcriptData == null || transcriptData!.timestamps.isEmpty) {
-      return false;
-    }
-    return transcriptData!.timestamps.any(
-      (sentence) => sentence.textKor != null,
-    );
   }
 
   // ========== 내부 상태 ==========
@@ -254,9 +244,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   void toggleTranscriptLanguage() {
-    if (hasKoreanTranscript) {
-      isKoreanLanguage.value = !isKoreanLanguage.value;
-    }
+    isKoreanLanguage.value = !isKoreanLanguage.value;
   }
 
   Future<void> toggleFullscreen() async {

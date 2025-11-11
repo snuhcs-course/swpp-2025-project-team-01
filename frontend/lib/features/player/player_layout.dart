@@ -559,29 +559,21 @@ class TranslationButton extends StatelessWidget {
 
     return ValueListenableBuilder<bool>(
       valueListenable: controller.isKoreanLanguage,
-      builder: (context, isKorean, _) {
-        final hasKorean = controller.hasKoreanTranscript;
-        final isEnabled = hasKorean;
-        final isActive = hasKorean && isKorean;
-        final backgroundColor = !isEnabled
-            ? (isDark
-                  ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
-                  : Colors.grey.shade300)
-            : (isActive
-                  ? (isDark ? colorScheme.primary : Colors.blue.shade600)
-                  : (isDark
-                        ? colorScheme.secondaryContainer
-                        : Colors.grey.shade400));
-        final textColor = !isEnabled
-            ? (isDark
-                  ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
-                  : Colors.grey.shade500)
-            : (isActive
-                  ? (isDark ? colorScheme.onPrimary : Colors.white)
-                  : (isDark ? colorScheme.onSecondaryContainer : Colors.white));
+      builder: (context, isKorean, _) { 
+        final isActive = isKorean;
+        final backgroundColor = 
+            (isActive
+              ? (isDark ? colorScheme.primary : Colors.blue.shade600)
+              : (isDark
+                  ? colorScheme.secondaryContainer
+                  : Colors.grey.shade400));
+        final textColor =
+            isActive
+              ? (isDark ? colorScheme.onPrimary : Colors.white)
+              : (isDark ? colorScheme.onSecondaryContainer : Colors.white);
 
         return InkWell(
-          onTap: hasKorean ? controller.toggleTranscriptLanguage : null,
+          onTap: controller.toggleTranscriptLanguage,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -694,8 +686,8 @@ class TranscriptArea extends StatelessWidget {
                             controller.transcriptData!.timestamps[index];
                         final isCurrentSentence = currentSentenceIndex == index;
                         final displayText =
-                            (isKorean && sentence.textKor != null)
-                            ? sentence.textKor!
+                            isKorean
+                            ? sentence.textKor
                             : sentence.textEng;
 
                         return AutoScrollTag(
