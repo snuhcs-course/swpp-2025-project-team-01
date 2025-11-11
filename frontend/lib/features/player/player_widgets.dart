@@ -52,7 +52,7 @@ class SyncButton extends StatelessWidget {
   String _getDifferenceText(BuildContext context, int difference) {
     final l10n = AppLocalizations.of(context);
     if (difference == 0) {
-      return l10n.synchronized;
+      return '';
     }
     final absValue = difference.abs();
     if (difference < 0) {
@@ -68,7 +68,7 @@ class SyncButton extends StatelessWidget {
 
     return Stack(
       clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
+      alignment: Alignment.topRight,
       children: [
         IconButton(
           onPressed: onPressed,
@@ -78,7 +78,7 @@ class SyncButton extends StatelessWidget {
             size: isVertical ? 22 : 28,
           ),
         ),
-        if (showDifference)
+        if (showDifference && (pageDifference ?? 0) != 0)
           Positioned(
             top: 48, // IconButton 아래에 위치
             child: Container(
