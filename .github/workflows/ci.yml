@@ -58,8 +58,8 @@ jobs:
     - name: Run data model unit tests
       run: flutter test test/data/
     
-    - name: Run lecture fetch unit tests
-      run: flutter test test/features/edit/lecture_fetch_test.dart
+    - name: Run edit unit tests
+      run: flutter test test/features/edit/
 
     - name: Run player unit tests
       run: flutter test test/features/player/
@@ -72,9 +72,6 @@ jobs:
 
     - name: Run settings unit tests
       run: flutter test test/features/settings/
-
-    - name: Run edit unit tests
-      run: flutter test test/features/edit/
 
     - name: Run tags unit tests
       run: flutter test test/features/tags/
