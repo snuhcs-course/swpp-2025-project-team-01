@@ -375,7 +375,7 @@ void main() {
         );
         expect(
           englishLocalizations.tagDeleteWarning('test', subjects),
-          'Tag "test" is used by:\n\n과목1\n과목2\n\nDo you want to delete it?',
+          'Tag "test" is used in the following subjects:\n\n과목1\n과목2\n\nDo you want to delete it?',
         );
       });
     });
