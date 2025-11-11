@@ -795,86 +795,86 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
         ),
         child: SingleChildScrollView(
           child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 과목 선택 드롭다운
-            DropdownButtonFormField<String>(
-              initialValue: _selectedSubjectId,
-              decoration: InputDecoration(
-                labelText: l10n.isKorean ? '과목' : 'Subject',
-                border: const OutlineInputBorder(),
-              ),
-              items: allSubjects.map((subject) {
-                return DropdownMenuItem<String>(
-                  value: subject.id,
-                  child: Text(
-                    subject.isUncategorized
-                        ? l10n.uncategorized
-                        : subject.title,
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedSubjectId = newValue;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _weekController,
-              decoration: InputDecoration(
-                labelText: l10n.week,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: l10n.lectureTitle,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // 강의 시간 정보
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.lectureLength,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    _formatDuration(widget.lecture.duration),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 과목 선택 드롭다운
+              DropdownButtonFormField<String>(
+                initialValue: _selectedSubjectId,
+                decoration: InputDecoration(
+                  labelText: l10n.isKorean ? '과목' : 'Subject',
+                  border: const OutlineInputBorder(),
+                ),
+                items: allSubjects.map((subject) {
+                  return DropdownMenuItem<String>(
+                    value: subject.id,
+                    child: Text(
+                      subject.isUncategorized
+                          ? l10n.uncategorized
+                          : subject.title,
                     ),
-                  ),
-                ],
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedSubjectId = newValue;
+                    });
+                  }
+                },
               ),
-            ),
-          ],
-        ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _weekController,
+                decoration: InputDecoration(
+                  labelText: l10n.week,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: l10n.lectureTitle,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // 강의 시간 정보
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.lectureLength,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _formatDuration(widget.lecture.duration),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

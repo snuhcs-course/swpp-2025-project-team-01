@@ -52,44 +52,44 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
-            controller: _titleController,
-            decoration: InputDecoration(
-              labelText: l10n.subjectName,
-              hintText: l10n.isKorean
-                  ? '예) 소프트웨어 개발의 원리와 실습'
-                  : 'ex) Software Development Principles and Practice',
-            ),
-            autofocus: true,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            AppLocalizations.of(context).selectTagsOptional,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.maxFinite,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: widget.allTags.map((tag) {
-                final isSelected = _selectedTagIds.contains(tag.id);
-                return SelectableTagPill(
-                  tag: tag,
-                  selected: isSelected,
-                  onSelected: (_) {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedTagIds.remove(tag.id);
-                      } else {
-                        _selectedTagIds.add(tag.id);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ),
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: l10n.subjectName,
+                  hintText: l10n.isKorean
+                      ? '예) 소프트웨어 개발의 원리와 실습'
+                      : 'ex) Software Development Principles and Practice',
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                AppLocalizations.of(context).selectTagsOptional,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.maxFinite,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.allTags.map((tag) {
+                    final isSelected = _selectedTagIds.contains(tag.id);
+                    return SelectableTagPill(
+                      tag: tag,
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedTagIds.remove(tag.id);
+                          } else {
+                            _selectedTagIds.add(tag.id);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
           ),
         ),
@@ -300,6 +300,9 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     // 최대 개수 제한 체크
     if (existingTags.length >= 15) {
       _showSnackBar(l10n.maxTagsReached);
+      setState(() {
+        _isCreatingTag = false;
+      });
       return;
     }
 
@@ -358,113 +361,187 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
         ),
         child: SingleChildScrollView(
           child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ========== 과목 이름 입력 ==========
-            Text(
-              l10n.subjectName,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: l10n.isKorean
-                    ? '예) 소프트웨어 개발의 원리와 실습'
-                    : 'ex) Software Development Principles and Practice',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ========== 과목 이름 입력 ==========
+              Text(
+                l10n.subjectName,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  hintText: l10n.isKorean
+                      ? '예) 소프트웨어 개발의 원리와 실습'
+                      : 'ex) Software Development Principles and Practice',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            Text(
-              l10n.editTags2,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: widget.allTags.map((tag) {
-                final isSelected = _selectedTagIds.contains(tag.id);
-                return SelectableTagPill(
-                  tag: tag,
-                  selected: isSelected,
-                  onSelected: (_) {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedTagIds.remove(tag.id);
-                      } else {
-                        _selectedTagIds.add(tag.id);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            ActionChip(
-              label: const Text('+', style: TextStyle(color: Colors.black)),
-              onPressed: _addNewTag,
-              elevation: 2,
-              backgroundColor: Colors.white,
-              side: BorderSide.none,
-            ),
-            const SizedBox(height: 10),
-            if (_isCreatingTag)
-              Row(
+              Text(
+                l10n.editTags2,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _tagNameController,
-                      decoration: InputDecoration(
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        labelText: l10n.tagName,
-                        hintText: l10n.newTag,
-                        border: const OutlineInputBorder(),
+                  ...widget.allTags.map((tag) {
+                    final isSelected = _selectedTagIds.contains(tag.id);
+                    return SelectableTagPill(
+                      tag: tag,
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedTagIds.remove(tag.id);
+                          } else {
+                            _selectedTagIds.add(tag.id);
+                          }
+                        });
+                      },
+                    );
+                  }),
+                  // 태그 추가 버튼
+                  Theme(
+                    data: ThemeData(
+                      useMaterial3: true,
+                      brightness: Brightness.light,
+                      chipTheme: const ChipThemeData(
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'NanumSquare',
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        side: BorderSide(color: Color(0x33000000), width: 1),
+                        shape: StadiumBorder(),
                       ),
-                      enableIMEPersonalizedLearning: false,
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  FilledButton(
-                    onPressed: () {
-                      final manager = HiveManager.instance;
-                      final newTitle = _tagNameController.text.trim();
-                      String newName = newTitle.isEmpty
-                          ? l10n.newTag
-                          : newTitle;
-                      if (newName == l10n.newTag) {
-                        int counter = 1;
-                        while (manager.getTags().any(
-                          (tag) => tag.name == newName,
-                        )) {
-                          newName = '${l10n.newTag} ($counter)';
-                          counter++;
-                        }
-                      }
-                      // Avoid duplicates
-                      if (manager
-                          .getTags()
-                          .map((t) => t.name)
-                          .contains(newName)) {
-                        _showSnackBar(l10n.duplicateTagName);
-                        _tagCompleter?.complete(null);
-                      }
-                      // Complete the future that _addNewTag() is awaiting
-                      _tagCompleter?.complete(newName);
-                    },
-                    child: Text(l10n.nameApply),
+                    child: ActionChip(
+                      label: const Text(
+                        '+',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      onPressed: _addNewTag,
+                      backgroundColor: Colors.white,
+                      elevation: 2,
+                      side: const BorderSide(
+                        color: Color(0x1F000000),
+                        width: 0.5,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            const SizedBox(height: 10),
-          ],
-        ),
+              const SizedBox(height: 12),
+              if (_isCreatingTag)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.isKorean ? '태그 추가' : 'Add Tag',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _tagNameController,
+                              decoration: InputDecoration(
+                                hintText: l10n.newTag,
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  10,
+                                  12,
+                                  10,
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              enableIMEPersonalizedLearning: false,
+                              autofocus: true,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: () {
+                              final manager = HiveManager.instance;
+                              final newTitle = _tagNameController.text.trim();
+                              String newName = newTitle.isEmpty
+                                  ? l10n.newTag
+                                  : newTitle;
+                              if (newName == l10n.newTag) {
+                                int counter = 1;
+                                while (manager.getTags().any(
+                                  (tag) => tag.name == newName,
+                                )) {
+                                  newName = '${l10n.newTag} ($counter)';
+                                  counter++;
+                                }
+                              }
+                              // Avoid duplicates
+                              if (manager
+                                  .getTags()
+                                  .map((t) => t.name)
+                                  .contains(newName)) {
+                                _showSnackBar(l10n.duplicateTagName);
+                                _tagCompleter?.complete(null);
+                              } else {
+                                // Complete the future that _addNewTag() is awaiting
+                                _tagCompleter?.complete(newName);
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                            ),
+                            child: Text(l10n.isKorean ? '적용' : 'Apply'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              if (_isCreatingTag) const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
