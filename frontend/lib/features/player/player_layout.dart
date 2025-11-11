@@ -102,11 +102,12 @@ class HorizontalPlayerLayout extends StatelessWidget {
                             Positioned(
                               top: 12,
                               right: 16,
-                              // isSynced와 currentPage를 함께 감시하여 즉시 업데이트
+                              // isSynced, currentPage, currentSentenceIndex를 함께 감시하여 즉시 업데이트
                               child: ListenableBuilder(
                                 listenable: Listenable.merge([
                                   controller.isSynced,
                                   controller.currentPage,
+                                  controller.currentSentenceIndex,
                                 ]),
                                 builder: (context, _) {
                                   return SyncButton(
@@ -318,23 +319,24 @@ class VideoControlsOverlay extends StatelessWidget {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: controller.isOriginalAudio,
-                  builder: (context, isOriginalAudio, _) {
-                    return ValueListenableBuilder<bool>(
-                      valueListenable: controller.isSynced,
-                      builder: (context, isSynced, _) {
-                        return TopControlBar(
-                          isVertical: isVertical,
-                          onBack: onBack,
-                          isOriginalAudio: isOriginalAudio,
-                          onAudioToggle: controller.toggleAudioSource,
-                          onSpeedChanged: controller.setPlaybackSpeed,
-                          isSynced: isSynced,
-                          onSyncToggle: controller.toggleSync,
-                          pageDifference: controller.pageDifference,
-                        );
-                      },
+                child: ListenableBuilder(
+                  // isOriginalAudio, isSynced, currentPage, currentSentenceIndex를 함께 감시
+                  listenable: Listenable.merge([
+                    controller.isOriginalAudio,
+                    controller.isSynced,
+                    controller.currentPage,
+                    controller.currentSentenceIndex,
+                  ]),
+                  builder: (context, _) {
+                    return TopControlBar(
+                      isVertical: isVertical,
+                      onBack: onBack,
+                      isOriginalAudio: controller.isOriginalAudio.value,
+                      onAudioToggle: controller.toggleAudioSource,
+                      onSpeedChanged: controller.setPlaybackSpeed,
+                      isSynced: controller.isSynced.value,
+                      onSyncToggle: controller.toggleSync,
+                      pageDifference: controller.pageDifference,
                     );
                   },
                 ),
@@ -373,7 +375,11 @@ class VideoControlsOverlay extends StatelessWidget {
                       isVertical: isVertical,
                       currentTime: controller.currentTime.value,
                       totalTime: controller.totalTime,
-                      onTimeChanged: controller.seek,
+                      onTimeChanged: (seconds) {
+                        // 슬라이더 움직일 때 즉시 PDF 페이지 업데이트
+                        controller.seek(seconds);
+                        controller.updateCurrentSentence(false, seconds);
+                      },
                       isCaptionEnabled: controller.isCaptionEnabled.value,
                       onCaptionToggle: controller.toggleCaption,
                       showTranscriptPanel: controller.showTranscriptPanel.value,

@@ -196,7 +196,7 @@ class PlayerController extends ChangeNotifier {
     // 재생 위치 변경 리스너
     _positionSubscription = _audioService.positionStream.listen((position) {
       currentTime.value = position.inMilliseconds / 1000.0;
-      _updateCurrentSentence();
+      updateCurrentSentence(true, currentTime.value);
     });
 
     // 재생 상태 변경 리스너
@@ -420,8 +420,8 @@ class PlayerController extends ChangeNotifier {
 
   // ========== Transcript 제어 메서드 ==========
 
-  void _updateCurrentSentence() {
-    if (transcriptData == null || _isForcedMove) {
+  void updateCurrentSentence(bool isForced, double seconds) {
+    if (transcriptData == null || (isForced && _isForcedMove)) {
       return;
     }
 
@@ -436,13 +436,13 @@ class PlayerController extends ChangeNotifier {
           ? sentence.originalEndTime
           : sentence.endTime;
 
-      if (currentTime.value * 1000 >= startTime &&
-          currentTime.value * 1000 < endTime + 0.2) {
+      if (seconds * 1000 >= startTime &&
+          seconds * 1000 < endTime + 0.2) {
         // 4개의 타이밍 모두 별도 변수에 저장
         _currentOriginalStartTime = sentence.originalStartTime;
         _currentStartTime = sentence.startTime;
 
-        _setCurrentSentenceAndPage(i);
+        _setCurrentSentenceAndPage(i, autoScroll: isForced);
         return;
       }
     }
@@ -570,7 +570,7 @@ class PlayerController extends ChangeNotifier {
       }
     }
   }
-
+  
   // ========== Dispose ==========
 
   @override
