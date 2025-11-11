@@ -37,7 +37,8 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: Text(AppLocalizations.of(context).addSubject),
+      titlePadding: EdgeInsets.zero,
+      title: DialogHeaderTitle(title: AppLocalizations.of(context).addSubject),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +336,8 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: Text(l10n.editSubjects),
+      titlePadding: EdgeInsets.zero,
+      title: DialogHeaderTitle(title: l10n.editSubjects),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
       content: SingleChildScrollView(
         child: Column(

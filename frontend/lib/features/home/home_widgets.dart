@@ -786,36 +786,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
 
     return AlertDialog(
       titlePadding: EdgeInsets.zero,
-      title: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1D1D1D),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              l10n.lectureDetails,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
-        ),
-      ),
+      title: DialogHeaderTitle(title: l10n.lectureDetails),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
