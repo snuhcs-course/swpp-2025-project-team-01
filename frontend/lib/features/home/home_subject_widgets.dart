@@ -38,13 +38,9 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
     final l10n = AppLocalizations.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color backgroundColor = isDark
-        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
-        : Colors.white; // 라이트모드: 흰색
 
     return AlertDialog(
-      backgroundColor: backgroundColor,
+      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: AppLocalizations.of(context).addSubject),
       content: ConstrainedBox(
@@ -69,7 +65,9 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
               const SizedBox(height: 16),
               Text(
                 AppLocalizations.of(context).selectTagsOptional,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
               SizedBox(
@@ -164,6 +162,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
 
   @override
   void dispose() {
+    _tagNameController.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -176,115 +175,71 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
 
   Future<bool?> showDeleteConfirmationDialog(HiveSubject subject) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
     return showDialog<bool>(
       context: context,
-      barrierColor: Colors.black87,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      builder: (_) => AlertDialog(
+        backgroundColor: theme.dialogTheme.backgroundColor,
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.error,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Center(
+            child: Text(
+              l10n.warning,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: theme.colorScheme.onError,
+              ),
+            ),
+          ),
+        ),
+        content: Text(
+          l10n.deleteSubjectWarning,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+        ),
+        contentPadding: const EdgeInsets.all(32),
+        actionsPadding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
+        actions: [
+          Row(
             children: [
-              // 검은 헤더
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                decoration: const BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: Center(
-                  child: Text(
-                    l10n.warning,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+              // "예" 버튼
+              Expanded(
+                child: FilledButton(
+                  onPressed: () async {
+                    final manager = HiveManager.instance;
+                    manager.deleteSubject(widget.subject.id);
+                    Navigator.pop(context, true);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.colorScheme.error,
+                    foregroundColor: theme.colorScheme.onError,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
+                  child: Text(l10n.yes, style: theme.textTheme.titleMedium),
                 ),
               ),
-              // 회색 바디
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE8E8E8),
-                  borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(20),
+              const SizedBox(width: 12),
+              // "아니오" 버튼
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pop(context, false);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      l10n.deleteSubjectWarning,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        // "예" 버튼
-                        Expanded(
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF5A5A5A),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: TextButton(
-                              onPressed: () async {
-                                final manager = HiveManager.instance;
-                                manager.deleteSubject(widget.subject.id);
-                                Navigator.pop(context, true);
-                              },
-                              child: Text(
-                                l10n.yes,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // "아니오" 버튼
-                        Expanded(
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFC0C0C0),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.pop(context, false);
-                              },
-                              child: Text(
-                                l10n.no,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  child: Text(l10n.no, style: theme.textTheme.titleMedium),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -355,13 +310,9 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     final l10n = AppLocalizations.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color backgroundColor = isDark
-        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
-        : Colors.white; // 라이트모드: 흰색
 
     return AlertDialog(
-      backgroundColor: backgroundColor,
+      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: l10n.editSubjects),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
@@ -377,7 +328,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
               // ========== 과목 이름 입력 ==========
               Text(
                 l10n.subjectName,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               TextField(
@@ -397,7 +348,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
 
               Text(
                 l10n.editTags2,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -421,40 +372,17 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                     );
                   }),
                   // 태그 추가 버튼
-                  Theme(
-                    data: ThemeData(
-                      useMaterial3: true,
-                      brightness: Brightness.light,
-                      chipTheme: const ChipThemeData(
-                        labelStyle: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'NanumSquare',
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        side: BorderSide(color: Color(0x33000000), width: 1),
-                        shape: StadiumBorder(),
-                      ),
+                  ActionChip(
+                    label: Text(
+                      '+',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(fontSize: 18),
                     ),
-                    child: ActionChip(
-                      label: const Text(
-                        '+',
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      onPressed: _addNewTag,
-                      backgroundColor: Colors.white,
-                      elevation: 2,
-                      side: const BorderSide(
-                        color: Color(0x1F000000),
-                        width: 0.5,
-                      ),
-                    ),
+                    onPressed: _addNewTag,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    elevation: Theme.of(context).chipTheme.elevation ?? 2,
+                    side: Theme.of(context).chipTheme.side,
                   ),
                 ],
               ),
@@ -479,9 +407,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                     children: [
                       Text(
                         l10n.isKorean ? '태그 추가' : 'Add Tag',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -501,7 +427,9 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                                   10,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: Theme.of(
+                                  context,
+                                ).colorScheme.surface,
                               ),
                               enableIMEPersonalizedLearning: false,
                               autofocus: true,

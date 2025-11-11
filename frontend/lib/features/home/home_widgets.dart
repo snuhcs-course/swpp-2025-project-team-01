@@ -596,8 +596,7 @@ class _LectureCardState extends State<LectureCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final theme = Theme.of(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -623,7 +622,7 @@ class _LectureCardState extends State<LectureCard> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+                  color: theme.cardTheme.color ?? theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -638,16 +637,15 @@ class _LectureCardState extends State<LectureCard> {
                       children: [
                         Text(
                           widget.lec.weekLabel,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: textColor,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: theme.textTheme.bodyMedium?.fontWeight,
                           ),
                         ),
                         Text(
                           widget.lec.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: textColor),
+                          style: theme.textTheme.bodyMedium,
                         ),
                       ],
                     ),
@@ -663,7 +661,7 @@ class _LectureCardState extends State<LectureCard> {
                             icon: Icon(
                               Icons.edit,
                               size: 20,
-                              color: isDark ? Colors.white : Color(0xFF2D2D2D),
+                              color: theme.colorScheme.onSurface,
                             ),
                             onPressed: () => _showLectureDetailDialog(context),
                           ),
@@ -679,11 +677,11 @@ class _LectureCardState extends State<LectureCard> {
   }
 
   Widget _buildThumbnail() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: Container(
-        color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         child: _buildThumbnailContent(),
       ),
     );
@@ -782,16 +780,13 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     final manager = HiveManager.instance;
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color backgroundColor = isDark
-        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
-        : Colors.white; // 라이트모드: 흰색
+    final theme = Theme.of(context);
 
     // 모든 과목 가져오기 (미분류 포함)
     final allSubjects = manager.getSubjects().toList();
 
     return AlertDialog(
-      backgroundColor: backgroundColor,
+      backgroundColor: theme.dialogTheme.backgroundColor,
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: l10n.lectureDetails),
       content: ConstrainedBox(
@@ -849,7 +844,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -861,19 +856,13 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                         const SizedBox(width: 8),
                         Text(
                           l10n.lectureLength,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: theme.textTheme.titleSmall,
                         ),
                       ],
                     ),
                     Text(
                       _formatDuration(widget.lecture.duration),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: theme.textTheme.bodyLarge,
                     ),
                   ],
                 ),

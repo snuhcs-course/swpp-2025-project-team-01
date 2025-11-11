@@ -176,14 +176,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildSectionTitle(String title) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Text(
           title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 18),
         );
       },
     );
@@ -194,18 +191,19 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildSubjectDropdown(AppLocalizations l10n, List<dynamic> subjects) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade700
-            : Colors.grey.shade300;
-        final textColor = isDark ? Colors.white : Colors.black87;
+        final theme = Theme.of(context);
+        final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
 
         return Container(
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: borderColor),
+            border: theme.inputDecorationTheme.border != null
+                ? Border.fromBorderSide(
+                    (theme.inputDecorationTheme.border as OutlineInputBorder)
+                        .borderSide,
+                  )
+                : Border.all(color: theme.colorScheme.outline),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
@@ -214,10 +212,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                   ? null
                   : _selectedSubjectId,
               isExpanded: true,
-              icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                size: 28,
+                color: theme.colorScheme.onSurface,
+              ),
               hint: Text(
                 l10n.isKorean ? '선택 안 함' : 'Not Selected',
-                style: TextStyle(fontSize: 16, color: textColor),
+                style: theme.textTheme.bodyLarge,
               ),
               dropdownColor: cardColor,
               items: [
@@ -226,7 +228,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                   value: null,
                   child: Text(
                     l10n.isKorean ? '선택 안 함' : 'Not Selected',
-                    style: TextStyle(fontSize: 16, color: textColor),
+                    style: theme.textTheme.bodyLarge,
                   ),
                 ),
                 // 기존 과목 리스트 (미분류 제외)
@@ -240,7 +242,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                         value: (s as dynamic).id as String,
                         child: Text(
                           (s as dynamic).title as String,
-                          style: TextStyle(fontSize: 16, color: textColor),
+                          style: theme.textTheme.bodyLarge,
                         ),
                       ),
                     ),
@@ -261,12 +263,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildLanguageDropdown(AppLocalizations l10n, List<dynamic> subjects) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade700
-            : Colors.grey.shade300;
-        final textColor = isDark ? Colors.white : Colors.black87;
+        final theme = Theme.of(context);
+        final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
 
         String labelFor(String code) => (code == 'ko' ? '한국어' : 'English');
 
@@ -274,14 +272,23 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: borderColor),
+            border: theme.inputDecorationTheme.border != null
+                ? Border.fromBorderSide(
+                    (theme.inputDecorationTheme.border as OutlineInputBorder)
+                        .borderSide,
+                  )
+                : Border.all(color: theme.colorScheme.outline),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: _selectedLanguage,
               isExpanded: true,
-              icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                size: 28,
+                color: theme.colorScheme.onSurface,
+              ),
               dropdownColor: cardColor,
               items: (l10n.isKorean ? ['ko', 'en'] : ['en', 'ko'])
                   .map(
@@ -289,7 +296,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       value: code,
                       child: Text(
                         labelFor(code),
-                        style: TextStyle(fontSize: 16, color: textColor),
+                        style: theme.textTheme.bodyLarge,
                       ),
                     ),
                   )
@@ -310,38 +317,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildWeekTextField() {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade400;
-        final focusColor = isDark ? Colors.white : Colors.black87;
-        final textColor = isDark ? Colors.white : Colors.black87;
-
         return TextField(
           controller: _weekController,
-          style: TextStyle(color: textColor),
           decoration: InputDecoration(
             hintText: 'Ex. Week 1-1',
-            hintStyle: TextStyle(color: Colors.grey.shade600),
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: focusColor, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
+            border: const OutlineInputBorder(),
           ),
         );
       },
@@ -352,37 +332,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildTitleTextField() {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade400;
-        final focusColor = isDark ? Colors.white : Colors.black87;
-        final textColor = isDark ? Colors.white : Colors.black87;
-
         return TextField(
           controller: _titleController,
-          style: TextStyle(color: textColor),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: focusColor, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
         );
       },
     );
@@ -392,11 +344,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildAudioFilesHeader(AppLocalizations l10n) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final iconColor = isDark ? Colors.white70 : Colors.grey.shade700;
-        final disabledColor = isDark
-            ? Colors.grey.withValues(alpha: 0.3)
-            : Colors.grey.withValues(alpha: 0.3);
+        final theme = Theme.of(context);
 
         return Row(
           children: [
@@ -407,15 +355,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             ),
             // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
             IconButton(
-              icon: Icon(
-                Icons.remove_circle_outline,
-                color: _canRemoveAudioFile() ? iconColor : disabledColor,
-              ),
+              icon: Icon(Icons.remove_circle_outline),
+              color: _canRemoveAudioFile()
+                  ? theme.colorScheme.onSurface
+                  : theme.disabledColor,
               onPressed: _canRemoveAudioFile() ? _removeLastAudioFile : null,
             ),
             // 오디오 파일 추가 버튼
             IconButton(
-              icon: Icon(Icons.add_circle_outline, color: iconColor),
+              icon: const Icon(Icons.add_circle_outline),
               onPressed: _addAudioFile,
             ),
           ],
@@ -453,26 +401,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   }) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade700
-            : Colors.grey.shade300;
-        final textColor = isDark ? Colors.white : Colors.black87;
+        final theme = Theme.of(context);
+        final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
 
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: theme.cardTheme.shape != null
+                ? null
+                : Border.all(color: theme.colorScheme.outline),
           ),
           child: Row(
             children: [
@@ -481,7 +420,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 angle: 0.785, // 45도 회전
                 child: Icon(
                   Icons.attach_file,
-                  color: isDark ? Colors.white70 : Colors.grey.shade600,
+                  color: theme.colorScheme.onSurfaceVariant,
                   size: 24,
                 ),
               ),
@@ -490,9 +429,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: label == '...' ? Colors.grey.shade400 : textColor,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: label == '...'
+                        ? theme.colorScheme.onSurfaceVariant
+                        : theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -501,23 +441,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               // 추가 버튼
               OutlinedButton(
                 onPressed: onTap,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  side: BorderSide(color: borderColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
                 child: Text(
                   AppLocalizations.of(context).isKorean ? '추가' : 'Add',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
                 ),
               ),
             ],
@@ -558,8 +483,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildPageRangeInputs(AudioFileEntry entry, AppLocalizations l10n) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final textColor = isDark ? Colors.white70 : Colors.grey.shade600;
+        final theme = Theme.of(context);
 
         const double pageFieldWidth = 70;
 
@@ -575,7 +499,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                     children: [
                       Text(
                         l10n.isKorean ? '페이지 설정' : 'Page Range',
-                        style: TextStyle(fontSize: 14, color: textColor),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       SizedBox(
@@ -584,14 +510,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          '-',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
+                        child: Text('-', style: theme.textTheme.titleLarge),
                       ),
                       SizedBox(
                         width: pageFieldWidth,
@@ -612,38 +531,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildPageTextField(TextEditingController controller) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade300;
-        final focusColor = isDark ? Colors.white : Colors.blue;
-
         return TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: focusColor, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 12,
-            ),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
         );
       },
     );
@@ -653,34 +545,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildBottomCreateButton(AppLocalizations l10n) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final backgroundColor = isDark
-            ? const Color(0xFF212121) // 다크모드: 배경색과 동일
-            : Colors.white; // 라이트모드: 흰색
+        final theme = Theme.of(context);
 
         return SafeArea(
           child: Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
+            decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
             child: SizedBox(
               width: double.infinity,
               height: 54,
               child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: isDark ? Colors.white : Colors.black87,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 onPressed: _isCreating ? null : _createLecture,
                 child: _isCreating
                     ? SizedBox(
@@ -689,17 +563,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation(
-                            isDark ? Colors.black : Colors.white,
+                            theme.colorScheme.onPrimary,
                           ),
                         ),
                       )
                     : Text(
                         l10n.isKorean ? '생성하기' : 'Create',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.black : Colors.white,
-                        ),
+                        style: theme.textTheme.titleMedium,
                       ),
               ),
             ),

@@ -80,29 +80,27 @@ class TagPill extends StatelessWidget {
     final Color resolvedTextColor =
         textColor ??
         getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontFamily: 'NanumSquare',
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          side: BorderSide(color: Color(0x33000000), width: 1),
-          shape: StadiumBorder(),
+
+    // Use theme's chip settings for high contrast mode
+    final chipTheme = Theme.of(context).chipTheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Chip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: TextStyle(
+          color: resolvedTextColor,
+          fontFamily: 'NanumSquare',
+          fontWeight: textTheme.bodyMedium?.fontWeight ?? FontWeight.w600,
         ),
       ),
-      child: Chip(
-        label: Text(
-          label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: resolvedTextColor, fontFamily: 'NanumSquare'),
-        ),
-        backgroundColor: color,
-        elevation: 2,
-        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-      ),
+      backgroundColor: color,
+      elevation: chipTheme.elevation ?? 2,
+      side: chipTheme.side,
+      shape: chipTheme.shape ?? const StadiumBorder(),
+      padding:
+          chipTheme.padding ??
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     );
   }
 }
@@ -134,34 +132,34 @@ class SelectableTagPill extends StatelessWidget {
     final Color resolvedTextColor =
         textColor ??
         getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontFamily: 'NanumSquare',
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          side: BorderSide(color: Color(0x33000000), width: 1),
-          shape: StadiumBorder(),
+
+    // Use theme's chip settings for high contrast mode
+    final chipTheme = Theme.of(context).chipTheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return ChoiceChip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: TextStyle(
+          color: resolvedTextColor,
+          fontFamily: 'NanumSquare',
+          fontWeight: textTheme.bodyMedium?.fontWeight ?? FontWeight.w600,
         ),
       ),
-      child: ChoiceChip(
-        label: Text(
-          label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: resolvedTextColor, fontFamily: 'NanumSquare'),
-        ),
-        selected: selected,
-        onSelected: onSelected,
-        backgroundColor: color,
-        selectedColor: color,
-        elevation: selected ? 4 : 2,
-        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-        showCheckmark: showCheckmark,
-        checkmarkColor: resolvedTextColor,
-      ),
+      selected: selected,
+      onSelected: onSelected,
+      backgroundColor: color,
+      selectedColor: color,
+      elevation: selected
+          ? (chipTheme.elevation ?? 4)
+          : (chipTheme.elevation ?? 2),
+      side: chipTheme.side,
+      shape: chipTheme.shape ?? const StadiumBorder(),
+      padding:
+          chipTheme.padding ??
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      showCheckmark: showCheckmark,
+      checkmarkColor: resolvedTextColor,
     );
   }
 }
@@ -830,10 +828,12 @@ class DialogHeaderTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final Color headerColor = isDark
         ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
         : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+    final Color textColor = isDark ? Colors.white : Colors.white;
 
     return Container(
       width: double.infinity,
@@ -850,14 +850,13 @@ class DialogHeaderTitle extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: textColor,
               fontSize: 18,
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: textColor),
             onPressed: onClose ?? () => Navigator.pop(context),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -909,7 +908,8 @@ class SubjectPanelHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final Color headerColor = isDark
         ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
         : const Color(0xFF1D1D1D); // 라이트모드: 검은색
@@ -981,9 +981,8 @@ class SubjectPanelHeader extends StatelessWidget {
                     padding: EdgeInsets.only(right: titleEndPadding),
                     child: Text(
                       title,
-                      style: TextStyle(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         color: textColor,
-                        fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
                       overflow: TextOverflow.ellipsis,
