@@ -1186,10 +1186,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       final jsonFile = File(jsonPath);
-      final jsonData =
-          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
-      final metadata = jsonData['metadata'] as Map<String, dynamic>;
-      duration = metadata['total_duration'] as int;
+      final List<dynamic> jsonData =
+          jsonDecode(await jsonFile.readAsString()) as List<dynamic>;
+      final tsList = jsonData.cast<Map<String, dynamic>>();
+      duration = tsList.last['tts_end_time'] as int;
 
       // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(

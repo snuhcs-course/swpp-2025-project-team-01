@@ -554,18 +554,8 @@ Future<String?> concatenateJsonFiles(
     final jsonOutputPath = '$outputDir/$lectureId/$titleText.json';
 
     final List<Map<String, dynamic>> mergedTimestamps = [];
-    int runningSentenceId = 1;
     int originalTimeOffset = 0;
     int ttsTimeOffset = 0;
-
-    int totalSentences = 0;
-    int totalDuration = 0;
-
-    // Metadata
-    String? voice;
-    double? speed;
-    String? languageCode;
-    int? sampleRate;
 
     for (int i = 0; i < jsonPaths.length; i++) {
       final jsonFile = File(jsonPaths[i]);
@@ -576,66 +566,18 @@ Future<String?> concatenateJsonFiles(
       // Actual start index
       final pdfStart = pdfStarts[i];
 
-      final data =
-          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
+      final List<dynamic> data =
+          jsonDecode(await jsonFile.readAsString()) as List<dynamic>;
 
-      // Validate/collect metadata
-      final meta = data['metadata'] as Map<String, dynamic>;
-      final fileTotalSentences = meta['total_sentences'] as int;
-      final fileTotalDuration = meta['total_duration'] as int;
-      final fileVoice = meta['voice'] as String?;
-      final fileSpeed = meta['speed'] as double?;
-      final fileLanguage = meta['language_code'] as String?;
-      final fileSampleRate = meta['sample_rate'] as int?;
-
-      if (i == 0) {
-        voice = fileVoice;
-        speed = fileSpeed;
-        languageCode = fileLanguage;
-        sampleRate = fileSampleRate;
-      } else {
-        // Metadata consistency check
-        if (voice != null && fileVoice != null && voice != fileVoice) {
-          throw Exception(
-            'Metadata mismatch: voice "$fileVoice" != "$voice" in ${jsonPaths[i]}',
-          );
-        }
-        if (speed != null &&
-            fileSpeed != null &&
-            (speed - fileSpeed).abs() > 1e-9) {
-          throw Exception(
-            'Metadata mismatch: speed $fileSpeed != $speed in ${jsonPaths[i]}',
-          );
-        }
-        if (languageCode != null &&
-            fileLanguage != null &&
-            languageCode != fileLanguage) {
-          throw Exception(
-            'Metadata mismatch: language_code "$fileLanguage" != "$languageCode" in ${jsonPaths[i]}',
-          );
-        }
-        if (sampleRate != null &&
-            fileSampleRate != null &&
-            sampleRate != fileSampleRate) {
-          throw Exception(
-            'Metadata mismatch: sample_rate $fileSampleRate != $sampleRate in ${jsonPaths[i]}',
-          );
-        }
-      }
-
-      final tsList = (data['timestamps'] as List).cast<Map<String, dynamic>>();
+      final tsList = data.cast<Map<String, dynamic>>();
       if (tsList.isEmpty) {
         continue;
       }
 
-      // Update totals
-      totalSentences += fileTotalSentences;
-      totalDuration += fileTotalDuration;
-
       // Determine how much time to offset this file by: append after current last end
       final currentTtsTimelineEnd = mergedTimestamps.isEmpty
           ? 0
-          : mergedTimestamps.last['end_time'] as int;
+          : mergedTimestamps.last['tts_end_time'] as int;
       final currentOriginalTimelineEnd = mergedTimestamps.isEmpty
           ? 0
           : mergedTimestamps.last['original_end_time'] as int;
@@ -649,47 +591,29 @@ Future<String?> concatenateJsonFiles(
         final textEng = ts['text_eng'] as String? ?? '';
         final textKor = ts['text_kor'] as String? ?? '';
         final slideNumber = (ts['slide_number'] as num?)?.toInt() ?? 0;
-        final startTime = (ts['start_time'] as num?)?.toInt() ?? 0;
-        final endTime = (ts['end_time'] as num?)?.toInt() ?? startTime;
+        final ttsStartTime = (ts['tts_start_time'] as num?)?.toInt() ?? 0;
+        final ttsEndTime = (ts['tts_end_time'] as num?)?.toInt() ?? ttsStartTime;
         final originalStartTime =
             (ts['original_start_time'] as num?)?.toInt() ?? 0;
         final originalEndTime = (ts['original_end_time'] as num?)?.toInt() ?? 0;
-        final duration =
-            (ts['duration'] as num?)?.toInt() ?? (endTime - startTime);
 
         mergedTimestamps.add({
-          'sentence_id': runningSentenceId++,
           'text_eng': textEng,
           'text_kor': textKor,
           'slide_number': slideNumber + pdfStart - 1,
-          'start_time': startTime + ttsTimeOffset,
-          'end_time': endTime + ttsTimeOffset,
+          'tts_start_time': ttsStartTime + ttsTimeOffset,
+          'tts_end_time': ttsEndTime + ttsTimeOffset,
           'original_start_time': originalStartTime + originalTimeOffset,
           'original_end_time': originalEndTime + originalTimeOffset,
-          'duration': duration,
         });
       }
     }
-
-    totalDuration += (jsonPaths.length - 1) * gapBetweenFiles;
-
-    final output = <String, dynamic>{
-      'metadata': {
-        'total_sentences': totalSentences,
-        'total_duration': totalDuration,
-        'voice': voice,
-        'speed': speed,
-        'language_code': languageCode,
-        'sample_rate': sampleRate,
-      },
-      'timestamps': mergedTimestamps,
-    };
 
     // Write final JSON
     final encoder = const JsonEncoder.withIndent('  ');
     final outFile = File(jsonOutputPath);
     await outFile.create(recursive: true);
-    await outFile.writeAsString(encoder.convert(output));
+    await outFile.writeAsString(encoder.convert(mergedTimestamps));
 
     try {
       for (final jsonPath in jsonPaths) {
