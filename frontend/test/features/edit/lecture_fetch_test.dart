@@ -384,7 +384,6 @@ void main() {
           'tts_end_time': 2000,
           'original_start_time': 0,
           'original_end_time': 2000,
-          'duration': 2000,
         },
         {
           'text_eng': 'How are you?',
