@@ -209,7 +209,7 @@ void main() {
 
       await tester.pumpWidget(
         wrapWithMaterialApp(
-          FavoritePill(active: true, onTap: mockOnTap.call, label: 'Favorites'),
+          FavoritePill(active: true, onTap: mockOnTap.call),
         ),
       );
 
@@ -226,7 +226,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         wrapWithMaterialApp(
-          FavoritePill(active: false, onTap: () {}, label: 'Favorites'),
+          FavoritePill(active: false, onTap: () {}),
         ),
       );
 
