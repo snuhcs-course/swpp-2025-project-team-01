@@ -581,9 +581,6 @@ class PlayerController extends ChangeNotifier {
     }
     _isDisposed = true;
 
-    // Orientation 복원
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-
     showControls.dispose();
     isPagesExpanded.dispose();
     showTranscriptPanel.dispose();
