@@ -446,54 +446,59 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                 ],
               ),
             const SizedBox(height: 10),
-
-            // ========== 과목 삭제 버튼 ==========
-            Center(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 231, 76, 60),
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    final result = await showDeleteConfirmationDialog(
-                      widget.subject,
-                    );
-                    if (result == true && context.mounted) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  icon: const Icon(Icons.delete),
-                  label: Text(AppLocalizations.of(context).deleteSubject),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, null),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: () {
-            final newTitle = _nameController.text.trim();
-            if (newTitle.isEmpty) {
-              _showSnackBar(l10n.pleaseEnterSubjectName);
-              return;
-            }
-            final manager = HiveManager.instance;
-            manager.updateSubject(
-              widget.subject.id,
-              title: newTitle,
-              tagIds: _selectedTagIds.toList(),
-            );
-            Navigator.pop(context, null);
-          },
-          child: Text(l10n.ok),
+        // 하단 버튼: 삭제 / 완료
+        Row(
+          children: [
+            // 삭제 버튼 (왼쪽)
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () async {
+                  final result = await showDeleteConfirmationDialog(
+                    widget.subject,
+                  );
+                  if (result == true && context.mounted) {
+                    Navigator.pop(context, true);
+                  }
+                },
+                icon: const Icon(Icons.delete_outline, size: 20),
+                label: Text(l10n.isKorean ? '삭제' : 'Delete'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 완료 버튼 (오른쪽)
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () {
+                  final newTitle = _nameController.text.trim();
+                  if (newTitle.isEmpty) {
+                    _showSnackBar(l10n.pleaseEnterSubjectName);
+                    return;
+                  }
+                  final manager = HiveManager.instance;
+                  manager.updateSubject(
+                    widget.subject.id,
+                    title: newTitle,
+                    tagIds: _selectedTagIds.toList(),
+                  );
+                  Navigator.pop(context, true);
+                },
+                child: Text(l10n.complete),
+              ),
+            ),
+          ],
         ),
       ],
     );
