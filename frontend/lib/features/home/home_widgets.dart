@@ -139,20 +139,15 @@ class FavoritePill extends StatelessWidget {
     super.key,
     required this.active,
     required this.onTap,
-    required this.label,
   });
 
   final bool active;
   final VoidCallback onTap;
-  final String label;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final AppHighlights h = context.highlights;
-    final Color fg = active
-        ? (isDark ? Colors.black : Colors.white)
-        : (isDark ? Colors.white : Colors.black87);
     final Color starColor = active
         ? h.important
         : (isDark ? Colors.white : Colors.black87);
@@ -161,19 +156,8 @@ class FavoritePill extends StatelessWidget {
     return PillButton(
       onTap: onTap,
       active: active,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(starIcon, size: 18, color: starColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.w600, color: fg),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Icon(starIcon, size: 18, color: starColor),
     );
   }
 }

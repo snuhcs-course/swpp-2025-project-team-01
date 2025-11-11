@@ -208,11 +208,10 @@ class _HomeScreenState extends State<HomeScreen>
                       }
                     }),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 6),
                   FavoritePill(
                     active: favoritesOnly,
                     onTap: () => setState(() => favoritesOnly = !favoritesOnly),
-                    label: l10n.favorites,
                   ),
                   const Spacer(),
                   EditPill(
