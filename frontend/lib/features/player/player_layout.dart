@@ -374,7 +374,7 @@ class VideoControlsOverlay extends StatelessWidget {
                     return BottomControlBar(
                       isVertical: isVertical,
                       currentTime: controller.currentTime.value,
-                      totalTime: controller.totalTime,
+                      totalTime: controller.isOriginalAudio.value ? controller.originalTotalDuration : controller.ttsTotalDuration,
                       onTimeChanged: (seconds) {
                         // 슬라이더 움직일 때 즉시 PDF 페이지 업데이트
                         controller.seek(seconds);
@@ -696,7 +696,7 @@ class TranscriptArea extends StatelessWidget {
                         final displayText =
                             (isKorean && sentence.textKor != null)
                             ? sentence.textKor!
-                            : sentence.text;
+                            : sentence.textEng;
 
                         return AutoScrollTag(
                           key: ValueKey(index),

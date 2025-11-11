@@ -49,7 +49,8 @@ class PlayerController extends ChangeNotifier {
   PdfController? pdfController;
   PdfDocument? pdfDocument;
   TranscriptData? transcriptData;
-  double totalTime = 0.0;
+  double ttsTotalDuration = 0.0;
+  double originalTotalDuration = 0.0;
   AutoScrollController? transcriptScrollController;
   double? pdfAspectRatio; // PDF 페이지의 가로/세로 비율 (width/height)
 
@@ -88,7 +89,7 @@ class PlayerController extends ChangeNotifier {
     if (isKoreanLanguage.value && sentence.textKor != null) {
       return sentence.textKor!;
     }
-    return sentence.text;
+    return sentence.textEng;
   }
 
   /// 한국어 transcript가 있는지 확인
@@ -132,7 +133,8 @@ class PlayerController extends ChangeNotifier {
     String originalAudioPath,
   ) async {
     this.transcriptData = transcriptData;
-    totalTime = transcriptData.metadata.totalDuration.toDouble() / 1000;
+    ttsTotalDuration = transcriptData.ttsTotalDuration.toDouble() / 1000;
+    originalTotalDuration = transcriptData.originalTotalDuration.toDouble() / 1000;
 
     // 오디오 경로 저장
     _audioPath = audioPath;
@@ -394,12 +396,12 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> skipBackward() async {
-    final newTime = (currentTime.value - 10).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value - 10).clamp(0, isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration).toDouble();
     await seek(newTime);
   }
 
   Future<void> skipForward() async {
-    final newTime = (currentTime.value + 10).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value + 10).clamp(0, isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration).toDouble();
     await seek(newTime);
   }
 
@@ -431,15 +433,15 @@ class PlayerController extends ChangeNotifier {
       // 현재 오디오 모드에 따라 적절한 타이밍 사용
       final startTime = isOriginalAudio.value
           ? sentence.originalStartTime
-          : sentence.startTime;
+          : sentence.ttsStartTime;
       final endTime = isOriginalAudio.value
           ? sentence.originalEndTime
-          : sentence.endTime;
+          : sentence.ttsEndTime;
 
       if (seconds * 1000 >= startTime && seconds * 1000 < endTime + 0.2) {
         // 4개의 타이밍 모두 별도 변수에 저장
         _currentOriginalStartTime = sentence.originalStartTime;
-        _currentStartTime = sentence.startTime;
+        _currentStartTime = sentence.ttsStartTime;
 
         _setCurrentSentenceAndPage(i, autoScroll: isForced);
         return;
@@ -519,7 +521,7 @@ class PlayerController extends ChangeNotifier {
     _isForcedMove = true;
     isAutoScrolling.value = true;
 
-    await _audioService.seek(Duration(milliseconds: sentence.startTime));
+    await _audioService.seek(Duration(milliseconds: isOriginalAudio.value ? sentence.originalStartTime : sentence.ttsStartTime));
 
     _setCurrentSentenceAndPage(
       index,
@@ -553,7 +555,7 @@ class PlayerController extends ChangeNotifier {
       if (sentence.slideNumber == slideNumber) {
         _isForcedMove = true;
 
-        await _audioService.seek(Duration(milliseconds: sentence.startTime));
+        await _audioService.seek(Duration(milliseconds: isOriginalAudio.value ? sentence.originalStartTime : sentence.ttsStartTime));
 
         _scrollTimer?.cancel();
         isAutoScrolling.value = true;
