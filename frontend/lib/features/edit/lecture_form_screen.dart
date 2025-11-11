@@ -1051,10 +1051,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     for (int i = 0; i < effectiveAudios.length; i++) {
       clients.add(_httpClientFactory());
     }
-    _loadingService.startLoading(
-      titleText,
-      effectiveAudios.length,
-    );
+    _loadingService.startLoading(titleText, effectiveAudios.length);
     _loadingService.setOnCancel(() {
       for (int i = 0; i < effectiveAudios.length; i++) {
         clients[i]?.close();
@@ -1067,9 +1064,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       // Disable background execution when cancelled
       if (backgroundEnabled && Platform.isAndroid) {
-        unawaited(Future.delayed(const Duration(seconds: 1), () async {
-          await _flutterBackground.disableBackgroundExecution();
-        }));
+        unawaited(
+          Future.delayed(const Duration(seconds: 1), () async {
+            await _flutterBackground.disableBackgroundExecution();
+          }),
+        );
       }
     });
 
@@ -1227,9 +1226,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // 강의 생성 완료 - lectureId 전달
-      _loadingService.completeLoading(
-        lectureId: generatedLecture.id,
-      );
+      _loadingService.completeLoading(lectureId: generatedLecture.id);
 
       // 7. 성공 메시지
       _showToast(
