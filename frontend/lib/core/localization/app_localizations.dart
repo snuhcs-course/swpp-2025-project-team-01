@@ -38,7 +38,6 @@ class AppLocalizations {
   // 홈 화면
   String get menu => isKorean ? '메뉴' : 'Menu';
   String get filter => isKorean ? '필터' : 'Filter';
-  String get favorites => isKorean ? '즐겨찾기' : 'Favorites';
   String get editMode => isKorean ? '수정' : 'Edit';
   String get addLecture => isKorean ? '강의 생성' : 'Create Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
@@ -226,11 +225,10 @@ class AppLocalizations {
   // 플레이어
   String get subtitle => isKorean ? '자막' : 'Subtitle';
   String get transcript => isKorean ? '대본' : 'Transcript';
-  String get synchronized => isKorean ? '동기화됨' : 'Synchronized';
   String pagesAhead(int pages) =>
-      isKorean ? '$pages 페이지 앞' : '$pages pages ahead';
+      isKorean ? '$pages 페이지 빠름' : '$pages pages ahead';
   String pagesBehind(int pages) =>
-      isKorean ? '$pages 페이지 뒤' : '$pages pages behind';
+      isKorean ? '$pages 페이지 느림' : '$pages pages behind';
 
   // 플레이어 에러 메시지
   String get lectureIdMissing =>

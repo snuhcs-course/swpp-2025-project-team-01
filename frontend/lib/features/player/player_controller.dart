@@ -49,7 +49,8 @@ class PlayerController extends ChangeNotifier {
   PdfController? pdfController;
   PdfDocument? pdfDocument;
   TranscriptData? transcriptData;
-  double totalTime = 0.0;
+  double ttsTotalDuration = 0.0;
+  double originalTotalDuration = 0.0;
   AutoScrollController? transcriptScrollController;
   double? pdfAspectRatio; // PDF 페이지의 가로/세로 비율 (width/height)
 
@@ -85,20 +86,10 @@ class PlayerController extends ChangeNotifier {
       return '';
     }
     final sentence = transcriptData!.timestamps[currentSentenceIndex.value!];
-    if (isKoreanLanguage.value && sentence.textKor != null) {
-      return sentence.textKor!;
+    if (isKoreanLanguage.value) {
+      return sentence.textKor;
     }
-    return sentence.text;
-  }
-
-  /// 한국어 transcript가 있는지 확인
-  bool get hasKoreanTranscript {
-    if (transcriptData == null || transcriptData!.timestamps.isEmpty) {
-      return false;
-    }
-    return transcriptData!.timestamps.any(
-      (sentence) => sentence.textKor != null,
-    );
+    return sentence.textEng;
   }
 
   // ========== 내부 상태 ==========
@@ -132,7 +123,9 @@ class PlayerController extends ChangeNotifier {
     String originalAudioPath,
   ) async {
     this.transcriptData = transcriptData;
-    totalTime = transcriptData.metadata.totalDuration.toDouble() / 1000;
+    ttsTotalDuration = transcriptData.ttsTotalDuration.toDouble() / 1000;
+    originalTotalDuration =
+        transcriptData.originalTotalDuration.toDouble() / 1000;
 
     // 오디오 경로 저장
     _audioPath = audioPath;
@@ -196,7 +189,7 @@ class PlayerController extends ChangeNotifier {
     // 재생 위치 변경 리스너
     _positionSubscription = _audioService.positionStream.listen((position) {
       currentTime.value = position.inMilliseconds / 1000.0;
-      _updateCurrentSentence();
+      updateCurrentSentence(true, currentTime.value);
     });
 
     // 재생 상태 변경 리스너
@@ -252,9 +245,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   void toggleTranscriptLanguage() {
-    if (hasKoreanTranscript) {
-      isKoreanLanguage.value = !isKoreanLanguage.value;
-    }
+    isKoreanLanguage.value = !isKoreanLanguage.value;
   }
 
   Future<void> toggleFullscreen() async {
@@ -394,12 +385,22 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> skipBackward() async {
-    final newTime = (currentTime.value - 10).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value - 10)
+        .clamp(
+          0,
+          isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration,
+        )
+        .toDouble();
     await seek(newTime);
   }
 
   Future<void> skipForward() async {
-    final newTime = (currentTime.value + 10).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value + 10)
+        .clamp(
+          0,
+          isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration,
+        )
+        .toDouble();
     await seek(newTime);
   }
 
@@ -420,8 +421,8 @@ class PlayerController extends ChangeNotifier {
 
   // ========== Transcript 제어 메서드 ==========
 
-  void _updateCurrentSentence() {
-    if (transcriptData == null || _isForcedMove) {
+  void updateCurrentSentence(bool isForced, double seconds) {
+    if (transcriptData == null || (isForced && _isForcedMove)) {
       return;
     }
 
@@ -431,18 +432,17 @@ class PlayerController extends ChangeNotifier {
       // 현재 오디오 모드에 따라 적절한 타이밍 사용
       final startTime = isOriginalAudio.value
           ? sentence.originalStartTime
-          : sentence.startTime;
+          : sentence.ttsStartTime;
       final endTime = isOriginalAudio.value
           ? sentence.originalEndTime
-          : sentence.endTime;
+          : sentence.ttsEndTime;
 
-      if (currentTime.value * 1000 >= startTime &&
-          currentTime.value * 1000 < endTime + 0.2) {
+      if (seconds * 1000 >= startTime && seconds * 1000 < endTime + 0.2) {
         // 4개의 타이밍 모두 별도 변수에 저장
         _currentOriginalStartTime = sentence.originalStartTime;
-        _currentStartTime = sentence.startTime;
+        _currentStartTime = sentence.ttsStartTime;
 
-        _setCurrentSentenceAndPage(i);
+        _setCurrentSentenceAndPage(i, autoScroll: isForced);
         return;
       }
     }
@@ -520,7 +520,13 @@ class PlayerController extends ChangeNotifier {
     _isForcedMove = true;
     isAutoScrolling.value = true;
 
-    await _audioService.seek(Duration(milliseconds: sentence.startTime));
+    await _audioService.seek(
+      Duration(
+        milliseconds: isOriginalAudio.value
+            ? sentence.originalStartTime
+            : sentence.ttsStartTime,
+      ),
+    );
 
     _setCurrentSentenceAndPage(
       index,
@@ -554,7 +560,13 @@ class PlayerController extends ChangeNotifier {
       if (sentence.slideNumber == slideNumber) {
         _isForcedMove = true;
 
-        await _audioService.seek(Duration(milliseconds: sentence.startTime));
+        await _audioService.seek(
+          Duration(
+            milliseconds: isOriginalAudio.value
+                ? sentence.originalStartTime
+                : sentence.ttsStartTime,
+          ),
+        );
 
         _scrollTimer?.cancel();
         isAutoScrolling.value = true;
@@ -580,9 +592,6 @@ class PlayerController extends ChangeNotifier {
       return;
     }
     _isDisposed = true;
-
-    // Orientation 복원
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
 
     showControls.dispose();
     isPagesExpanded.dispose();

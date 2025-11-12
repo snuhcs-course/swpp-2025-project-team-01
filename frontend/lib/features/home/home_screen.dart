@@ -1,15 +1,17 @@
 // 홈 메인: 상단 필터/즐겨찾기 pill + 태그칩 + 과목 패널 리스트
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+
 import 'package:reorderables/reorderables.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/device_orientation_helper.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/home/add_pill.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/features/home/custom_drawer.dart';
 import 'package:re_view/features/home/home_subject_widgets.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 /// 메인 홈 화면
 class HomeScreen extends StatefulWidget {
@@ -19,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool favoritesOnly = false;
   bool showTagFilter = false;
   bool editModeEnabled = false;
@@ -34,15 +36,50 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    // Repository 변경 리스너 등록
+
+    // WidgetsBindingObserver 등록
+    WidgetsBinding.instance.addObserver(this);
+
+    // 초기 orientation 설정
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        lockToCurrentOrientation(context);
+      }
+    });
+
     _manager.addListener(_onDataChanged);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // 앱이 foreground로 돌아올 때 orientation 재설정
+    if (state == AppLifecycleState.resumed && mounted) {
+      lockToCurrentOrientation(context);
+    }
   }
 
   @override
   void dispose() {
     // 리스너 제거
+    WidgetsBinding.instance.removeObserver(this);
     _manager.removeListener(_onDataChanged);
     super.dispose();
+  }
+
+  /// Player로 이동하고 돌아올 때 orientation 재설정
+  Future<void> _navigateToPlayer(String lectureId) async {
+    await Navigator.pushNamed(
+      context,
+      Routes.player,
+      arguments: {'lectureId': lectureId},
+    );
+
+    // Player에서 돌아온 후 orientation 재설정
+    if (mounted) {
+      lockToCurrentOrientation(context);
+    }
   }
 
   void _onDataChanged() {
@@ -208,11 +245,10 @@ class _HomeScreenState extends State<HomeScreen>
                       }
                     }),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 6),
                   FavoritePill(
                     active: favoritesOnly,
                     onTap: () => setState(() => favoritesOnly = !favoritesOnly),
-                    label: l10n.favorites,
                   ),
                   const Spacer(),
                   EditPill(
@@ -432,11 +468,7 @@ class _HomeScreenState extends State<HomeScreen>
                             await _manager.toggleSubjectFavorite(s.id);
                           },
                           onOpenLecture: (HiveLecture lec) {
-                            Navigator.pushNamed(
-                              context,
-                              Routes.player,
-                              arguments: {'lectureId': lec.id},
-                            );
+                            _navigateToPlayer(lec.id);
                           },
                           onLectureUpdated: () {
                             // Repository가 notifyListeners()를 호출하므로 setState 불필요

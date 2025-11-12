@@ -100,11 +100,6 @@ void main() {
         expect(englishLocalizations.filter, 'Filter');
       });
 
-      test('favorites returns correct translation', () {
-        expect(koreanLocalizations.favorites, '즐겨찾기');
-        expect(englishLocalizations.favorites, 'Favorites');
-      });
-
       test('addLecture returns correct translation', () {
         expect(koreanLocalizations.addLecture, '강의 생성');
         expect(englishLocalizations.addLecture, 'Create Lecture');

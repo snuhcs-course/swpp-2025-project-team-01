@@ -52,7 +52,7 @@ class SyncButton extends StatelessWidget {
   String _getDifferenceText(BuildContext context, int difference) {
     final l10n = AppLocalizations.of(context);
     if (difference == 0) {
-      return l10n.synchronized;
+      return '';
     }
     final absValue = difference.abs();
     if (difference < 0) {
@@ -68,7 +68,7 @@ class SyncButton extends StatelessWidget {
 
     return Stack(
       clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
+      alignment: Alignment.topRight,
       children: [
         IconButton(
           onPressed: onPressed,
@@ -78,7 +78,7 @@ class SyncButton extends StatelessWidget {
             size: isVertical ? 22 : 28,
           ),
         ),
-        if (showDifference)
+        if (showDifference && (pageDifference ?? 0) != 0)
           Positioned(
             top: 48, // IconButton 아래에 위치
             child: Container(
@@ -703,6 +703,46 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(PdfSlidesList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // currentPage가 변경되었을 때 자동 스크롤
+    if (oldWidget.currentPage != widget.currentPage) {
+      // 다음 프레임에서 스크롤 실행 (빌드 완료 후)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToPage(widget.currentPage);
+      });
+    }
+  }
+
+  void _scrollToPage(int pageNumber) {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    // 각 아이템의 총 너비 (itemWidth + separator)
+    const separator = 12.0;
+    final itemTotalWidth = widget.itemWidth + separator;
+    final viewportWidth = _scrollController.position.viewportDimension;
+
+    // 페이지를 중앙에 배치하기 위한 오프셋 계산
+    final targetOffset =
+        (pageNumber - 1) * itemTotalWidth -
+        (viewportWidth - widget.itemWidth) / 2 +
+        widget.padding.left;
+
+    // 스크롤 범위 내로 제한
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final minScroll = _scrollController.position.minScrollExtent;
+    final clampedOffset = targetOffset.clamp(minScroll, maxScroll);
+
+    _scrollController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _handleScroll() {

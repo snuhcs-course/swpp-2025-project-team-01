@@ -102,11 +102,12 @@ class HorizontalPlayerLayout extends StatelessWidget {
                             Positioned(
                               top: 12,
                               right: 16,
-                              // isSynced와 currentPage를 함께 감시하여 즉시 업데이트
+                              // isSynced, currentPage, currentSentenceIndex를 함께 감시하여 즉시 업데이트
                               child: ListenableBuilder(
                                 listenable: Listenable.merge([
                                   controller.isSynced,
                                   controller.currentPage,
+                                  controller.currentSentenceIndex,
                                 ]),
                                 builder: (context, _) {
                                   return SyncButton(
@@ -318,23 +319,24 @@ class VideoControlsOverlay extends StatelessWidget {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: controller.isOriginalAudio,
-                  builder: (context, isOriginalAudio, _) {
-                    return ValueListenableBuilder<bool>(
-                      valueListenable: controller.isSynced,
-                      builder: (context, isSynced, _) {
-                        return TopControlBar(
-                          isVertical: isVertical,
-                          onBack: onBack,
-                          isOriginalAudio: isOriginalAudio,
-                          onAudioToggle: controller.toggleAudioSource,
-                          onSpeedChanged: controller.setPlaybackSpeed,
-                          isSynced: isSynced,
-                          onSyncToggle: controller.toggleSync,
-                          pageDifference: controller.pageDifference,
-                        );
-                      },
+                child: ListenableBuilder(
+                  // isOriginalAudio, isSynced, currentPage, currentSentenceIndex를 함께 감시
+                  listenable: Listenable.merge([
+                    controller.isOriginalAudio,
+                    controller.isSynced,
+                    controller.currentPage,
+                    controller.currentSentenceIndex,
+                  ]),
+                  builder: (context, _) {
+                    return TopControlBar(
+                      isVertical: isVertical,
+                      onBack: onBack,
+                      isOriginalAudio: controller.isOriginalAudio.value,
+                      onAudioToggle: controller.toggleAudioSource,
+                      onSpeedChanged: controller.setPlaybackSpeed,
+                      isSynced: controller.isSynced.value,
+                      onSyncToggle: controller.toggleSync,
+                      pageDifference: controller.pageDifference,
                     );
                   },
                 ),
@@ -372,8 +374,14 @@ class VideoControlsOverlay extends StatelessWidget {
                     return BottomControlBar(
                       isVertical: isVertical,
                       currentTime: controller.currentTime.value,
-                      totalTime: controller.totalTime,
-                      onTimeChanged: controller.seek,
+                      totalTime: controller.isOriginalAudio.value
+                          ? controller.originalTotalDuration
+                          : controller.ttsTotalDuration,
+                      onTimeChanged: (seconds) {
+                        // 슬라이더 움직일 때 즉시 PDF 페이지 업데이트
+                        controller.seek(seconds);
+                        controller.updateCurrentSentence(false, seconds);
+                      },
                       isCaptionEnabled: controller.isCaptionEnabled.value,
                       onCaptionToggle: controller.toggleCaption,
                       showTranscriptPanel: controller.showTranscriptPanel.value,
@@ -554,28 +562,16 @@ class TranslationButton extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: controller.isKoreanLanguage,
       builder: (context, isKorean, _) {
-        final hasKorean = controller.hasKoreanTranscript;
-        final isEnabled = hasKorean;
-        final isActive = hasKorean && isKorean;
-        final backgroundColor = !isEnabled
-            ? (isDark
-                  ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
-                  : Colors.grey.shade300)
-            : (isActive
-                  ? (isDark ? colorScheme.primary : Colors.blue.shade600)
-                  : (isDark
-                        ? colorScheme.secondaryContainer
-                        : Colors.grey.shade400));
-        final textColor = !isEnabled
-            ? (isDark
-                  ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
-                  : Colors.grey.shade500)
-            : (isActive
-                  ? (isDark ? colorScheme.onPrimary : Colors.white)
-                  : (isDark ? colorScheme.onSecondaryContainer : Colors.white));
+        final isActive = isKorean;
+        final backgroundColor = (isActive
+            ? (isDark ? colorScheme.primary : Colors.blue.shade600)
+            : (isDark ? colorScheme.secondaryContainer : Colors.grey.shade400));
+        final textColor = isActive
+            ? (isDark ? colorScheme.onPrimary : Colors.white)
+            : (isDark ? colorScheme.onSecondaryContainer : Colors.white);
 
         return InkWell(
-          onTap: hasKorean ? controller.toggleTranscriptLanguage : null,
+          onTap: controller.toggleTranscriptLanguage,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -687,10 +683,9 @@ class TranscriptArea extends StatelessWidget {
                         final sentence =
                             controller.transcriptData!.timestamps[index];
                         final isCurrentSentence = currentSentenceIndex == index;
-                        final displayText =
-                            (isKorean && sentence.textKor != null)
-                            ? sentence.textKor!
-                            : sentence.text;
+                        final displayText = isKorean
+                            ? sentence.textKor
+                            : sentence.textEng;
 
                         return AutoScrollTag(
                           key: ValueKey(index),

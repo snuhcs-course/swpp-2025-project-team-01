@@ -2,10 +2,12 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 import 'package:mockito/mockito.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/player/player_screen.dart';
@@ -72,13 +74,24 @@ void main() {
     await HiveManager.instance.initForTesting(testBox);
   });
 
-  Widget buildTestApp({Object? args, Widget? child}) {
-    return MaterialApp(home: child ?? PlayerScreen(args: args));
+  Widget buildTestApp({Object? args, Widget? child, Locale? locale}) {
+    return MaterialApp(
+      home: child ?? PlayerScreen(args: args),
+      locale: locale ?? const Locale('en', 'US'), // Default to English
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+    );
   }
 
   group('PlayerScreen - Widget Creation', () {
     testWidgets('creates PlayerScreen widget', (tester) async {
       await tester.pumpWidget(buildTestApp());
+      await tester.pump();
       expect(find.byType(PlayerScreen), findsOneWidget);
     });
 
@@ -104,6 +117,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(args: null));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
       expect(find.byType(SnackBar), findsOneWidget);
@@ -113,6 +127,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(args: 'invalid'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
     });
@@ -121,6 +136,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(args: {'lectureId': null}));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
     });
@@ -129,6 +145,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(args: {'lectureId': ''}));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
     });
@@ -136,6 +153,14 @@ void main() {
     testWidgets('navigates back after showing error', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('en', 'US'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) {
               return ElevatedButton(
@@ -157,10 +182,12 @@ void main() {
         ),
       );
 
+      await tester.pump(); // Initial render
       await tester.tap(find.text('Open Player'));
-      await tester.pump(); // 네비게이션 완료
-      await tester.pump(); // initState의 addPostFrameCallback 실행
-      await tester.pump(); // _handleError의 addPostFrameCallback 실행
+      await tester.pump(); // Start navigation
+      await tester.pump(); // Complete navigation and initState
+      await tester.pump(); // Process addPostFrameCallback
+      await tester.pump(); // Show SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
 
@@ -225,6 +252,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(args: {'lectureId': 'nonexistent'}));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture not found.'), findsOneWidget);
     });
@@ -259,6 +287,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       // Then: Should show error message
       expect(find.text('Failed to load transcript file.'), findsOneWidget);
@@ -293,6 +322,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Invalid transcript data format.'), findsOneWidget);
     });
@@ -320,29 +350,18 @@ void main() {
       await addLectureToHive(tester, lecture);
 
       // Mock valid transcript
-      final validTranscript = {
-        'metadata': {
-          'total_sentences': 1,
-          'total_duration': 1000,
-          'voice': 'test',
-          'speed': 1.0,
-          'language_code': 'en',
-          'sample_rate': 22050,
+      final validTranscript = [
+        {
+          'text_eng': 'Test sentence',
+          'text_kor': '테스트',
+          'slide_number': 1,
+          'original_start_time': 0,
+          'original_end_time': 1000,
+          'tts_start_time': 0,
+          'tts_end_time': 1000,
+          'duration': 1000,
         },
-        'timestamps': [
-          {
-            'sentence_id': 0,
-            'text': 'Test sentence',
-            'text_kor': null,
-            'slide_number': 1,
-            'original_start_time': 0,
-            'original_end_time': 1000,
-            'start_time': 0,
-            'end_time': 1000,
-            'duration': 1000,
-          },
-        ],
-      };
+      ];
 
       setupAssetMockHandler((key) {
         if (key.contains('test_valid_transcript.json')) {
@@ -392,6 +411,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       // Will fail at transcript loading stage
       expect(find.text('Failed to load transcript file.'), findsOneWidget);
@@ -447,9 +467,15 @@ void main() {
 
     testWidgets('shows error when lecture not found in Hive', (tester) async {
       // HiveManager is initialized with empty lectures
-      await tester.pumpWidget(buildTestApp(args: {'lectureId': 'nonexistent'}));
+      await tester.pumpWidget(
+        buildTestApp(
+          args: {'lectureId': 'nonexistent'},
+          locale: const Locale('ko', 'KR'),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('강의를 찾을 수 없습니다.'), findsOneWidget);
     });
@@ -483,10 +509,14 @@ void main() {
 
       // When: Load the player screen
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'korean_lecture_1'}),
+        buildTestApp(
+          args: {'lectureId': 'korean_lecture_1'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       // Then: Should show error message
       expect(find.text('자막 파일을 불러올 수 없습니다.'), findsOneWidget);
@@ -520,10 +550,14 @@ void main() {
       HiveManager.instance.settings.language = 'ko';
 
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'korean_lecture_2'}),
+        buildTestApp(
+          args: {'lectureId': 'korean_lecture_2'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('자막 데이터 형식이 올바르지 않습니다.'), findsOneWidget);
     });
@@ -588,7 +622,10 @@ void main() {
       HiveManager.instance.settings.language = 'ko';
 
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'korean_lecture_3'}),
+        buildTestApp(
+          args: {'lectureId': 'korean_lecture_3'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
 
       // Let async operations complete
@@ -622,10 +659,14 @@ void main() {
       setupAssetMockHandler((key) => null);
 
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'korean_lecture_4'}),
+        buildTestApp(
+          args: {'lectureId': 'korean_lecture_4'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Additional pump for SnackBar
 
       // Will fail at transcript loading stage
       expect(find.text('자막 파일을 불러올 수 없습니다.'), findsOneWidget);
@@ -637,8 +678,8 @@ void main() {
       final customAudioService = AudioService();
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: PlayerScreen(args: null, audioService: customAudioService),
+        buildTestApp(
+          child: PlayerScreen(args: null, audioService: customAudioService),
         ),
       );
       await tester.pump();
@@ -661,8 +702,8 @@ void main() {
       final customPdfCacheService = PdfCacheService();
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: PlayerScreen(
+        buildTestApp(
+          child: PlayerScreen(
             args: null,
             pdfCacheService: customPdfCacheService,
           ),
@@ -686,8 +727,8 @@ void main() {
 
     testWidgets('accepts custom HiveManager', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: PlayerScreen(args: null, hiveManager: HiveManager.instance),
+        buildTestApp(
+          child: PlayerScreen(args: null, hiveManager: HiveManager.instance),
         ),
       );
       await tester.pump();
@@ -818,7 +859,10 @@ void main() {
       await addLectureForPaths(tester, lecture);
 
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'test_lecture_custom'}),
+        buildTestApp(
+          args: {'lectureId': 'test_lecture_custom'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
 
       // Let async operations complete
@@ -937,7 +981,10 @@ void main() {
           });
 
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'test_success'}),
+        buildTestApp(
+          args: {'lectureId': 'test_success'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
 
       // Initial loading state
@@ -992,7 +1039,10 @@ void main() {
       });
 
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'test_unexpected'}),
+        buildTestApp(
+          args: {'lectureId': 'test_unexpected'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
 
       await tester.pump();
@@ -1059,7 +1109,10 @@ void main() {
           });
 
       await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'test_malformed'}),
+        buildTestApp(
+          args: {'lectureId': 'test_malformed'},
+          locale: const Locale('ko', 'KR'),
+        ),
       );
 
       await tester.pump();
@@ -1299,6 +1352,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('en', 'US'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: PlayerScreen(
             args: {'lectureId': 'test_layout'},
             audioService: mockAudioService,
@@ -1334,6 +1395,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('en', 'US'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) {
               return ElevatedButton(
@@ -1352,10 +1421,12 @@ void main() {
         ),
       );
 
+      await tester.pump(); // Initial render
       await tester.tap(find.text('Open Player'));
-      await tester.pump();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Start navigation
+      await tester.pump(); // Complete navigation
+      await tester.pump(const Duration(milliseconds: 100)); // Process callbacks
+      await tester.pump(); // Show SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
 
@@ -1454,6 +1525,14 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('en', 'US'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: PlayerScreen(
               args: {'lectureId': 'test_horizontal'},
               audioService: mockAudioService,

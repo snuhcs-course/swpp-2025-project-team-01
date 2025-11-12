@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/device_orientation_helper.dart';
 import 'package:re_view/features/player/player_layout.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
@@ -45,12 +46,6 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 앱 라이프사이클 옵저버 등록
     WidgetsBinding.instance.addObserver(this);
 
-    // 세로 방향으로 고정
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-
     // 의존성 주입
     final audioService = widget._audioService ?? AudioService();
     final pdfCacheService = widget._pdfCacheService ?? PdfCacheService();
@@ -64,6 +59,8 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 프레임이 빌드된 이후에 실행
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        lockToCurrentOrientation(context);
+
         _loadLectureData();
       }
     });
@@ -74,10 +71,8 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 앱 라이프사이클 옵저버 제거
     WidgetsBinding.instance.removeObserver(this);
 
-    // 방향 제한 해제
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-
     _controller.dispose();
+
     super.dispose();
   }
 
