@@ -601,33 +601,41 @@ class PlayerController extends ChangeNotifier {
   // ========== Cleanup ==========
 
   /// PDF 로드 중 생성된 임시 파일들을 정리
-  void _cleanupTempPdfFiles() {
+  Future<void> _cleanupTempPdfFiles() async {
     if (_initialTempFiles == null) {
+      debugPrint('⚠️ No initial temp files list - skipping cleanup');
       return;
     }
 
     try {
-      final tempDir = Directory.fromUri(
-        Uri.file(Directory.systemTemp.path),
-      );
+      final tempDir = await getTemporaryDirectory();
 
       if (!tempDir.existsSync()) {
+        debugPrint('⚠️ Temp directory does not exist - skipping cleanup');
         return;
       }
 
       final currentFiles = tempDir.listSync();
+      int deletedCount = 0;
+      int failedCount = 0;
 
       // 초기 파일 목록에 없는 새로 생성된 파일들만 삭제
       for (final file in currentFiles) {
         if (!_initialTempFiles!.contains(file.path) && file is File) {
           try {
-            file.deleteSync();
+            await file.delete();
+            deletedCount++;
             debugPrint('🗑️ Deleted temp PDF file: ${file.path}');
           } catch (e) {
+            failedCount++;
             debugPrint('⚠️ Failed to delete temp file ${file.path}: $e');
           }
         }
       }
+
+      debugPrint(
+        '✅ Temp PDF cleanup completed: $deletedCount deleted, $failedCount failed',
+      );
     } catch (e) {
       debugPrint('⚠️ Failed to cleanup temp PDF files: $e');
     }
@@ -668,7 +676,11 @@ class PlayerController extends ChangeNotifier {
     // PDF 리소스 정리
     pdfDocument?.close();
     _pdfCacheService.clearCache();
-    _cleanupTempPdfFiles();
+
+    // 파일 핸들이 완전히 해제될 시간을 주기 위해 짧은 지연 후 cleanup 실행
+    Future.delayed(const Duration(milliseconds: 100), () async {
+      await _cleanupTempPdfFiles();
+    });
 
     super.dispose();
   }
