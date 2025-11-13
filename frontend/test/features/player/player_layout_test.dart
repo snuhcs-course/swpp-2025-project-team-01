@@ -13,6 +13,7 @@ import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/player/player_layout.dart';
 import 'package:re_view/features/player/player_controller.dart';
+import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 
 import 'mocks.mocks.dart';
@@ -304,6 +305,136 @@ void main() {
       tester.takeException();
 
       expect(controller.isPagesExpanded.value, isFalse);
+    });
+
+    testWidgets('renders PagesListWidget when expanded', (tester) async {
+      controller.isPagesExpanded.value = true;
+      when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(PagesListWidget), findsOneWidget);
+    });
+
+    testWidgets('hides PagesListWidget when collapsed', (tester) async {
+      controller.isPagesExpanded.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(PagesListWidget), findsNothing);
+    });
+  });
+
+  group('HorizontalPlayerLayout - Pages Controls', () {
+    testWidgets('shows toggle bar and pages list when expanded', (
+      tester,
+    ) async {
+      controller.isPagesExpanded.value = true;
+      when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(HorizontalToggleBar), findsOneWidget);
+      expect(find.byType(PagesListWidget), findsOneWidget);
+    });
+
+    testWidgets('hides toggle bar when pages collapsed', (tester) async {
+      controller.isPagesExpanded.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(HorizontalToggleBar), findsNothing);
+    });
+
+    testWidgets('shows SyncButton when expanded for quick resync access', (
+      tester,
+    ) async {
+      controller.isPagesExpanded.value = true;
+      controller.isSynced.value = false;
+      controller.currentSentenceIndex.value = 0;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(SyncButton), findsOneWidget);
+    });
+  });
+
+  group('HorizontalPlayerLayout - Transcript panel rendering', () {
+    testWidgets('renders transcript panel when showTranscriptPanel is true', (
+      tester,
+    ) async {
+      controller.showTranscriptPanel.value = true;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      // TranscriptArea contains localized heading text
+      expect(find.byType(TranscriptArea), findsOneWidget);
+      expect(find.text('Transcript'), findsWidgets);
+    });
+
+    testWidgets('omits transcript panel when showTranscriptPanel is false', (
+      tester,
+    ) async {
+      controller.showTranscriptPanel.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(TranscriptArea), findsNothing);
     });
   });
 
@@ -838,6 +969,51 @@ void main() {
 
       // Reset language back to English for other tests
       HiveManager.instance.settings.language = 'en';
+    });
+  });
+
+  group('PdfArea overlays', () {
+    testWidgets('shows loading indicator when pdfController is null', (
+      tester,
+    ) async {
+      controller.pdfController = null;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(isVertical: true, controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('tapping gesture overlay toggles controller controls state', (
+      tester,
+    ) async {
+      controller.pdfController = null;
+      controller.showControls.value = false;
+      controller.isPagesExpanded.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(isVertical: true, controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+
+      final overlayFinder = find.byKey(
+        const ValueKey('pdf-gesture-overlay-vertical'),
+      );
+      expect(overlayFinder, findsOneWidget);
+
+      final gesture = tester.widget<GestureDetector>(overlayFinder);
+      gesture.onTap?.call();
+      await tester.pump();
+
+      expect(controller.showControls.value, isTrue);
     });
   });
 
