@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -112,6 +114,9 @@ class PlayerController extends ChangeNotifier {
   // 더블탭 위치 저장
   double _doubleTapX = 0;
 
+  // PDF 로드 전 임시 파일 목록 (캐시 정리용)
+  List<String>? _initialTempFiles;
+
   // ========== 초기화 메서드 ==========
 
   Future<void> initialize(
@@ -157,6 +162,16 @@ class PlayerController extends ChangeNotifier {
     String lectureId,
     int initialPage,
   ) async {
+    // PDF 로드 전 임시 디렉토리의 파일 목록 저장
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final files = tempDir.listSync();
+      _initialTempFiles = files.map((file) => file.path).toList();
+    } catch (e) {
+      debugPrint('Failed to capture initial temp files: $e');
+      _initialTempFiles = [];
+    }
+
     pdfDocument = pdfPath.startsWith('assets/')
         ? await PdfDocument.openAsset(pdfPath)
         : await PdfDocument.openFile(pdfPath);
@@ -583,6 +598,41 @@ class PlayerController extends ChangeNotifier {
     }
   }
 
+  // ========== Cleanup ==========
+
+  /// PDF 로드 중 생성된 임시 파일들을 정리
+  void _cleanupTempPdfFiles() {
+    if (_initialTempFiles == null) {
+      return;
+    }
+
+    try {
+      final tempDir = Directory.fromUri(
+        Uri.file(Directory.systemTemp.path),
+      );
+
+      if (!tempDir.existsSync()) {
+        return;
+      }
+
+      final currentFiles = tempDir.listSync();
+
+      // 초기 파일 목록에 없는 새로 생성된 파일들만 삭제
+      for (final file in currentFiles) {
+        if (!_initialTempFiles!.contains(file.path) && file is File) {
+          try {
+            file.deleteSync();
+            debugPrint('🗑️ Deleted temp PDF file: ${file.path}');
+          } catch (e) {
+            debugPrint('⚠️ Failed to delete temp file ${file.path}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to cleanup temp PDF files: $e');
+    }
+  }
+
   // ========== Dispose ==========
 
   @override
@@ -614,6 +664,11 @@ class PlayerController extends ChangeNotifier {
     _audioService.dispose();
     pdfController?.dispose();
     transcriptScrollController?.dispose();
+
+    // PDF 리소스 정리
+    pdfDocument?.close();
+    _pdfCacheService.clearCache();
+    _cleanupTempPdfFiles();
 
     super.dispose();
   }

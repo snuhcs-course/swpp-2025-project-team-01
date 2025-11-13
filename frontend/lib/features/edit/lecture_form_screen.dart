@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
@@ -1180,7 +1182,25 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           return;
         }
       } else {
-        originalAudioPath = originalAudioPaths[0];
+        // 단일 오디오 모드: 원본 오디오를 documentsDir로 복사
+        final sourceAudioPath = originalAudioPaths[0];
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final extension = path.extension(sourceAudioPath);
+        final permanentAudioPath =
+            '${documentsDir.path}/$lectureId/$titleText$extension';
+
+        try {
+          // 원본 오디오를 영구 저장소로 복사
+          await File(sourceAudioPath).copy(permanentAudioPath);
+          originalAudioPath = permanentAudioPath;
+        } catch (e) {
+          debugPrint('Failed to copy original audio to permanent storage: $e');
+          _showToast(
+            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+          );
+          return;
+        }
+
         ttsAudioPath = ttsAudioPaths[0];
         jsonPath = jsonPaths[0];
       }
@@ -1209,6 +1229,46 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // 6. Hive에 강의 저장
       await _hive.addLecture(generatedLecture);
+
+      // 6-1. PDF를 영구 저장소로 복사 및 경로 업데이트
+      if (_slidePdfPath != null) {
+        try {
+          final documentsDir = await getApplicationDocumentsDirectory();
+          final permanentPdfPath =
+              '${documentsDir.path}/$lectureId/$titleText.pdf';
+
+          // PDF를 영구 저장소로 복사
+          await File(_slidePdfPath!).copy(permanentPdfPath);
+
+          // Hive에 저장된 경로를 영구 저장소 경로로 업데이트
+          final updatedLecture = generatedLecture.copyWith(
+            slidePath: permanentPdfPath,
+            updatedAt: DateTime.now(),
+          );
+          await _hive.updateLecture(updatedLecture);
+
+          // File_picker로 선택한 원본 PDF 삭제
+          try {
+            await File(_slidePdfPath!).delete();
+          } catch (e) {
+            debugPrint('Failed to delete temporary PDF: $e');
+          }
+        } catch (e) {
+          debugPrint('Failed to copy PDF to permanent storage: $e');
+        }
+      }
+
+      // 6-2. File_picker 캐시 폴더 전체 정리
+      try {
+        final tempDir = await getTemporaryDirectory();
+        final pickerDir = Directory('${tempDir.path}/file_picker');
+        if (pickerDir.existsSync()) {
+          await pickerDir.delete(recursive: true);
+          debugPrint('Deleted file_picker cache directory: ${pickerDir.path}');
+        }
+      } catch (e) {
+        debugPrint('Failed to delete file_picker cache: $e');
+      }
 
       // 7. 과목에 강의 추가
       if (_selectedSubjectId != null) {

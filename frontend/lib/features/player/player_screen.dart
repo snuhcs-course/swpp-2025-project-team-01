@@ -179,12 +179,12 @@ class _PlayerScreenState extends State<PlayerScreen>
       TranscriptData? transcriptData;
       try {
         final transcriptJsonData = json.decode(transcriptJson);
-            json.decode(transcriptJson) as Map<String, dynamic>;
         transcriptData = TranscriptData.fromJson(transcriptJsonData);
       } catch (e) {
         if (!mounted) {
           return;
         }
+        debugPrint(e.toString());
         final l10n = AppLocalizations.of(context);
         _handleError(l10n.invalidTranscriptFormat);
         return;

@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 bool isTabletDevice(BuildContext context) {
   final size = MediaQuery.of(context).size;
   final aspectRatio = size.shortestSide / size.longestSide;
-  // 비율이 0.65 이상이면 태블릿으로 판단
-  return aspectRatio >= 0.65;
+  // 비율이 0.6 이상이면 태블릿으로 판단
+  return aspectRatio >= 0.6;
 }
 
 /// 디바이스 타입에 따라 화면 방향 설정
