@@ -178,7 +178,7 @@ class _PlayerScreenState extends State<PlayerScreen>
       // 4. JSON 파싱
       TranscriptData? transcriptData;
       try {
-        final transcriptJsonData =
+        final transcriptJsonData = json.decode(transcriptJson);
             json.decode(transcriptJson) as Map<String, dynamic>;
         transcriptData = TranscriptData.fromJson(transcriptJsonData);
       } catch (e) {
