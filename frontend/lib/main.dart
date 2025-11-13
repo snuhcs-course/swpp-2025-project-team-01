@@ -16,6 +16,23 @@ import 'package:re_view/shared/widgets.dart';
 // Global navigator key for accessing navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/// 앱 진입점 - HiveManager 초기화 후 앱 실행
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // pdfx가 생성한 캐시 파일들 정리
+  await _cleanupCache();
+
+  // HiveManager 초기화
+  await HiveManager.instance.init();
+
+  if (Platform.isAndroid) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  runApp(const ReViewApp());
+}
+
 /// 캐시 디렉토리 정리 (앱 시작 시)
 /// pdfx 라이브러리가 생성한 UUID 형태의 PDF 캐시 파일들을 삭제
 Future<void> _cleanupCache() async {
@@ -48,23 +65,6 @@ Future<void> _cleanupCache() async {
   } catch (e) {
     debugPrint('⚠️ Failed to cleanup cache: $e');
   }
-}
-
-/// 앱 진입점 - HiveManager 초기화 후 앱 실행
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // pdfx가 생성한 캐시 파일들 정리
-  await _cleanupCache();
-
-  // HiveManager 초기화
-  await HiveManager.instance.init();
-
-  if (Platform.isAndroid) {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  }
-
-  runApp(const ReViewApp());
 }
 
 /// Re:View 앱의 루트 위젯
