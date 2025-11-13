@@ -198,6 +198,9 @@ class PdfArea extends StatelessWidget {
                 }
                 return Positioned.fill(
                   child: GestureDetector(
+                    key: ValueKey(
+                      'pdf-gesture-overlay-${isVertical ? 'vertical' : 'horizontal'}',
+                    ),
                     behavior: HitTestBehavior.opaque,
                     onVerticalDragUpdate: isVertical
                         ? null
