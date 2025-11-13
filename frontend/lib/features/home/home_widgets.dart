@@ -471,8 +471,6 @@ class LectureCard extends StatefulWidget {
 }
 
 class _LectureCardState extends State<LectureCard> {
-  PdfDocument? _pdfDocument;
-  PdfPage? _pdfPage;
   PdfPageImage? _cachedImage; // 렌더링된 이미지 (로컬 참조용)
   double? _aspectRatio; // PDF 페이지의 aspect ratio
   bool _isLoading = true;
@@ -482,24 +480,6 @@ class _LectureCardState extends State<LectureCard> {
   void initState() {
     super.initState();
     _loadPdf();
-  }
-
-  @override
-  void didUpdateWidget(LectureCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 강의 내용이 변경되면 PDF 다시 로드
-    if (oldWidget.lec.slidePath != widget.lec.slidePath ||
-        oldWidget.lec.id != widget.lec.id) {
-      _pdfPage?.close();
-      _pdfDocument?.close();
-      _pdfDocument = null;
-      _pdfPage = null;
-      _cachedImage = null;
-      _aspectRatio = null;
-      _isLoading = true;
-      _error = null;
-      _loadPdf();
-    }
   }
 
   Future<void> _loadPdf() async {
@@ -550,8 +530,6 @@ class _LectureCardState extends State<LectureCard> {
 
       if (mounted) {
         setState(() {
-          _pdfDocument = document;
-          _pdfPage = page;
           _cachedImage = image;
           _aspectRatio = aspectRatio;
           _isLoading = false;
@@ -569,8 +547,6 @@ class _LectureCardState extends State<LectureCard> {
 
   @override
   void dispose() {
-    _pdfPage?.close();
-    _pdfDocument?.close();
     super.dispose();
   }
 
