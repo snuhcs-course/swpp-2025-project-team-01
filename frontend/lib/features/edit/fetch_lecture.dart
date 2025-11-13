@@ -180,7 +180,9 @@ Future<String?> requestLecture(
     final streamed = await client
         .send(req)
         .timeout(
-          const Duration(minutes: 5),
+          endpointOverride != null
+              ? const Duration(seconds: 1) // Fast timeout for testing
+              : const Duration(minutes: 5),
           onTimeout: () {
             throw Exception(
               'Server connection timeout - Please check if server is running',
@@ -192,7 +194,9 @@ Future<String?> requestLecture(
     final stream = streamed.stream
         .transform(utf8.decoder)
         .timeout(
-          const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
+          endpointOverride != null
+              ? const Duration(milliseconds: 100) // Fast timeout for testing
+              : const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
           onTimeout: (sink) {
             debugPrint(
               'Stream timeout - No updates from server for 30 seconds',
@@ -246,19 +250,34 @@ Future<String?> requestLecture(
       }
 
       debugPrint('SSE issue triggered');
-      final client = http.Client();
+      // Use fakeClient if provided (for testing), otherwise create new client
+      final pollingClient = fakeClient ?? http.Client();
+      final shouldCloseClient = fakeClient == null;
+
       if (jobId == null) {
+        if (shouldCloseClient) {
+          pollingClient.close();
+        }
         return null;
       }
       while (true) {
-        final status = await getJobStatus(jobId, serverAddress, port, client);
+        final status = await getJobStatus(
+          jobId,
+          serverAddress,
+          port,
+          pollingClient,
+        );
         if (status == null || status.$1 == 'failed') {
           debugPrint('Error during lecture request stream processing: $e');
           LectureLoadingService.instance.setError();
-          client.close();
+          if (shouldCloseClient) {
+            pollingClient.close();
+          }
           return null;
         } else if (status.$1 == 'completed') {
-          client.close();
+          if (shouldCloseClient) {
+            pollingClient.close();
+          }
           return jobId;
         }
 
@@ -374,6 +393,7 @@ Future<List<String>?> unzipResult(
   int order, {
   Directory? documentsDirOverride, // for testing
   bool deleteZip = true, // for test assertions
+  Future<void> Function(File)? deleteZipOverride, // for testing deletion
 }) async {
   final zipFile = File(zipPath);
   if (!zipFile.existsSync()) {
@@ -415,9 +435,13 @@ Future<List<String>?> unzipResult(
   // Unzip 완료 후 zip 파일 삭제
   if (deleteZip) {
     try {
-      await zipFile.delete();
-    } catch (_) {
-      // Ignore deletion errors
+      if (deleteZipOverride != null) {
+        await deleteZipOverride(zipFile);
+      } else {
+        await zipFile.delete();
+      }
+    } catch (e) {
+      debugPrint('Zip file deletion failed: $e');
     }
   }
 
@@ -499,6 +523,7 @@ Future<String?> concatenateAudioFiles(
   String titleText,
   String lectureId, {
   Directory? dirOverride, // for testing
+  Future<void> Function(String)? deleteFileOverride, // for testing deletion
 }) async {
   final audioFileList = audioPaths.map((p) => "file '$p'").join('\n');
   final documentsDir = dirOverride ?? await getApplicationDocumentsDirectory();
@@ -524,10 +549,14 @@ Future<String?> concatenateAudioFiles(
 
   try {
     for (final audioPath in audioPaths) {
-      await File(audioPath).delete();
+      if (deleteFileOverride != null) {
+        await deleteFileOverride(audioPath);
+      } else {
+        await File(audioPath).delete();
+      }
     }
-  } catch (_) {
-    // Ignore deletion errors
+  } catch (e) {
+    debugPrint('Audio file deletion failed: $e');
   }
 
   return audioOutputPath;
@@ -540,6 +569,7 @@ Future<String?> concatenateJsonFiles(
   String titleText,
   String lectureId, {
   Directory? dirOverride, // for testing
+  Future<void> Function(String)? deleteFileOverride, // for testing deletion
 }) async {
   const gapBetweenFiles = 5000;
 
@@ -618,10 +648,14 @@ Future<String?> concatenateJsonFiles(
 
     try {
       for (final jsonPath in jsonPaths) {
-        await File(jsonPath).delete();
+        if (deleteFileOverride != null) {
+          await deleteFileOverride(jsonPath);
+        } else {
+          await File(jsonPath).delete();
+        }
       }
-    } catch (_) {
-      // Ignore deletion errors
+    } catch (e) {
+      debugPrint('JSON file deletion failed: $e');
     }
 
     return jsonOutputPath;
@@ -637,8 +671,19 @@ const _progressChannelDesc = 'Shows task progress';
 const _progressNotificationId = 10042;
 bool _notifierInitialized = false;
 
-final FlutterLocalNotificationsPlugin _notifier =
-    FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin _notifier = FlutterLocalNotificationsPlugin();
+
+/// For testing: allows injecting a mock notifier
+@visibleForTesting
+void setNotifierForTest(FlutterLocalNotificationsPlugin? notifier) {
+  if (notifier != null) {
+    _notifier = notifier;
+    _notifierInitialized = true;
+  } else {
+    _notifier = FlutterLocalNotificationsPlugin();
+    _notifierInitialized = false;
+  }
+}
 
 /// Ensure the notifications plugin is initialized (works in bg isolates too).
 Future<void> _ensureNotificationsInitialized() async {
@@ -765,9 +810,28 @@ Future<void> onProgress(
   }
 }
 
+// For testing: allows injecting lifecycle state
+AppLifecycleState? Function()? _lifecycleStateOverride;
+
+@visibleForTesting
+void setLifecycleStateForTest(AppLifecycleState? Function()? override) {
+  _lifecycleStateOverride = override;
+}
+
 /// Check if the app is currently in background
 bool _isAppInBackground() {
   try {
+    // Use override for testing
+    if (_lifecycleStateOverride != null) {
+      final state = _lifecycleStateOverride!();
+      if (state == null) {
+        return false;
+      }
+      return state == AppLifecycleState.paused ||
+          state == AppLifecycleState.inactive ||
+          state == AppLifecycleState.detached;
+    }
+
     // WidgetsBinding is available in UI isolate
     final lifecycleState = WidgetsBinding.instance.lifecycleState;
 
