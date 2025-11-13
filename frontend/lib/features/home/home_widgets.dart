@@ -567,7 +567,9 @@ class _LectureCardState extends State<LectureCard> {
           }
 
           if (deletedCount > 0) {
-            debugPrint('✅ Cleaned up $deletedCount cache files for lecture: ${widget.lec.id}');
+            debugPrint(
+              '✅ Cleaned up $deletedCount cache files for lecture: ${widget.lec.id}',
+            );
           }
         } catch (e) {
           debugPrint('⚠️ Failed to cleanup cache files: $e');
