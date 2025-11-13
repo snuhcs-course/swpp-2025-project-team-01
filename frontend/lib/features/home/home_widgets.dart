@@ -1,5 +1,8 @@
 // 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:reorderables/reorderables.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
@@ -471,8 +474,6 @@ class LectureCard extends StatefulWidget {
 }
 
 class _LectureCardState extends State<LectureCard> {
-  PdfDocument? _pdfDocument;
-  PdfPage? _pdfPage;
   PdfPageImage? _cachedImage; // 렌더링된 이미지 (로컬 참조용)
   double? _aspectRatio; // PDF 페이지의 aspect ratio
   bool _isLoading = true;
@@ -482,24 +483,6 @@ class _LectureCardState extends State<LectureCard> {
   void initState() {
     super.initState();
     _loadPdf();
-  }
-
-  @override
-  void didUpdateWidget(LectureCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 강의 내용이 변경되면 PDF 다시 로드
-    if (oldWidget.lec.slidePath != widget.lec.slidePath ||
-        oldWidget.lec.id != widget.lec.id) {
-      _pdfPage?.close();
-      _pdfDocument?.close();
-      _pdfDocument = null;
-      _pdfPage = null;
-      _cachedImage = null;
-      _aspectRatio = null;
-      _isLoading = true;
-      _error = null;
-      _loadPdf();
-    }
   }
 
   Future<void> _loadPdf() async {
@@ -525,13 +508,29 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     // 2. 캐시에 없으면 PDF 로드 및 렌더링
+    PdfDocument? document;
+    PdfPage? page;
+    Set<String>? beforeFiles;
+
     try {
+      // PDF 열기 전 캐시 디렉토리의 파일 목록 저장
+      try {
+        final cacheDir = await getTemporaryDirectory();
+        beforeFiles = cacheDir.listSync().map((f) => f.path).toSet();
+        debugPrint('📂 Cache files before PDF open: ${beforeFiles.length}');
+      } catch (e) {
+        debugPrint('⚠️ Failed to list cache directory: $e');
+      }
+
       // assets 경로인지 파일 시스템 경로인지 확인
       final bool isAsset = widget.lec.slidePath!.startsWith('assets/');
-      final PdfDocument document = isAsset
+      document = isAsset
           ? await PdfDocument.openAsset(widget.lec.slidePath!)
           : await PdfDocument.openFile(widget.lec.slidePath!);
-      final PdfPage page = await document.getPage(1);
+
+      debugPrint('📄 Opened PDF: ${widget.lec.slidePath}');
+
+      page = await document.getPage(1);
 
       // aspect ratio 계산
       final double aspectRatio = page.width / page.height;
@@ -543,6 +542,40 @@ class _LectureCardState extends State<LectureCard> {
         format: PdfPageImageFormat.png,
       );
 
+      // PDF document와 page를 사용 후 즉시 닫기
+      await page.close();
+      await document.close();
+      debugPrint('🔒 Closed PDF document and page');
+
+      // 새로 생긴 캐시 파일 찾아서 삭제
+      if (beforeFiles != null) {
+        try {
+          final cacheDir = await getTemporaryDirectory();
+          final afterFiles = cacheDir.listSync();
+          int deletedCount = 0;
+
+          for (final file in afterFiles) {
+            if (!beforeFiles.contains(file.path) && file is File) {
+              try {
+                await file.delete();
+                deletedCount++;
+                debugPrint('🗑️ Deleted cache file: ${file.path}');
+              } catch (e) {
+                debugPrint('⚠️ Failed to delete ${file.path}: $e');
+              }
+            }
+          }
+
+          if (deletedCount > 0) {
+            debugPrint(
+              '✅ Cleaned up $deletedCount cache files for lecture: ${widget.lec.id}',
+            );
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to cleanup cache files: $e');
+        }
+      }
+
       if (image != null) {
         // 3. 글로벌 캐시에 aspect ratio와 함께 저장
         cacheManager.put(widget.lec.id, image, aspectRatio);
@@ -550,27 +583,30 @@ class _LectureCardState extends State<LectureCard> {
 
       if (mounted) {
         setState(() {
-          _pdfDocument = document;
-          _pdfPage = page;
           _cachedImage = image;
           _aspectRatio = aspectRatio;
           _isLoading = false;
         });
       }
     } catch (e) {
+      // 에러 발생 시에도 document와 page 정리
+      try {
+        await page?.close();
+        await document?.close();
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
           _error = e.toString();
           _isLoading = false;
         });
       }
+      debugPrint('❌ Error loading PDF: $e');
     }
   }
 
   @override
   void dispose() {
-    _pdfPage?.close();
-    _pdfDocument?.close();
     super.dispose();
   }
 

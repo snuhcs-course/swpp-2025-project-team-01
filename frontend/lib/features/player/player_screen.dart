@@ -184,6 +184,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (!mounted) {
           return;
         }
+        debugPrint(e.toString());
         final l10n = AppLocalizations.of(context);
         _handleError(l10n.invalidTranscriptFormat);
         return;
