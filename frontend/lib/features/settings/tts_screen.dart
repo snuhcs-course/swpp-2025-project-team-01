@@ -83,7 +83,7 @@ class _TtsScreenState extends State<TtsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isKorean = AppLocalizations.of(context).isKorean;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -101,12 +101,12 @@ class _TtsScreenState extends State<TtsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle(isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender'),
+            _buildSectionTitle(l10n.ttsVoiceGender),
             const SizedBox(height: 12),
-            _buildGenderButtons(isKorean),
+            _buildGenderButtons(l10n),
             const SizedBox(height: 8),
             Text(
-              isKorean
+              l10n.isKorean
                   ? '현재 여성 TTS 음성만 지원됩니다.'
                   : 'Only female TTS voices are currently supported.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -131,13 +131,13 @@ class _TtsScreenState extends State<TtsScreen> {
     return Text(title, style: textStyle);
   }
 
-  Widget _buildGenderButtons(bool isKorean) {
+  Widget _buildGenderButtons(AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
           child: _genderButton(
             context,
-            isKorean ? '남성' : 'Male',
+            l10n.male,
             _gender == '남성',
             false,
           ),
@@ -146,7 +146,7 @@ class _TtsScreenState extends State<TtsScreen> {
         Expanded(
           child: _genderButton(
             context,
-            isKorean ? '여성' : 'Female',
+            l10n.female,
             _gender == '여성',
             true,
           ),

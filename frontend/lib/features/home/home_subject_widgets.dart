@@ -56,9 +56,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
                 controller: _titleController,
                 decoration: InputDecoration(
                   labelText: l10n.subjectName,
-                  hintText: l10n.isKorean
-                      ? '예) 소프트웨어 개발의 원리와 실습'
-                      : 'ex) Software Development Principles and Practice',
+                  hintText: l10n.subjectNameHint,
                 ),
                 autofocus: true,
               ),
@@ -334,9 +332,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  hintText: l10n.isKorean
-                      ? '예) 소프트웨어 개발의 원리와 실습'
-                      : 'ex) Software Development Principles and Practice',
+                  hintText: l10n.subjectNameHint,
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12,
@@ -406,7 +402,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        l10n.isKorean ? '태그 추가' : 'Add Tag',
+                        l10n.addTag,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -470,7 +466,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                                 vertical: 14,
                               ),
                             ),
-                            child: Text(l10n.isKorean ? '적용' : 'Apply'),
+                            child: Text(l10n.apply),
                           ),
                         ],
                       ),
@@ -504,7 +500,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                   }
                 },
                 icon: const Icon(Icons.delete_outline, size: 20),
-                label: Text(l10n.isKorean ? '삭제' : 'Delete'),
+                label: Text(l10n.delete),
               ),
             ),
             const SizedBox(width: 12),

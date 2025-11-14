@@ -141,9 +141,10 @@ class AppLocalizations {
   String get addSubject => isKorean ? '과목 추가' : 'Add Subject';
   String get subjectName => isKorean ? '과목명' : 'Subject Name';
   String get subjectNameHint => isKorean
-      ? '예) 소프트웨어 개발의 원리와 실제'
-      : 'e.g.) Principles of Software Development';
+      ? '예) 소프트웨어 개발의 원리와 실습'
+      : 'ex) Software Development Principles and Practice';
   String get selectTags => isKorean ? '태그 선택' : 'Select Tags';
+  String get addTag => isKorean ? '태그 추가' : 'Add Tag';
   String get selectTagsOptional =>
       isKorean ? '태그 선택 (선택사항)' : 'Select Tags (Optional)';
   String get pleaseEnterSubjectName =>
@@ -176,9 +177,103 @@ class AppLocalizations {
   String get lectures => isKorean ? '강의' : 'Lectures';
   String get lectureDetails => isKorean ? '강의 상세정보' : 'Lecture Details';
   String get week => isKorean ? '주차' : 'Week';
+  String get lectureWeek => isKorean ? '강의 주차' : 'Lecture Week';
   String get lectureTitle => isKorean ? '강의 제목' : 'Lecture Title';
   String get lectureLength => isKorean ? '강의 길이' : 'Lecture Length';
   String get deleteLecture => isKorean ? '강의 삭제' : 'Delete Lecture';
+  String get lectureLanguage => isKorean ? '강의 언어' : 'Spoken Language';
+  String get lectureSlide => isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)';
+  String get lectureAudio => isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio';
+  String get pageRange => isKorean ? '페이지 설정' : 'Page Range';
+  String get selectSubject => isKorean ? '과목 선택' : 'Select Subject';
+  String get notSelected => isKorean ? '선택 안 함' : 'Not Selected';
+  String get create => isKorean ? '생성하기' : 'Create';
+
+  // 강의 생성 화면 - 에러 메시지들
+  String get pdfPageCountError =>
+      isKorean ? 'PDF 페이지 수를 확인할 수 없습니다' : 'Could not determine PDF page count';
+  String get onlyM4aAllowed =>
+      isKorean ? 'm4a 형식의 파일만 업로드 가능합니다' : 'Only m4a files are allowed';
+  String get deleteFileConfirm =>
+      isKorean ? '업로드된 파일이 있습니다.\n삭제하시겠습니까?' : 'There is an uploaded file.\nDo you want to delete it?';
+  String get enterLectureWeek =>
+      isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week';
+  String get enterLectureTitle =>
+      isKorean ? '강의 제목을 입력해주세요' : 'Please enter lecture title';
+  String get uploadSlidePdf =>
+      isKorean ? '슬라이드 PDF를 업로드해주세요' : 'Please upload slide PDF';
+  String get uploadAtLeastOneAudio =>
+      isKorean ? '오디오 파일을 최소 1개 업로드해주세요' : 'Please upload at least one audio file';
+  String enterPageRangeForAudio(int index) =>
+      isKorean ? '${index + 1}번째 오디오의 페이지 범위를 입력해주세요' : 'Please enter page range for audio ${index + 1}';
+  String pageNumbersMustBeNumbers(int index) =>
+      isKorean ? '${index + 1}번째 오디오의 페이지 번호는 숫자로 입력해주세요' : 'Page numbers for audio ${index + 1} must be numbers';
+  String pageNumbersAtLeastOne(int index) =>
+      isKorean ? '${index + 1}번째 오디오의 페이지 번호는 1 이상이어야 합니다' : 'Page numbers for audio ${index + 1} must be at least 1';
+  String startPageGreaterThanEnd(int index) =>
+      isKorean ? '${index + 1}번째 오디오의 시작 페이지가 끝 페이지보다 클 수 없습니다' : 'Start page cannot be greater than end page for audio ${index + 1}';
+  String startPageExceedsPdfTotal(int index, int startPage, int totalPages) =>
+      isKorean
+          ? '${index + 1}번째 오디오의 시작 페이지($startPage)가 PDF 전체 페이지($totalPages)를 초과합니다'
+          : 'Start page ($startPage) for audio ${index + 1} exceeds total PDF pages ($totalPages)';
+  String endPageExceedsPdfTotal(int index, int endPage, int totalPages) =>
+      isKorean
+          ? '${index + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($totalPages)를 초과합니다'
+          : 'End page ($endPage) for audio ${index + 1} exceeds total PDF pages ($totalPages)';
+  String get lectureCancelled =>
+      isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled';
+  String get lectureCreatedSuccessfully =>
+      isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully';
+  String get lectureGenerationFailed =>
+      isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.';
+  String lectureCreationFailed(String error) =>
+      isKorean ? '강의 생성 실패: $error' : 'Failed to create lecture: $error';
+
+  // TTS 설정 화면
+  String get ttsVoiceGender => isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender';
+  String get male => isKorean ? '남성' : 'Male';
+  String get female => isKorean ? '여성' : 'Female';
+
+  // 강의 로딩 화면
+  String get creatingLecture => isKorean ? '강의 생성 중…' : 'Creating Lecture…';
+  String get lectureLabel => isKorean ? '강의명: ' : 'Lecture: ';
+  String get untitled => isKorean ? '제목 없음' : 'Untitled';
+  String get lectureCreated => isKorean ? '강의 생성 완료!' : 'Lecture Created!';
+  String get lectureCreationComplete =>
+      isKorean ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.' : 'Lecture creation completed.\nCheck out the result.';
+  String get goToLecture => isKorean ? '강의 바로가기' : 'Go to Lecture';
+  String get korean => isKorean ? '한국어' : 'Korean';
+  String get english => isKorean ? 'English' : 'English';
+
+  // 강의 로딩 중 친화적인 메시지들
+  List<String> get loadingFriendlyMessages => isKorean
+      ? [
+          '열심히 강의를 받아적는 중..',
+          '강의 내용을 정리하고 있어요',
+          '음성 파일을 듣고 있어요',
+          '슬라이드와 음성을 매칭하는 중..',
+          '강의 노트를 작성하고 있어요',
+          '중요한 부분을 체크하고 있어요',
+          '강의를 분석하고 있어요',
+          '거의 다 됐어요!',
+        ]
+      : [
+          'Taking notes from the lecture..',
+          'Organizing lecture content',
+          'Listening to the audio file',
+          'Matching slides with audio..',
+          'Writing lecture notes',
+          'Highlighting key points',
+          'Analyzing the lecture',
+          'Almost done!',
+        ];
+  String get lectureCreationCompleted =>
+      isKorean ? '강의 생성 완료!' : 'Lecture created!';
+  String get errorOccurred => isKorean ? '오류가 발생했습니다' : 'An error occurred';
+  String get networkErrorMessage => isKorean
+      ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'
+      : 'Please check your network settings and try again later.';
+  String get cancellingLecture => isKorean ? '강의 생성을 취소하는 중..' : 'Cancelling..';
 
   // 검색 화면
   String get searchLecture => isKorean ? '강의 검색' : 'Search Lectures';
@@ -243,6 +338,10 @@ class AppLocalizations {
       isKorean ? '플레이어 초기화에 실패했습니다.' : 'Failed to initialize player.';
   String get unknownError =>
       isKorean ? '알 수 없는 오류가 발생했습니다.' : 'An unknown error occurred.';
+
+  // Language labels for dropdown
+  String get koreanLanguage => isKorean ? '한국어' : 'Korean';
+  String get englishLanguage => isKorean ? '영어' : 'English';
 }
 
 class _AppLocalizationsDelegate
