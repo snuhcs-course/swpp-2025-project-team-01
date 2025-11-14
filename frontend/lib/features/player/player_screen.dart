@@ -255,22 +255,38 @@ class _PlayerScreenState extends State<PlayerScreen>
     final playerContent = Container(
       color: Colors.black,
       child: SafeArea(
-        child: ValueListenableBuilder<bool>(
-          valueListenable: _controller.isFullscreen,
-          builder: (_, isFullscreen, __) {
-            if (isFullscreen) {
-              return HorizontalPlayerLayout(
-                controller: _controller,
-                onBack: () => Navigator.pop(context),
-              );
-            } else {
-              return VerticalPlayerLayout(
-                controller: _controller,
-                onBack: () => Navigator.pop(context),
-              );
-            }
-          },
-        ),
+        child: isTabletDevice(context)
+            ? OrientationBuilder(
+                builder: (context, orientation) {
+                  if (orientation == Orientation.landscape) {
+                    return HorizontalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  } else {
+                    return VerticalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  }
+                },
+              )
+            : ValueListenableBuilder<bool>(
+                valueListenable: _controller.isFullscreen,
+                builder: (_, isFullscreen, __) {
+                  if (isFullscreen) {
+                    return HorizontalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  } else {
+                    return VerticalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  }
+                },
+              ),
       ),
     );
 
