@@ -135,21 +135,11 @@ class _TtsScreenState extends State<TtsScreen> {
     return Row(
       children: [
         Expanded(
-          child: _genderButton(
-            context,
-            l10n.male,
-            _gender == '남성',
-            false,
-          ),
+          child: _genderButton(context, l10n.male, _gender == '남성', false),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _genderButton(
-            context,
-            l10n.female,
-            _gender == '여성',
-            true,
-          ),
+          child: _genderButton(context, l10n.female, _gender == '여성', true),
         ),
       ],
     );

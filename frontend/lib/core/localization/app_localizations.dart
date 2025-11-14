@@ -182,7 +182,8 @@ class AppLocalizations {
   String get lectureLength => isKorean ? '강의 길이' : 'Lecture Length';
   String get deleteLecture => isKorean ? '강의 삭제' : 'Delete Lecture';
   String get lectureLanguage => isKorean ? '강의 언어' : 'Spoken Language';
-  String get lectureSlide => isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)';
+  String get lectureSlide =>
+      isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)';
   String get lectureAudio => isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio';
   String get pageRange => isKorean ? '페이지 설정' : 'Page Range';
   String get selectSubject => isKorean ? '과목 선택' : 'Select Subject';
@@ -194,32 +195,38 @@ class AppLocalizations {
       isKorean ? 'PDF 페이지 수를 확인할 수 없습니다' : 'Could not determine PDF page count';
   String get onlyM4aAllowed =>
       isKorean ? 'm4a 형식의 파일만 업로드 가능합니다' : 'Only m4a files are allowed';
-  String get deleteFileConfirm =>
-      isKorean ? '업로드된 파일이 있습니다.\n삭제하시겠습니까?' : 'There is an uploaded file.\nDo you want to delete it?';
+  String get deleteFileConfirm => isKorean
+      ? '업로드된 파일이 있습니다.\n삭제하시겠습니까?'
+      : 'There is an uploaded file.\nDo you want to delete it?';
   String get enterLectureWeek =>
       isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week';
   String get enterLectureTitle =>
       isKorean ? '강의 제목을 입력해주세요' : 'Please enter lecture title';
   String get uploadSlidePdf =>
       isKorean ? '슬라이드 PDF를 업로드해주세요' : 'Please upload slide PDF';
-  String get uploadAtLeastOneAudio =>
-      isKorean ? '오디오 파일을 최소 1개 업로드해주세요' : 'Please upload at least one audio file';
-  String enterPageRangeForAudio(int index) =>
-      isKorean ? '${index + 1}번째 오디오의 페이지 범위를 입력해주세요' : 'Please enter page range for audio ${index + 1}';
-  String pageNumbersMustBeNumbers(int index) =>
-      isKorean ? '${index + 1}번째 오디오의 페이지 번호는 숫자로 입력해주세요' : 'Page numbers for audio ${index + 1} must be numbers';
-  String pageNumbersAtLeastOne(int index) =>
-      isKorean ? '${index + 1}번째 오디오의 페이지 번호는 1 이상이어야 합니다' : 'Page numbers for audio ${index + 1} must be at least 1';
-  String startPageGreaterThanEnd(int index) =>
-      isKorean ? '${index + 1}번째 오디오의 시작 페이지가 끝 페이지보다 클 수 없습니다' : 'Start page cannot be greater than end page for audio ${index + 1}';
+  String get uploadAtLeastOneAudio => isKorean
+      ? '오디오 파일을 최소 1개 업로드해주세요'
+      : 'Please upload at least one audio file';
+  String enterPageRangeForAudio(int index) => isKorean
+      ? '${index + 1}번째 오디오의 페이지 범위를 입력해주세요'
+      : 'Please enter page range for audio ${index + 1}';
+  String pageNumbersMustBeNumbers(int index) => isKorean
+      ? '${index + 1}번째 오디오의 페이지 번호는 숫자로 입력해주세요'
+      : 'Page numbers for audio ${index + 1} must be numbers';
+  String pageNumbersAtLeastOne(int index) => isKorean
+      ? '${index + 1}번째 오디오의 페이지 번호는 1 이상이어야 합니다'
+      : 'Page numbers for audio ${index + 1} must be at least 1';
+  String startPageGreaterThanEnd(int index) => isKorean
+      ? '${index + 1}번째 오디오의 시작 페이지가 끝 페이지보다 클 수 없습니다'
+      : 'Start page cannot be greater than end page for audio ${index + 1}';
   String startPageExceedsPdfTotal(int index, int startPage, int totalPages) =>
       isKorean
-          ? '${index + 1}번째 오디오의 시작 페이지($startPage)가 PDF 전체 페이지($totalPages)를 초과합니다'
-          : 'Start page ($startPage) for audio ${index + 1} exceeds total PDF pages ($totalPages)';
+      ? '${index + 1}번째 오디오의 시작 페이지($startPage)가 PDF 전체 페이지($totalPages)를 초과합니다'
+      : 'Start page ($startPage) for audio ${index + 1} exceeds total PDF pages ($totalPages)';
   String endPageExceedsPdfTotal(int index, int endPage, int totalPages) =>
       isKorean
-          ? '${index + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($totalPages)를 초과합니다'
-          : 'End page ($endPage) for audio ${index + 1} exceeds total PDF pages ($totalPages)';
+      ? '${index + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($totalPages)를 초과합니다'
+      : 'End page ($endPage) for audio ${index + 1} exceeds total PDF pages ($totalPages)';
   String get lectureCancelled =>
       isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled';
   String get lectureCreatedSuccessfully =>
@@ -239,8 +246,9 @@ class AppLocalizations {
   String get lectureLabel => isKorean ? '강의명: ' : 'Lecture: ';
   String get untitled => isKorean ? '제목 없음' : 'Untitled';
   String get lectureCreated => isKorean ? '강의 생성 완료!' : 'Lecture Created!';
-  String get lectureCreationComplete =>
-      isKorean ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.' : 'Lecture creation completed.\nCheck out the result.';
+  String get lectureCreationComplete => isKorean
+      ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
+      : 'Lecture creation completed.\nCheck out the result.';
   String get goToLecture => isKorean ? '강의 바로가기' : 'Go to Lecture';
   String get korean => isKorean ? '한국어' : 'Korean';
   String get english => isKorean ? 'English' : 'English';

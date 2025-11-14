@@ -270,9 +270,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 const SizedBox(height: 20),
 
                 // ========== 강의 슬라이드 업로드 섹션 ==========
-                _buildSectionTitle(
-                  l10n.lectureSlide,
-                ),
+                _buildSectionTitle(l10n.lectureSlide),
                 const SizedBox(height: 8),
                 _buildFileUploadButton(
                   icon: Icons.attach_file,
@@ -347,10 +345,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 size: 28,
                 color: theme.colorScheme.onSurface,
               ),
-              hint: Text(
-                l10n.notSelected,
-                style: theme.textTheme.bodyLarge,
-              ),
+              hint: Text(l10n.notSelected, style: theme.textTheme.bodyLarge),
               dropdownColor: cardColor,
               items: [
                 // "선택 안 함" 옵션
@@ -479,11 +474,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
         return Row(
           children: [
-            Expanded(
-              child: _buildSectionTitle(
-                l10n.lectureAudio,
-              ),
-            ),
+            Expanded(child: _buildSectionTitle(l10n.lectureAudio)),
             // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
             IconButton(
               icon: Icon(Icons.remove_circle_outline),
@@ -570,12 +561,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               ),
               const SizedBox(width: 8),
               // 추가 버튼
-              OutlinedButton(
-                onPressed: onTap,
-                child: Text(
-                  l10n.add,
-                ),
-              ),
+              OutlinedButton(onPressed: onTap, child: Text(l10n.add)),
             ],
           ),
         );
@@ -594,9 +580,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         // 파일 업로드 버튼
         _buildFileUploadButton(
           icon: Icons.attach_file,
-          label: entry.filePath != null
-              ? _getFileName(entry.filePath!)
-              : '...',
+          label: entry.filePath != null ? _getFileName(entry.filePath!) : '...',
           onTap: () => _pickAudioFile(index),
         ),
 
@@ -698,10 +682,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                           ),
                         ),
                       )
-                    : Text(
-                        l10n.create,
-                        style: theme.textTheme.titleMedium,
-                      ),
+                    : Text(l10n.create, style: theme.textTheme.titleMedium),
               ),
             ),
           ),
@@ -952,7 +933,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       if (pdfTotalPages != null) {
         if (startPage > pdfTotalPages) {
-          _showToast(l10n.startPageExceedsPdfTotal(i, startPage, pdfTotalPages));
+          _showToast(
+            l10n.startPageExceedsPdfTotal(i, startPage, pdfTotalPages),
+          );
           return;
         }
         if (endPage > pdfTotalPages) {
@@ -964,7 +947,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         if (fallbackTotalPages == null) {
           fallbackTotalPages = endPage;
         } else if (endPage > fallbackTotalPages) {
-          _showToast(l10n.endPageExceedsPdfTotal(i, endPage, fallbackTotalPages));
+          _showToast(
+            l10n.endPageExceedsPdfTotal(i, endPage, fallbackTotalPages),
+          );
           return;
         }
       }
