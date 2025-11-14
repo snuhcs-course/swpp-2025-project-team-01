@@ -345,6 +345,7 @@ class BottomControlBar extends StatelessWidget {
     required this.onTranscriptToggle,
     required this.isFullscreen,
     required this.onFullscreenToggle,
+    this.isTablet = false,
   });
 
   final bool isVertical;
@@ -357,6 +358,7 @@ class BottomControlBar extends StatelessWidget {
   final VoidCallback onTranscriptToggle;
   final bool isFullscreen;
   final VoidCallback onFullscreenToggle;
+  final bool isTablet;
 
   @override
   Widget build(BuildContext context) {
@@ -372,15 +374,16 @@ class BottomControlBar extends StatelessWidget {
                 totalTime: totalTime,
                 onChanged: onTimeChanged,
               ),
-              Positioned(
-                bottom: 4,
-                right: 4,
-                child: FullscreenButton(
-                  isEnabled: isFullscreen,
-                  onPressed: onFullscreenToggle,
-                  isVertical: isVertical,
+              if (!isTablet)
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: FullscreenButton(
+                    isEnabled: isFullscreen,
+                    onPressed: onFullscreenToggle,
+                    isVertical: isVertical,
+                  ),
                 ),
-              ),
             ],
           ),
         // 버튼들
@@ -410,16 +413,17 @@ class BottomControlBar extends StatelessWidget {
                   ),
                 ),
                 // 우측: 전체화면 버튼
-                Positioned(
-                  right: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: FullscreenButton(
-                    isEnabled: isFullscreen,
-                    onPressed: onFullscreenToggle,
-                    isVertical: isVertical,
+                if (!isTablet)
+                  Positioned(
+                    right: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: FullscreenButton(
+                      isEnabled: isFullscreen,
+                      onPressed: onFullscreenToggle,
+                      isVertical: isVertical,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
