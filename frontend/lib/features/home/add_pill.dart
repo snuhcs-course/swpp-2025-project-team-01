@@ -6,17 +6,23 @@ import 'package:re_view/features/home/home_subject_widgets.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 
 class AddPill extends StatefulWidget {
-  const AddPill({super.key, required this.icon, required this.link});
+  const AddPill({
+    super.key,
+    required this.icon,
+    required this.link,
+    this.hiveManager,
+  });
 
   final IconData icon;
   final LayerLink link;
+  final HiveManager? hiveManager;
 
   @override
   State<AddPill> createState() => _AddPillState();
 }
 
 class _AddPillState extends State<AddPill> with SingleTickerProviderStateMixin {
-  late final HiveManager _manager = HiveManager.instance;
+  late final HiveManager _manager = widget.hiveManager ?? HiveManager.instance;
 
   bool active = false;
 
