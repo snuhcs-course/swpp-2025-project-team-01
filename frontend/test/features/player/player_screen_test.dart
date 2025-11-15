@@ -1474,16 +1474,16 @@ void main() {
 
         // Mock valid transcript
         final validTranscript = [
-            {
-              'text_eng': 'Test sentence',
-              'text_kor': null,
-              'slide_number': 1,
-              'original_start_time': 0,
-              'original_end_time': 1000,
-              'tts_start_time': 0,
-              'tts_end_time': 1000,
-            },
-          ];
+          {
+            'text_eng': 'Test sentence',
+            'text_kor': null,
+            'slide_number': 1,
+            'original_start_time': 0,
+            'original_end_time': 1000,
+            'tts_start_time': 0,
+            'tts_end_time': 1000,
+          },
+        ];
 
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMessageHandler('flutter/assets', (message) async {
