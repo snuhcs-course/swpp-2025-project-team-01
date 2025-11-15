@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
@@ -14,6 +14,13 @@ from contextlib import asynccontextmanager
 from typing import Callable
 from enum import Enum
 import uuid
+import os
+
+# Disable tokenizers parallelism to avoid fork-related warnings
+# This must be set before importing any transformers/tokenizers code
+# Note: This only affects tokenization speed (1-2% of total pipeline time)
+# The main GPU-accelerated operations (ASR, Translation, TTS) are unaffected
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
 # Import from inference_models subdirectory
 from inference_models.lecture_pipeline import LecturePipeline, PipelineOutput, simple_sentence_splitter
@@ -42,10 +49,11 @@ class JobInfo:
         self.created_at = datetime.now()
         self.completed_at: datetime | None = None
         self.downloaded = False  # Track if file has been downloaded by client
+        self.audio_path: Path | None = None  # Track uploaded audio file for cleanup
+        self.pdf_path: Path | None = None  # Track uploaded PDF file for cleanup
 
 # Global variables
-pipeline: LecturePipeline | None = None
-ml_inference_semaphore: asyncio.Semaphore | None = None
+pipeline_queue: asyncio.Queue[LecturePipeline] | None = None
 jobs: dict[str, JobInfo] = {}  # job_id -> JobInfo
 job_cleanup_task: asyncio.Task | None = None
 
@@ -53,23 +61,110 @@ UPLOAD_DIR = Path('./uploads')
 OUTPUT_DIR = Path('./pipeline_output')
 JOB_RETENTION_MINUTES = 30  # Keep completed jobs for 30 minutes if not downloaded
 
+async def cleanup_orphaned_files():
+    """Clean up orphaned files in uploads and output directories on startup."""
+    print('🧹 Checking for orphaned files from previous runs...')
+
+    # Clean up uploads directory
+    if UPLOAD_DIR.exists():
+        try:
+            upload_files = list(UPLOAD_DIR.glob('*'))
+            if upload_files:
+                for file_path in upload_files:
+                    if file_path.is_file():
+                        await asyncio.to_thread(file_path.unlink)
+                        print(f'   🧹 Deleted orphaned upload file: {file_path.name}')
+                print(f'   ✅ Cleaned up {len(upload_files)} orphaned upload files')
+            else:
+                print('   ✅ No orphaned upload files found')
+        except Exception as e:
+            print(f'   ⚠️  Error cleaning upload directory: {e}')
+
+    # Clean up old output directories (not ZIPs, as they might be for pending downloads)
+    if OUTPUT_DIR.exists():
+        try:
+            orphaned_dirs = [d for d in OUTPUT_DIR.iterdir() if d.is_dir()]
+            if orphaned_dirs:
+                for dir_path in orphaned_dirs:
+                    await asyncio.to_thread(shutil.rmtree, dir_path)
+                    print(f'   🧹 Deleted orphaned output directory: {dir_path.name}')
+                print(f'   ✅ Cleaned up {len(orphaned_dirs)} orphaned output directories')
+            else:
+                print('   ✅ No orphaned output directories found')
+        except Exception as e:
+            print(f'   ⚠️  Error cleaning output directory: {e}')
+
+async def cleanup_job_files(job_info: JobInfo):
+    """Clean up all files associated with a job (uploaded files and output)."""
+    # Clean up uploaded audio file
+    if job_info.audio_path and job_info.audio_path.exists():
+        try:
+            await asyncio.to_thread(job_info.audio_path.unlink)
+            print(f"🧹 Deleted uploaded audio file for job: {job_info.job_id}")
+        except Exception as e:
+            print(f"⚠️  Error deleting audio file for job {job_info.job_id}: {e}")
+
+    # Clean up uploaded PDF file
+    if job_info.pdf_path and job_info.pdf_path.exists():
+        try:
+            await asyncio.to_thread(job_info.pdf_path.unlink)
+            print(f"🧹 Deleted uploaded PDF file for job: {job_info.job_id}")
+        except Exception as e:
+            print(f"⚠️  Error deleting PDF file for job {job_info.job_id}: {e}")
+
+    # Clean up output ZIP file
+    if job_info.output_path and job_info.output_path.exists():
+        try:
+            await asyncio.to_thread(job_info.output_path.unlink)
+            print(f"🧹 Deleted output ZIP file for job: {job_info.job_id}")
+        except Exception as e:
+            print(f"⚠️  Error deleting output file for job {job_info.job_id}: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan - initialize and cleanup resources."""
-    global ml_inference_semaphore, pipeline, job_cleanup_task
+    global pipeline_queue, job_cleanup_task
 
     UPLOAD_DIR.mkdir(exist_ok = True)
     OUTPUT_DIR.mkdir(exist_ok = True)
 
-    ml_inference_semaphore = asyncio.Semaphore(1)
+    # Clean up orphaned files from previous runs
+    await cleanup_orphaned_files()
 
-    print('🚀 Initializing ML pipeline...')
-    try:
-        pipeline = await asyncio.to_thread(get_pipeline)
-        print('✅ ML pipeline loaded successfully')
-    except Exception as e:
-        print(f'⚠️  Warning: Failed to pre-load pipeline: {e}')
-        print('   Pipeline will be loaded lazily on first request')
+    # Create queue for 2 pipeline workers
+    pipeline_queue = asyncio.Queue(maxsize = 2)
+
+    print('🚀 Initializing ML pipeline workers...')
+    print('   NOTE: Workers are initialized sequentially to avoid model loading conflicts')
+
+    # Load 2 pipeline instances SEQUENTIALLY (not in parallel)
+    # This prevents PyTorch meta tensor errors and CUDA initialization conflicts
+    for i in range(2):
+        try:
+            print(f'\n   Loading pipeline worker {i+1}/2...')
+            print(f'   (This may take several minutes for the first worker)')
+
+            # Create pipeline in a thread to avoid blocking asyncio
+            pipeline = await asyncio.to_thread(create_pipeline)
+            await pipeline_queue.put(pipeline)
+
+            print(f'   ✅ Pipeline worker {i+1} loaded successfully')
+
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f'   ❌ Failed to load pipeline worker {i+1}:')
+            print(f'   {error_details}')
+            # Continue trying to load remaining workers
+            # If both fail, the queue will be empty and jobs will fail gracefully
+
+    workers_ready = pipeline_queue.qsize()
+    if workers_ready == 0:
+        print('❌ WARNING: No pipeline workers loaded! Server will not be able to process jobs.')
+    elif workers_ready == 1:
+        print(f'⚠️  Only {workers_ready} pipeline worker ready (degraded performance)')
+    else:
+        print(f'✅ {workers_ready} pipeline workers ready (full capacity)')
 
     # Start background cleanup task
     job_cleanup_task = asyncio.create_task(cleanup_old_jobs())
@@ -85,15 +180,19 @@ async def lifespan(app: FastAPI):
         except asyncio.CancelledError:
             pass
 
-    if pipeline is not None:
-        print("🧹 Cleaning up ML pipeline...")
+    # Cleanup all pipelines in queue
+    print("🧹 Cleaning up ML pipeline workers...")
+    while not pipeline_queue.empty():
         try:
+            pipeline = await asyncio.wait_for(pipeline_queue.get(), timeout=1.0)
             await asyncio.to_thread(pipeline.asr.unload_model)
             await asyncio.to_thread(pipeline.matcher.unload_model)
             await asyncio.to_thread(pipeline.tts.unload_model)
-            print('✅ ML pipeline cleaned up')
+            print('   ✅ Pipeline worker cleaned up')
+        except asyncio.TimeoutError:
+            break
         except Exception as e:
-            print(f'⚠️  Warning during cleanup: {e}')
+            print(f'   ⚠️  Warning during cleanup: {e}')
 
 
 app = FastAPI(
@@ -110,54 +209,52 @@ app.add_middleware(
     allow_headers = ["*"],
 )
 
-def get_pipeline() -> LecturePipeline:
+def create_pipeline() -> LecturePipeline:
     """
-    Get or initialize the pipeline singleton.
-
-    Note: This is typically called during server startup via lifespan event.
-    If pipeline initialization fails during startup, it will be retried here
-    on the first request (lazy loading fallback).
+    Create a new pipeline instance.
+    Called during server startup to create worker pool.
+    The pipeline will be reused for both Korean and English lectures.
+    Language will be specified per request.
     """
-    global pipeline
-    if pipeline is None:
-        print('📦 Loading ML pipeline (lazy initialization)...')
-        pipeline = LecturePipeline(
-            # ASR settings
-            asr_chunk_seconds = 300,
-            asr_batch_size = 4,
+    return LecturePipeline(
+        # ASR settings
+        asr_model = "turbo",
+        asr_chunk_seconds = 300,
+        asr_batch_size = 3,
 
-            # Matching settings
-            jump_penalty = 0.2,
-            backward_weight = 2.0,
-            use_exponential_scaling = True,
-            exponential_scale = 2.8,
-            use_confidence_boost = True,
-            confidence_threshold = 0.925,
-            confidence_weight = 2.25,
-            use_context_similarity = True,
-            context_weight = 0.05,
-            context_update_rate = 0.25,
+        # Matching settings
+        jump_penalty = 1.5,
+        backward_weight = 2.0,
+        use_exponential_scaling = True,
+        exponential_scale = 2.79,
+        use_confidence_boost = True,
+        confidence_threshold = 0.9,
+        confidence_weight = 2.13,
+        use_context_similarity = True,
+        context_weight = 0.047,
+        context_update_rate = 0.24,
 
-            # Translation settings
-            translation_model = "tencent/Hunyuan-MT-7B-fp8",
-            translation_tensor_parallel_size = 1,
-            enable_translation = True,
+        # Translation settings
+        translation_model = "tencent/Hunyuan-MT-7B-fp8",
+        translation_tensor_parallel_size = 1,
+        enable_translation = True,
 
-            # TTS settings
-            tts_voice = 'af_heart',
-            tts_speed = 1.0,
+        # TTS settings
+        enable_tts = True,
+        tts_voice = 'af_heart',
+        tts_speed = 1.0,
 
-            # General settings
-            device = 'cuda',
-            output_dir = str(OUTPUT_DIR)
-        )
-        print('✅ ML pipeline loaded (lazy)')
-    return pipeline
+        # General settings
+        device = 'cuda',
+        output_dir = str(OUTPUT_DIR)
+    )
 
 async def run_pipeline_in_executor(
+    pipeline_instance: LecturePipeline,
     audio_path: str,
     pdf_path: str,
     lecture_name: str,
+    language: str = "en",
     progress_callback: Callable[[JobStatus, float, str], None] | None = None
 ) -> PipelineOutput:
     """
@@ -165,12 +262,13 @@ async def run_pipeline_in_executor(
     This is necessary because the pipeline operations are CPU/GPU intensive.
 
     Args:
+        pipeline_instance: The pipeline instance to use for processing
         audio_path: Path to audio file
         pdf_path: Path to PDF file
         lecture_name: Name for this lecture
+        language: Language code for ASR transcription ('en' for English, 'ko' for Korean)
         progress_callback: Optional callback to report progress (status, progress, message)
     """
-    pipeline_instance = get_pipeline()
 
     # Wrapper to convert pipeline progress to job progress
     def pipeline_progress_wrapper(stage: str, progress: float, message: str):
@@ -190,6 +288,7 @@ async def run_pipeline_in_executor(
         pipeline_instance.run,
         audio_path = audio_path,
         pdf_path = pdf_path,
+        language = language,
         lecture_name = lecture_name,
         sentence_splitter = simple_sentence_splitter,
         save_intermediate = False,
@@ -214,21 +313,28 @@ async def cleanup_old_jobs():
                         # Clean up if not downloaded after retention period
                         if not job_info.downloaded and age > timedelta(minutes=JOB_RETENTION_MINUTES):
                             jobs_to_remove.append(job_id)
-                            # Clean up output file
-                            if job_info.output_path and job_info.output_path.exists():
-                                await asyncio.to_thread(job_info.output_path.unlink)
-                                print(f"🧹 Deleted non-downloaded file: {job_id} (age: {age.total_seconds()/60:.1f} min)")
+                            # Clean up all job files
+                            await cleanup_job_files(job_info)
+                            print(f"🧹 Cleaned up non-downloaded job: {job_id} (age: {age.total_seconds()/60:.1f} min)")
 
             for job_id in jobs_to_remove:
                 del jobs[job_id]
-                print(f"🧹 Cleaned up old job: {job_id}")
         except Exception as e:
             print(f"⚠️  Error in cleanup task: {e}")
 
-async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str):
+async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str, language: str = "en"):
     """Background task to process a lecture synchronization job."""
-    global jobs
+    global jobs, pipeline_queue
     job_info = jobs[job_id]
+
+    # Track uploaded files for cleanup
+    job_info.audio_path = audio_path
+    job_info.pdf_path = pdf_path
+
+    # Acquire a pipeline from the queue (waits if none available)
+    pipeline = await pipeline_queue.get()
+
+    print(f"Processing job with language: {language}")
 
     try:
         # Update job status
@@ -242,24 +348,30 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
             job_info.progress = progress
             job_info.message = message
 
-        # Wait for semaphore and run pipeline
-        async with ml_inference_semaphore:
-            job_info.message = "Starting pipeline..."
-            output: PipelineOutput = await run_pipeline_in_executor(
-                audio_path = str(audio_path),
-                pdf_path = str(pdf_path),
-                lecture_name = lecture_name,
-                progress_callback = update_progress
-            )
+        # Run pipeline with acquired worker
+        job_info.message = "Starting pipeline..."
+        output: PipelineOutput = await run_pipeline_in_executor(
+            pipeline_instance = pipeline,
+            audio_path = str(audio_path),
+            pdf_path = str(pdf_path),
+            lecture_name = lecture_name,
+            language = language,
+            progress_callback = update_progress
+        )
 
         # Verify output files exist
-        audio_file_path = Path(output.audio_file)
         timestamps_file_path = Path(output.timestamps_file)
-
-        if not audio_file_path.exists():
-            raise Exception('Audio file generation failed')
         if not timestamps_file_path.exists():
             raise Exception('Timestamps file generation failed')
+
+        # For English lectures, verify audio file exists
+        # For Korean lectures, audio_file will be empty string
+        if output.audio_file:
+            audio_file_path = Path(output.audio_file)
+            if not audio_file_path.exists():
+                raise Exception('Audio file generation failed')
+        else:
+            audio_file_path = None
 
         # Create ZIP file
         job_info.status = JobStatus.CREATING_OUTPUT
@@ -269,7 +381,7 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
         zip_path = OUTPUT_DIR / f"{job_id}.zip"
         await asyncio.to_thread(
             create_zip_file_to_disk,
-            str(audio_file_path),
+            str(audio_file_path) if audio_file_path else None,
             str(timestamps_file_path),
             str(zip_path)
         )
@@ -307,25 +419,29 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
             print(f"⚠️  Error during output directory cleanup: {cleanup_error}")
 
     finally:
-        # Clean up uploaded files
-        try:
-            if audio_path.exists():
-                await asyncio.to_thread(audio_path.unlink)
-                print(f"🧹 Cleaned up uploaded audio file: {job_id}")
-        except Exception as e:
-            print(f"⚠️  Error deleting audio file: {e}")
+        # Return pipeline to queue for reuse
+        await pipeline_queue.put(pipeline)
 
-        try:
-            if pdf_path.exists():
-                await asyncio.to_thread(pdf_path.unlink)
+        # Clean up uploaded files immediately after processing (success or failure)
+        if job_info.audio_path and job_info.audio_path.exists():
+            try:
+                await asyncio.to_thread(job_info.audio_path.unlink)
+                print(f"🧹 Cleaned up uploaded audio file: {job_id}")
+            except Exception as e:
+                print(f"⚠️  Error deleting audio file: {e}")
+
+        if job_info.pdf_path and job_info.pdf_path.exists():
+            try:
+                await asyncio.to_thread(job_info.pdf_path.unlink)
                 print(f"🧹 Cleaned up uploaded PDF file: {job_id}")
-        except Exception as e:
-            print(f"⚠️  Error deleting PDF file: {e}")
+            except Exception as e:
+                print(f"⚠️  Error deleting PDF file: {e}")
 
 @app.post('/api/synchronize/stream')
 async def synchronize_stream(
     audio: UploadFile = File(..., description = 'Lecture audio file (mp3, wav, etc.)'),
-    lecture_note: UploadFile = File(..., description = 'Lecture slides PDF')
+    lecture_note: UploadFile = File(..., description = 'Lecture slides PDF'),
+    lang: str = Form('en')
 ):
     """
     Synchronize lecture audio with slides with real-time progress updates via SSE.
@@ -336,6 +452,7 @@ async def synchronize_stream(
     Args:
         audio: Lecture audio file
         lecture_note: Lecture slides PDF file
+        lang: Language code for ASR transcription ('en' for English, 'ko' for Korean)
 
     Returns:
         SSE stream with progress updates and final job_id
@@ -344,20 +461,27 @@ async def synchronize_stream(
         - data: JSON object with {status, progress, message, job_id}
         - Final event includes job_id for downloading results
     """
-    # Generate unique job ID and lecture name
+    # Validate lang parameter
+    if lang not in ["en", "ko"]:
+        raise HTTPException(status_code = 400, detail = 'Invalid lang parameter. Must be "en" or "ko"')
+    # Generate unique job ID and lecture name using full UUID for uniqueness
     job_id = str(uuid.uuid4())
-    lecture_name = f"lecture_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{job_id[:8]}"
+    lecture_name = f"lecture_{job_id}"
 
     # Preserve original file extensions
     audio_ext = Path(audio.filename).suffix or '.mp3'
     pdf_ext = Path(lecture_note.filename).suffix or '.pdf'
 
-    audio_path = UPLOAD_DIR / f'{lecture_name}_audio{audio_ext}'
-    pdf_path = UPLOAD_DIR / f'{lecture_name}_pdf{pdf_ext}'
+    audio_path = UPLOAD_DIR / f'{job_id}_audio{audio_ext}'
+    pdf_path = UPLOAD_DIR / f'{job_id}_pdf{pdf_ext}'
 
     # Create job info
     job_info = JobInfo(job_id)
     jobs[job_id] = job_info
+
+    # Track uploaded files in job_info from the start
+    job_info.audio_path = audio_path
+    job_info.pdf_path = pdf_path
 
     try:
         # Save uploaded files
@@ -369,8 +493,8 @@ async def synchronize_stream(
             content = await lecture_note.read()
             await f.write(content)
 
-        # Start background processing
-        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name))
+        # Start background processing with language parameter
+        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name, language=lang))
 
         # SSE generator with disconnect detection
         async def event_generator():
@@ -434,28 +558,38 @@ async def synchronize_stream(
         return EventSourceResponse(event_generator())
 
     except Exception as e:
-        # Clean up on error
-        if job_id in jobs:
-            del jobs[job_id]
-        if audio_path.exists():
-            await asyncio.to_thread(audio_path.unlink)
-        if pdf_path.exists():
-            await asyncio.to_thread(pdf_path.unlink)
+        # Clean up on error during upload/initialization
+        try:
+            if job_id in jobs:
+                # Use our cleanup helper function
+                await cleanup_job_files(job_info)
+                del jobs[job_id]
+        except Exception as cleanup_error:
+            print(f"⚠️  Error during cleanup after initialization failure: {cleanup_error}")
         raise HTTPException(status_code = 500, detail = f'Failed to start synchronization: {str(e)}')
 
 def create_zip_file(audio_file: str, timestamp_file: str) -> io.BytesIO:
     """Create ZIP file with audio and timestamps in memory. Run in executor."""
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.write(audio_file, arcname = 'audio.opus')
+        if audio_file:
+            zip_file.write(audio_file, arcname = 'audio.opus')
         zip_file.write(timestamp_file, arcname = 'timestamps.json')
     zip_buffer.seek(0)
     return zip_buffer
 
-def create_zip_file_to_disk(audio_file: str, timestamp_file: str, output_path: str) -> None:
-    """Create ZIP file with audio and timestamps to disk. Run in executor."""
+def create_zip_file_to_disk(audio_file: str | None, timestamp_file: str, output_path: str) -> None:
+    """
+    Create ZIP file with timestamps and optional audio to disk. Run in executor.
+
+    Args:
+        audio_file: Path to audio file (None for Korean lectures)
+        timestamp_file: Path to timestamps.json
+        output_path: Output ZIP file path
+    """
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.write(audio_file, arcname = 'audio.opus')
+        if audio_file:
+            zip_file.write(audio_file, arcname = 'audio.opus')
         zip_file.write(timestamp_file, arcname = 'timestamps.json')
 
 @app.get('/api/synchronize/status/{job_id}')
@@ -526,14 +660,14 @@ async def download_result(job_id: str):
     output_path = job.output_path
 
     # Cleanup function to run after file is sent
-    def cleanup_after_send():
+    async def cleanup_after_send():
         """Cleanup function that runs after FileResponse completes sending the file."""
         try:
-            if output_path and output_path.exists():
-                output_path.unlink()
-                print(f"🧹 Deleted downloaded file: {job_id}")
+            # Clean up all job-related files (uploaded files should already be gone, but just in case)
+            await cleanup_job_files(job)
+            print(f"🧹 Cleaned up all files for downloaded job: {job_id}")
         except Exception as e:
-            print(f"⚠️  Error deleting file {job_id}: {e}")
+            print(f"⚠️  Error during cleanup after download {job_id}: {e}")
 
         try:
             if job_id in jobs:

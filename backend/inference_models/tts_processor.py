@@ -10,8 +10,18 @@ import soundfile as sf
 import subprocess
 import os
 import gc
+import threading
 from typing import Any, Callable
 from pathlib import Path
+
+# Global lock for TTS pipeline initialization
+# Protects pipeline loading when multiple pipelines start simultaneously
+_tts_init_lock = threading.Lock()
+
+# Global lock for TTS inference
+# Protects inference operations when multiple pipelines run simultaneously
+# This prevents errors when the same TTS pipeline runs concurrent inference
+_tts_inference_lock = threading.Lock()
 
 
 class TTSProcessor:
@@ -49,13 +59,15 @@ class TTSProcessor:
 
     def load_model(self):
         """Load TTS pipeline."""
-        if self.pipeline is not None:
-            print("Pipeline already loaded")
-            return
+        # Use global lock only during pipeline initialization
+        with _tts_init_lock:
+            if self.pipeline is not None:
+                print("Pipeline already loaded")
+                return
 
-        print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
-        self.pipeline = KPipeline(lang_code = self.lang_code)
-        print("TTS pipeline loaded successfully")
+            print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
+            self.pipeline = KPipeline(lang_code = self.lang_code)
+            print("TTS pipeline loaded successfully")
 
     def unload_model(self):
         """Unload pipeline to free memory."""
@@ -77,7 +89,8 @@ class TTSProcessor:
         Generate audio from sentences with slide alignment.
 
         Args:
-            sentences: List of dicts with 'text' and 'slide_number' keys
+            sentences: List of dicts with 'text_eng' and 'slide_number' keys
+                      (TTS only processes English text for English lectures)
             output_audio_path: Output WAV file path
             output_json_path: Optional JSON metadata output path
             export_formats: Optional list of additional formats ['opus', 'aac']
@@ -86,143 +99,149 @@ class TTSProcessor:
         Returns:
             Dictionary with metadata and timestamps
         """
+        # Load pipeline BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.pipeline is None:
             self.load_model()
 
-        print(f"Generating audio for {len(sentences)} sentences...")
-
-        if progress_callback:
-            progress_callback(0.0, "Starting TTS generation...")
-
-        # Result storage
-        all_audio = []
-        timestamp_data = []
-        current_time = 0.0
-
-        total_sentences = len(sentences)
-        for idx, sentence_info in enumerate(sentences):
-            text = sentence_info.get('text', '')
-            slide_number = sentence_info.get('slide_number', 1)
-
-            print(f"Processing: [{idx+1}/{len(sentences)}] [Slide {slide_number}] {text[:50]}...")
+        # Use inference lock to prevent concurrent inference on the same pipeline
+        with _tts_inference_lock:
+            print(f"Generating audio for {len(sentences)} sentences...")
 
             if progress_callback:
-                # Update progress for each sentence (0-80% of TTS stage)
-                sentence_progress = (idx / total_sentences) * 80.0
-                progress_callback(sentence_progress, f"Generating audio for sentence {idx+1}/{total_sentences}...")
+                progress_callback(0.0, "Starting TTS generation...")
 
-            try:
-                # TTS generation
-                generator = self.pipeline(text, voice = self.voice, speed = self.speed)
+            # Result storage
+            all_audio = []
+            timestamp_data = []
+            current_time = 0.0
 
-                # Collect audio segments
-                sentence_audio_parts = []
-                for graphemes, phonemes, audio in generator:
-                    sentence_audio_parts.append(audio)
+            total_sentences = len(sentences)
+            for idx, sentence_info in enumerate(sentences):
+                # TTS uses English text (text_eng) for English lectures
+                text = sentence_info.get('text_eng', '')
+                slide_number = sentence_info.get('slide_number', 1)
 
-                # Merge segments
-                if sentence_audio_parts:
-                    sentence_audio = np.concatenate(sentence_audio_parts)
+                print(f"Processing: [{idx+1}/{len(sentences)}] [Slide {slide_number}] {text[:50]}...")
 
-                    # Calculate duration
-                    duration = len(sentence_audio) / self.sample_rate
-
-                    # Save timestamp info (convert to milliseconds as integer)
-                    timestamp_info = {
-                        "sentence_id": idx + 1,
-                        "text": text,
-                        "slide_number": slide_number,
-                        "start_time": int(round(current_time * 1000)),
-                        "end_time": int(round((current_time + duration) * 1000)),
-                        "duration": int(round(duration * 1000))
-                    }
-
-                    # Add Korean translation if available
-                    if 'text_kor' in sentence_info:
-                        timestamp_info['text_kor'] = sentence_info['text_kor']
-
-                    # Add original audio timestamps if available (in milliseconds)
-                    if 'original_start_time' in sentence_info:
-                        timestamp_info['original_start_time'] = int(round(sentence_info['original_start_time'] * 1000))
-                    if 'original_end_time' in sentence_info:
-                        timestamp_info['original_end_time'] = int(round(sentence_info['original_end_time'] * 1000))
-
-                    timestamp_data.append(timestamp_info)
-
-                    # Accumulate audio
-                    all_audio.append(sentence_audio)
-
-                    # Update time
-                    current_time += duration + self.silence_duration
-
-            except Exception as e:
-                print(f"Error processing sentence {idx+1}: {e}")
-                continue
-
-        # Merge all audio
-        if all_audio:
-            if progress_callback:
-                progress_callback(80.0, "Merging audio segments...")
-
-            # Add silence between sentences
-            silence = np.zeros(int(self.silence_duration * self.sample_rate))
-            merged_audio = []
-
-            for audio_segment in all_audio:
-                merged_audio.append(audio_segment)
-                merged_audio.append(silence)
-
-            # Remove last silence
-            if merged_audio:
-                merged_audio.pop()
-
-            final_audio = np.concatenate(merged_audio)
-
-            if progress_callback:
-                progress_callback(85.0, "Saving audio file...")
-
-            # Save WAV file
-            Path(output_audio_path).parent.mkdir(parents = True, exist_ok = True)
-            sf.write(output_audio_path, final_audio, self.sample_rate)
-            print(f"\n✓ Audio file saved: {output_audio_path}")
-            print(f"  - Total duration: {len(final_audio) / self.sample_rate:.2f}s")
-
-            # File size
-            wav_size = os.path.getsize(output_audio_path) / (1024 * 1024)  # MB
-            print(f"  - WAV file size: {wav_size:.2f} MB")
-
-            # Additional format conversion
-            if export_formats:
                 if progress_callback:
-                    progress_callback(90.0, "Converting audio formats...")
-                self._convert_formats(output_audio_path, export_formats, wav_size)
+                    # Update progress for each sentence (0-80% of TTS stage)
+                    sentence_progress = (idx / total_sentences) * 80.0
+                    progress_callback(sentence_progress, f"Generating audio for sentence {idx+1}/{total_sentences}...")
 
-        if progress_callback:
-            progress_callback(95.0, "Saving metadata...")
+                try:
+                    # TTS generation
+                    generator = self.pipeline(text, voice = self.voice, speed = self.speed)
 
-        # Save JSON metadata
-        output_data = {
-            "metadata": {
-                "total_sentences": len(timestamp_data),
-                "total_duration": int(round((current_time - self.silence_duration) * 1000)) if timestamp_data else 0,
-                "voice": self.voice,
-                "speed": self.speed,
-                "language_code": self.lang_code,
-                "sample_rate": self.sample_rate
-            },
-            "timestamps": timestamp_data
-        }
+                    # Collect audio segments
+                    sentence_audio_parts = []
+                    for graphemes, phonemes, audio in generator:
+                        sentence_audio_parts.append(audio)
 
-        if output_json_path:
-            Path(output_json_path).parent.mkdir(parents = True, exist_ok = True)
-            with open(output_json_path, 'w', encoding = 'utf-8') as f:
-                json.dump(output_data, f, ensure_ascii = False, indent = 2)
-            print(f"✓ Timestamp JSON saved: {output_json_path}")
+                    # Merge segments
+                    if sentence_audio_parts:
+                        sentence_audio = np.concatenate(sentence_audio_parts)
 
-        if progress_callback:
-            progress_callback(100.0, "TTS generation completed")
+                        # Calculate duration
+                        duration = len(sentence_audio) / self.sample_rate
 
-        return output_data
+                        # Save timestamp info (convert to milliseconds as integer)
+                        timestamp_info = {
+                            "slide_number": slide_number,
+                            "start_time": int(round(current_time * 1000)),
+                            "end_time": int(round((current_time + duration) * 1000))
+                        }
+
+                        # Add text fields (text_eng and text_kor)
+                        if 'text_eng' in sentence_info:
+                            timestamp_info['text_eng'] = sentence_info['text_eng']
+                        if 'text_kor' in sentence_info:
+                            timestamp_info['text_kor'] = sentence_info['text_kor']
+
+                        # Add original audio timestamps if available (convert to milliseconds as integer)
+                        if 'original_start_time' in sentence_info:
+                            # original_start_time is in seconds, convert to milliseconds
+                            timestamp_info['original_start_time'] = int(round(sentence_info['original_start_time'] * 1000))
+                        if 'original_end_time' in sentence_info:
+                            # original_end_time is in seconds, convert to milliseconds
+                            timestamp_info['original_end_time'] = int(round(sentence_info['original_end_time'] * 1000))
+
+                        timestamp_data.append(timestamp_info)
+
+                        # Accumulate audio
+                        all_audio.append(sentence_audio)
+
+                        # Update time
+                        current_time += duration + self.silence_duration
+
+                except Exception as e:
+                    print(f"Error processing sentence {idx+1}: {e}")
+                    continue
+
+            # Merge all audio
+            if all_audio:
+                if progress_callback:
+                    progress_callback(80.0, "Merging audio segments...")
+
+                # Add silence between sentences
+                silence = np.zeros(int(self.silence_duration * self.sample_rate))
+                merged_audio = []
+
+                for audio_segment in all_audio:
+                    merged_audio.append(audio_segment)
+                    merged_audio.append(silence)
+
+                # Remove last silence
+                if merged_audio:
+                    merged_audio.pop()
+
+                final_audio = np.concatenate(merged_audio)
+
+                if progress_callback:
+                    progress_callback(85.0, "Saving audio file...")
+
+                # Save WAV file
+                Path(output_audio_path).parent.mkdir(parents = True, exist_ok = True)
+                sf.write(output_audio_path, final_audio, self.sample_rate)
+                print(f"\n✓ Audio file saved: {output_audio_path}")
+                print(f"  - Total duration: {len(final_audio) / self.sample_rate:.2f}s")
+
+                # File size
+                wav_size = os.path.getsize(output_audio_path) / (1024 * 1024)  # MB
+                print(f"  - WAV file size: {wav_size:.2f} MB")
+
+                # Additional format conversion
+                if export_formats:
+                    if progress_callback:
+                        progress_callback(90.0, "Converting audio formats...")
+                    self._convert_formats(output_audio_path, export_formats, wav_size)
+
+            if progress_callback:
+                progress_callback(95.0, "Saving metadata...")
+
+            # Save JSON metadata
+            output_data = {
+                "metadata": {
+                    "total_sentences": len(timestamp_data),
+                    "total_duration": int(round((current_time - self.silence_duration) * 1000)) if timestamp_data else 0,
+                    "voice": self.voice,
+                    "speed": self.speed,
+                    "language_code": self.lang_code,
+                    "sample_rate": self.sample_rate
+                },
+                "timestamps": timestamp_data
+            }
+
+            if output_json_path:
+                Path(output_json_path).parent.mkdir(parents = True, exist_ok = True)
+                with open(output_json_path, 'w', encoding = 'utf-8') as f:
+                    json.dump(output_data, f, ensure_ascii = False, indent = 2)
+                print(f"✓ Timestamp JSON saved: {output_json_path}")
+
+            if progress_callback:
+                progress_callback(100.0, "TTS generation completed")
+
+            return output_data
 
     def _convert_formats(
         self,
@@ -287,10 +306,10 @@ class TTSProcessor:
         progress_callback: Callable[[float, str], None] | None = None
     ) -> dict[str, Any]:
         """
-        Generate audio from slide matching results.
+        Generate audio from slide matching results (English lectures only).
 
         Args:
-            matching_results: Results from SlideMatchingProcessor
+            matching_results: Results from SlideMatchingProcessor with text_eng and text_kor fields
             output_audio_path: Output WAV file path
             output_json_path: Optional JSON metadata output path
             export_formats: Optional list of additional formats
@@ -299,19 +318,17 @@ class TTSProcessor:
         Returns:
             Dictionary with metadata and timestamps
         """
-        # Convert matching results to sentence format
+        # Convert matching results to sentence format for TTS
+        # TTS only processes English text (text_eng)
         sentences = []
         for result in matching_results:
             sentence_info = {
-                'text': result['text'],
+                'text_eng': result.get('text_eng', ''),
+                'text_kor': result.get('text_kor', ''),
                 'slide_number': result['matched_page']
             }
 
-            # Include Korean translation if available
-            if 'text_kor' in result:
-                sentence_info['text_kor'] = result['text_kor']
-
-            # Include original audio timestamps if available
+            # Include original audio timestamps if available (already in seconds from ASR)
             if 'original_start_time' in result:
                 sentence_info['original_start_time'] = result['original_start_time']
             if 'original_end_time' in result:
@@ -337,11 +354,13 @@ if __name__ == "__main__":
         silence_duration = 0.2
     )
 
-    # Example sentences with slide numbers
+    # Example sentences with slide numbers (English lectures)
+    # text_eng: English text for TTS generation
+    # text_kor: Korean translation (optional)
     sentences = [
-        {"text": "Welcome to this lecture on deep learning.", "slide_number": 1},
-        {"text": "Today we will discuss neural networks.", "slide_number": 1},
-        {"text": "Let's start with the basics.", "slide_number": 2},
+        {"text_eng": "Welcome to this lecture on deep learning.", "text_kor": "딥러닝 강의에 오신 것을 환영합니다.", "slide_number": 1},
+        {"text_eng": "Today we will discuss neural networks.", "text_kor": "오늘은 신경망에 대해 논의할 것입니다.", "slide_number": 1},
+        {"text_eng": "Let's start with the basics.", "text_kor": "기본부터 시작해봅시다.", "slide_number": 2},
     ]
 
     result = processor.generate_audio(
@@ -352,4 +371,4 @@ if __name__ == "__main__":
     )
 
     print(f"\nGenerated {result['metadata']['total_sentences']} sentences")
-    print(f"Total duration: {result['metadata']['total_duration']}s")
+    print(f"Total duration: {result['metadata']['total_duration']}ms")

@@ -24,7 +24,7 @@ Backend API for lecture synchronization using AI inference pipeline.
    This will:
    - Create a conda environment named `swpp-backend` (or your custom name)
    - Install Python 3.12, PyTorch with CUDA 12.9
-   - Install NeMo Toolkit (ASR), Kokoro TTS
+   - Install Whisper (ASR), Kokoro TTS
    - Install vLLM for translation inference
    - Install transformers and ML libraries
    - Install FastAPI and backend dependencies
@@ -80,6 +80,7 @@ Start a lecture synchronization job and receive real-time progress updates via S
 - **Body Parameters**:
   - `audio` (file, required): Lecture audio file (mp3, wav, etc.)
   - `lecture_note` (file, required): Lecture slides PDF file
+  - `lang` (string, optional): Lecture language code (`en` for English, `ko` for Korean). Default: `en`
 
 #### Response
 
@@ -120,71 +121,25 @@ Server-Sent Events (SSE) stream with JSON data.
 **Status Values:**
 - `pending` - Job created, waiting to start
 - `uploading` - Files uploaded, waiting for processing
-- `processing_asr` - ASR (speech-to-text) in progress (10-40%)
-- `processing_matching` - Slide matching in progress (40-70%)
-- `processing_translation` - English-to-Korean translation in progress (70-80%)
-- `processing_tts` - TTS (text-to-speech) generation in progress (80-95%)
+- `processing_asr` - ASR (speech-to-text) in progress
+  - English lectures: 10-40%
+  - Korean lectures: 10-50%
+- `processing_matching` - Slide matching in progress
+  - English lectures: 40-70%
+  - Korean lectures: 50-80%
+- `processing_translation` - Translation in progress (bidirectional: English↔Korean)
+  - English lectures (en→ko): 70-80%
+  - Korean lectures (ko→en): 80-95%
+- `processing_tts` - TTS generation or timestamp creation
+  - English lectures (TTS): 80-95%
+  - Korean lectures (timestamps only): 95-99%
 - `creating_output` - Creating final output ZIP file (95-100%)
 - `completed` - Job completed successfully
 - `failed` - Job failed with error
 
 **Progress Range:** 0.0 to 100.0
 
-#### Example Usage (Dart/Flutter)
-
-```dart
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'dart:convert';
-import 'dart:io';
-
-Future<String?> synchronizeLecture(
-  File audioFile,
-  File pdfFile,
-  Function(double progress, String message) onProgress,
-) async {
-  final uri = Uri.parse('http://localhost:8080/api/synchronize/stream');
-
-  final request = http.MultipartRequest('POST', uri);
-  request.files.add(await http.MultipartFile.fromPath(
-    'audio',
-    audioFile.path,
-    contentType: MediaType('audio', 'mpeg'),
-  ));
-  request.files.add(await http.MultipartFile.fromPath(
-    'lecture_note',
-    pdfFile.path,
-    contentType: MediaType('application', 'pdf'),
-  ));
-
-  final response = await request.send();
-
-  String? jobId;
-  await for (var chunk in response.stream.transform(utf8.decoder)) {
-    final lines = chunk.split('\n');
-    for (var line in lines) {
-      if (line.startsWith('data: ')) {
-        final jsonData = line.substring(6);
-        final data = jsonDecode(jsonData);
-
-        jobId = data['job_id'];
-        final progress = data['progress'] as double;
-        final message = data['message'] as String;
-
-        onProgress(progress, message);
-
-        if (data['status'] == 'completed') {
-          return jobId;
-        } else if (data['status'] == 'failed') {
-          throw Exception('Job failed: ${data['error']}');
-        }
-      }
-    }
-  }
-
-  return jobId;
-}
-```
+**Note:** Progress percentages are allocated differently for English and Korean lectures to account for TTS being skipped in Korean lectures.
 
 ---
 
@@ -217,24 +172,6 @@ Query the current status of a synchronization job.
 - `200` - Success
 - `404` - Job not found
 
-#### Example Usage (Dart/Flutter)
-
-```dart
-Future<Map<String, dynamic>> checkJobStatus(String jobId) async {
-  final response = await http.get(
-    Uri.parse('http://localhost:8080/api/synchronize/status/$jobId'),
-  );
-
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  } else if (response.statusCode == 404) {
-    throw Exception('Job not found');
-  } else {
-    throw Exception('Failed to check status: ${response.statusCode}');
-  }
-}
-```
-
 ---
 
 ### 3. Download Result
@@ -253,7 +190,7 @@ Download the result ZIP file for a completed synchronization job.
 - **File Name**: `lecture_output.zip`
 
 **ZIP Contents:**
-- `audio.opus` - Reconstructed audio file in Opus format
+- `audio.opus` - Reconstructed audio file in Opus format (English lectures only, empty for Korean lectures)
 - `timestamps.json` - Timestamps with slide alignment metadata
 
 #### Status Codes
@@ -269,211 +206,77 @@ Download the result ZIP file for a completed synchronization job.
 - **Retention period**: Non-downloaded files are kept for 30 minutes after completion
 - After download, the job is removed from the system
 
-#### Example Usage (Dart/Flutter)
-
-```dart
-Future<void> downloadResult(String jobId, String savePath) async {
-  final response = await http.get(
-    Uri.parse('http://localhost:8080/api/synchronize/download/$jobId'),
-  );
-
-  if (response.statusCode == 200) {
-    final file = File(savePath);
-    await file.writeAsBytes(response.bodyBytes);
-    print('Downloaded to: $savePath');
-  } else if (response.statusCode == 404) {
-    throw Exception('Job not found');
-  } else if (response.statusCode == 400) {
-    final error = jsonDecode(response.body);
-    throw Exception('Cannot download: ${error['detail']}');
-  } else {
-    throw Exception('Download failed: ${response.statusCode}');
-  }
-}
-```
-
 ---
 
 ## Output Format
 
 ### timestamps.json Structure
 
-The `timestamps.json` file in the downloaded ZIP contains:
+The `timestamps.json` file in the downloaded ZIP contains an array of timestamp entries:
 
+**For English Lectures:**
 ```json
-{
-  "metadata": {
-    "total_sentences": 42,
-    "total_duration": 125300,
-    "voice": "af_heart",
-    "speed": 1.0,
-    "language_code": "a",
-    "sample_rate": 24000
+[
+  {
+    "text_eng": "Welcome to this lecture on deep learning.",
+    "text_kor": "딥러닝에 관한 이 강의에 오신 것을 환영합니다.",
+    "slide_number": 1,
+    "tts_start_time": 0,
+    "tts_end_time": 3200,
+    "original_start_time": 120,
+    "original_end_time": 4500
   },
-  "timestamps": [
-    {
-      "sentence_id": 1,
-      "text": "Welcome to this lecture on deep learning.",
-      "text_kor": "딥러닝에 관한 이 강의에 오신 것을 환영합니다.",
-      "slide_number": 1,
-      "start_time": 0,
-      "end_time": 3200,
-      "duration": 3200,
-      "original_start_time": 120,
-      "original_end_time": 4500
-    },
-    {
-      "sentence_id": 2,
-      "text": "Today we will discuss neural networks.",
-      "text_kor": "오늘 우리는 신경망에 대해 논의할 것입니다.",
-      "slide_number": 1,
-      "start_time": 3400,
-      "end_time": 6800,
-      "duration": 3400,
-      "original_start_time": 4600,
-      "original_end_time": 8200
-    }
-  ]
-}
+  {
+    "text_eng": "Today we will discuss neural networks.",
+    "text_kor": "오늘 우리는 신경망에 대해 논의할 것입니다.",
+    "slide_number": 1,
+    "tts_start_time": 3400,
+    "tts_end_time": 6800,
+    "original_start_time": 4600,
+    "original_end_time": 8200
+  }
+]
+```
+
+**For Korean Lectures:**
+```json
+[
+  {
+    "text_eng": "Welcome to this lecture on deep learning.",
+    "text_kor": "딥러닝에 관한 이 강의에 오신 것을 환영합니다.",
+    "slide_number": 1,
+    "tts_start_time": 0,
+    "tts_end_time": 0,
+    "original_start_time": 120,
+    "original_end_time": 4500
+  },
+  {
+    "text_eng": "Today we will discuss neural networks.",
+    "text_kor": "오늘 우리는 신경망에 대해 논의할 것입니다.",
+    "slide_number": 1,
+    "tts_start_time": 0,
+    "tts_end_time": 0,
+    "original_start_time": 4600,
+    "original_end_time": 8200
+  }
+]
 ```
 
 **Field Descriptions:**
 
-- `metadata`: Audio generation metadata
-  - `total_sentences`: Number of sentences in the lecture
-  - `total_duration`: Total audio duration in milliseconds (integer)
-  - `voice`: TTS voice used
-  - `speed`: Playback speed multiplier
-  - `language_code`: Language code (`a` = American English)
-  - `sample_rate`: Audio sample rate (24000 Hz)
+- `text_eng`: English text (original for English lectures, translation for Korean lectures)
+- `text_kor`: Korean text (translation for English lectures, original for Korean lectures)
+- `slide_number`: Corresponding slide page number (1-indexed)
+- `tts_start_time`: Sentence start time in reconstructed TTS audio in milliseconds (0 for Korean lectures)
+- `tts_end_time`: Sentence end time in reconstructed TTS audio in milliseconds (0 for Korean lectures)
+- `original_start_time`: Sentence start time in original lecture audio in milliseconds
+- `original_end_time`: Sentence end time in original lecture audio in milliseconds
 
-- `timestamps`: Array of sentence timing information
-  - `sentence_id`: Unique sentence identifier (1-indexed)
-  - `text`: Sentence text content (English)
-  - `text_kor`: Korean translation of the sentence (added by translation processor)
-  - `slide_number`: Corresponding slide page number (1-indexed)
-  - `start_time`: Sentence start time in reconstructed audio in milliseconds (integer)
-  - `end_time`: Sentence end time in reconstructed audio in milliseconds (integer)
-  - `duration`: Sentence duration in reconstructed audio in milliseconds (integer)
-  - `original_start_time`: Sentence start time in original lecture audio in milliseconds (integer)
-  - `original_end_time`: Sentence end time in original lecture audio in milliseconds (integer)
-
----
-
-## Complete Usage Flow (Dart/Flutter)
-
-```dart
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'dart:convert';
-import 'dart:io';
-
-class LectureSyncService {
-  final String baseUrl;
-
-  LectureSyncService(this.baseUrl);
-
-  /// Start synchronization and track progress via SSE
-  Future<String?> startSync(
-    File audioFile,
-    File pdfFile,
-    Function(double progress, String message) onProgress,
-  ) async {
-    final uri = Uri.parse('$baseUrl/api/synchronize/stream');
-
-    final request = http.MultipartRequest('POST', uri);
-    request.files.add(await http.MultipartFile.fromPath(
-      'audio',
-      audioFile.path,
-      contentType: MediaType('audio', 'mpeg'),
-    ));
-    request.files.add(await http.MultipartFile.fromPath(
-      'lecture_note',
-      pdfFile.path,
-      contentType: MediaType('application', 'pdf'),
-    ));
-
-    final response = await request.send();
-
-    String? jobId;
-    await for (var chunk in response.stream.transform(utf8.decoder)) {
-      final lines = chunk.split('\n');
-      for (var line in lines) {
-        if (line.startsWith('data: ')) {
-          final jsonData = line.substring(6);
-          final data = jsonDecode(jsonData);
-
-          jobId = data['job_id'];
-          onProgress(data['progress'].toDouble(), data['message']);
-
-          if (data['status'] == 'completed') {
-            return jobId;
-          } else if (data['status'] == 'failed') {
-            throw Exception('Job failed: ${data['error']}');
-          }
-        }
-      }
-    }
-
-    return jobId;
-  }
-
-  /// Check job status (alternative to SSE if needed)
-  Future<Map<String, dynamic>> checkStatus(String jobId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/synchronize/status/$jobId'),
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to check status: ${response.statusCode}');
-    }
-  }
-
-  /// Download result ZIP file
-  Future<File> downloadResult(String jobId, String savePath) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/synchronize/download/$jobId'),
-    );
-
-    if (response.statusCode == 200) {
-      final file = File(savePath);
-      await file.writeAsBytes(response.bodyBytes);
-      return file;
-    } else {
-      throw Exception('Download failed: ${response.statusCode}');
-    }
-  }
-}
-
-// Usage example
-void main() async {
-  final service = LectureSyncService('http://localhost:8080');
-
-  try {
-    // Start sync with progress tracking
-    final jobId = await service.startSync(
-      File('lecture.mp3'),
-      File('slides.pdf'),
-      (progress, message) {
-        print('Progress: ${progress.toStringAsFixed(1)}% - $message');
-      },
-    );
-
-    if (jobId != null) {
-      // Download result
-      final zipFile = await service.downloadResult(
-        jobId,
-        'lecture_output.zip',
-      );
-      print('Downloaded: ${zipFile.path}');
-    }
-  } catch (e) {
-    print('Error: $e');
-  }
-}
-```
+**Notes:**
+- For **English lectures**: `text_eng` is the original ASR output, `text_kor` is the translation
+- For **Korean lectures**: `text_kor` is the original ASR output, `text_eng` is the translation
+- Korean lectures do not generate TTS audio, so `tts_start_time` and `tts_end_time` are 0
+- The translation processor automatically organizes results into `text_eng` and `text_kor` fields based on the source language
 
 ---
 
@@ -490,7 +293,7 @@ void main() async {
 
 - **Image Batching**: Slide images are processed in batches (default: 4 images per batch) for faster embedding computation. Can be disabled if shared memory issues occur.
 - **FP8 Quantization**: Translation model uses FP8 quantization (`tencent/Hunyuan-MT-7B-fp8`) for reduced memory footprint while maintaining translation quality.
-- **Segment-based Processing**: ASR outputs are used directly as segments for slide matching, eliminating the need for separate sentence splitting.
+- **Punctuation-based Segmentation**: ASR outputs are segmented by punctuation for both English and Korean, with special handling for Korean sentence endings (니다, 요).
 
 ### File Cleanup
 

@@ -10,8 +10,18 @@ import io
 from tqdm import tqdm
 from typing import Callable
 import gc
+import threading
 
 from transformers import AutoModel
+
+# Global lock for slide matching model initialization
+# Protects CUDA initialization during model loading when multiple pipelines start simultaneously
+_matching_init_lock = threading.Lock()
+
+# Global lock for slide matching model inference
+# Protects inference operations when multiple pipelines run simultaneously
+# This prevents CUDA errors when the same model runs concurrent inference
+_matching_inference_lock = threading.Lock()
 
 
 class SlideMatchingProcessor:
@@ -84,24 +94,27 @@ class SlideMatchingProcessor:
 
     def load_model(self):
         """Load multimodal model into memory."""
-        if self.model is not None:
-            print("Model already loaded")
-            return
+        # Use global lock only during model initialization
+        # This prevents CUDA initialization conflicts when multiple pipelines load models simultaneously
+        with _matching_init_lock:
+            if self.model is not None:
+                print("Model already loaded")
+                return
 
-        print('Loading NeMo Retriever model...')
+            print('Loading NeMo Retriever model...')
 
-        if torch.cuda.is_available():
-            torch.cuda.reset_peak_memory_stats()
+            if torch.cuda.is_available():
+                torch.cuda.reset_peak_memory_stats()
 
-        self.model = AutoModel.from_pretrained(
-            self.model_name,
-            device_map = self.device,
-            torch_dtype = torch.bfloat16,
-            trust_remote_code = True,
-            attn_implementation = "flash_attention_2",
-        ).eval()
+            self.model = AutoModel.from_pretrained(
+                self.model_name,
+                device_map = self.device,
+                torch_dtype = torch.bfloat16,
+                trust_remote_code = True,
+                attn_implementation = "flash_attention_2",
+            ).eval()
 
-        print("Model loaded successfully!")
+            print("Model loaded successfully!")
 
     def unload_model(self):
         """Unload model to free memory."""
@@ -164,42 +177,46 @@ class SlideMatchingProcessor:
         Returns:
             Tuple of (query_embeddings, image_embeddings)
         """
+        # Load model BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.model is None:
             self.load_model()
 
-        print('Computing embeddings...')
+        # Use inference lock to prevent concurrent inference on the same model
+        with _matching_inference_lock:
+            print('Computing embeddings...')
 
-        print('Processing text queries...')
-        with torch.no_grad():
-            query_embeddings = self.model.forward_queries(
-                queries,
-                batch_size = self.batch_size
-            )
+            print('Processing text queries...')
+            with torch.no_grad():
+                query_embeddings = self.model.forward_queries(
+                    queries,
+                    batch_size = self.batch_size
+                )
 
-        print('Processing page images...')
-        if self.use_image_batching:
-            # Process images in batches for faster processing
-            image_embeddings = []
-            num_images = len(images)
-            for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
-                batch = images[i:i + self.image_batch_size]
-                with torch.no_grad():
-                    emb = self.model.forward_passages(batch, batch_size = len(batch))
-                    image_embeddings.append(emb)
-            image_embeddings = torch.cat(image_embeddings, dim = 0)
-        else:
-            # Process images one by one to avoid shared memory errors
-            image_embeddings = []
-            for image in tqdm(images, desc = 'Processing images'):
-                with torch.no_grad():
-                    emb = self.model.forward_passages([image], batch_size = 1)
-                    image_embeddings.append(emb)
-            image_embeddings = torch.cat(image_embeddings, dim = 0)
+            print('Processing page images...')
+            if self.use_image_batching:
+                # Process images in batches for faster processing
+                image_embeddings = []
+                num_images = len(images)
+                for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
+                    batch = images[i:i + self.image_batch_size]
+                    with torch.no_grad():
+                        emb = self.model.forward_passages(batch, batch_size = len(batch))
+                        image_embeddings.append(emb)
+                image_embeddings = torch.cat(image_embeddings, dim = 0)
+            else:
+                # Process images one by one to avoid shared memory errors
+                image_embeddings = []
+                for image in tqdm(images, desc = 'Processing images'):
+                    with torch.no_grad():
+                        emb = self.model.forward_passages([image], batch_size = 1)
+                        image_embeddings.append(emb)
+                image_embeddings = torch.cat(image_embeddings, dim = 0)
 
-        print(f'Query embeddings shape: {query_embeddings.shape}')
-        print(f'Image embeddings shape: {image_embeddings.shape}')
+            print(f'Query embeddings shape: {query_embeddings.shape}')
+            print(f'Image embeddings shape: {image_embeddings.shape}')
 
-        return query_embeddings, image_embeddings
+            return query_embeddings, image_embeddings
 
     def match_with_dp(
         self,
@@ -340,6 +357,8 @@ class SlideMatchingProcessor:
         Returns:
             List of matching results with page numbers
         """
+        # Load model BEFORE acquiring inference lock to avoid deadlock
+        # This ensures init_lock and inference_lock are never held simultaneously
         if self.model is None:
             self.load_model()
 
