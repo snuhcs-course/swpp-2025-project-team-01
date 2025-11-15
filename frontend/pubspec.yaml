@@ -102,6 +102,7 @@ flutter:
     - assets/images/light_mode.png
     - assets/images/dark_mode.png
     - assets/lectures/lec_demo_001/
+    - assets/lectures/lec_demo_002/
     - assets/data/subjects.json
     - assets/data/tags.json
 

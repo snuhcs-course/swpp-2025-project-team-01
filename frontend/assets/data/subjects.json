@@ -3,27 +3,11 @@
     "subjects": [
       {
         "id": "s1",
-        "title": "외계행성과 생명",
+        "title": "환영합니다!",
         "favorite": true,
         "tagIds": ["t1", "t2"],
-        "lectureIds": ["lec_demo_001", "lec_demo_002", "lec_demo_003"],
+        "lectureIds": ["lec_demo_001", "lec_demo_002"],
         "order": 0
-      },
-      {
-        "id": "s2",
-        "title": "Psychology 101",
-        "favorite": false,
-        "tagIds": ["t1", "t3"],
-        "lectureIds": ["lec_demo_004", "lec_demo_005"],
-        "order": 1
-      },
-      {
-        "id": "uncategorized",
-        "title": "Uncategorized",
-        "favorite": false,
-        "tagIds": [],
-        "lectureIds": ["lec_demo_006"],
-        "order": 2
       }
     ]
   }
