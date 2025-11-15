@@ -217,7 +217,7 @@ class HiveLecture {
   String? jsonPath; // 자막/스크립트 JSON 경로
 
   @HiveField(10)
-  String? langCode; // 자막/스크립트 JSON 경로
+  String? langCode; // 언어설정 (en, ko)
 
   @HiveField(11)
   DateTime? createdAt;
