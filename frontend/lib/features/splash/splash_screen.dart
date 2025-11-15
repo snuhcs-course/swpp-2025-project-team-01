@@ -83,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         );
                       },
-                      child: const _GradientTitle(),
+                      child: const GradientTitle(),
                     ),
                   ),
                 ],
@@ -96,8 +96,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-class _GradientTitle extends StatelessWidget {
-  const _GradientTitle();
+class GradientTitle extends StatelessWidget {
+  const GradientTitle({super.key});
 
   @override
   Widget build(BuildContext context) {
