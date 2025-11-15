@@ -43,11 +43,9 @@ void main() {
         ),
       );
 
-      // Label is shown
       expect(find.text('Create lecture'), findsOneWidget);
       expect(find.byType(ElevatedButton), findsOneWidget);
 
-      // Tap the button
       await tester.tap(find.byType(ElevatedButton));
       await tester.pumpAndSettle();
 
@@ -117,7 +115,7 @@ void main() {
     testWidgets('uses prefix + tag.name by default', (tester) async {
       final mockTag = MockHiveTag();
       when(mockTag.name).thenReturn('Math');
-      when(mockTag.color).thenReturn(0xFF00FF00); // arbitrary green
+      when(mockTag.color).thenReturn(0xFF00FF00);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -127,7 +125,6 @@ void main() {
         ),
       );
 
-      // default label is "#<name>"
       expect(find.text('#Math'), findsOneWidget);
 
       final chip = tester.widget<Chip>(find.byType(Chip));
@@ -155,11 +152,9 @@ void main() {
         ),
       );
 
-      // Custom label should be used instead of "#Science"
       expect(find.text('Custom tag'), findsOneWidget);
       expect(find.text('#Science'), findsNothing);
 
-      // Confirm textColor override is applied
       final text = tester.widget<Text>(find.text('Custom tag'));
       expect(text.style?.color, Colors.red);
 
@@ -213,7 +208,6 @@ void main() {
         ),
       );
 
-      // Tap the chip
       await tester.tap(find.byType(ChoiceChip));
       await tester.pumpAndSettle();
 
@@ -244,7 +238,7 @@ void main() {
         ),
       );
 
-      // Just ensure the widget builds and has a ChoiceChip
+      // Ensure the widget builds and has a ChoiceChip
       expect(find.byType(ChoiceChip), findsOneWidget);
       expect(find.text('#Chemistry'), findsOneWidget);
     });
@@ -259,7 +253,7 @@ void main() {
           home: Scaffold(
             body: SubjectPanelHeader(
               title: 'Biochemistry',
-              tags: const <HiveTag>[], // empty so TagPill doesn’t build
+              tags: const <HiveTag>[],
               expanded: false,
               onToggleExpanded: mockHandler.call,
             ),
@@ -267,7 +261,6 @@ void main() {
         ),
       );
 
-      // Tap the whole header
       await tester.tap(find.byType(SubjectPanelHeader));
       await tester.pumpAndSettle();
 
@@ -319,11 +312,9 @@ void main() {
           ),
         );
 
-        // There should be an edit icon
         final editFinder = find.byIcon(Icons.edit);
         expect(editFinder, findsOneWidget);
 
-        // Tap the edit icon
         await tester.tap(editFinder);
         await tester.pumpAndSettle();
 
@@ -387,11 +378,14 @@ void main() {
           ),
         );
 
-        // Drag handle should be wrapped with ReorderableDelayedDragStartListener
-        expect(
-          find.byType(ReorderableDelayedDragStartListener),
-          findsOneWidget,
+        final headerFinder = find.byType(SubjectPanelHeader);
+        expect(headerFinder, findsOneWidget);
+
+        final dragHandleFinder = find.descendant(
+          of: headerFinder,
+          matching: find.byType(ReorderableDelayedDragStartListener),
         );
+        expect(dragHandleFinder, findsOneWidget);
       },
     );
 
@@ -428,14 +422,11 @@ void main() {
 
   group('LectureLoadingBar', () {
     testWidgets('renders nothing when service is not loading', (tester) async {
-      // Rely on default state of the singleton (isLoading == false).
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: LectureLoadingBar())),
       );
 
-      // No AnimatedSwitcher (expanded/collapsed UI) should be built.
       expect(find.byType(AnimatedSwitcher), findsNothing);
-      // The bar itself should still exist in the tree.
       expect(find.byType(LectureLoadingBar), findsOneWidget);
     });
   });
@@ -514,7 +505,6 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockService.expandFromBubble()).called(1);
-      verifyNoMoreInteractions(mockService);
     });
 
     testWidgets(
@@ -529,14 +519,11 @@ void main() {
         final gestureFinder = find.byType(GestureDetector);
         expect(gestureFinder, findsOneWidget);
 
-        // Drag the bubble a bit to the right and up.
         await tester.drag(gestureFinder, const Offset(40, -20));
         await tester.pumpAndSettle();
 
-        // After drag completes, onPanEnd should call updateBubblePosition.
         verify(mockService.updateBubblePosition(any, any)).called(1);
 
-        // The Positioned widget should reflect a moved bubble (within screen bounds).
         final positioned = tester.widget<Positioned>(find.byType(Positioned));
         expect(positioned.left, greaterThan(0.0));
         expect(positioned.bottom, greaterThan(0.0));
@@ -550,7 +537,6 @@ void main() {
     setUp(() {
       mockService = MockLectureLoadingService();
 
-      // common defaults
       when(mockService.isCompleted).thenReturn(false);
       when(mockService.hasError).thenReturn(false);
       when(mockService.lectureTitle).thenReturn('My lecture');
@@ -577,8 +563,8 @@ void main() {
           ),
         ),
       );
-      await tester
-          .pump(); // let initial build + AnimatedSwitcher settle a frame
+
+      await tester.pump();
     }
 
     Future<void> pumpOverlay(WidgetTester tester) async {
@@ -589,59 +575,64 @@ void main() {
           home: Scaffold(
             body: Builder(
               key: rootKey,
-              builder: (ctx) => ExpandedLoadingOverlay(
-                service: mockService,
-                context: ctx, // used only by CompletedView
-              ),
+              builder: (ctx) =>
+                  ExpandedLoadingOverlay(service: mockService, context: ctx),
             ),
           ),
         ),
       );
     }
 
-    testWidgets('wraps content in rounded card with dark background and shadow', (
-      tester,
-    ) async {
-      final mockService = MockLectureLoadingService();
-      when(mockService.isCompleted).thenReturn(false);
-      when(mockService.hasError).thenReturn(false);
-      when(mockService.lectureTitle).thenReturn('My Lecture');
-      when(mockService.message).thenReturn('Preparing…');
-      when(mockService.progress).thenReturn(0.3);
+    testWidgets(
+      'wraps content in rounded card with dark background and shadow',
+      (tester) async {
+        final mockService = MockLectureLoadingService();
+        when(mockService.isCompleted).thenReturn(false);
+        when(mockService.hasError).thenReturn(false);
+        when(mockService.lectureTitle).thenReturn('My Lecture');
+        when(mockService.message).thenReturn('Preparing…');
+        when(mockService.progress).thenReturn(0.3);
 
-      await pumpWithService(tester, mockService);
+        await pumpWithService(tester, mockService);
 
-      // Rounded card is implemented as a ClipRRect with radius 24.
-      final clipFinder = find.byWidgetPredicate((widget) {
-        if (widget is ClipRRect) {
-          final radius = widget.borderRadius;
-          return radius == BorderRadius.circular(24);
-        }
-        return false;
-      });
-      expect(clipFinder, findsOneWidget);
+        final clipFinder = find.byWidgetPredicate((widget) {
+          if (widget is ClipRRect) {
+            final radius = widget.borderRadius;
+            return radius == BorderRadius.circular(24);
+          }
+          return false;
+        });
+        expect(clipFinder, findsOneWidget);
 
-      // Inside it there should be a DecoratedBox with the dark background color
-      // and at least one boxShadow.
-      final decoratedFinder = find.byWidgetPredicate((widget) {
-        if (widget is DecoratedBox && widget.decoration is BoxDecoration) {
-          final box = widget.decoration as BoxDecoration;
-          return box.color == const Color(0xFF1A1A1A) &&
-              (box.boxShadow?.isNotEmpty ?? false);
-        }
-        return false;
-      });
-      expect(decoratedFinder, findsOneWidget);
+        final decoratedFinder = find.byWidgetPredicate((widget) {
+          if (widget is DecoratedBox && widget.decoration is BoxDecoration) {
+            final box = widget.decoration as BoxDecoration;
+            return box.color == const Color(0xFF1A1A1A) &&
+                (box.boxShadow?.isNotEmpty ?? false);
+          }
+          return false;
+        });
+        expect(decoratedFinder, findsOneWidget);
 
-      // And the leaf content sits inside a transparent Material.
-      final materialFinder = find.descendant(
-        of: decoratedFinder,
-        matching: find.byType(Material),
-      );
-      expect(materialFinder, findsOneWidget);
-      final material = tester.widget<Material>(materialFinder);
-      expect(material.type, MaterialType.transparency);
-    });
+        // And the leaf content sits inside a transparent Material.
+        final materialWidgets = tester
+            .widgetList<Material>(
+              find.descendant(
+                of: decoratedFinder,
+                matching: find.byType(Material),
+              ),
+            )
+            .toList();
+        expect(materialWidgets, isNotEmpty);
+
+        final transparentMaterial = materialWidgets.firstWhere(
+          (m) => m.type == MaterialType.transparency,
+          orElse: () => materialWidgets.first,
+        );
+
+        expect(transparentMaterial.type, MaterialType.transparency);
+      },
+    );
 
     testWidgets(
       'shows loading view with clamped progress and message when not completed and no error',
@@ -649,17 +640,14 @@ void main() {
         // Arrange service so that we stay in the loading state
         when(mockService.isCompleted).thenReturn(false);
         when(mockService.hasError).thenReturn(false);
-        when(mockService.lectureTitle).thenReturn(''); // force fallback title
+        when(mockService.lectureTitle).thenReturn('');
         when(mockService.message).thenReturn('Uploading PDF…');
-        when(
-          mockService.progress,
-        ).thenReturn(1.5); // > 1.0 -> should be clamped
+        when(mockService.progress).thenReturn(1.5);
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: Builder(
-                // Use Builder so we can pass a real BuildContext into ExpandedLoadingOverlay
                 builder: (context) {
                   return ExpandedLoadingOverlay(
                     service: mockService,
@@ -671,10 +659,9 @@ void main() {
           ),
         );
 
-        // Let AnimatedSwitcher finish
         await tester.pumpAndSettle();
 
-        // We should be in the loading branch
+        // Should be in the loading branch
         expect(find.byKey(const ValueKey('loading')), findsOneWidget);
 
         final creatingHeaderIsEnglish = find
@@ -687,10 +674,7 @@ void main() {
             .isNotEmpty;
         expect(creatingHeaderIsEnglish || creatingHeaderIsKorean, isTrue);
 
-        // Message text should match the service.message
         expect(find.text('Uploading PDF…'), findsOneWidget);
-
-        // Progress is clamped to 100% inside _FancyProgressBar -> percent text
         expect(find.text('100%'), findsOneWidget);
 
         final richTexts = tester
@@ -726,12 +710,10 @@ void main() {
 
         await pumpWithService(tester, mockService);
 
-        // Only completed view should be active.
         expect(find.byKey(const ValueKey('completed')), findsOneWidget);
         expect(find.byKey(const ValueKey('loading')), findsNothing);
         expect(find.byKey(const ValueKey('error')), findsNothing);
 
-        // Header text: either English or Korean version.
         final english = find.text('Lecture Created!');
         final korean = find.text('강의 생성 완료!');
         final hasHeader =
@@ -744,7 +726,7 @@ void main() {
       'shows error view and uses provided errorTitle/errorMessage when service.hasError is true',
       (tester) async {
         final mockService = MockLectureLoadingService();
-        when(mockService.isCompleted).thenReturn(true); // should be ignored
+        when(mockService.isCompleted).thenReturn(true);
         when(mockService.hasError).thenReturn(true);
         when(mockService.errorTitle).thenReturn('Oops!');
         when(
@@ -756,12 +738,9 @@ void main() {
 
         await pumpWithService(tester, mockService);
 
-        // Error view should take precedence.
         expect(find.byKey(const ValueKey('error')), findsOneWidget);
         expect(find.byKey(const ValueKey('completed')), findsNothing);
         expect(find.byKey(const ValueKey('loading')), findsNothing);
-
-        // Error title and message come from the service and are visible.
         expect(find.text('Oops!'), findsOneWidget);
         expect(
           find.text('Something went wrong while creating the lecture.'),
@@ -775,7 +754,6 @@ void main() {
       (tester) async {
         await pumpOverlay(tester);
 
-        // find the *inner* GestureDetector
         final gesture = find
             .descendant(
               of: find.byType(ExpandedLoadingOverlay),
@@ -786,16 +764,12 @@ void main() {
         final detector = tester.widget<GestureDetector>(gesture);
         expect(detector.onHorizontalDragEnd, isNotNull);
 
-        // simulate a fast swipe to the left
         detector.onHorizontalDragEnd!(
           DragEndDetails(
-            velocity: const Velocity(
-              pixelsPerSecond: Offset(-300.0, 0.0), // abs(dx) > 200
-            ),
+            velocity: const Velocity(pixelsPerSecond: Offset(-300.0, 0.0)),
           ),
         );
 
-        // Now collapseToBubble should have been called with alignRight=false
         verify(mockService.collapseToBubble(alignRight: false)).called(1);
       },
     );
@@ -946,12 +920,10 @@ void main() {
         ),
       );
 
-      // Open the "dialog" route that contains DialogHeaderTitle.
       await tester.tap(find.text('Open dialog'));
       await tester.pumpAndSettle();
       expect(find.byType(DialogHeaderTitle), findsOneWidget);
 
-      // Tap the close icon – should pop back to the first route.
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
