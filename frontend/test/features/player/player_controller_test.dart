@@ -1001,7 +1001,7 @@ void main() {
                     'assets/test.pdf',
                     'assets/test.mp3',
                     'assets/test.mp3',
-                    false
+                    false,
                   )
                   .catchError((_) {
                     // Ignore errors from PDF loading in test
