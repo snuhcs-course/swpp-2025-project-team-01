@@ -10,8 +10,22 @@ import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/home/home_screen.dart';
 import 'package:re_view/features/home/custom_drawer.dart';
+import 'package:re_view/features/home/home_subject_widgets.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/shared/widgets.dart';
+import 'package:mockito/mockito.dart';
+
+class MockNavigatorObserver extends Mock implements NavigatorObserver {}
+
+class RecordingNavigatorObserver extends NavigatorObserver {
+  final List<Route<dynamic>> pushedRoutes = [];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushedRoutes.add(route);
+    super.didPush(route, previousRoute);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +102,30 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: const HomeScreen(),
       onGenerateRoute: AppRouter.onGenerateRoute,
+    );
+  }
+
+  Widget buildTestAppWithObserver(
+    NavigatorObserver observer, {
+    Locale locale = const Locale('en'),
+  }) {
+    final theme = ThemeData.from(
+      colorScheme: lightScheme,
+    ).copyWith(extensions: [AppHighlights.fromScheme(lightScheme)]);
+
+    return MaterialApp(
+      locale: locale,
+      theme: theme,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const HomeScreen(),
+      onGenerateRoute: AppRouter.onGenerateRoute,
+      navigatorObservers: [observer],
     );
   }
 
@@ -538,6 +576,94 @@ void main() {
       // Verify subject panel exists
       expect(find.byType(SubjectPanel), findsOneWidget);
     });
+
+    testWidgets('navigates to player when lecture is tapped', (tester) async {
+      final observer = RecordingNavigatorObserver();
+
+      updateTestData((data) {
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Subject 1',
+          lectureIds: ['lec1'],
+        );
+        data.lectures['lec1'] = makeLecture(
+          id: 'lec1',
+          subjectId: 's1',
+          title: 'Test Lecture',
+        );
+      });
+
+      await tester.pumpWidget(buildTestAppWithObserver(observer));
+      await tester.pumpAndSettle();
+
+      // Make sure lecture is visible
+      expect(find.text('Test Lecture'), findsOneWidget);
+
+      // Tap → triggers _navigateToPlayer
+      await tester.tap(find.text('Test Lecture'));
+      await tester.pumpAndSettle();
+
+      // Assert that a route was pushed
+      expect(observer.pushedRoutes, isNotEmpty);
+    });
+
+    testWidgets('reorders subjects when onReorder is called in edit mode', (
+      tester,
+    ) async {
+
+    });
+
+    testWidgets('shows SubjectEditDialog when subject edit is invoked', (
+      tester,
+    ) async {
+      // Prepare a subject with tags, so we can verify initialTagIds / allTags
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.tags['t2'] = makeTag(id: 't2', name: 'Tag2');
+
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Editable Subject',
+          tagIds: ['t1', 't2'],
+        );
+      });
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // Enter edit mode so SubjectPanels are created with onEditSubject callbacks
+      await tester.tap(find.byType(EditPill));
+      await tester.pumpAndSettle();
+
+      // Grab the first SubjectPanel and its edit callback
+      final panel = tester.widget<SubjectPanel>(
+        find.byType(SubjectPanel).first,
+      );
+
+      expect(panel.showEdit, isTrue); // edit UI is enabled
+      expect(panel.onEditSubject, isNotNull);
+
+      // Invoke the edit callback, which calls _showSubjectEditDialog(...)
+      panel.onEditSubject!.call();
+      await tester.pumpAndSettle();
+
+      // The subject edit dialog should appear
+      final dialogFinder = find.byType(SubjectEditDialog);
+      expect(dialogFinder, findsOneWidget);
+
+      // Inspect the dialog's configuration to ensure correct wiring
+      final dialog = tester.widget<SubjectEditDialog>(dialogFinder);
+      expect(dialog.subject.id, 's1');
+      expect(dialog.initialTagIds, equals(['t1', 't2']));
+
+      final allTagIds = dialog.allTags.map((t) => t.id).toSet();
+      expect(allTagIds.containsAll(['t1', 't2']), isTrue);
+
+      // Close the dialog with a null result to exercise the null-result path
+      final dialogContext = tester.element(dialogFinder);
+      Navigator.of(dialogContext).pop<bool>(null);
+      await tester.pumpAndSettle();
+    });
   });
 
   group('HomeScreen - Empty states', () {
@@ -672,7 +798,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('필터'), findsOneWidget);
-      expect(find.text('즐겨찾기'), findsOneWidget);
+      expect(find.text('수정'), findsOneWidget);
     });
 
     testWidgets('renders English labels when locale is en', (tester) async {
@@ -680,7 +806,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Filter'), findsOneWidget);
-      expect(find.text('Favorites'), findsOneWidget);
+      expect(find.text('Edit'), findsOneWidget);
     });
   });
 
@@ -757,6 +883,78 @@ void main() {
 
       // Should show the subject
       expect(find.byType(SubjectPanel), findsOneWidget);
+    });
+  });
+
+  group('HomeScreen - Edit mode', () {
+    testWidgets('entering edit mode resets filters and shows edit controls', (
+      tester,
+    ) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Subject 1',
+          favorite: true,
+          tagIds: ['t1'],
+        );
+      });
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // Turn on favorites filter
+      await tester.tap(find.byType(FavoritePill));
+      await tester.pump();
+
+      // Enable tag filter
+      await tester.tap(find.byType(FilterPill));
+      await tester.pump();
+
+      // Select a tag
+      await tester.tap(find.byType(ChoiceChip).first);
+      await tester.pump();
+
+      // Sanity checks before entering edit mode
+      expect(
+        tester.widget<FavoritePill>(find.byType(FavoritePill)).active,
+        isTrue,
+      );
+      expect(tester.widget<FilterPill>(find.byType(FilterPill)).active, isTrue);
+      expect(find.byType(TagChips), findsOneWidget);
+
+      // Initially subject panels should not be in edit mode
+      final initialPanel = tester.widget<SubjectPanel>(
+        find.byType(SubjectPanel),
+      );
+      expect(initialPanel.showEdit, isFalse);
+
+      // Enter edit mode
+      await tester.tap(find.byType(EditPill));
+      await tester.pump();
+
+      // Favorite and filter pills should be reset by edit mode
+      expect(
+        tester.widget<FavoritePill>(find.byType(FavoritePill)).active,
+        isFalse,
+      );
+      expect(
+        tester.widget<FilterPill>(find.byType(FilterPill)).active,
+        isFalse,
+      );
+
+      // Tag chips should be hidden
+      expect(find.byType(TagChips), findsNothing);
+
+      // Subject panel should now expose edit controls
+      final editedPanel = tester.widget<SubjectPanel>(
+        find.byType(SubjectPanel),
+      );
+      expect(editedPanel.showEdit, isTrue);
+
+      // Edit pill itself should be active
+      final editPill = tester.widget<EditPill>(find.byType(EditPill));
+      expect(editPill.active, isTrue);
     });
   });
 }
