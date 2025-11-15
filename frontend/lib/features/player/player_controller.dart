@@ -127,7 +127,7 @@ class PlayerController extends ChangeNotifier {
     String pdfPath,
     String audioPath,
     String originalAudioPath,
-    bool isKoreanLec
+    bool isKoreanLec,
   ) async {
     this.transcriptData = transcriptData;
     ttsTotalDuration = transcriptData.ttsTotalDuration.toDouble() / 1000;
@@ -160,7 +160,9 @@ class PlayerController extends ChangeNotifier {
     _setupScrollListener();
 
     // 오디오 로드 (재생은 외부에서 startPlayback() 호출)
-    await _audioService.loadAudio(isOriginalAudio.value ? originalAudioPath : audioPath);
+    await _audioService.loadAudio(
+      isOriginalAudio.value ? originalAudioPath : audioPath,
+    );
   }
 
   Future<void> _loadPdfDocument(

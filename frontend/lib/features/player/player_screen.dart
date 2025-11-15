@@ -217,7 +217,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
       final originalAudioPath = hiveLecture.originalAudioPath;
 
-      final ttsAudioPath = isKoreanLecture ? hiveLecture.originalAudioPath : hiveLecture.ttsAudioPath;
+      final ttsAudioPath = isKoreanLecture
+          ? hiveLecture.originalAudioPath
+          : hiveLecture.ttsAudioPath;
 
       debugPrint('$isKoreanLecture $originalAudioPath, $ttsAudioPath');
 
@@ -234,7 +236,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           pdfPath,
           ttsAudioPath,
           originalAudioPath,
-          isKoreanLecture
+          isKoreanLecture,
         );
       } catch (e) {
         if (!mounted) {
