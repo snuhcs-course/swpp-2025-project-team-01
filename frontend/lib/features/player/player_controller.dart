@@ -55,6 +55,7 @@ class PlayerController extends ChangeNotifier {
   double originalTotalDuration = 0.0;
   AutoScrollController? transcriptScrollController;
   double? pdfAspectRatio; // PDF 페이지의 가로/세로 비율 (width/height)
+  bool? isKoreanLecture;
 
   // PDF 뷰와 Transcript의 상태를 유지하기 위한 GlobalKey
   final GlobalKey pdfViewKey = GlobalKey();
@@ -88,7 +89,7 @@ class PlayerController extends ChangeNotifier {
       return '';
     }
     final sentence = transcriptData!.timestamps[currentSentenceIndex.value!];
-    if (isKoreanLanguage.value) {
+    if (isKoreanLecture == isOriginalAudio.value) {
       return sentence.textKor;
     }
     return sentence.textEng;
@@ -126,6 +127,7 @@ class PlayerController extends ChangeNotifier {
     String pdfPath,
     String audioPath,
     String originalAudioPath,
+    bool isKoreanLec
   ) async {
     this.transcriptData = transcriptData;
     ttsTotalDuration = transcriptData.ttsTotalDuration.toDouble() / 1000;
@@ -147,6 +149,10 @@ class PlayerController extends ChangeNotifier {
     final initialPage = transcriptData.timestamps[0].slideNumber;
     await _loadPdfDocument(pdfPath, lectureId, initialPage);
 
+    isKoreanLanguage.value = isKoreanLec;
+    isOriginalAudio.value = isKoreanLec;
+    isKoreanLecture = isKoreanLec;
+
     // 오디오 리스너 설정
     _setupAudioListeners();
 
@@ -154,7 +160,7 @@ class PlayerController extends ChangeNotifier {
     _setupScrollListener();
 
     // 오디오 로드 (재생은 외부에서 startPlayback() 호출)
-    await _audioService.loadAudio(audioPath);
+    await _audioService.loadAudio(isOriginalAudio.value ? originalAudioPath : audioPath);
   }
 
   Future<void> _loadPdfDocument(

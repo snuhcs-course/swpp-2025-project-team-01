@@ -277,7 +277,7 @@ class HiveLecture {
             'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
-        langCode: 'en',
+        langCode: lectureId == 'lec_demo_001' ? 'en' : 'ko',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

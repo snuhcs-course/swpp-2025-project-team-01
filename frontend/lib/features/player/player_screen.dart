@@ -174,6 +174,9 @@ class _PlayerScreenState extends State<PlayerScreen>
         return;
       }
 
+      // Load lecture from Hive and store Korean status
+      final isKoreanLecture = hiveLecture.langCode == 'ko';
+
       // transcript.json 로드 (HiveLecture에서 경로 가져오기)
       final transcriptPath =
           hiveLecture.jsonPath ?? 'assets/lectures/$lectureId/transcript.json';
@@ -214,7 +217,9 @@ class _PlayerScreenState extends State<PlayerScreen>
 
       final originalAudioPath = hiveLecture.originalAudioPath;
 
-      final ttsAudioPath = hiveLecture.ttsAudioPath;
+      final ttsAudioPath = isKoreanLecture ? hiveLecture.originalAudioPath : hiveLecture.ttsAudioPath;
+
+      debugPrint('$isKoreanLecture $originalAudioPath, $ttsAudioPath');
 
       // 6. Controller 초기화
       if (!mounted) {
@@ -229,6 +234,7 @@ class _PlayerScreenState extends State<PlayerScreen>
           pdfPath,
           ttsAudioPath,
           originalAudioPath,
+          isKoreanLecture
         );
       } catch (e) {
         if (!mounted) {
