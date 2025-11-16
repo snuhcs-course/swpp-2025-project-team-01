@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 
 // 화면들
-import 'package:re_view/features/tutorial/tutorial_screen.dart';
 import 'package:re_view/features/home/home_screen.dart';
 import 'package:re_view/features/search/search_screen.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
@@ -14,13 +13,12 @@ import 'package:re_view/features/settings/help_screen.dart';
 import 'package:re_view/features/settings/language_screen.dart';
 import 'package:re_view/features/settings/settings_screen.dart';
 import 'package:re_view/features/settings/tts_screen.dart';
-import 'package:re_view/features/subjects/subjects_edit_screen.dart';
 import 'package:re_view/features/tags/tags_edit_screen.dart';
+import 'package:re_view/features/splash/splash_screen.dart';
 
 /// 앱의 모든 라우트 경로를 정의하는 클래스
 class Routes {
   static const onboarding = '/';
-  static const tutorial = '/tutorial';
   static const home = '/home';
   static const search = '/search';
   static const lectureForm = '/lectures/new';
@@ -33,7 +31,6 @@ class Routes {
   static const settingsAccessibility = '/settings/accessibility';
   static const settingsLanguage = '/settings/language';
   static const settingsHelp = '/settings/help';
-  static const subjectsEdit = '/subjects/edit';
   static const tagsEdit = '/tags/edit';
 }
 
@@ -42,8 +39,7 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings s) {
     switch (s.name) {
       case Routes.onboarding:
-      case Routes.tutorial:
-        return MaterialPageRoute(builder: (_) => const TutorialScreen());
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
       case Routes.home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case Routes.search:
@@ -68,8 +64,6 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const LanguageScreen());
       case Routes.settingsHelp:
         return MaterialPageRoute(builder: (_) => const HelpScreen());
-      case Routes.subjectsEdit:
-        return MaterialPageRoute(builder: (_) => const SubjectsEditScreen());
       case Routes.tagsEdit:
         return MaterialPageRoute(builder: (_) => const TagsEditScreen());
       default:

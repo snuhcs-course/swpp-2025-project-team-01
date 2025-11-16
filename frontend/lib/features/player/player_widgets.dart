@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 // 시간 포맷 유틸 함수
 String formatDuration(int seconds) {
@@ -11,15 +12,24 @@ String formatDuration(int seconds) {
 /// 비디오 컨트롤 공통 위젯 모듈
 // 뒤로가기 버튼
 class BackButton extends StatelessWidget {
-  const BackButton({super.key, required this.onPressed});
+  const BackButton({
+    super.key,
+    required this.onPressed,
+    this.isVertical = false,
+  });
 
   final VoidCallback onPressed;
+  final bool isVertical;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onPressed,
-      icon: const Icon(Icons.chevron_left, color: Colors.white, size: 32),
+      icon: Icon(
+        Icons.chevron_left,
+        color: Colors.white,
+        size: isVertical ? 26 : 32,
+      ),
     );
   }
 }
@@ -31,21 +41,24 @@ class SyncButton extends StatelessWidget {
     required this.isSynced,
     required this.onPressed,
     this.pageDifference,
+    this.isVertical = false,
   });
 
   final bool isSynced;
   final VoidCallback onPressed;
   final int? pageDifference;
+  final bool isVertical;
 
-  String _getDifferenceText(int difference) {
+  String _getDifferenceText(BuildContext context, int difference) {
+    final l10n = AppLocalizations.of(context);
     if (difference == 0) {
-      return '동기화됨';
+      return '';
     }
     final absValue = difference.abs();
     if (difference < 0) {
-      return '$absValue 페이지 앞';
+      return l10n.pagesAhead(absValue);
     } else {
-      return '$absValue 페이지 뒤';
+      return l10n.pagesBehind(absValue);
     }
   }
 
@@ -55,17 +68,17 @@ class SyncButton extends StatelessWidget {
 
     return Stack(
       clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
+      alignment: Alignment.topRight,
       children: [
         IconButton(
           onPressed: onPressed,
           icon: Icon(
             isSynced ? Icons.sync : Icons.sync_disabled,
             color: Colors.white,
-            size: 28,
+            size: isVertical ? 22 : 28,
           ),
         ),
-        if (showDifference)
+        if (showDifference && (pageDifference ?? 0) != 0)
           Positioned(
             top: 48, // IconButton 아래에 위치
             child: Container(
@@ -81,12 +94,14 @@ class SyncButton extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Text(
-                _getDifferenceText(pageDifference!),
-                style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              child: Builder(
+                builder: (context) => Text(
+                  _getDifferenceText(context, pageDifference!),
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
@@ -98,9 +113,14 @@ class SyncButton extends StatelessWidget {
 
 // 재생 속도 버튼
 class SpeedButton extends StatefulWidget {
-  const SpeedButton({super.key, required this.onSpeedChanged});
+  const SpeedButton({
+    super.key,
+    required this.onSpeedChanged,
+    this.isVertical = false,
+  });
 
   final ValueChanged<double> onSpeedChanged;
+  final bool isVertical;
 
   @override
   State<SpeedButton> createState() => _SpeedButtonState();
@@ -123,9 +143,9 @@ class _SpeedButtonState extends State<SpeedButton> {
       onPressed: _toggleSpeed,
       icon: Text(
         '${_speeds[_currentIndex]}x',
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
-          fontSize: 16,
+          fontSize: widget.isVertical ? 13 : 16,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -139,49 +159,30 @@ class AudioSourceButton extends StatelessWidget {
     super.key,
     required this.isOriginalAudio,
     required this.onPressed,
+    this.isVertical = false,
   });
 
   final bool isOriginalAudio;
   final VoidCallback onPressed;
+  final bool isVertical;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onPressed,
       icon: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: isVertical ? 7 : 10,
+          vertical: isVertical ? 4 : 6,
+        ),
         child: Text(
           isOriginalAudio ? 'Rec' : 'TTS',
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 14,
+            fontSize: isVertical ? 12 : 14,
             fontWeight: FontWeight.w600,
           ),
         ),
-      ),
-    );
-  }
-}
-
-// 자막 버튼
-class CaptionButton extends StatelessWidget {
-  const CaptionButton({
-    super.key,
-    required this.isEnabled,
-    required this.onPressed,
-  });
-
-  final bool isEnabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(
-        isEnabled ? Icons.closed_caption : Icons.closed_caption_outlined,
-        color: Colors.white,
-        size: 28,
       ),
     );
   }
@@ -193,10 +194,12 @@ class PlayPauseButton extends StatelessWidget {
     super.key,
     required this.isPlaying,
     required this.onPressed,
+    this.isVertical = false,
   });
 
   final bool isPlaying;
   final VoidCallback onPressed;
+  final bool isVertical;
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +209,7 @@ class PlayPauseButton extends StatelessWidget {
       icon: Icon(
         isPlaying ? Icons.pause : Icons.play_arrow,
         color: Colors.white,
-        size: 56,
+        size: isVertical ? 50 : 72,
       ),
     );
   }
@@ -218,10 +221,12 @@ class SkipButton extends StatefulWidget {
     super.key,
     required this.isForward,
     required this.onPressed,
+    this.isVertical = false,
   });
 
   final bool isForward; // true면 앞으로, false면 뒤로
   final VoidCallback onPressed;
+  final bool isVertical;
 
   @override
   State<SkipButton> createState() => _SkipButtonState();
@@ -253,31 +258,17 @@ class _SkipButtonState extends State<SkipButton> {
       onTap: _handleTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(widget.isVertical ? 8 : 10),
         decoration: BoxDecoration(
           color: _showBackground
               ? Colors.white.withValues(alpha: 0.3)
               : Colors.transparent,
           shape: BoxShape.circle,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              widget.isForward ? Icons.arrow_forward : Icons.arrow_back,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              '15',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        child: Icon(
+          widget.isForward ? Icons.forward_10 : Icons.replay_10,
+          color: Colors.white,
+          size: widget.isVertical ? 42 : 56,
         ),
       ),
     );
@@ -301,6 +292,22 @@ class VideoTimelineSlider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // 시간 표시
+        Padding(
+          padding: const EdgeInsets.only(left: 15, right: 30),
+          child: Row(
+            children: [
+              Text(
+                '${formatDuration(currentTime.toInt())} / ${formatDuration(totalTime.toInt())}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
         // 슬라이더
         SliderTheme(
           data: SliderThemeData(
@@ -319,33 +326,219 @@ class VideoTimelineSlider extends StatelessWidget {
             onChanged: onChanged,
           ),
         ),
-        // 시간 표시
-        Padding(
-          padding: const EdgeInsets.only(left: 1, right: 30),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      ],
+    );
+  }
+}
+
+// 하단 컨트롤 바 (슬라이더 + 자막/대본/전체화면 버튼)
+class BottomControlBar extends StatelessWidget {
+  const BottomControlBar({
+    super.key,
+    required this.isVertical,
+    required this.currentTime,
+    required this.totalTime,
+    required this.onTimeChanged,
+    required this.isCaptionEnabled,
+    required this.onCaptionToggle,
+    required this.showTranscriptPanel,
+    required this.onTranscriptToggle,
+    required this.isFullscreen,
+    required this.onFullscreenToggle,
+    this.isTablet = false,
+  });
+
+  final bool isVertical;
+  final double currentTime;
+  final double totalTime;
+  final ValueChanged<double> onTimeChanged;
+  final bool isCaptionEnabled;
+  final VoidCallback onCaptionToggle;
+  final bool showTranscriptPanel;
+  final VoidCallback onTranscriptToggle;
+  final bool isFullscreen;
+  final VoidCallback onFullscreenToggle;
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 슬라이더 (세로 모드일 때는 전체화면 버튼과 함께 Stack으로)
+        if (isVertical)
+          Stack(
             children: [
-              Text(
-                formatDuration(currentTime.toInt()),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+              VideoTimelineSlider(
+                currentTime: currentTime,
+                totalTime: totalTime,
+                onChanged: onTimeChanged,
               ),
+              if (!isTablet)
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: FullscreenButton(
+                    isEnabled: isFullscreen,
+                    onPressed: onFullscreenToggle,
+                    isVertical: isVertical,
+                  ),
+                ),
+            ],
+          ),
+        // 버튼들
+        if (!isVertical) ...[
+          VideoTimelineSlider(
+            currentTime: currentTime,
+            totalTime: totalTime,
+            onChanged: onTimeChanged,
+          ),
+          SizedBox(
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 중앙
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CaptionButton(
+                        isEnabled: isCaptionEnabled,
+                        onPressed: onCaptionToggle,
+                      ),
+                      const SizedBox(width: 24),
+                      TranscriptButton(onPressed: onTranscriptToggle),
+                    ],
+                  ),
+                ),
+                // 우측: 전체화면 버튼
+                if (!isTablet)
+                  Positioned(
+                    right: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: FullscreenButton(
+                      isEnabled: isFullscreen,
+                      onPressed: onFullscreenToggle,
+                      isVertical: isVertical,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// 자막 버튼
+class CaptionButton extends StatelessWidget {
+  const CaptionButton({
+    super.key,
+    required this.isEnabled,
+    required this.onPressed,
+  });
+
+  final bool isEnabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return _IconTextButton(
+      icon: isEnabled ? Icons.closed_caption : Icons.closed_caption_outlined,
+      label: l10n.subtitle,
+      onPressed: onPressed,
+    );
+  }
+}
+
+// 대본 버튼
+class TranscriptButton extends StatelessWidget {
+  const TranscriptButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return _IconTextButton(
+      icon: Icons.subject,
+      label: l10n.transcript,
+      onPressed: onPressed,
+    );
+  }
+}
+
+// 전체화면 버튼
+class FullscreenButton extends StatelessWidget {
+  const FullscreenButton({
+    super.key,
+    required this.isEnabled,
+    required this.onPressed,
+    required this.isVertical,
+  });
+
+  final bool isEnabled;
+  final VoidCallback onPressed;
+  final bool isVertical;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      padding: isVertical ? const EdgeInsets.all(4) : const EdgeInsets.all(8),
+      constraints: const BoxConstraints(),
+      onPressed: onPressed,
+      icon: Icon(
+        isEnabled ? Icons.fullscreen_exit : Icons.fullscreen,
+        color: Colors.white,
+        size: isVertical ? 24 : 28,
+      ),
+    );
+  }
+}
+
+// 아이콘 + 텍스트 버튼 (내부 헬퍼 위젯)
+// 가로모드에서만 표시되므로 항상 가로모드 크기 사용
+class _IconTextButton extends StatelessWidget {
+  const _IconTextButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 24),
+              const SizedBox(width: 6),
               Text(
-                '-${formatDuration((totalTime - currentTime).toInt())}',
+                label,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 12,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
-                textAlign: TextAlign.right,
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -358,23 +551,37 @@ class CenterPlayControls extends StatelessWidget {
     required this.onPlayPause,
     required this.onSkipBackward,
     required this.onSkipForward,
+    this.isVertical = false,
   });
 
   final bool isPlaying;
   final VoidCallback onPlayPause;
   final VoidCallback onSkipBackward;
   final VoidCallback onSkipForward;
+  final bool isVertical;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SkipButton(isForward: false, onPressed: onSkipBackward),
-        const SizedBox(width: 40),
-        PlayPauseButton(isPlaying: isPlaying, onPressed: onPlayPause),
-        const SizedBox(width: 40),
-        SkipButton(isForward: true, onPressed: onSkipForward),
+        SkipButton(
+          isForward: false,
+          onPressed: onSkipBackward,
+          isVertical: isVertical,
+        ),
+        SizedBox(width: isVertical ? 56 : 80),
+        PlayPauseButton(
+          isPlaying: isPlaying,
+          onPressed: onPlayPause,
+          isVertical: isVertical,
+        ),
+        SizedBox(width: isVertical ? 56 : 80),
+        SkipButton(
+          isForward: true,
+          onPressed: onSkipForward,
+          isVertical: isVertical,
+        ),
       ],
     );
   }
@@ -387,9 +594,8 @@ class TopControlBar extends StatelessWidget {
     required this.isVertical,
     required this.onBack,
     required this.isOriginalAudio,
+    required this.isKoreanLecture,
     required this.onAudioToggle,
-    required this.isCaptionEnabled,
-    required this.onCaptionToggle,
     required this.onSpeedChanged,
     required this.isSynced,
     required this.onSyncToggle,
@@ -400,9 +606,8 @@ class TopControlBar extends StatelessWidget {
 
   final VoidCallback onBack;
   final bool isOriginalAudio;
+  final bool isKoreanLecture;
   final VoidCallback onAudioToggle;
-  final bool isCaptionEnabled;
-  final VoidCallback onCaptionToggle;
   final ValueChanged<double> onSpeedChanged;
   final bool isSynced;
   final VoidCallback onSyncToggle;
@@ -414,26 +619,21 @@ class TopControlBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          BackButton(onPressed: onBack),
+          BackButton(onPressed: onBack, isVertical: isVertical),
           const Spacer(),
-          if (!isVertical) ...[
-            AudioSourceButton(
-              isOriginalAudio: isOriginalAudio,
-              onPressed: onAudioToggle,
-            ),
-            const SizedBox(width: 8),
-            CaptionButton(
-              isEnabled: isCaptionEnabled,
-              onPressed: onCaptionToggle,
-            ),
-            const SizedBox(width: 8),
-          ],
-          SpeedButton(onSpeedChanged: onSpeedChanged),
+          AudioSourceButton(
+            isOriginalAudio: isOriginalAudio,
+            onPressed: isKoreanLecture ? () {} : onAudioToggle,
+            isVertical: isVertical,
+          ),
+          const SizedBox(width: 8),
+          SpeedButton(onSpeedChanged: onSpeedChanged, isVertical: isVertical),
           const SizedBox(width: 8),
           SyncButton(
             isSynced: isSynced,
             onPressed: onSyncToggle,
             pageDifference: pageDifference,
+            isVertical: isVertical,
           ),
         ],
       ),
@@ -509,6 +709,46 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(PdfSlidesList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // currentPage가 변경되었을 때 자동 스크롤
+    if (oldWidget.currentPage != widget.currentPage) {
+      // 다음 프레임에서 스크롤 실행 (빌드 완료 후)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToPage(widget.currentPage);
+      });
+    }
+  }
+
+  void _scrollToPage(int pageNumber) {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    // 각 아이템의 총 너비 (itemWidth + separator)
+    const separator = 12.0;
+    final itemTotalWidth = widget.itemWidth + separator;
+    final viewportWidth = _scrollController.position.viewportDimension;
+
+    // 페이지를 중앙에 배치하기 위한 오프셋 계산
+    final targetOffset =
+        (pageNumber - 1) * itemTotalWidth -
+        (viewportWidth - widget.itemWidth) / 2 +
+        widget.padding.left;
+
+    // 스크롤 범위 내로 제한
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final minScroll = _scrollController.position.minScrollExtent;
+    final clampedOffset = targetOffset.clamp(minScroll, maxScroll);
+
+    _scrollController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _handleScroll() {

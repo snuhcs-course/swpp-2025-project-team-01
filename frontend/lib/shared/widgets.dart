@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
-import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/main.dart' show navigatorKey;
 
@@ -66,36 +66,41 @@ class TagPill extends StatelessWidget {
     required this.tag,
     this.labelPrefix = '#',
     this.label,
+    this.textColor,
   });
 
-  final Tag tag;
+  final HiveTag tag;
   final String? label;
   final String labelPrefix;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
-    final Color textColor = getTextColorForBackground(tag.color);
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(fontWeight: FontWeight.w600),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          side: BorderSide(color: Color(0x33000000), width: 1),
-          shape: StadiumBorder(),
+    final Color resolvedTextColor =
+        textColor ??
+        getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
+
+    // Use theme's chip settings for high contrast mode
+    final chipTheme = Theme.of(context).chipTheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Chip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: TextStyle(
+          color: resolvedTextColor,
+          fontFamily: 'NanumSquare',
+          fontWeight: textTheme.bodyMedium?.fontWeight ?? FontWeight.w600,
         ),
       ),
-      child: Chip(
-        label: Text(
-          label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: textColor),
-        ),
-        backgroundColor: color,
-        elevation: 2,
-        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-      ),
+      backgroundColor: color,
+      elevation: chipTheme.elevation ?? 2,
+      side: chipTheme.side,
+      shape: chipTheme.shape ?? const StadiumBorder(),
+      padding:
+          chipTheme.padding ??
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     );
   }
 }
@@ -110,44 +115,51 @@ class SelectableTagPill extends StatelessWidget {
     this.showCheckmark = true,
     this.labelPrefix = '#',
     this.label,
+    this.textColor,
   });
 
-  final Tag tag;
+  final HiveTag tag;
   final bool selected;
   final ValueChanged<bool> onSelected;
   final bool showCheckmark;
   final String? label;
   final String labelPrefix;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     final Color color = Color(tag.color);
-    final Color textColor = getTextColorForBackground(tag.color);
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        chipTheme: const ChipThemeData(
-          labelStyle: TextStyle(fontWeight: FontWeight.w600),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          side: BorderSide(color: Color(0x33000000), width: 1),
-          shape: StadiumBorder(),
+    final Color resolvedTextColor =
+        textColor ??
+        getTagThemeTextColor(HiveManager.instance.settings.tagColorTheme);
+
+    // Use theme's chip settings for high contrast mode
+    final chipTheme = Theme.of(context).chipTheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return ChoiceChip(
+      label: Text(
+        label ?? '$labelPrefix${tag.name}',
+        style: TextStyle(
+          color: resolvedTextColor,
+          fontFamily: 'NanumSquare',
+          fontWeight: textTheme.bodyMedium?.fontWeight ?? FontWeight.w600,
         ),
       ),
-      child: ChoiceChip(
-        label: Text(
-          label ?? '$labelPrefix${tag.name}',
-          style: TextStyle(color: textColor),
-        ),
-        selected: selected,
-        onSelected: onSelected,
-        backgroundColor: color,
-        selectedColor: color,
-        elevation: selected ? 4 : 2,
-        side: const BorderSide(color: Color(0x1F000000), width: 0.5),
-        showCheckmark: showCheckmark,
-        checkmarkColor: textColor,
-      ),
+      selected: selected,
+      onSelected: onSelected,
+      backgroundColor: color,
+      selectedColor: color,
+      elevation: selected
+          ? (chipTheme.elevation ?? 4)
+          : (chipTheme.elevation ?? 2),
+      side: chipTheme.side,
+      shape: chipTheme.shape ?? const StadiumBorder(),
+      padding:
+          chipTheme.padding ??
+          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      showCheckmark: showCheckmark,
+      checkmarkColor: resolvedTextColor,
     );
   }
 }
@@ -168,12 +180,12 @@ class LectureLoadingBar extends StatelessWidget {
 
         final Widget child;
         if (service.isCollapsed) {
-          child = _CollapsedBubbleOverlay(
+          child = CollapsedBubbleOverlay(
             key: const ValueKey('collapsed-bubble'),
             service: service,
           );
         } else {
-          child = _ExpandedLoadingOverlay(
+          child = ExpandedLoadingOverlay(
             key: const ValueKey('expanded-bar'),
             service: service,
             context: buildContext,
@@ -192,8 +204,8 @@ class LectureLoadingBar extends StatelessWidget {
 }
 
 /// 둥근모서리 + 그림자 카드 컨테이너
-class _ExpandedLoadingOverlay extends StatelessWidget {
-  const _ExpandedLoadingOverlay({
+class ExpandedLoadingOverlay extends StatelessWidget {
+  const ExpandedLoadingOverlay({
     super.key,
     required this.service,
     required this.context,
@@ -204,7 +216,8 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext widgetContext) {
-    final isCompleted = service.progress >= 1.0;
+    final isCompleted = service.isCompleted;
+    final hasError = service.hasError;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -220,17 +233,23 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
             }
             service.collapseToBubble(alignRight: velocity > 0);
           },
-          child: _RoundedCard(
+          child: RoundedCard(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
-              child: isCompleted
-                  ? _CompletedView(
+              child: hasError
+                  ? ErrorView(
+                      key: const ValueKey('error'),
+                      errorTitle: service.errorTitle,
+                      errorMessage: service.errorMessage,
+                    )
+                  : isCompleted
+                  ? CompletedView(
                       key: const ValueKey('completed'),
                       context: context,
                     )
-                  : _LoadingView(
+                  : LoadingView(
                       key: const ValueKey('loading'),
                       title: service.lectureTitle,
                       message: service.message,
@@ -244,17 +263,16 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
   }
 }
 
-class _CollapsedBubbleOverlay extends StatefulWidget {
-  const _CollapsedBubbleOverlay({super.key, required this.service});
+class CollapsedBubbleOverlay extends StatefulWidget {
+  const CollapsedBubbleOverlay({super.key, required this.service});
 
   final LectureLoadingService service;
 
   @override
-  State<_CollapsedBubbleOverlay> createState() =>
-      _CollapsedBubbleOverlayState();
+  State<CollapsedBubbleOverlay> createState() => _CollapsedBubbleOverlayState();
 }
 
-class _CollapsedBubbleOverlayState extends State<_CollapsedBubbleOverlay> {
+class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
   late double _dragX;
   late double _dragY;
 
@@ -363,8 +381,8 @@ class _CollapsedBubbleOverlayState extends State<_CollapsedBubbleOverlay> {
   }
 }
 
-class _RoundedCard extends StatelessWidget {
-  const _RoundedCard({required this.child});
+class RoundedCard extends StatelessWidget {
+  const RoundedCard({super.key, required this.child});
 
   final Widget child;
 
@@ -390,8 +408,8 @@ class _RoundedCard extends StatelessWidget {
 }
 
 /// 로딩 중 화면
-class _LoadingView extends StatelessWidget {
-  const _LoadingView({
+class LoadingView extends StatelessWidget {
+  const LoadingView({
     super.key,
     required this.title,
     required this.message,
@@ -517,8 +535,8 @@ class _LoadingView extends StatelessWidget {
 }
 
 /// 완료 화면 (요청: 배경이미지 위주, 카드 라운드 유지)
-class _CompletedView extends StatelessWidget {
-  const _CompletedView({super.key, required this.context});
+class CompletedView extends StatelessWidget {
+  const CompletedView({super.key, required this.context});
 
   final BuildContext context;
 
@@ -604,7 +622,7 @@ class _CompletedView extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: Text(isKorean ? '생성된 강의 바로가기' : 'Go to Lecture'),
+                    label: Text(isKorean ? '강의 바로가기' : 'Go to Lecture'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF7FAB0),
                       foregroundColor: Colors.black87,
@@ -618,6 +636,84 @@ class _CompletedView extends StatelessWidget {
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 에러 화면
+class ErrorView extends StatelessWidget {
+  const ErrorView({
+    super.key,
+    required this.errorTitle,
+    required this.errorMessage,
+  });
+
+  final String errorTitle;
+  final String errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final service = LectureLoadingService.instance;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minHeight: 120),
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/loading_background.png'),
+          fit: BoxFit.cover,
+          opacity: 0.15,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _CharacterBlock(),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        errorTitle,
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFFF6B6B),
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: service.hideLoading,
+                      child: const Padding(
+                        padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
+                        child: Icon(Icons.close, color: Colors.grey, size: 22),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  errorMessage,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade300,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -720,6 +816,56 @@ class _FancyProgressBar extends StatelessWidget {
   }
 }
 
+/// 다이얼로그 헤더 위젯 (공통 스타일)
+///
+/// 검은 배경의 다이얼로그 헤더로 제목과 닫기 버튼을 표시합니다.
+class DialogHeaderTitle extends StatelessWidget {
+  const DialogHeaderTitle({super.key, required this.title, this.onClose});
+
+  final String title;
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final Color headerColor = isDark
+        ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
+        : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+    final Color textColor = isDark ? Colors.white : Colors.white;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: headerColor,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: textColor,
+              fontSize: 18,
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, color: textColor),
+            onPressed: onClose ?? () => Navigator.pop(context),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 과목 패널 헤더 위젯 (홈 화면 & 과목 수정 화면 공통)
 ///
 /// 검은 배경의 헤더로 과목 제목, 태그, 펼침/접기 버튼을 표시합니다.
@@ -733,32 +879,41 @@ class SubjectPanelHeader extends StatelessWidget {
     this.panelRadius = 22.0,
     this.collapsedRadius,
     this.expandedRadius,
-    this.favoriteIcon,
+    this.favoriteOrDrag,
     this.onToggleFavorite,
     this.favoriteIconColor,
     this.onLongPress,
     this.titleEndPadding = 0,
+    this.showEdit = false,
+    this.onEditSubject,
+    this.reorderIndex,
   });
 
   final String title;
-  final List<Tag> tags;
+  final List<HiveTag> tags;
   final bool expanded;
   final VoidCallback onToggleExpanded;
   final double panelRadius;
   final BorderRadius? collapsedRadius;
   final BorderRadius? expandedRadius;
-  final IconData? favoriteIcon;
+  final IconData? favoriteOrDrag;
   final VoidCallback? onToggleFavorite;
   final Color? favoriteIconColor;
   final VoidCallback? onLongPress;
   final double titleEndPadding;
+  final bool showEdit;
+  final VoidCallback? onEditSubject;
+  final int? reorderIndex;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final Color headerColor = isDark
-        ? const Color(0xFF2D2D2D) // 다크모드: 어두운 회색
+        ? const Color.fromARGB(255, 88, 88, 86) // 다크모드: 밝은 회청색
         : const Color(0xFF1D1D1D); // 라이트모드: 검은색
+
+    // 여기 아래 두 줄 redundant한 조건문 맞는데, 헤더 색 또 바뀔때 커스텀하기 쉽게 이대로 유지합시다
     final Color textColor = isDark ? Colors.white : Colors.white;
     final Color iconColor = isDark ? Colors.white : Colors.white;
 
@@ -775,6 +930,7 @@ class SubjectPanelHeader extends StatelessWidget {
         : resolvedCollapsedRadius;
 
     return GestureDetector(
+      onTap: onToggleExpanded,
       onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
@@ -787,32 +943,60 @@ class SubjectPanelHeader extends StatelessWidget {
           children: [
             // 제목 라인
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 즐겨찾기 아이콘 (선택사항)
-                if (favoriteIcon != null)
-                  IconButton(
-                    icon: Icon(
-                      favoriteIcon,
-                      color: favoriteIconColor ?? iconColor,
-                      size: 22,
-                    ),
-                    onPressed: onToggleFavorite,
-                    tooltip: '즐겨찾기',
+                // 즐겨찾기 또는 드래그 아이콘
+                if (favoriteOrDrag != null)
+                  favoriteOrDrag == Icons.drag_indicator
+                      ? (reorderIndex != null
+                            ? Padding(
+                                padding: const EdgeInsets.only(left: 10),
+                                child: ReorderableDelayedDragStartListener(
+                                  index: reorderIndex!, // ← required
+                                  child: Icon(
+                                    Icons.drag_indicator,
+                                    size: 22,
+                                    color: iconColor.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink())
+                      : IconButton(
+                          icon: Icon(
+                            favoriteOrDrag,
+                            color: favoriteIconColor ?? iconColor,
+                            size: 24,
+                          ),
+                          onPressed: onToggleFavorite,
+                          tooltip: '즐겨찾기',
+                        ),
+                if (favoriteOrDrag != null)
+                  SizedBox(
+                    width: favoriteOrDrag == Icons.drag_indicator ? 18 : 2,
                   ),
-                if (favoriteIcon != null) const SizedBox(width: 2),
                 // 제목
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.only(right: titleEndPadding),
                     child: Text(
                       title,
-                      style: TextStyle(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         color: textColor,
-                        fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                ),
+                // 수정 버튼 (수정 모드일 때)
+                Visibility(
+                  visible: showEdit,
+                  maintainState: true,
+                  maintainAnimation: true,
+                  maintainSize: true,
+                  child: IconButton(
+                    icon: Icon(Icons.edit, size: 20, color: iconColor),
+                    onPressed: () async => onEditSubject?.call(),
                   ),
                 ),
                 // 펼침/접기 버튼
@@ -832,7 +1016,7 @@ class SubjectPanelHeader extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.only(
                   top: 4,
-                  left: favoriteIcon != null ? 40 : 0,
+                  left: favoriteOrDrag != null ? 40 : 0,
                 ),
                 child: Wrap(
                   spacing: 8,

@@ -1,6 +1,12 @@
 // 앱 엔트리: 테마 + 라우터 연결
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:native_device_orientation/native_device_orientation.dart';
+
+import 'dart:io' show Platform, Directory, File;
+
+import 'package:path_provider/path_provider.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/app_theme.dart';
@@ -13,8 +19,52 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// 앱 진입점 - HiveManager 초기화 후 앱 실행
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // pdfx가 생성한 캐시 파일들 정리
+  await _cleanupCache();
+
+  // HiveManager 초기화
   await HiveManager.instance.init();
+
+  if (Platform.isAndroid) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
   runApp(const ReViewApp());
+}
+
+/// 캐시 디렉토리 정리 (앱 시작 시)
+/// pdfx 라이브러리가 생성한 UUID 형태의 PDF 캐시 파일들을 삭제
+Future<void> _cleanupCache() async {
+  try {
+    final cacheDir = await getTemporaryDirectory();
+
+    if (!cacheDir.existsSync()) {
+      return;
+    }
+
+    // 캐시 디렉토리의 모든 파일 삭제
+    final files = cacheDir.listSync();
+    int deletedCount = 0;
+
+    for (final file in files) {
+      try {
+        if (file is File) {
+          await file.delete();
+          deletedCount++;
+        } else if (file is Directory) {
+          await file.delete(recursive: true);
+          deletedCount++;
+        }
+      } catch (e) {
+        // 삭제 실패는 무시 (파일이 사용 중일 수 있음)
+      }
+    }
+
+    debugPrint('✅ Cache cleanup completed: $deletedCount items deleted');
+  } catch (e) {
+    debugPrint('⚠️ Failed to cleanup cache: $e');
+  }
 }
 
 /// Re:View 앱의 루트 위젯
@@ -136,27 +186,27 @@ class _ReViewAppState extends State<ReViewApp> {
             : null,
       ),
       themeMode: themeMode,
-      initialRoute:
-          hive
-              .hasTutorialCompleted // 앱을 처음 설치한 경우 튜토리얼 진행
-          ? Routes.home
-          : Routes.tutorial,
+      initialRoute: Routes.onboarding,
 
       onGenerateRoute: AppRouter.onGenerateRoute,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        // 모션 줄이기가 활성화되면 스크롤 물리 효과 제거
-        Widget wrappedChild = child!;
+        // NativeDeviceOrientationReader로 정확한 디바이스 방향 감지
+        return NativeDeviceOrientationReader(
+          builder: (context) {
+            Widget wrappedChild = child!;
 
-        if (reduceMotion) {
-          wrappedChild = ScrollConfiguration(
-            behavior: const _NoBouncingScrollBehavior(),
-            child: wrappedChild,
-          );
-        }
+            if (reduceMotion) {
+              wrappedChild = ScrollConfiguration(
+                behavior: const _NoBouncingScrollBehavior(),
+                child: wrappedChild,
+              );
+            }
 
-        // 모든 화면 위에 로딩 바 오버레이 추가
-        return Stack(children: [wrappedChild, const LectureLoadingBar()]);
+            // 모든 화면 위에 로딩 바 오버레이 추가
+            return Stack(children: [wrappedChild, const LectureLoadingBar()]);
+          },
+        );
       },
     );
   }

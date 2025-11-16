@@ -73,14 +73,13 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       accessibilityEmphasizeCaptions: fields[4] as bool,
       ttsGender: fields[5] as String,
       tagColorTheme: fields[6] as String,
-      hasCompletedTutorial: fields[7] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppSettings obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.theme)
       ..writeByte(1)
@@ -94,9 +93,7 @@ class AppSettingsAdapter extends TypeAdapter<AppSettings> {
       ..writeByte(5)
       ..write(obj.ttsGender)
       ..writeByte(6)
-      ..write(obj.tagColorTheme)
-      ..writeByte(7)
-      ..write(obj.hasCompletedTutorial);
+      ..write(obj.tagColorTheme);
   }
 
   @override
@@ -163,7 +160,7 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       favorite: fields[2] as bool,
       tagIds: (fields[3] as List?)?.cast<String>(),
       lectureIds: (fields[4] as List?)?.cast<String>(),
-      isUncategorized: fields[5] as bool? ?? false,
+      isUncategorized: fields[5] as bool,
     );
   }
 
@@ -253,19 +250,20 @@ class HiveLectureAdapter extends TypeAdapter<HiveLecture> {
       title: fields[3] as String,
       duration: fields[4] as int,
       slidePath: fields[5] as String?,
-      originalAudioPath: fields[6] as String?,
-      ttsAudioPath: fields[7] as String?,
+      originalAudioPath: fields[6] as String,
+      ttsAudioPath: fields[7] as String,
       thumbnailUrl: fields[8] as String?,
       jsonPath: fields[9] as String?,
-      createdAt: fields[10] as DateTime?,
-      updatedAt: fields[11] as DateTime?,
+      langCode: fields[10] as String?,
+      createdAt: fields[11] as DateTime?,
+      updatedAt: fields[12] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveLecture obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -287,8 +285,10 @@ class HiveLectureAdapter extends TypeAdapter<HiveLecture> {
       ..writeByte(9)
       ..write(obj.jsonPath)
       ..writeByte(10)
-      ..write(obj.createdAt)
+      ..write(obj.langCode)
       ..writeByte(11)
+      ..write(obj.createdAt)
+      ..writeByte(12)
       ..write(obj.updatedAt);
   }
 

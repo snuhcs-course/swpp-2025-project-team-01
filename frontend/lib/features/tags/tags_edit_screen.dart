@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
-import 'package:re_view/data/models.dart';
+import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
 
@@ -34,7 +34,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   late final HiveManager _manager;
 
   // 태그 목록 (작업 중인 데이터)
-  late List<Tag> _tags;
+  late List<HiveTag> _tags;
 
   // 선택된 태그 인덱스
   int _selected = 0;
@@ -59,11 +59,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 초기 데이터 로드
-  ///
-  /// 저장소에서 태그 목록과 테마를 불러오고 색상을 할당합니다.
+
   void _loadData() {
-    // HiveTag → Tag 변환
-    _tags = _manager.getTags().map((ht) => ht.toTag()).toList();
+    _tags = _manager.getTags();
     _currentTheme = _manager.settings.tagColorTheme;
     _assignColors();
 
@@ -73,9 +71,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 폼 데이터와 선택된 태그 동기화
-  ///
-  /// 태그를 선택하면 해당 태그의 이름을 입력 필드에 표시합니다.
-  /// 한글 입력 문제 방지를 위해 setState 외부에서 TextEditingController를 업데이트합니다.
+
   void _syncForm(int index) {
     setState(() {
       _selected = index;
@@ -89,12 +85,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 선택된 테마에 따라 모든 태그에 색상 할당
-  ///
-  /// 각 태그는 테마의 색상 배열에서 순환하며 색상을 부여받습니다.
-  /// 예: 15개 색상 테마에서 16번째 태그는 첫 번째 색상을 받습니다.
   void _assignColors() {
     final theme = getTagColorTheme(_currentTheme);
-    final newTags = <Tag>[];
+    final newTags = <HiveTag>[];
 
     for (int i = 0; i < _tags.length; i++) {
       final colorIndex = i % theme.colors.length;
@@ -105,7 +98,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
         newTags.add(_tags[i]);
       } else {
         newTags.add(
-          Tag(id: _tags[i].id, name: _tags[i].name, color: expectedColor),
+          HiveTag(id: _tags[i].id, name: _tags[i].name, color: expectedColor),
         );
       }
     }
@@ -126,9 +119,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 뒤로가기 시 변경사항 저장
   Future<bool> _onWillPop() async {
     await _manager.updateTagColorTheme(_currentTheme);
-    // Tag → HiveTag 변환
-    final hiveTags = _tags.map((t) => t.toHiveTag()).toList();
-    await _manager.saveTags(hiveTags);
+    await _manager.saveTags(_tags);
     return true;
   }
 
@@ -246,6 +237,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 태그 수정 섹션 (태그 칩 + 편집 폼 + 삭제 버튼)
   Widget _buildTagEditSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -253,7 +245,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context).editingTags,
+              l10n.editingTags,
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -262,7 +254,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
             TextField(
               controller: _nameC,
               decoration: InputDecoration(
-                labelText: AppLocalizations.of(context).tagName,
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                labelText: l10n.tagName,
+                hintText: l10n.newTag,
                 border: const OutlineInputBorder(),
               ),
               enableIMEPersonalizedLearning: false,
@@ -273,7 +267,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                 Expanded(
                   child: FilledButton(
                     onPressed: _applyNameChange,
-                    child: Text(AppLocalizations.of(context).nameApply),
+                    child: Text(l10n.nameApply),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -286,7 +280,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                         foregroundColor: Colors.white,
                       ),
                       onPressed: _deleteSelectedTag,
-                      label: Text(AppLocalizations.of(context).deleteTag),
+                      label: Text(l10n.deleteTag),
                     ),
                   ),
               ],
@@ -328,30 +322,31 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 각 태그를 칩 형태로 표시하며, 선택 시 체크마크와 그림자로 구분합니다.
   Widget _buildTagChip(int index) {
     final isSelected = _selected == index;
+    final Color textColor = getTagThemeTextColor(_currentTheme);
 
     return SelectableTagPill(
       tag: _tags[index],
       selected: isSelected,
       onSelected: (_) => _syncForm(index),
+      textColor: textColor,
     );
   }
 
   /// 새 태그 추가
-  ///
-  /// 중복되지 않는 이름으로 새 태그를 생성하고 현재 테마의 다음 색상을 할당합니다.
-  /// 최대 15개까지만 생성 가능합니다.
   void _addNewTag() {
+    final l10n = AppLocalizations.of(context);
+
     // 최대 개수 제한 체크
     if (_tags.length >= 15) {
-      _showSnackBar(AppLocalizations.of(context).maxTagsReached);
+      _showSnackBar(l10n.maxTagsReached);
       return;
     }
 
     // 중복되지 않는 이름 생성
-    String newName = '새 태그';
+    String newName = l10n.newTag;
     int counter = 1;
     while (_tags.any((tag) => tag.name == newName)) {
-      newName = '새 태그 ($counter)';
+      newName = '${l10n.newTag} ($counter)';
       counter++;
     }
 
@@ -361,7 +356,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     setState(() {
       _tags.add(
-        Tag(
+        HiveTag(
           id: 'new_${DateTime.now().millisecondsSinceEpoch}',
           name: newName,
           color: theme.colors[colorIndex],
@@ -379,8 +374,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 태그 이름 변경 적용
-  ///
-  /// 입력된 이름의 유효성을 검사하고 중복이 없으면 태그를 업데이트합니다.
   void _applyNameChange() {
     final newName = _nameC.text.trim();
 
@@ -398,7 +391,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     // 태그 이름 업데이트
     setState(() {
-      _tags[_selected] = Tag(
+      _tags[_selected] = HiveTag(
         id: _tags[_selected].id,
         name: newName,
         color: _tags[_selected].color,
@@ -417,9 +410,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 선택된 태그 삭제
-  ///
-  /// 태그가 과목에서 사용 중이면 경고 다이얼로그를 표시합니다.
-  /// 삭제 후에는 색상을 재할당하고 이전 태그를 선택합니다.
   Future<void> _deleteSelectedTag() async {
     if (_tags.isEmpty) {
       return;
@@ -427,10 +417,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
     // 삭제하려는 태그를 사용 중인 과목 확인
     final tagToDelete = _tags[_selected];
-    final subjects = _manager
-        .getSubjects()
-        .map((hs) => hs.toSubject())
-        .toList();
+    final subjects = _manager.getSubjects().toList();
     final usingSubjects = subjects
         .where((s) => s.tagIds.contains(tagToDelete.id))
         .toList();
@@ -486,7 +473,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   Future<bool?> _showDeleteWarningDialog(
     BuildContext context,
     String tagName,
-    List<Subject> usingSubjects,
+    List<HiveSubject> usingSubjects,
   ) {
     return showDialog<bool>(
       context: context,
@@ -510,15 +497,16 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 다이얼로그 헤더 빌드
   Widget _buildDialogHeader() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20),
       decoration: const BoxDecoration(
         color: Colors.black87,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
-          '경고',
+          l10n.warning,
           style: TextStyle(
             color: Colors.white,
             fontSize: 24,
@@ -530,7 +518,8 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   }
 
   /// 다이얼로그 본문 빌드
-  Widget _buildDialogBody(String tagName, List<Subject> usingSubjects) {
+  Widget _buildDialogBody(String tagName, List<HiveSubject> usingSubjects) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: const BoxDecoration(
@@ -540,7 +529,10 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       child: Column(
         children: [
           Text(
-            '태그 "#$tagName"는\n다음 과목에서 사용 중입니다:\n\n${usingSubjects.map((s) => s.title).join('\n')}\n\n삭제하시겠습니까?',
+            l10n.tagDeleteWarning(
+              tagName,
+              usingSubjects.map((s) => s.title).toList(),
+            ),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.black,
@@ -563,6 +555,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 다이얼로그 확인 버튼
   Widget _buildConfirmButton() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -571,8 +564,8 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       ),
       child: TextButton(
         onPressed: () => Navigator.pop(context, true),
-        child: const Text(
-          '예',
+        child: Text(
+          l10n.yes,
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -585,6 +578,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 다이얼로그 취소 버튼
   Widget _buildCancelButton() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -593,8 +587,8 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       ),
       child: TextButton(
         onPressed: () => Navigator.pop(context, false),
-        child: const Text(
-          '아니오',
+        child: Text(
+          l10n.no,
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,

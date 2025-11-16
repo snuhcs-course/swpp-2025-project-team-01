@@ -1,7 +1,23 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/features/player/player_widgets.dart' as pw;
+
+Widget buildLocalizedScaffold(Widget child) {
+  return MaterialApp(
+    locale: const Locale('en', 'US'),
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(body: child),
+  );
+}
 
 void main() {
   group('BackButton', () {
@@ -25,7 +41,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(IconButton));
+      await tester.tap(find.byType(InkWell));
       await tester.pump();
 
       expect(pressed, isTrue);
@@ -75,16 +91,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.SyncButton(
-              isSynced: false,
-              onPressed: () {},
-              pageDifference: 3,
-            ),
-          ),
+        buildLocalizedScaffold(
+          pw.SyncButton(isSynced: false, onPressed: () {}, pageDifference: 3),
         ),
       );
+      await tester.pump();
 
       // Text contains Korean characters - just verify widget exists
       expect(find.byType(pw.SyncButton), findsOneWidget);
@@ -94,16 +105,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.SyncButton(
-              isSynced: false,
-              onPressed: () {},
-              pageDifference: -3,
-            ),
-          ),
+        buildLocalizedScaffold(
+          pw.SyncButton(isSynced: false, onPressed: () {}, pageDifference: -3),
         ),
       );
+      await tester.pump();
 
       // Text contains Korean characters - just verify widget exists
       expect(find.byType(pw.SyncButton), findsOneWidget);
@@ -123,7 +129,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(IconButton));
+      await tester.tap(find.byType(InkWell));
       await tester.pump();
 
       expect(pressed, isTrue);
@@ -133,12 +139,11 @@ void main() {
   group('CaptionButton', () {
     testWidgets('should show filled caption icon when enabled', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.CaptionButton(isEnabled: true, onPressed: () {}),
-          ),
+        buildLocalizedScaffold(
+          pw.CaptionButton(isEnabled: true, onPressed: () {}),
         ),
       );
+      await tester.pump();
 
       expect(find.byIcon(Icons.closed_caption), findsOneWidget);
       expect(find.byIcon(Icons.closed_caption_outlined), findsNothing);
@@ -148,12 +153,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.CaptionButton(isEnabled: false, onPressed: () {}),
-          ),
+        buildLocalizedScaffold(
+          pw.CaptionButton(isEnabled: false, onPressed: () {}),
         ),
       );
+      await tester.pump();
 
       expect(find.byIcon(Icons.closed_caption_outlined), findsOneWidget);
       expect(find.byIcon(Icons.closed_caption), findsNothing);
@@ -163,17 +167,13 @@ void main() {
       bool pressed = false;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.CaptionButton(
-              isEnabled: false,
-              onPressed: () => pressed = true,
-            ),
-          ),
+        buildLocalizedScaffold(
+          pw.CaptionButton(isEnabled: false, onPressed: () => pressed = true),
         ),
       );
+      await tester.pump();
 
-      await tester.tap(find.byType(IconButton));
+      await tester.tap(find.byType(InkWell));
       await tester.pump();
 
       expect(pressed, isTrue);
@@ -237,12 +237,12 @@ void main() {
       );
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.pause));
-      expect(icon.size, equals(56));
+      expect(icon.size, equals(72));
     });
   });
 
   group('SkipButton', () {
-    testWidgets('should show forward icon when isForward is true', (
+    testWidgets('should show forward_10 icon when isForward is true', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -253,11 +253,11 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_back), findsNothing);
+      expect(find.byIcon(Icons.forward_10), findsOneWidget);
+      expect(find.byIcon(Icons.replay_10), findsNothing);
     });
 
-    testWidgets('should show back icon when isForward is false', (
+    testWidgets('should show replay_10 icon when isForward is false', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -268,11 +268,11 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward), findsNothing);
+      expect(find.byIcon(Icons.replay_10), findsOneWidget);
+      expect(find.byIcon(Icons.forward_10), findsNothing);
     });
 
-    testWidgets('should display 15 seconds text', (tester) async {
+    testWidgets('should use correct icon size', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -281,7 +281,8 @@ void main() {
         ),
       );
 
-      expect(find.text('15'), findsOneWidget);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.forward_10));
+      expect(icon.size, equals(56));
     });
 
     testWidgets('should call onPressed when tapped', (tester) async {
@@ -449,9 +450,7 @@ void main() {
       expect(slider.max, equals(120.0));
     });
 
-    testWidgets('should display current time and remaining time', (
-      tester,
-    ) async {
+    testWidgets('should display current time and total time', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -464,8 +463,7 @@ void main() {
         ),
       );
 
-      expect(find.text('1:05'), findsOneWidget);
-      expect(find.text('-1:00'), findsOneWidget);
+      expect(find.text('1:05 / 2:05'), findsOneWidget);
     });
 
     testWidgets('should call onChanged when slider is moved', (tester) async {
@@ -502,8 +500,7 @@ void main() {
         ),
       );
 
-      expect(find.text('0:00'), findsOneWidget);
-      expect(find.text('-1:40'), findsOneWidget);
+      expect(find.text('0:00 / 1:40'), findsOneWidget);
     });
 
     testWidgets('should handle end time correctly', (tester) async {
@@ -519,8 +516,7 @@ void main() {
         ),
       );
 
-      expect(find.text('1:40'), findsOneWidget);
-      expect(find.text('-0:00'), findsOneWidget);
+      expect(find.text('1:40 / 1:40'), findsOneWidget);
     });
   });
 
@@ -569,12 +565,12 @@ void main() {
       expect(playPausePressed, isTrue);
 
       // Test skip backward
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byIcon(Icons.replay_10));
       await tester.pump();
       expect(skipBackPressed, isTrue);
 
       // Test skip forward
-      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.tap(find.byIcon(Icons.forward_10));
       await tester.pump();
       expect(skipForwardPressed, isTrue);
 
@@ -602,7 +598,7 @@ void main() {
   });
 
   group('TopControlBar', () {
-    testWidgets('should render all buttons in horizontal mode', (tester) async {
+    testWidgets('should render all buttons', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -610,9 +606,8 @@ void main() {
               isVertical: false,
               onBack: () {},
               isOriginalAudio: false,
+              isKoreanLecture: false,
               onAudioToggle: () {},
-              isCaptionEnabled: false,
-              onCaptionToggle: () {},
               isSynced: true,
               onSyncToggle: () {},
               onSpeedChanged: (_) {},
@@ -622,31 +617,6 @@ void main() {
       );
 
       expect(find.byType(pw.BackButton), findsOneWidget);
-      expect(find.byType(pw.CaptionButton), findsOneWidget);
-      expect(find.byType(pw.SyncButton), findsOneWidget);
-    });
-
-    testWidgets('should hide caption button in vertical mode', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.TopControlBar(
-              isVertical: true,
-              onBack: () {},
-              isOriginalAudio: false,
-              onAudioToggle: () {},
-              isCaptionEnabled: false,
-              onCaptionToggle: () {},
-              isSynced: true,
-              onSyncToggle: () {},
-              onSpeedChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(pw.BackButton), findsOneWidget);
-      expect(find.byType(pw.CaptionButton), findsNothing);
       expect(find.byType(pw.SyncButton), findsOneWidget);
     });
 
@@ -654,7 +624,6 @@ void main() {
       tester,
     ) async {
       bool backPressed = false;
-      bool captionPressed = false;
       bool syncPressed = false;
 
       await tester.pumpWidget(
@@ -664,9 +633,8 @@ void main() {
               isVertical: false,
               onBack: () => backPressed = true,
               isOriginalAudio: false,
+              isKoreanLecture: false,
               onAudioToggle: () {},
-              isCaptionEnabled: false,
-              onCaptionToggle: () => captionPressed = true,
               isSynced: true,
               onSyncToggle: () => syncPressed = true,
               onSpeedChanged: (_) {},
@@ -678,10 +646,6 @@ void main() {
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
       expect(backPressed, isTrue);
-
-      await tester.tap(find.byIcon(Icons.closed_caption_outlined));
-      await tester.pump();
-      expect(captionPressed, isTrue);
 
       await tester.tap(find.byIcon(Icons.sync));
       await tester.pump();
@@ -919,39 +883,31 @@ void main() {
       tester,
     ) async {
       bool backCalled = false;
-      bool captionCalled = false;
       bool syncCalled = false;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: pw.TopControlBar(
-              isVertical: false,
-              onBack: () => backCalled = true,
-              isOriginalAudio: false,
-              onAudioToggle: () {},
-              isCaptionEnabled: true,
-              onCaptionToggle: () => captionCalled = true,
-              isSynced: false,
-              onSyncToggle: () => syncCalled = true,
-              pageDifference: 3,
-              onSpeedChanged: (_) {},
-            ),
+        buildLocalizedScaffold(
+          pw.TopControlBar(
+            isVertical: false,
+            onBack: () => backCalled = true,
+            isOriginalAudio: false,
+            isKoreanLecture: false,
+            onAudioToggle: () {},
+            isSynced: false,
+            onSyncToggle: () => syncCalled = true,
+            pageDifference: 3,
+            onSpeedChanged: (_) {},
           ),
         ),
       );
+      await tester.pump();
 
       expect(find.byType(pw.BackButton), findsOneWidget);
-      expect(find.byType(pw.CaptionButton), findsOneWidget);
       expect(find.byType(pw.SyncButton), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
       expect(backCalled, isTrue);
-
-      await tester.tap(find.byIcon(Icons.closed_caption));
-      await tester.pump();
-      expect(captionCalled, isTrue);
 
       await tester.tap(find.byIcon(Icons.sync_disabled));
       await tester.pump();
@@ -989,11 +945,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.pause), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.arrow_forward));
+      await tester.tap(find.byIcon(Icons.forward_10));
       await tester.pump();
       expect(skipCount, equals(1));
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byIcon(Icons.replay_10));
       await tester.pump();
       expect(skipCount, equals(0));
 

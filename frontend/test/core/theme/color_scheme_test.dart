@@ -16,11 +16,11 @@ void main() {
     });
 
     test('should have correct number of colors in each theme', () {
-      expect(tagColorThemes[0].colors.length, 10); // 봄
+      expect(tagColorThemes[0].colors.length, 7); // 봄
       expect(tagColorThemes[1].colors.length, 7); // 여름
-      expect(tagColorThemes[2].colors.length, 10); // 가을
-      expect(tagColorThemes[3].colors.length, 5); // 겨울
-      expect(tagColorThemes[4].colors.length, 10); // 솜사탕
+      expect(tagColorThemes[2].colors.length, 7); // 가을
+      expect(tagColorThemes[3].colors.length, 7); // 겨울
+      expect(tagColorThemes[4].colors.length, 7); // 솜사탕
       expect(tagColorThemes[5].colors.length, 7); // 비비드
       expect(tagColorThemes[6].colors.length, 7); // 바다
     });
@@ -43,7 +43,7 @@ void main() {
     test('should return correct theme by name', () {
       final springTheme = getTagColorTheme('봄');
       expect(springTheme.name, '봄');
-      expect(springTheme.colors.length, 10);
+      expect(springTheme.colors.length, 7);
 
       final summerTheme = getTagColorTheme('여름');
       expect(summerTheme.name, '여름');
@@ -53,12 +53,25 @@ void main() {
     test('should return first theme (봄) when theme not found', () {
       final unknownTheme = getTagColorTheme('존재하지않는테마');
       expect(unknownTheme.name, '봄');
-      expect(unknownTheme.colors.length, 10);
+      expect(unknownTheme.colors.length, 7);
     });
 
     test('should return first theme when empty string is provided', () {
       final emptyTheme = getTagColorTheme('');
       expect(emptyTheme.name, '봄');
+    });
+  });
+
+  group('getTagThemeTextColor', () {
+    test('should return black for default themes', () {
+      expect(getTagThemeTextColor('봄'), Colors.black);
+      expect(getTagThemeTextColor('여름'), Colors.black);
+      expect(getTagThemeTextColor('비비드'), Colors.black);
+    });
+
+    test('should return theme-specific overrides', () {
+      expect(getTagThemeTextColor('겨울'), Colors.black);
+      expect(getTagThemeTextColor('바다'), Colors.white);
     });
   });
 
@@ -71,8 +84,9 @@ void main() {
       expect(isColorDark(0xFF333333), true);
 
       // 바다 테마의 어두운 색상들
-      expect(isColorDark(0xFF15253F), true);
-      expect(isColorDark(0xFF354E6B), true);
+      expect(isColorDark(0xFF02182E), true);
+      expect(isColorDark(0xFF022F56), true);
+      expect(isColorDark(0xFF314B6E), true);
       expect(isColorDark(0xFF263C42), true);
     });
 
@@ -84,9 +98,10 @@ void main() {
       expect(isColorDark(0xFFCCCCCC), false);
 
       // 봄 테마의 밝은 색상들
-      expect(isColorDark(0xFFE9C9D4), false);
-      expect(isColorDark(0xFFE0E5A2), false);
-      expect(isColorDark(0xFFF1E8C1), false);
+      expect(isColorDark(0xFFF5C8C4), false);
+      expect(isColorDark(0xFFFFE7AB), false);
+      expect(isColorDark(0xFFC5DBA9), false);
+      expect(isColorDark(0xFFEBCFFF), false);
     });
 
     test('should handle medium brightness colors', () {
@@ -108,8 +123,9 @@ void main() {
       expect(getTextColorForBackground(0xFF000000), Colors.white);
 
       // 바다 테마의 어두운 색상들
-      expect(getTextColorForBackground(0xFF15253F), Colors.white);
-      expect(getTextColorForBackground(0xFF354E6B), Colors.white);
+      expect(getTextColorForBackground(0xFF02182E), Colors.white);
+      expect(getTextColorForBackground(0xFF022F56), Colors.white);
+      expect(getTextColorForBackground(0xFF314B6E), Colors.white);
     });
 
     test('should return black for light backgrounds', () {
@@ -117,8 +133,9 @@ void main() {
       expect(getTextColorForBackground(0xFFFFFFFF), Colors.black);
 
       // 봄 테마의 밝은 색상들
-      expect(getTextColorForBackground(0xFFE9C9D4), Colors.black);
-      expect(getTextColorForBackground(0xFFF1E8C1), Colors.black);
+      expect(getTextColorForBackground(0xFFF5C8C4), Colors.black);
+      expect(getTextColorForBackground(0xFFFFE7AB), Colors.black);
+      expect(getTextColorForBackground(0xFFC5DBA9), Colors.black);
     });
 
     test('should work for all theme colors', () {

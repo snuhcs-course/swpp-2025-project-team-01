@@ -7,7 +7,7 @@ import 'package:re_view/core/localization/app_localizations.dart';
 /// 이 화면은 텍스트 음성 변환 기능의 다양한 설정을 제공합니다.
 ///
 /// 제공 옵션:
-/// - 음성 성별: 남성/여성 (선택 시 "Hello, World!" 예시 음성 재생)
+/// - 음성 성별: 현재는 여성 음성만 지원 (선택 시 "Hello, World!" 예시 음성 재생)
 /// - TTS 음성 속도: 빠르게/보통/느리게 (선택 시 "Hello, World!" 예시 음성 재생)
 ///
 /// UI 구조:
@@ -28,7 +28,7 @@ class _TtsScreenState extends State<TtsScreen> {
   late final HiveManager _hiveManager;
 
   // TTS 설정 상태
-  String _gender = '남성'; // 음성 성별
+  String _gender = '여성'; // 음성 성별
 
   @override
   void initState() {
@@ -40,14 +40,25 @@ class _TtsScreenState extends State<TtsScreen> {
   /// HiveManager에서 저장된 TTS 설정 불러오기
   Future<void> _loadSettings() async {
     if (mounted) {
-      setState(() {
-        _gender = _hiveManager.settings.ttsGender;
-      });
+      final savedGender = _hiveManager.settings.ttsGender;
+      // 현재는 여성 음성만 지원되므로 저장된 값이 남성이면 여성으로 교체한다.
+      if (savedGender == '남성') {
+        await _hiveManager.updateTts(gender: '여성');
+      }
+      if (mounted) {
+        setState(() {
+          final updatedGender = _hiveManager.settings.ttsGender;
+          _gender = updatedGender == '남성' ? '여성' : updatedGender;
+        });
+      }
     }
   }
 
   /// 음성 성별 저장 및 예시 음성 재생
   Future<void> _saveGender(String value) async {
+    if (value == '남성' || value == 'Male') {
+      return;
+    }
     await _hiveManager.updateTts(gender: value);
     setState(() => _gender = value);
     _playPreviewTTS();
@@ -70,21 +81,21 @@ class _TtsScreenState extends State<TtsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isKorean = AppLocalizations.of(context).isKorean;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('TTS'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
+      backgroundColor: isDark
+          ? theme.scaffoldBackgroundColor
+          : const Color(0xFFF5F5F5),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -93,6 +104,17 @@ class _TtsScreenState extends State<TtsScreen> {
             _buildSectionTitle(isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender'),
             const SizedBox(height: 12),
             _buildGenderButtons(isKorean),
+            const SizedBox(height: 8),
+            Text(
+              isKorean
+                  ? '현재 여성 TTS 음성만 지원됩니다.'
+                  : 'Only female TTS voices are currently supported.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
           ],
         ),
       ),
@@ -100,27 +122,71 @@ class _TtsScreenState extends State<TtsScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
     );
+
+    return Text(title, style: textStyle);
   }
 
   Widget _buildGenderButtons(bool isKorean) {
     return Row(
       children: [
         Expanded(
-          child: _genderButton(isKorean ? '남성' : 'Male', _gender == '남성'),
+          child: _genderButton(
+            context,
+            isKorean ? '남성' : 'Male',
+            _gender == '남성',
+            false,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _genderButton(isKorean ? '여성' : 'Female', _gender == '여성'),
+          child: _genderButton(
+            context,
+            isKorean ? '여성' : 'Female',
+            _gender == '여성',
+            true,
+          ),
         ),
       ],
     );
   }
 
-  Widget _genderButton(String label, bool isSelected) {
+  Widget _genderButton(
+    BuildContext context,
+    String label,
+    bool isSelected,
+    bool isEnabled,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final backgroundColor = isDark
+        ? (isSelected
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainerHighest)
+        : (isSelected
+              ? Colors.white
+              : isEnabled
+              ? const Color(0xFFE0E0E0)
+              : const Color(0xFFE0E0E0).withValues(alpha: 0.6));
+    final borderColor = isDark
+        ? (isSelected ? colorScheme.primary : Colors.transparent)
+        : (isSelected ? const Color(0xFF424242) : Colors.transparent);
+    final textColor = isDark
+        ? (isSelected
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.onSurfaceVariant)
+        : (isSelected
+              ? Colors.black
+              : isEnabled
+              ? const Color(0xFF666666)
+              : const Color(0xFF999999));
+
     final actualValue = label == 'Male'
         ? '남성'
         : label == 'Female'
@@ -128,15 +194,15 @@ class _TtsScreenState extends State<TtsScreen> {
         : label;
 
     return GestureDetector(
-      onTap: () => _saveGender(actualValue),
+      onTap: isEnabled ? () => _saveGender(actualValue) : null,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : const Color(0xFFE0E0E0),
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: const Color(0xFF424242), width: 2)
-              : null,
+          border: isDark
+              ? Border.all(color: borderColor, width: isSelected ? 2 : 1)
+              : (isSelected ? Border.all(color: borderColor, width: 2) : null),
         ),
         child: Center(
           child: Text(
@@ -144,7 +210,7 @@ class _TtsScreenState extends State<TtsScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected ? Colors.black : const Color(0xFF666666),
+              color: textColor,
             ),
           ),
         ),

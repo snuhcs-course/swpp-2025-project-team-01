@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
@@ -11,9 +15,95 @@ import 'package:re_view/features/edit/fetch_lecture.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_background/flutter_background.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:uuid/uuid.dart';
+
+// coverage:ignore-start
+abstract class FileReadingService {
+  Future<Uint8List> readAsBytes(String path);
+  Future<String> readAsString(String path);
+}
+
+class FileReadingServiceImpl implements FileReadingService {
+  const FileReadingServiceImpl();
+
+  @override
+  Future<Uint8List> readAsBytes(String path) {
+    return File(path).readAsBytes();
+  }
+
+  @override
+  Future<String> readAsString(String path) {
+    return File(path).readAsString();
+  }
+}
 
 const String _serverAddress = '147.46.78.61';
 const String _port = '8001';
+
+typedef FetchLectureCallback =
+    Future<List<String>?> Function(
+      String slidePath,
+      AudioFileEntry audioFileEntry,
+      String titleText,
+      String lectureId,
+      int part,
+      int totalParts,
+      String serverAddress,
+      String port,
+      String langCode, {
+      http.Client? clientToClose,
+    });
+
+typedef ConcatenateAudioFilesCallback =
+    Future<String?> Function(
+      List<String> audioPaths,
+      String titleText,
+      String lectureId, {
+      Directory? dirOverride,
+    });
+
+typedef ConcatenateJsonFilesCallback =
+    Future<String?> Function(
+      List<String> jsonPaths,
+      List<int> pdfStarts,
+      String titleText,
+      String lectureId, {
+      Directory? dirOverride,
+    });
+
+typedef HttpClientFactory = http.Client Function();
+
+typedef FlutterBackgroundWrapper = FlutterBackgroundInterface;
+
+abstract class FlutterBackgroundInterface {
+  Future<bool> initialize({
+    required FlutterBackgroundAndroidConfig androidConfig,
+  });
+  Future<bool> enableBackgroundExecution();
+  Future<bool> disableBackgroundExecution();
+}
+
+class DefaultFlutterBackgroundWrapper implements FlutterBackgroundInterface {
+  @override
+  Future<bool> initialize({
+    required FlutterBackgroundAndroidConfig androidConfig,
+  }) {
+    return FlutterBackground.initialize(androidConfig: androidConfig);
+  }
+
+  @override
+  Future<bool> enableBackgroundExecution() {
+    return FlutterBackground.enableBackgroundExecution();
+  }
+
+  @override
+  Future<bool> disableBackgroundExecution() {
+    return FlutterBackground.disableBackgroundExecution();
+  }
+}
+
+typedef PdfDocumentFactory = PdfDocument Function(List<int> inputBytes);
+// coverage:ignore-end
 
 /// 강의 생성/편집 화면
 ///
@@ -26,7 +116,32 @@ const String _port = '8001';
 /// - 강의 녹음 파일(들) 업로드 (단일 또는 다중)
 /// - 다중 오디오 파일 모드에서 각 파일별 페이지 범위 설정
 class LectureFormScreen extends StatefulWidget {
-  const LectureFormScreen({super.key});
+  const LectureFormScreen({
+    super.key,
+    this.hiveManager,
+    this.lectureLoadingService,
+    this.fetchLectureCallback,
+    this.filePicker,
+    this.uuid,
+    this.concatenateAudioFilesCallback,
+    this.concatenateJsonFilesCallback,
+    this.httpClientFactory,
+    this.flutterBackground,
+    this.pdfDocumentFactory,
+    this.fileReadingService,
+  });
+
+  final HiveManager? hiveManager;
+  final LectureLoadingService? lectureLoadingService;
+  final FetchLectureCallback? fetchLectureCallback;
+  final FilePicker? filePicker;
+  final Uuid? uuid;
+  final ConcatenateAudioFilesCallback? concatenateAudioFilesCallback;
+  final ConcatenateJsonFilesCallback? concatenateJsonFilesCallback;
+  final HttpClientFactory? httpClientFactory;
+  final FlutterBackgroundInterface? flutterBackground;
+  final PdfDocumentFactory? pdfDocumentFactory;
+  final FileReadingService? fileReadingService;
 
   @override
   State<LectureFormScreen> createState() => _LectureFormScreenState();
@@ -34,7 +149,24 @@ class LectureFormScreen extends StatefulWidget {
 
 class _LectureFormScreenState extends State<LectureFormScreen> {
   // 데이터 저장소 인스턴스
-  final _hive = HiveManager.instance;
+  late final _hive = widget.hiveManager ?? HiveManager.instance;
+  late final _loadingService =
+      widget.lectureLoadingService ?? LectureLoadingService.instance;
+  late final _fetchLecture = widget.fetchLectureCallback ?? fetchLecture;
+  late final _filePicker = widget.filePicker ?? FilePicker.platform;
+  late final _uuid = widget.uuid ?? const Uuid();
+  late final _concatenateAudioFiles =
+      widget.concatenateAudioFilesCallback ?? concatenateAudioFiles;
+  late final _concatenateJsonFiles =
+      widget.concatenateJsonFilesCallback ?? concatenateJsonFiles;
+  late final _httpClientFactory =
+      widget.httpClientFactory ?? (() => http.Client());
+  late final _flutterBackground =
+      widget.flutterBackground ?? DefaultFlutterBackgroundWrapper();
+  late final _pdfDocumentFactory =
+      widget.pdfDocumentFactory ?? ((bytes) => PdfDocument(inputBytes: bytes));
+  late final _fileReadingService =
+      widget.fileReadingService ?? const FileReadingServiceImpl();
 
   // 텍스트 입력 컨트롤러
   final _weekController = TextEditingController();
@@ -46,8 +178,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 선택된 과목 ID (null = 선택 안 함)
   String? _selectedSubjectId;
 
+  // 선택된 강의 언어
+  late String _selectedLanguage = AppLocalizations.of(context).isKorean
+      ? 'ko'
+      : 'en';
+
   // 업로드된 슬라이드 PDF 파일 경로
   String? _slidePdfPath;
+
+  // 업로드된 슬라이드의 총 페이지 수 (가능한 경우)
+  int? _pdfPageCount;
 
   // 오디오 파일 엔트리 리스트 (최소 1개 시작)
   final List<AudioFileEntry> _audioFiles = [AudioFileEntry()];
@@ -58,17 +198,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 강의 생성 중 여부 (로딩 상태)
   bool _isCreating = false;
 
-  // HTTP 클라이언트 (취소를 위해)
-  http.Client? _httpClient;
-  bool _closeClientOnDispose = true;
-
   @override
   void dispose() {
-    // HTTP 클라이언트 정리
-    if (_closeClientOnDispose) {
-      _httpClient?.close();
-    }
-
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
     _titleController.dispose();
@@ -120,6 +251,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 _buildSubjectDropdown(l10n, subjects),
                 const SizedBox(height: 20),
 
+                // ========== 강의 언어 선택 섹션 ==========
+                _buildSectionTitle(l10n.isKorean ? '강의 언어' : 'Spoken Language'),
+                const SizedBox(height: 8),
+                _buildLanguageDropdown(l10n, subjects),
+                const SizedBox(height: 20),
+
                 // ========== 강의 주차 입력 섹션 ==========
                 _buildSectionTitle(l10n.isKorean ? '강의 주차' : 'Lecture Week'),
                 const SizedBox(height: 8),
@@ -169,14 +306,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildSectionTitle(String title) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Text(
           title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontSize: 18),
         );
       },
     );
@@ -187,18 +321,19 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildSubjectDropdown(AppLocalizations l10n, List<dynamic> subjects) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade700
-            : Colors.grey.shade300;
-        final textColor = isDark ? Colors.white : Colors.black87;
+        final theme = Theme.of(context);
+        final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
 
         return Container(
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: borderColor),
+            border: theme.inputDecorationTheme.border != null
+                ? Border.fromBorderSide(
+                    (theme.inputDecorationTheme.border as OutlineInputBorder)
+                        .borderSide,
+                  )
+                : Border.all(color: theme.colorScheme.outline),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButtonHideUnderline(
@@ -207,10 +342,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                   ? null
                   : _selectedSubjectId,
               isExpanded: true,
-              icon: Icon(Icons.arrow_drop_down, size: 28, color: textColor),
+              icon: Icon(
+                Icons.arrow_drop_down,
+                size: 28,
+                color: theme.colorScheme.onSurface,
+              ),
               hint: Text(
                 l10n.isKorean ? '선택 안 함' : 'Not Selected',
-                style: TextStyle(fontSize: 16, color: textColor),
+                style: theme.textTheme.bodyLarge,
               ),
               dropdownColor: cardColor,
               items: [
@@ -219,7 +358,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                   value: null,
                   child: Text(
                     l10n.isKorean ? '선택 안 함' : 'Not Selected',
-                    style: TextStyle(fontSize: 16, color: textColor),
+                    style: theme.textTheme.bodyLarge,
                   ),
                 ),
                 // 기존 과목 리스트 (미분류 제외)
@@ -233,7 +372,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                         value: (s as dynamic).id as String,
                         child: Text(
                           (s as dynamic).title as String,
-                          style: TextStyle(fontSize: 16, color: textColor),
+                          style: theme.textTheme.bodyLarge,
                         ),
                       ),
                     ),
@@ -250,42 +389,69 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     );
   }
 
+  /// 언어 선택 드롭다운 위젯
+  Widget _buildLanguageDropdown(AppLocalizations l10n, List<dynamic> subjects) {
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
+
+        String labelFor(String code) => (code == 'ko' ? '한국어' : 'English');
+
+        return Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(8),
+            border: theme.inputDecorationTheme.border != null
+                ? Border.fromBorderSide(
+                    (theme.inputDecorationTheme.border as OutlineInputBorder)
+                        .borderSide,
+                  )
+                : Border.all(color: theme.colorScheme.outline),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedLanguage,
+              isExpanded: true,
+              icon: Icon(
+                Icons.arrow_drop_down,
+                size: 28,
+                color: theme.colorScheme.onSurface,
+              ),
+              dropdownColor: cardColor,
+              items: (l10n.isKorean ? ['ko', 'en'] : ['en', 'ko'])
+                  .map(
+                    (code) => DropdownMenuItem<String>(
+                      value: code,
+                      child: Text(
+                        labelFor(code),
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedLanguage = value!;
+                });
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   /// 강의 주차 입력 텍스트 필드
   Widget _buildWeekTextField() {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade400;
-        final focusColor = isDark ? Colors.white : Colors.black87;
-        final textColor = isDark ? Colors.white : Colors.black87;
-
         return TextField(
           controller: _weekController,
-          style: TextStyle(color: textColor),
           decoration: InputDecoration(
             hintText: 'Ex. Week 1-1',
-            hintStyle: TextStyle(color: Colors.grey.shade600),
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: focusColor, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
+            border: const OutlineInputBorder(),
           ),
         );
       },
@@ -296,37 +462,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildTitleTextField() {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade400;
-        final focusColor = isDark ? Colors.white : Colors.black87;
-        final textColor = isDark ? Colors.white : Colors.black87;
-
         return TextField(
           controller: _titleController,
-          style: TextStyle(color: textColor),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: BorderSide(color: focusColor, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
         );
       },
     );
@@ -336,11 +474,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildAudioFilesHeader(AppLocalizations l10n) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final iconColor = isDark ? Colors.white70 : Colors.grey.shade700;
-        final disabledColor = isDark
-            ? Colors.grey.withValues(alpha: 0.3)
-            : Colors.grey.withValues(alpha: 0.3);
+        final theme = Theme.of(context);
 
         return Row(
           children: [
@@ -351,15 +485,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             ),
             // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
             IconButton(
-              icon: Icon(
-                Icons.remove_circle_outline,
-                color: _canRemoveAudioFile() ? iconColor : disabledColor,
-              ),
+              icon: Icon(Icons.remove_circle_outline),
+              color: _canRemoveAudioFile()
+                  ? theme.colorScheme.onSurface
+                  : theme.disabledColor,
               onPressed: _canRemoveAudioFile() ? _removeLastAudioFile : null,
             ),
             // 오디오 파일 추가 버튼
             IconButton(
-              icon: Icon(Icons.add_circle_outline, color: iconColor),
+              icon: const Icon(Icons.add_circle_outline),
               onPressed: _addAudioFile,
             ),
           ],
@@ -397,26 +531,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   }) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade700
-            : Colors.grey.shade300;
-        final textColor = isDark ? Colors.white : Colors.black87;
+        final theme = Theme.of(context);
+        final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
 
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: theme.cardTheme.shape != null
+                ? null
+                : Border.all(color: theme.colorScheme.outline),
           ),
           child: Row(
             children: [
@@ -425,7 +550,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 angle: 0.785, // 45도 회전
                 child: Icon(
                   Icons.attach_file,
-                  color: isDark ? Colors.white70 : Colors.grey.shade600,
+                  color: theme.colorScheme.onSurfaceVariant,
                   size: 24,
                 ),
               ),
@@ -434,9 +559,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: label == '...' ? Colors.grey.shade400 : textColor,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: label == '...'
+                        ? theme.colorScheme.onSurfaceVariant
+                        : theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -445,23 +571,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               // 추가 버튼
               OutlinedButton(
                 onPressed: onTap,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  side: BorderSide(color: borderColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
                 child: Text(
                   AppLocalizations.of(context).isKorean ? '추가' : 'Add',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
                 ),
               ),
             ],
@@ -502,33 +613,43 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildPageRangeInputs(AudioFileEntry entry, AppLocalizations l10n) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final textColor = isDark ? Colors.white70 : Colors.grey.shade600;
+        final theme = Theme.of(context);
+
+        const double pageFieldWidth = 70;
 
         return Padding(
           padding: const EdgeInsets.only(left: 40),
           child: Row(
             children: [
-              Text(
-                l10n.isKorean ? '페이지 설정' : 'Page Range',
-                style: TextStyle(fontSize: 14, color: textColor),
-              ),
-              const SizedBox(width: 16),
-              // 시작 페이지 입력
-              Expanded(child: _buildPageTextField(entry.startPageController)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  '-',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.isKorean ? '페이지 설정' : 'Page Range',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: pageFieldWidth,
+                        child: _buildPageTextField(entry.startPageController),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('-', style: theme.textTheme.titleLarge),
+                      ),
+                      SizedBox(
+                        width: pageFieldWidth,
+                        child: _buildPageTextField(entry.endPageController),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              // 끝 페이지 입력
-              Expanded(child: _buildPageTextField(entry.endPageController)),
             ],
           ),
         );
@@ -540,38 +661,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildPageTextField(TextEditingController controller) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
-        final borderColor = isDark
-            ? Colors.grey.shade600
-            : Colors.grey.shade300;
-        final focusColor = isDark ? Colors.white : Colors.blue;
-
         return TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: cardColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
-              borderSide: BorderSide(color: focusColor, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 12,
-            ),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
         );
       },
     );
@@ -581,34 +675,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Widget _buildBottomCreateButton(AppLocalizations l10n) {
     return Builder(
       builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final backgroundColor = isDark
-            ? const Color(0xFF212121) // 다크모드: 배경색과 동일
-            : Colors.white; // 라이트모드: 흰색
+        final theme = Theme.of(context);
 
         return SafeArea(
           child: Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
+            decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
             child: SizedBox(
               width: double.infinity,
               height: 54,
               child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: isDark ? Colors.white : Colors.black87,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
                 onPressed: _isCreating ? null : _createLecture,
                 child: _isCreating
                     ? SizedBox(
@@ -617,17 +693,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation(
-                            isDark ? Colors.black : Colors.white,
+                            theme.colorScheme.onPrimary,
                           ),
                         ),
                       )
                     : Text(
                         l10n.isKorean ? '생성하기' : 'Create',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.black : Colors.white,
-                        ),
+                        style: theme.textTheme.titleMedium,
                       ),
               ),
             ),
@@ -663,7 +735,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 슬라이드 PDF 파일 선택
   Future<void> _pickSlidePdf() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await _filePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
@@ -673,14 +745,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // PDF 페이지 수 확인
       try {
-        final pdfFile = File(pdfPath);
-        final bytes = await pdfFile.readAsBytes();
-        final document = PdfDocument(inputBytes: bytes);
+        final bytes = await _fileReadingService.readAsBytes(pdfPath);
+        final document = _pdfDocumentFactory(bytes);
         final pageCount = document.pages.count;
         document.dispose();
 
         setState(() {
           _slidePdfPath = pdfPath;
+          _pdfPageCount = pageCount;
 
           // 첫 번째 오디오 파일의 페이지 범위를 자동으로 설정
           if (_audioFiles.isNotEmpty) {
@@ -692,6 +764,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         // PDF 로드 실패 시 경로만 저장
         setState(() {
           _slidePdfPath = pdfPath;
+          _pdfPageCount = null;
         });
         _showToast(
           l10n.isKorean
@@ -704,14 +777,27 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 선택
   Future<void> _pickAudioFile(int index) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await _filePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['m4a', 'mp3', 'wav', 'aac', 'ogg', 'flac'],
+      allowedExtensions: ['m4a', 'm4b'],
+      allowMultiple: false,
     );
 
     if (result != null && result.files.single.path != null) {
+      final filePath = result.files.single.path!;
+
+      // m4a 파일만 허용
+      if (!filePath.toLowerCase().endsWith('.m4a')) {
+        _showToast(
+          l10n.isKorean
+              ? 'm4a 형식의 파일만 업로드 가능합니다'
+              : 'Only m4a files are allowed',
+        );
+        return;
+      }
+
       setState(() {
-        _audioFiles[index].filePath = result.files.single.path;
+        _audioFiles[index].filePath = filePath;
       });
     }
   }
@@ -847,8 +933,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     }
 
     // 페이지 범위 검증
-    // 첫 번째 오디오의 끝 페이지 = PDF 전체 페이지 수
-    int? totalPdfPages;
+    final pdfTotalPages = _pdfPageCount;
+    int? fallbackTotalPages;
 
     for (int i = 0; i < _audioFiles.length; i++) {
       final entry = _audioFiles[i];
@@ -899,16 +985,32 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         return;
       }
 
-      // 첫 번째 오디오의 끝 페이지를 PDF 전체 페이지 수로 저장
-      if (i == 0) {
-        totalPdfPages = endPage;
-      } else {
-        // 두 번째 오디오부터는 PDF 전체 페이지 수를 초과하지 않는지 검증
-        if (totalPdfPages != null && endPage > totalPdfPages) {
+      if (pdfTotalPages != null) {
+        if (startPage > pdfTotalPages) {
           _showToast(
             l10n.isKorean
-                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($totalPdfPages)를 초과합니다'
-                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($totalPdfPages)',
+                ? '${i + 1}번째 오디오의 시작 페이지($startPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
+                : 'Start page ($startPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)',
+          );
+          return;
+        }
+        if (endPage > pdfTotalPages) {
+          _showToast(
+            l10n.isKorean
+                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
+                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)',
+          );
+          return;
+        }
+      } else {
+        // PDF 페이지 수를 확인하지 못했을 때는 첫 오디오의 설정 범위를 기준으로 검증
+        if (fallbackTotalPages == null) {
+          fallbackTotalPages = endPage;
+        } else if (endPage > fallbackTotalPages) {
+          _showToast(
+            l10n.isKorean
+                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($fallbackTotalPages)를 초과합니다'
+                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($fallbackTotalPages)',
           );
           return;
         }
@@ -918,42 +1020,44 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     // 2. 로딩 시작
     setState(() => _isCreating = true);
     final titleText = _titleController.text.trim();
+    final langCode = _selectedLanguage;
 
     // Enable background execution
-    final androidConfig = FlutterBackgroundAndroidConfig(
-      notificationTitle: 'Generating Lecture',
-      notificationText: 'Processing: $titleText',
-      notificationImportance: AndroidNotificationImportance.high,
-      enableWifiLock: true,
-    );
-
     bool backgroundEnabled = false;
     try {
-      backgroundEnabled = await FlutterBackground.initialize(
-        androidConfig: androidConfig,
-      );
-      if (backgroundEnabled) {
-        await FlutterBackground.enableBackgroundExecution();
+      if (Platform.isAndroid) {
+        final androidConfig = FlutterBackgroundAndroidConfig(
+          notificationTitle: 'Generating Lecture',
+          notificationText: 'Processing: $titleText',
+          notificationImportance: AndroidNotificationImportance.high,
+          enableWifiLock: true,
+        );
+        backgroundEnabled = await _flutterBackground.initialize(
+          androidConfig: androidConfig,
+        );
+        if (backgroundEnabled) {
+          await _flutterBackground.enableBackgroundExecution();
+        }
       }
+      // iOS doesn't need FlutterBackground - background modes in Info.plist handle it
     } catch (e) {
       debugPrint('Failed to enable background execution: $e');
       // Continue anyway - app will still work in foreground
     }
 
-    // HTTP 클라이언트 생성
-    _httpClient = http.Client();
-
     // 로딩 서비스 시작 및 취소 콜백 등록
     final effectiveAudios = _audioFiles
         .where((e) => (e.filePath ?? '').isNotEmpty)
         .toList();
-    LectureLoadingService.instance.startLoading(
-      titleText,
-      effectiveAudios.length,
-    );
-    LectureLoadingService.instance.setOnCancel(() {
-      _httpClient?.close();
-      _closeClientOnDispose = true;
+    final clients = <http.Client?>[];
+    for (int i = 0; i < effectiveAudios.length; i++) {
+      clients.add(_httpClientFactory());
+    }
+    _loadingService.startLoading(titleText, effectiveAudios.length);
+    _loadingService.setOnCancel(() {
+      for (int i = 0; i < effectiveAudios.length; i++) {
+        clients[i]?.close();
+      }
       if (mounted) {
         setState(() => _isCreating = false);
         _showToast(
@@ -961,20 +1065,24 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
       }
       // Disable background execution when cancelled
-      if (backgroundEnabled) {
-        FlutterBackground.disableBackgroundExecution();
+      if (backgroundEnabled && Platform.isAndroid) {
+        unawaited(
+          Future.delayed(const Duration(seconds: 1), () async {
+            await _flutterBackground.disableBackgroundExecution();
+          }),
+        );
       }
     });
 
+    // 3. 서버에 강의 생성 요청
+    final lectureId = _uuid.v4();
     try {
-      // 3. 백엔드로 전송
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       final weekText = _weekController.text.trim();
       final slidePath = _slidePdfPath!;
 
       // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
       if (mounted) {
-        _closeClientOnDispose = false;
         final navigator = Navigator.of(context);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           navigator.pushNamedAndRemoveUntil(
@@ -995,16 +1103,20 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         originalAudioPaths.add(audioFileEntry.filePath!);
 
         futures.add(
-          fetchLecture(
-            slidePath,
-            audioFileEntry,
-            titleText,
-            i,
-            effectiveAudios.length,
-            _serverAddress,
-            _port,
-            onProgress,
-            clientToClose: _httpClient,
+          Future.delayed(
+            i == 1 ? Duration.zero : Duration(seconds: 10),
+            () => _fetchLecture(
+              slidePath,
+              audioFileEntry,
+              titleText,
+              lectureId,
+              i,
+              effectiveAudios.length,
+              _serverAddress,
+              _port,
+              langCode,
+              clientToClose: clients[i - 1],
+            ),
           ),
         );
 
@@ -1018,34 +1130,57 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // Async calls in parallel
       final results = await Future.wait(futures);
-      for (int i = 0; i < effectiveAudios.length; i++) {
-        if (results[i] == null) {
-          _showToast(
-            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-          );
-          return;
-        } else {
-          ttsAudioPaths.add(results[i]![0]);
+      final isSuccess = !results.contains(null);
+      if (isSuccess) {
+        for (int i = 0; i < results.length; i++) {
+          if (langCode == 'en') {
+            ttsAudioPaths.add(results[i]![0]); // TTS only for English lectures
+          }
           jsonPaths.add(results[i]![1]);
         }
+      } else {
+        for (int i = 0; i < results.length; i++) {
+          if (results[i] != null) {
+            if (langCode == 'en') {
+              await File(results[i]![0]).delete();
+            }
+            await File(results[i]![1]).delete();
+          }
+        }
+        _showToast(
+          l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+        );
+        return;
       }
 
       // 4. 음성 파일이 여러 개일 경우 통합 처리
       String? originalAudioPath;
-      String? ttsAudioPath;
+      String? ttsAudioPath; // null for Korean lectures
       String? jsonPath;
       int? duration;
 
       if (effectiveAudios.length > 1) {
-        originalAudioPath = await concatenateAudioFiles(
+        originalAudioPath = await _concatenateAudioFiles(
           originalAudioPaths,
           titleText,
+          lectureId,
         );
-        ttsAudioPath = await concatenateAudioFiles(ttsAudioPaths, titleText);
-        jsonPath = await concatenateJsonFiles(jsonPaths, pdfStarts, titleText);
+        if (langCode == 'en') {
+          ttsAudioPath = await _concatenateAudioFiles(
+            ttsAudioPaths,
+            titleText,
+            lectureId,
+          );
+        }
+        jsonPath = await _concatenateJsonFiles(
+          jsonPaths,
+          pdfStarts,
+          titleText,
+          lectureId,
+        );
 
         if (originalAudioPath == null ||
-            ttsAudioPath == null ||
+            (ttsAudioPath == null && langCode == 'en') ||
             jsonPath == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
@@ -1053,34 +1188,94 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           return;
         }
       } else {
-        originalAudioPath = originalAudioPaths[0];
-        ttsAudioPath = ttsAudioPaths[0];
+        // 단일 오디오 모드: 원본 오디오를 documentsDir로 복사
+        final sourceAudioPath = originalAudioPaths[0];
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final extension = path.extension(sourceAudioPath);
+        final permanentAudioPath =
+            '${documentsDir.path}/$lectureId/$titleText$extension';
+
+        try {
+          // 원본 오디오를 영구 저장소로 복사
+          await File(sourceAudioPath).copy(permanentAudioPath);
+          originalAudioPath = permanentAudioPath;
+        } catch (e) {
+          debugPrint('Failed to copy original audio to permanent storage: $e');
+          _showToast(
+            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
+          );
+          return;
+        }
+        if (langCode == 'en') {
+          ttsAudioPath = ttsAudioPaths[0];
+        }
         jsonPath = jsonPaths[0];
       }
 
       final jsonFile = File(jsonPath);
-      final jsonData =
-          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
-      final metadata = jsonData['metadata'] as Map<String, dynamic>;
-      duration = metadata['total_duration'] as int;
+      final List<dynamic> jsonData =
+          jsonDecode(await jsonFile.readAsString()) as List<dynamic>;
+      final tsList = jsonData.cast<Map<String, dynamic>>();
+      duration = tsList.last['tts_end_time'] as int;
 
       // 5. 강의 구조체 생성
       final generatedLecture = HiveLecture(
-        id: 'lecture_${DateTime.now().millisecondsSinceEpoch}',
+        id: lectureId,
         subjectId: subjectId,
         weekLabel: weekText,
         title: titleText,
         duration: duration,
         slidePath: _slidePdfPath,
         originalAudioPath: originalAudioPath,
-        ttsAudioPath: ttsAudioPath,
+        ttsAudioPath: ttsAudioPath ?? originalAudioPath,
         jsonPath: jsonPath,
+        langCode: langCode,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       // 6. Hive에 강의 저장
       await _hive.addLecture(generatedLecture);
+
+      // 6-1. PDF를 영구 저장소로 복사 및 경로 업데이트
+      if (_slidePdfPath != null) {
+        try {
+          final documentsDir = await getApplicationDocumentsDirectory();
+          final permanentPdfPath =
+              '${documentsDir.path}/$lectureId/$titleText.pdf';
+
+          // PDF를 영구 저장소로 복사
+          await File(_slidePdfPath!).copy(permanentPdfPath);
+
+          // Hive에 저장된 경로를 영구 저장소 경로로 업데이트
+          final updatedLecture = generatedLecture.copyWith(
+            slidePath: permanentPdfPath,
+            updatedAt: DateTime.now(),
+          );
+          await _hive.updateLecture(updatedLecture);
+
+          // File_picker로 선택한 원본 PDF 삭제
+          try {
+            await File(_slidePdfPath!).delete();
+          } catch (e) {
+            debugPrint('Failed to delete temporary PDF: $e');
+          }
+        } catch (e) {
+          debugPrint('Failed to copy PDF to permanent storage: $e');
+        }
+      }
+
+      // 6-2. File_picker 캐시 폴더 전체 정리
+      try {
+        final tempDir = await getTemporaryDirectory();
+        final pickerDir = Directory('${tempDir.path}/file_picker');
+        if (pickerDir.existsSync()) {
+          await pickerDir.delete(recursive: true);
+          debugPrint('Deleted file_picker cache directory: ${pickerDir.path}');
+        }
+      } catch (e) {
+        debugPrint('Failed to delete file_picker cache: $e');
+      }
 
       // 7. 과목에 강의 추가
       if (_selectedSubjectId != null) {
@@ -1098,9 +1293,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // 강의 생성 완료 - lectureId 전달
-      LectureLoadingService.instance.completeLoading(
-        lectureId: generatedLecture.id,
-      );
+      _loadingService.completeLoading(lectureId: generatedLecture.id);
 
       // 7. 성공 메시지
       _showToast(
@@ -1108,7 +1301,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       );
     } catch (e) {
       // 8. 에러 처리
-      LectureLoadingService.instance.hideLoading();
+      _loadingService.hideLoading();
       if (mounted) {
         _showToast(
           l10n.isKorean
@@ -1118,14 +1311,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
     } finally {
       // 9. 로딩 종료 및 클라이언트 정리
-      _httpClient?.close();
-      _httpClient = null;
-      _closeClientOnDispose = true;
+      for (int i = 0; i < effectiveAudios.length; i++) {
+        clients[i]?.close();
+      }
 
       // Disable background execution when task completes
-      if (backgroundEnabled) {
+      if (backgroundEnabled && Platform.isAndroid) {
         try {
-          await FlutterBackground.disableBackgroundExecution();
+          await _flutterBackground.disableBackgroundExecution();
         } catch (e) {
           debugPrint('Failed to disable background execution: $e');
         }

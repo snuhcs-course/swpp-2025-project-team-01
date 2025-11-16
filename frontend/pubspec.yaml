@@ -55,6 +55,11 @@ dependencies:
   test: ^1.26.2
   flutter_background: ^1.3.0
   ffmpeg_kit_flutter_new: ^4.0.0
+  hive_generator: ^2.0.1
+  native_device_orientation: ^2.0.2
+  flutter_staggered_grid_view: ^0.7.0
+  uuid: ^4.5.2
+  reorderables: ^0.6.0
 
 dev_dependencies:
   flutter_test:
@@ -71,10 +76,12 @@ dev_dependencies:
 
   # Hive code generation
   build_runner: ^2.4.13
-  hive_generator: ^2.0.1
 
   # Mockito for testing
   mockito: ^5.4.4
+
+  # Fake async for testing
+  fake_async: ^1.3.1
 
   # App icon generator
   flutter_launcher_icons: ^0.13.1
@@ -90,22 +97,15 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/images/app_icon.png
     - assets/images/logo.png
     - assets/images/loading_background.png
     - assets/images/loading_complete.png
     - assets/images/loading_character.png
-    - assets/tutorial/tutorial_step1.png
-    - assets/tutorial/tutorial_step2.png
-    - assets/tutorial/tutorial_step3.png
-    - assets/tutorial/tutorial_step4.png
-    - assets/tutorial/tutorial_step5.png
-    - assets/tutorial/tutorial_character.png
-    - assets/tutorial/tutorial_speech_bubble.png
+    - assets/images/light_mode.png
+    - assets/images/dark_mode.png
     - assets/lectures/lec_demo_001/
     - assets/lectures/lec_demo_002/
-    - assets/lectures/lec_demo_003/
-    - assets/lectures/lec_demo_004/
-    - assets/lectures/lec_demo_005/
     - assets/data/subjects.json
     - assets/data/tags.json
 

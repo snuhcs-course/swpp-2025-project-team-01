@@ -1,8 +1,8 @@
 {
     "lectureId": "lec_demo_002",
     "subjectId": "s1",
-    "title": "Week 1-1: Course Overview",
-    "weekLabel": "Week 1-1",
-    "duration": 3600000,
-    "slides": 10
-  }
+    "title": "리뷰 사용 설명서",
+    "weekLabel": "튜토리얼(ko)",
+    "duration": 2140,
+    "slides": 6
+}

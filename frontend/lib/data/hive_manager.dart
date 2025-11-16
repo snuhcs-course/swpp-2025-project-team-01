@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -39,8 +40,6 @@ class HiveManager extends ChangeNotifier {
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
-
-  bool get hasTutorialCompleted => settings.hasCompletedTutorial;
 
   // ========== 초기화 ==========
 
@@ -120,16 +119,22 @@ class HiveManager extends ChangeNotifier {
     final tags = await _loadDefaultTags();
     final lectures = await _loadDemoLectures(subjects);
 
-    // 미분류 과목 자동 생성
-    final uncategorizedSubject = HiveSubject(
-      id: 'uncategorized',
-      title: 'Uncategorized', // UI에서 다국어 처리됨
-      favorite: false,
-      tagIds: [],
-      lectureIds: [],
-      isUncategorized: true,
-    );
-    subjects['uncategorized'] = uncategorizedSubject;
+    // 미분류 과목이 없으면 자동 생성
+    if (!subjects.containsKey('uncategorized')) {
+      final uncategorizedSubject = HiveSubject(
+        id: 'uncategorized',
+        title: 'Uncategorized', // UI에서 다국어 처리됨
+        favorite: false,
+        tagIds: [],
+        lectureIds: [],
+        isUncategorized: true,
+      );
+      subjects['uncategorized'] = uncategorizedSubject;
+    } else {
+      // subjects.json에 uncategorized가 있으면 isUncategorized 플래그 추가
+      final existing = subjects['uncategorized']!;
+      subjects['uncategorized'] = existing.copyWith(isUncategorized: true);
+    }
 
     _appData = AppData(
       settings: AppSettings(),
@@ -283,6 +288,7 @@ class HiveManager extends ChangeNotifier {
     List<String> filterTagIds = const [],
   }) {
     List<HiveSubject> list;
+    final hasActiveFilters = favoritesOnly || filterTagIds.isNotEmpty;
 
     // 미분류 과목과 일반 과목 분리
     final normalSubjects = subjects.values.where((s) => !s.isUncategorized);
@@ -321,8 +327,10 @@ class HiveManager extends ChangeNotifier {
           .toList();
     }
 
-    // 미분류 과목을 항상 마지막에 추가 (필터링 영향 받지 않음)
-    list.addAll(uncategorizedSubjects);
+    // 필터 미적용 시에만 미분류 과목을 마지막에 추가
+    if (!hasActiveFilters) {
+      list.addAll(uncategorizedSubjects);
+    }
 
     return list;
   }
@@ -375,6 +383,10 @@ class HiveManager extends ChangeNotifier {
   }
 
   Future<void> deleteSubject(String id) async {
+    final subject = getSubject(id)!;
+    for (final lectureId in subject.lectureIds) {
+      await deleteLecture(lectureId);
+    }
     subjects.remove(id);
     subjectOrder.remove(id); // 순서 목록에서도 제거
     await _save();
@@ -397,6 +409,38 @@ class HiveManager extends ChangeNotifier {
   Future<void> updateSubjectOrder(List<String> newOrder) async {
     _appData?.subjectOrder.clear();
     _appData?.subjectOrder.addAll(newOrder);
+    await _save();
+  }
+
+  /// 과목 내 강의 순서 변경
+  Future<void> reorderLecture(
+    String subjectId,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final subject = getSubject(subjectId)!;
+
+    // Make a mutable copy of the current order
+    final ids = List<String>.from(subject.lectureIds);
+    if (ids.isEmpty) {
+      return;
+    }
+
+    if (oldIndex < 0 || oldIndex >= ids.length) {
+      return;
+    }
+
+    final moved = ids.removeAt(oldIndex);
+    if (newIndex < 0) {
+      newIndex = 0;
+    }
+    if (newIndex > ids.length) {
+      newIndex = ids.length;
+    }
+
+    ids.insert(newIndex, moved);
+    subject.lectureIds = ids;
+
     await _save();
   }
 
@@ -581,6 +625,16 @@ class HiveManager extends ChangeNotifier {
     // 모든 과목에서 제거
     for (final subject in subjects.values) {
       if (subject.lectureIds.contains(lectureId)) {
+        final lecture = getLecture(lectureId)!;
+        try {
+          await File(lecture.originalAudioPath).delete();
+          if (lecture.langCode == 'en') {
+            await File(lecture.ttsAudioPath).delete();
+          }
+          await File(lecture.jsonPath!).delete();
+        } catch (_) {
+          // Ignore deletion errors
+        }
         final updatedIds = subject.lectureIds
             .where((id) => id != lectureId)
             .toList();
@@ -637,21 +691,5 @@ class HiveManager extends ChangeNotifier {
 
     _appData = null;
     _isInitialized = false;
-  }
-
-  // ========== 튜토리얼 관련 ==========
-
-  // 튜토리얼 완료 상태 업데이트
-  Future<void> completeTutorial() async {
-    settings.hasCompletedTutorial = true;
-    await _save(); // Hive에 저장
-    notifyListeners(); // UI 업데이트 알림
-  }
-
-  // 개발/테스트용: 튜토리얼 리셋
-  Future<void> resetTutorial() async {
-    settings.hasCompletedTutorial = false;
-    await _save();
-    notifyListeners();
   }
 }

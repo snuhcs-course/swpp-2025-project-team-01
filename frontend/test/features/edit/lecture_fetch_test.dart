@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/widgets.dart';
+import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -25,7 +26,7 @@ void main() {
   group('Split PDF', () {
     test('Success', () async {
       final inputFilePath =
-          'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf';
+          'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf';
       final bytes = await File(inputFilePath).readAsBytes();
       final originalPdf = PdfDocument(inputBytes: bytes);
       final originalSize = originalPdf.pages[2].size;
@@ -112,6 +113,8 @@ void main() {
         '127.0.0.1',
         '8080',
         onProgress,
+        'ko',
+        false,
         fakeClient: fakeClient,
         endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
@@ -128,7 +131,7 @@ void main() {
     test('Fail on endpoint', () async {
       // Minimal fake inputs
       final slide = File(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
       );
       final audio = await tempFile('audio.m4a', [4, 5, 6]);
 
@@ -155,42 +158,47 @@ void main() {
       }
 
       // Act: call with injected client + endpointOverride so we don’t depend on host/port
-      await expectLater(
-        () async => requestLecture(
-          slide.path,
-          audioEntry,
-          'My Lecture',
-          0,
-          1,
-          '127.0.0.1',
-          '8080',
-          onProgress,
-          endpointOverride: Uri.parse(
-            'http://local.test/api/synchronize/stream',
-          ),
-        ),
-        throwsA(anything),
+      final service = LectureLoadingService.instance;
+
+      final resultSingle = await requestLecture(
+        slide.path,
+        audioEntry,
+        'My Lecture',
+        0,
+        1,
+        '127.0.0.1',
+        '8080',
+        onProgress,
+        'ko',
+        true,
+        endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
-      await expectLater(
-        () async => requestLecture(
-          slide.path,
-          audioEntry,
-          'My Lecture',
-          0,
-          2,
-          '127.0.0.1',
-          '8080',
-          onProgress,
-          endpointOverride: Uri.parse(
-            'http://local.test/api/synchronize/stream',
-          ),
-        ),
-        throwsA(anything),
+      expect(resultSingle, isNull);
+      expect(service.hasError, isTrue);
+      service.hideLoading();
+
+      final resultMulti = await requestLecture(
+        slide.path,
+        audioEntry,
+        'My Lecture',
+        0,
+        2,
+        '127.0.0.1',
+        '8080',
+        onProgress,
+        'ko',
+        true,
+        endpointOverride: Uri.parse('http://local.test/api/synchronize/stream'),
       );
+      expect(resultMulti, isNull);
+      expect(service.hasError, isTrue);
+      service.hideLoading();
+
+      expect(progressEvents, isEmpty);
 
       try {
         File(
-          'assets/lectures/lec_demo_002/lec_demo_002_slides_tmp0.pdf',
+          'assets/lectures/lec_demo_001/lec_demo_001_slides_tmp0.pdf',
         ).delete();
       } catch (_) {
         // Ignore deletion errors
@@ -225,6 +233,7 @@ void main() {
         2,
         'localhost',
         '8080',
+        false,
         fakeClient: mock,
         tempDirOverride: temp,
       );
@@ -250,6 +259,7 @@ void main() {
         0,
         'localhost',
         '8080',
+        false,
         fakeClient: mock,
         tempDirOverride: temp,
       );
@@ -284,14 +294,15 @@ void main() {
       await unzipResult(
         zipFile.path,
         'MyLecture',
+        'lecId',
         3,
         documentsDirOverride: docsDir,
         deleteZip: true,
       );
 
       // Assert: files are renamed to MyLecture_3.<ext> in docsDir
-      final outPdf = File('${docsDir.path}/MyLecture_3.pdf');
-      final outJson = File('${docsDir.path}/MyLecture_3.json');
+      final outPdf = File('${docsDir.path}/lecId/MyLecture_3.pdf');
+      final outJson = File('${docsDir.path}/lecId/MyLecture_3.json');
 
       expect(outPdf.existsSync(), isTrue);
       expect(outJson.existsSync(), isTrue);
@@ -305,7 +316,7 @@ void main() {
     test('Fail', () async {
       final missing = File('/does/not/exist.zip').path;
       await expectLater(
-        () => unzipResult(missing, 'A', 0, deleteZip: false),
+        () => unzipResult(missing, 'A', 'lecId', 0, deleteZip: false),
         throwsA(isA<Exception>()),
       );
     });
@@ -336,6 +347,7 @@ void main() {
       final result = await concatenateAudioFiles(
         [audio1, 'missing.opus'],
         title,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, isNull);
@@ -345,6 +357,7 @@ void main() {
       final result = await concatenateAudioFiles(
         [audio1, audio2],
         title,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, anyOf(isNull, isA<String>()));
@@ -362,58 +375,38 @@ void main() {
       outputTitle = 'merged_result';
 
       // Build minimal valid JSON templates
-      final json1 = {
-        'metadata': {
-          'total_sentences': 2,
-          'total_duration': 4000,
-          'voice': 'af_heart',
-          'speed': 1.0,
-          'language_code': 'a',
-          'sample_rate': 24000,
+      final json1 = [
+        {
+          'text_eng': 'Hello world.',
+          'text_kor': '안녕하세요',
+          'slide_number': 1,
+          'tts_start_time': 0,
+          'tts_end_time': 2000,
+          'original_start_time': 0,
+          'original_end_time': 2000,
         },
-        'timestamps': [
-          {
-            'sentence_id': 1,
-            'text': 'Hello world.',
-            'text_kor': '안녕하세요',
-            'slide_number': 1,
-            'start_time': 0,
-            'end_time': 2000,
-            'duration': 2000,
-          },
-          {
-            'sentence_id': 2,
-            'text': 'How are you?',
-            'text_kor': '잘 지내세요?',
-            'slide_number': 1,
-            'start_time': 2000,
-            'end_time': 4000,
-            'duration': 2000,
-          },
-        ],
-      };
+        {
+          'text_eng': 'How are you?',
+          'text_kor': '잘 지내세요?',
+          'slide_number': 1,
+          'tts_start_time': 2000,
+          'tts_end_time': 4000,
+          'original_start_time': 2000,
+          'original_end_time': 4000,
+        },
+      ];
 
-      final json2 = {
-        'metadata': {
-          'total_sentences': 1,
-          'total_duration': 3000,
-          'voice': 'af_heart',
-          'speed': 1.0,
-          'language_code': 'a',
-          'sample_rate': 24000,
+      final json2 = [
+        {
+          'text_eng': 'Goodbye.',
+          'text_kor': '안녕히 가세요.',
+          'slide_number': 2,
+          'tts_start_time': 0,
+          'tts_end_time': 3000,
+          'original_start_time': 0,
+          'original_end_time': 3000,
         },
-        'timestamps': [
-          {
-            'sentence_id': 1,
-            'text': 'Goodbye.',
-            'text_kor': '안녕히 가세요.',
-            'slide_number': 2,
-            'start_time': 0,
-            'end_time': 3000,
-            'duration': 3000,
-          },
-        ],
-      };
+      ];
 
       tmp1 = '${tempDir.path}/file1.json';
       tmp2 = '${tempDir.path}/file2.json';
@@ -433,6 +426,7 @@ void main() {
         [tmp1],
         [1],
         outputTitle,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, isNull);
@@ -443,161 +437,19 @@ void main() {
         [tmp1, tmp2],
         [1, 2],
         outputTitle,
+        'lecId',
         dirOverride: tempDir,
       );
       expect(result, isNotNull);
 
-      final merged =
-          jsonDecode(await File(result!).readAsString())
-              as Map<String, dynamic>;
-      final metadata = merged['metadata'] as Map<String, dynamic>;
-      final timestamps = merged['timestamps'] as List;
+      final List<dynamic> merged =
+          jsonDecode(await File(result!).readAsString()) as List<dynamic>;
 
-      expect(metadata['total_sentences'], 3);
-      expect(metadata['total_duration'], greaterThan(7000));
-      expect(timestamps.length, 3);
+      expect(merged.length, 3);
 
-      expect((timestamps.first as Map<String, dynamic>)['sentence_id'], 1);
-      expect((timestamps.last as Map<String, dynamic>)['sentence_id'], 3);
-      expect(
-        (timestamps.last as Map<String, dynamic>)['text'],
-        contains('Goodbye'),
-      );
-    });
-
-    test('throws error when metadata mismatch', () async {
-      final badVoice = {
-        'metadata': {
-          'total_sentences': 1,
-          'total_duration': 1000,
-          'voice': 'different_voice',
-          'speed': 1.0,
-          'language_code': 'a',
-          'sample_rate': 24000,
-        },
-        'timestamps': [
-          {
-            'sentence_id': 1,
-            'text': 'Different voice',
-            'text_kor': '다른 목소리',
-            'slide_number': 1,
-            'start_time': 0,
-            'end_time': 1000,
-            'duration': 1000,
-          },
-        ],
-      };
-      final tmpBadVoice = '${tempDir.path}/badvoice.json';
-      await File(tmpBadVoice).writeAsString(jsonEncode(badVoice));
-
-      final badSpeed = {
-        'metadata': {
-          'total_sentences': 1,
-          'total_duration': 1000,
-          'voice': 'af_heart',
-          'speed': 1.5,
-          'language_code': 'a',
-          'sample_rate': 24000,
-        },
-        'timestamps': [
-          {
-            'sentence_id': 1,
-            'text': 'Different speed',
-            'text_kor': '다른 속도',
-            'slide_number': 1,
-            'start_time': 0,
-            'end_time': 1000,
-            'duration': 1000,
-          },
-        ],
-      };
-      final tmpBadSpeed = '${tempDir.path}/badspeed.json';
-      await File(tmpBadSpeed).writeAsString(jsonEncode(badSpeed));
-
-      final badLanguage = {
-        'metadata': {
-          'total_sentences': 1,
-          'total_duration': 1000,
-          'voice': 'af_heart',
-          'speed': 1.0,
-          'language_code': 'b',
-          'sample_rate': 24000,
-        },
-        'timestamps': [
-          {
-            'sentence_id': 1,
-            'text': 'Different language',
-            'text_kor': '다른 언어',
-            'slide_number': 1,
-            'start_time': 0,
-            'end_time': 1000,
-            'duration': 1000,
-          },
-        ],
-      };
-      final tmpBadLanguage = '${tempDir.path}/badlanguage.json';
-      await File(tmpBadLanguage).writeAsString(jsonEncode(badLanguage));
-
-      final badSampleRate = {
-        'metadata': {
-          'total_sentences': 1,
-          'total_duration': 1000,
-          'voice': 'af_heart',
-          'speed': 1.0,
-          'language_code': 'a',
-          'sample_rate': 12000,
-        },
-        'timestamps': [
-          {
-            'sentence_id': 1,
-            'text': 'Different sample rate',
-            'text_kor': '다른 샘플링 속도',
-            'slide_number': 1,
-            'start_time': 0,
-            'end_time': 1000,
-            'duration': 1000,
-          },
-        ],
-      };
-      final tmpBadSampleRate = '${tempDir.path}/badsamplerate.json';
-      await File(tmpBadSampleRate).writeAsString(jsonEncode(badSampleRate));
-
-      await expectLater(
-        () async => concatenateJsonFiles(
-          [tmp1, tmpBadVoice],
-          [1, 2],
-          outputTitle,
-          dirOverride: tempDir,
-        ),
-        throwsA(anything),
-      );
-      await expectLater(
-        () async => concatenateJsonFiles(
-          [tmp1, tmpBadSpeed],
-          [1, 2],
-          outputTitle,
-          dirOverride: tempDir,
-        ),
-        throwsA(anything),
-      );
-      await expectLater(
-        () async => concatenateJsonFiles(
-          [tmp1, tmpBadLanguage],
-          [1, 2],
-          outputTitle,
-          dirOverride: tempDir,
-        ),
-        throwsA(anything),
-      );
-      await expectLater(
-        () async => concatenateJsonFiles(
-          [tmp1, tmpBadSampleRate],
-          [1, 2],
-          outputTitle,
-          dirOverride: tempDir,
-        ),
-        throwsA(anything),
-      );
+      expect((merged.first as Map<String, dynamic>)['text_kor'], '안녕하세요');
+      expect((merged.last as Map<String, dynamic>)['tts_end_time'], 12000);
+      expect((merged.last as Map<String, dynamic>)['text_eng'], 'Goodbye.');
     });
 
     test('throws when input file missing', () async {
@@ -606,6 +458,7 @@ void main() {
           [tmp1, '${tempDir.path}/noexist.json'],
           [1, 2],
           outputTitle,
+          'lecId',
           dirOverride: tempDir,
         ),
         throwsA(anything),

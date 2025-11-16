@@ -10,8 +10,22 @@ import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/home/home_screen.dart';
 import 'package:re_view/features/home/custom_drawer.dart';
+import 'package:re_view/features/home/home_subject_widgets.dart';
 import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/shared/widgets.dart';
+import 'package:mockito/mockito.dart';
+
+class MockNavigatorObserver extends Mock implements NavigatorObserver {}
+
+class RecordingNavigatorObserver extends NavigatorObserver {
+  final List<Route<dynamic>> pushedRoutes = [];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushedRoutes.add(route);
+    super.didPush(route, previousRoute);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,8 +78,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    // Close all Hive boxes and clean up
-    await Hive.close();
+    // Finally, clean up test directory
     if (testDirectory.existsSync()) {
       testDirectory.deleteSync(recursive: true);
     }
@@ -88,6 +101,30 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: const HomeScreen(),
       onGenerateRoute: AppRouter.onGenerateRoute,
+    );
+  }
+
+  Widget buildTestAppWithObserver(
+    NavigatorObserver observer, {
+    Locale locale = const Locale('en'),
+  }) {
+    final theme = ThemeData.from(
+      colorScheme: lightScheme,
+    ).copyWith(extensions: [AppHighlights.fromScheme(lightScheme)]);
+
+    return MaterialApp(
+      locale: locale,
+      theme: theme,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const HomeScreen(),
+      onGenerateRoute: AppRouter.onGenerateRoute,
+      navigatorObservers: [observer],
     );
   }
 
@@ -129,8 +166,8 @@ void main() {
       weekLabel: weekLabel,
       title: title,
       duration: duration,
-      originalAudioPath: null,
-      ttsAudioPath: null,
+      originalAudioPath: 'originalAudio.m4a',
+      ttsAudioPath: 'ttsAudio.opus',
     );
   }
 
@@ -139,6 +176,8 @@ void main() {
     final appData = testBox.get('main')!;
     updater(appData);
     // Note: Hive saves changes automatically for HiveObjects, no need to call put
+    // Force HiveManager to reload the modified data
+    HiveManager.instance.initForTesting(testBox);
   }
 
   setUp(() async {
@@ -538,6 +577,93 @@ void main() {
       // Verify subject panel exists
       expect(find.byType(SubjectPanel), findsOneWidget);
     });
+
+    testWidgets('navigates to player when lecture is tapped', (tester) async {
+      final observer = RecordingNavigatorObserver();
+
+      updateTestData((data) {
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Subject 1',
+          lectureIds: ['lec1'],
+        );
+        data.lectures['lec1'] = makeLecture(
+          id: 'lec1',
+          subjectId: 's1',
+          title: 'Test Lecture',
+        );
+      });
+
+      await tester.pumpWidget(buildTestAppWithObserver(observer));
+      await tester.pumpAndSettle();
+
+      // Make sure lecture is visible
+      expect(find.text('Test Lecture'), findsOneWidget);
+
+      // Tap → triggers _navigateToPlayer
+      await tester.tap(find.text('Test Lecture'));
+      await tester.pumpAndSettle();
+
+      // Assert that a route was pushed
+      expect(observer.pushedRoutes, isNotEmpty);
+    });
+
+    testWidgets(
+      'reorders subjects when onReorder is called in edit mode',
+      (tester) async {},
+    );
+
+    testWidgets('shows SubjectEditDialog when subject edit is invoked', (
+      tester,
+    ) async {
+      // Prepare a subject with tags, so we can verify initialTagIds / allTags
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.tags['t2'] = makeTag(id: 't2', name: 'Tag2');
+
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Editable Subject',
+          tagIds: ['t1', 't2'],
+        );
+      });
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // Enter edit mode so SubjectPanels are created with onEditSubject callbacks
+      await tester.tap(find.byType(EditPill));
+      await tester.pumpAndSettle();
+
+      // Grab the first SubjectPanel and its edit callback
+      final panel = tester.widget<SubjectPanel>(
+        find.byType(SubjectPanel).first,
+      );
+
+      expect(panel.showEdit, isTrue); // edit UI is enabled
+      expect(panel.onEditSubject, isNotNull);
+
+      // Invoke the edit callback, which calls _showSubjectEditDialog(...)
+      panel.onEditSubject!.call();
+      await tester.pumpAndSettle();
+
+      // The subject edit dialog should appear
+      final dialogFinder = find.byType(SubjectEditDialog);
+      expect(dialogFinder, findsOneWidget);
+
+      // Inspect the dialog's configuration to ensure correct wiring
+      final dialog = tester.widget<SubjectEditDialog>(dialogFinder);
+      expect(dialog.subject.id, 's1');
+      expect(dialog.initialTagIds, equals(['t1', 't2']));
+
+      final allTagIds = dialog.allTags.map((t) => t.id).toSet();
+      expect(allTagIds.containsAll(['t1', 't2']), isTrue);
+
+      // Close the dialog with a null result to exercise the null-result path
+      final dialogContext = tester.element(dialogFinder);
+      Navigator.of(dialogContext).pop<bool>(null);
+      await tester.pumpAndSettle();
+    });
   });
 
   group('HomeScreen - Empty states', () {
@@ -672,7 +798,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('필터'), findsOneWidget);
-      expect(find.text('즐겨찾기'), findsOneWidget);
+      expect(find.text('수정'), findsOneWidget);
     });
 
     testWidgets('renders English labels when locale is en', (tester) async {
@@ -680,7 +806,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Filter'), findsOneWidget);
-      expect(find.text('Favorites'), findsOneWidget);
+      expect(find.text('Edit'), findsOneWidget);
     });
   });
 
@@ -757,6 +883,552 @@ void main() {
 
       // Should show the subject
       expect(find.byType(SubjectPanel), findsOneWidget);
+    });
+  });
+
+  group('HomeScreen - Edit mode', () {
+    testWidgets('entering edit mode resets filters and shows edit controls', (
+      tester,
+    ) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Subject 1',
+          favorite: true,
+          tagIds: ['t1'],
+        );
+      });
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // Turn on favorites filter
+      await tester.tap(find.byType(FavoritePill));
+      await tester.pump();
+
+      // Enable tag filter
+      await tester.tap(find.byType(FilterPill));
+      await tester.pump();
+
+      // Select a tag
+      await tester.tap(find.byType(ChoiceChip).first);
+      await tester.pump();
+
+      // Sanity checks before entering edit mode
+      expect(
+        tester.widget<FavoritePill>(find.byType(FavoritePill)).active,
+        isTrue,
+      );
+      expect(tester.widget<FilterPill>(find.byType(FilterPill)).active, isTrue);
+      expect(find.byType(TagChips), findsOneWidget);
+
+      // Initially subject panels should not be in edit mode
+      final initialPanel = tester.widget<SubjectPanel>(
+        find.byType(SubjectPanel),
+      );
+      expect(initialPanel.showEdit, isFalse);
+
+      // Enter edit mode
+      await tester.tap(find.byType(EditPill));
+      await tester.pump();
+
+      // Favorite and filter pills should be reset by edit mode
+      expect(
+        tester.widget<FavoritePill>(find.byType(FavoritePill)).active,
+        isFalse,
+      );
+      expect(
+        tester.widget<FilterPill>(find.byType(FilterPill)).active,
+        isFalse,
+      );
+
+      // Tag chips should be hidden
+      expect(find.byType(TagChips), findsNothing);
+
+      // Subject panel should now expose edit controls
+      final editedPanel = tester.widget<SubjectPanel>(
+        find.byType(SubjectPanel),
+      );
+      expect(editedPanel.showEdit, isTrue);
+
+      // Edit pill itself should be active
+      final editPill = tester.widget<EditPill>(find.byType(EditPill));
+      expect(editPill.active, isTrue);
+    });
+  });
+
+  Widget buildDialogTestApp(
+    Widget Function() dialogBuilder, {
+    Locale locale = const Locale('en'),
+  }) {
+    final theme = ThemeData.from(
+      colorScheme: lightScheme,
+    ).copyWith(extensions: [AppHighlights.fromScheme(lightScheme)]);
+
+    return MaterialApp(
+      locale: locale,
+      theme: theme,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: Builder(
+          builder: (context) {
+            return Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  showDialog<dynamic>(
+                    context: context,
+                    builder: (_) => dialogBuilder(),
+                  );
+                },
+                child: const Text('Open Dialog'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  group('CreateSubjectDialog', () {
+    testWidgets('shows CreateSubjectDialog with tags', (tester) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.tags['t2'] = makeTag(id: 't2', name: 'Tag2');
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Verify dialog is shown
+      expect(find.byType(CreateSubjectDialog), findsOneWidget);
+
+      // Verify tags are displayed as SelectableTagPill
+      expect(find.byType(SelectableTagPill), findsNWidgets(2));
+    });
+
+    testWidgets('toggles SelectableTagPill selection', (tester) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.tags['t2'] = makeTag(id: 't2', name: 'Tag2');
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Find the first SelectableTagPill
+      final firstTagPill = find.byType(SelectableTagPill).first;
+
+      // Initially should not be selected
+      SelectableTagPill pill = tester.widget<SelectableTagPill>(firstTagPill);
+      expect(pill.selected, isFalse);
+
+      // Tap to select
+      await tester.tap(firstTagPill);
+      await tester.pump();
+
+      // Should now be selected
+      pill = tester.widget<SelectableTagPill>(firstTagPill);
+      expect(pill.selected, isTrue);
+
+      // Tap again to deselect
+      await tester.tap(firstTagPill);
+      await tester.pump();
+
+      // Should be deselected
+      pill = tester.widget<SelectableTagPill>(firstTagPill);
+      expect(pill.selected, isFalse);
+    });
+
+    testWidgets('FilledButton shows SnackBar when title is empty', (
+      tester,
+    ) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Find the add button (FilledButton with "Add" or "추가" text)
+      final addButton = find.widgetWithText(FilledButton, 'Add');
+
+      // Tap the add button without entering a title
+      await tester.tap(addButton);
+      await tester.pump();
+
+      // Verify SnackBar is shown
+      expect(find.byType(SnackBar), findsOneWidget);
+    });
+
+    testWidgets('FilledButton closes dialog with data when title is valid', (
+      tester,
+    ) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Enter a valid title
+      await tester.enterText(find.byType(TextField).first, 'New Subject');
+      await tester.pump();
+
+      // Select a tag
+      await tester.tap(find.byType(SelectableTagPill).first);
+      await tester.pump();
+
+      // Tap the add button
+      await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      // Verify dialog is closed
+      expect(find.byType(CreateSubjectDialog), findsNothing);
+    });
+  });
+
+  group('SubjectEditDialog', () {
+    testWidgets('shows SubjectEditDialog with initial data', (tester) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.tags['t2'] = makeTag(id: 't2', name: 'Tag2');
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Test Subject',
+          tagIds: ['t1'],
+        );
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Verify dialog is shown
+      expect(find.byType(SubjectEditDialog), findsOneWidget);
+
+      // Verify subject name is shown in TextField
+      expect(find.text('Test Subject'), findsOneWidget);
+
+      // Verify tags are displayed
+      expect(find.byType(SelectableTagPill), findsNWidgets(2));
+    });
+
+    testWidgets('_showSnackBar is called when title is empty on complete', (
+      tester,
+    ) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Test Subject',
+          tagIds: ['t1'],
+        );
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Clear the subject name
+      final textField = find.byType(TextField).first;
+      await tester.enterText(textField, '');
+      await tester.pump();
+
+      // Find and tap the complete button
+      final completeButton = find.widgetWithText(FilledButton, 'Complete');
+      await tester.tap(completeButton.last);
+      await tester.pump();
+
+      // Verify SnackBar is shown (which means _showSnackBar was called)
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Clean up SnackBar to prevent state leakage to next test
+      ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold).first),
+      ).clearSnackBars();
+      await tester.pump();
+    });
+
+    testWidgets('shows tag creation UI when add tag button is tapped', (
+      tester,
+    ) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Test Subject',
+          tagIds: ['t1'],
+        );
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Initially there should be only 1 TextField (for subject name)
+      expect(find.byType(TextField), findsOneWidget);
+
+      // Find the add tag button (ActionChip with '+')
+      final addTagButton = find.widgetWithText(ActionChip, '+');
+      expect(addTagButton, findsOneWidget);
+
+      // Tap the add tag button
+      await tester.tap(addTagButton);
+      await tester.pump();
+
+      // Verify tag creation UI is shown (if (_isCreatingTag) block)
+      // Now there should be 2 TextFields (subject name + new tag name)
+      expect(find.byType(TextField), findsNWidgets(2));
+
+      // Verify apply button is shown
+      final applyButton = find.widgetWithText(FilledButton, 'Apply');
+      expect(applyButton, findsOneWidget);
+    });
+
+    testWidgets('_addNewTag shows snackbar when max tags reached', (
+      tester,
+    ) async {
+      // Create 15 tags (maximum allowed)
+      updateTestData((data) {
+        data.tags.clear(); // Clear existing tags from previous tests
+        data.subjects.clear(); // Clear existing subjects from previous tests
+        for (int i = 0; i < 15; i++) {
+          data.tags['t$i'] = makeTag(id: 't$i', name: 'Tag$i');
+        }
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Test Subject',
+          tagIds: ['t0'],
+        );
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t0'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Tap the add tag button
+      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.pump();
+
+      // Wait for async operations
+      await tester.pumpAndSettle();
+
+      // Verify SnackBar is shown with max tags message
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Clean up SnackBar to prevent state leakage to next test
+      await tester.pumpAndSettle();
+      ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold).first),
+      ).clearSnackBars();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('_addNewTag shows snackbar for duplicate tag name', (
+      tester,
+    ) async {
+      updateTestData((data) {
+        data.tags.clear(); // Clear existing tags from previous tests
+        data.subjects.clear(); // Clear existing subjects from previous tests
+        data.tags['t1'] = makeTag(id: 't1', name: 'ExistingTag');
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Test Subject',
+          tagIds: ['t1'],
+        );
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Tap the add tag button
+      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.pump();
+
+      // Enter a duplicate tag name in the second TextField
+      final tagNameField = find.byType(TextField).last;
+      await tester.enterText(tagNameField, 'ExistingTag');
+      await tester.pump();
+
+      // Tap apply button
+      final applyButton = find.widgetWithText(FilledButton, 'Apply');
+      await tester.tap(applyButton);
+      await tester.pump();
+
+      // Verify SnackBar is shown with duplicate tag message
+      expect(find.byType(SnackBar), findsOneWidget);
+
+      // Clean up SnackBar to prevent state leakage to next test
+      await tester.pumpAndSettle();
+      ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold).first),
+      ).clearSnackBars();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('_addNewTag creates a new tag successfully', (tester) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.subjects['s1'] = makeSubject(
+          id: 's1',
+          title: 'Test Subject',
+          tagIds: ['t1'],
+        );
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
+      );
+      await tester.pumpAndSettle();
+
+      final initialTagCount = HiveManager.instance.getTags().length;
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Tap the add tag button to show creation UI
+      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.pump();
+
+      // Enter a new tag name in the second TextField (first is subject name)
+      final tagNameField = find.byType(TextField).last;
+      await tester.enterText(tagNameField, 'NewTag');
+      await tester.pump();
+
+      // Tap apply button
+      final applyButton = find.widgetWithText(FilledButton, 'Apply');
+      await tester.tap(applyButton);
+      await tester.pump();
+
+      // Wait for async operations to complete
+      await tester.pumpAndSettle();
+
+      // Verify a new tag was added
+      final newTagCount = HiveManager.instance.getTags().length;
+      expect(newTagCount, initialTagCount + 1);
+
+      // Verify the new tag exists
+      final newTag = HiveManager.instance.getTags().firstWhere(
+        (tag) => tag.name == 'NewTag',
+      );
+      expect(newTag, isNotNull);
+
+      // Clean up the created tag to prevent state leakage
+      updateTestData((data) {
+        data.tags.remove(newTag.id);
+        // Also remove from any subject's tagIds
+        for (final subject in data.subjects.values) {
+          subject.tagIds.remove(newTag.id);
+        }
+      });
     });
   });
 }

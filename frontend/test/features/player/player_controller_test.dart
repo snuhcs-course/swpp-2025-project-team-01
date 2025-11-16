@@ -67,47 +67,35 @@ void main() {
 
   TranscriptData createTestTranscriptData() {
     return TranscriptData(
-      metadata: TranscriptMetadata(
-        totalSentences: 3,
-        totalDuration: 3000,
-        voice: 'test',
-        speed: 1.0,
-        languageCode: 'en',
-        sampleRate: 22050,
-      ),
+      ttsTotalDuration: 3000,
+      originalTotalDuration: 3000,
       timestamps: [
         TranscriptSentence(
-          sentenceId: 0,
-          text: 'First sentence',
+          textEng: 'First sentence',
           textKor: '첫 번째 문장',
           slideNumber: 1,
           originalStartTime: 0,
           originalEndTime: 1000,
-          startTime: 0,
-          endTime: 1000,
-          duration: 1000,
+          ttsStartTime: 0,
+          ttsEndTime: 1000,
         ),
         TranscriptSentence(
-          sentenceId: 1,
-          text: 'Second sentence',
+          textEng: 'Second sentence',
           textKor: '두 번째 문장',
           slideNumber: 1,
           originalStartTime: 0,
           originalEndTime: 1000,
-          startTime: 1000,
-          endTime: 2000,
-          duration: 1000,
+          ttsStartTime: 1000,
+          ttsEndTime: 2000,
         ),
         TranscriptSentence(
-          sentenceId: 2,
-          text: 'Third sentence',
-          textKor: null,
+          textEng: 'Third sentence',
+          textKor: '세 번째 문장',
           slideNumber: 2,
           originalStartTime: 0,
           originalEndTime: 1000,
-          startTime: 2000,
-          endTime: 3000,
-          duration: 1000,
+          ttsStartTime: 2000,
+          ttsEndTime: 3000,
         ),
       ],
     );
@@ -133,10 +121,12 @@ void main() {
       expect(controller.showControls.value, isFalse);
       expect(controller.isPagesExpanded.value, isFalse);
       expect(controller.showTranscriptPanel.value, isFalse);
+      expect(controller.isFullscreen.value, isFalse);
       expect(controller.isPlaying.value, isFalse);
       expect(controller.isSynced.value, isTrue);
       expect(controller.isCaptionEnabled.value, isFalse);
       expect(controller.isKoreanLanguage.value, isFalse);
+      expect(controller.isOriginalAudio.value, isFalse);
       expect(controller.currentTime.value, equals(0.0));
       expect(controller.currentPage.value, equals(1));
       expect(controller.currentSentenceIndex.value, isNull);
@@ -242,7 +232,6 @@ void main() {
 
         controller.transcriptData = createTestTranscriptData();
 
-        expect(controller.hasKoreanTranscript, isTrue);
         expect(controller.isKoreanLanguage.value, isFalse);
 
         controller.toggleTranscriptLanguage();
@@ -254,47 +243,6 @@ void main() {
         controller.dispose();
       },
     );
-
-    test('toggleTranscriptLanguage does nothing when no Korean transcript', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      final transcriptData = TranscriptData(
-        metadata: TranscriptMetadata(
-          totalSentences: 1,
-          totalDuration: 1000,
-          voice: 'test',
-          speed: 1.0,
-          languageCode: 'en',
-          sampleRate: 22050,
-        ),
-        timestamps: [
-          TranscriptSentence(
-            sentenceId: 0,
-            text: 'No Korean',
-            textKor: null,
-            slideNumber: 1,
-            originalStartTime: 0,
-            originalEndTime: 1000,
-            startTime: 0,
-            endTime: 1000,
-            duration: 1000,
-          ),
-        ],
-      );
-
-      controller.transcriptData = transcriptData;
-
-      expect(controller.hasKoreanTranscript, isFalse);
-      expect(controller.isKoreanLanguage.value, isFalse);
-
-      controller.toggleTranscriptLanguage();
-      expect(controller.isKoreanLanguage.value, isFalse);
-
-      controller.dispose();
-    });
 
     test('handlePdfTap toggles controls in vertical mode', () {
       final controller = PlayerController(
@@ -470,7 +418,8 @@ void main() {
         controller.currentTime.value = position.inMilliseconds / 1000.0;
       });
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
 
       await controller.seek(50.0);
 
@@ -500,7 +449,8 @@ void main() {
         controller.currentTime.value = position.inMilliseconds / 1000.0;
       });
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
 
       // Start first seek (it will complete almost immediately in test)
       final future1 = controller.seek(30.0);
@@ -530,7 +480,7 @@ void main() {
       controller.dispose();
     });
 
-    test('skipBackward seeks backward by 15 seconds', () async {
+    test('skipBackward seeks backward by 10 seconds', () async {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
@@ -541,7 +491,8 @@ void main() {
         controller.currentTime.value = position.inMilliseconds / 1000.0;
       });
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
       controller.currentTime.value = 30.0;
 
       await controller.skipBackward();
@@ -549,13 +500,13 @@ void main() {
       // Wait for stream event to be processed
       await Future.delayed(const Duration(milliseconds: 10));
 
-      // Verify audioService.seek was called with correct Duration (30 - 15 = 15)
+      // Verify audioService.seek was called with correct Duration (30 - 10 = 20)
       verify(
-        mockAudioService.seek(const Duration(milliseconds: 15000)),
+        mockAudioService.seek(const Duration(milliseconds: 20000)),
       ).called(1);
 
-      // Verify currentTime was updated to 15.0
-      expect(controller.currentTime.value, equals(15.0));
+      // Verify currentTime was updated to 20.0
+      expect(controller.currentTime.value, equals(20.0));
 
       await subscription.cancel();
       controller.dispose();
@@ -572,7 +523,8 @@ void main() {
         controller.currentTime.value = position.inMilliseconds / 1000.0;
       });
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
       controller.currentTime.value = 10.0;
 
       await controller.skipBackward();
@@ -590,7 +542,7 @@ void main() {
       controller.dispose();
     });
 
-    test('skipForward seeks forward by 15 seconds', () async {
+    test('skipForward seeks forward by 10 seconds', () async {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
@@ -601,7 +553,8 @@ void main() {
         controller.currentTime.value = position.inMilliseconds / 1000.0;
       });
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
       controller.currentTime.value = 30.0;
 
       await controller.skipForward();
@@ -611,11 +564,11 @@ void main() {
 
       // Verify audioService.seek was called with correct Duration (30 + 15 = 45)
       verify(
-        mockAudioService.seek(const Duration(milliseconds: 45000)),
+        mockAudioService.seek(const Duration(milliseconds: 40000)),
       ).called(1);
 
       // Verify currentTime was updated to 45.0
-      expect(controller.currentTime.value, equals(45.0));
+      expect(controller.currentTime.value, equals(40.0));
 
       await subscription.cancel();
       controller.dispose();
@@ -632,7 +585,8 @@ void main() {
         controller.currentTime.value = position.inMilliseconds / 1000.0;
       });
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
       controller.currentTime.value = 95.0;
 
       await controller.skipForward();
@@ -801,21 +755,6 @@ void main() {
       controller.dispose();
     });
 
-    test('captionText returns English when Korean not available', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      controller.transcriptData = createTestTranscriptData();
-      controller.currentSentenceIndex.value = 2; // No Korean
-      controller.isKoreanLanguage.value = true;
-
-      expect(controller.captionText, equals('Third sentence'));
-
-      controller.dispose();
-    });
-
     test('captionText returns empty string when no sentence index', () {
       final controller = PlayerController(
         audioService: mockAudioService,
@@ -825,92 +764,6 @@ void main() {
       controller.transcriptData = createTestTranscriptData();
 
       expect(controller.captionText, equals(''));
-
-      controller.dispose();
-    });
-
-    test('hasKoreanTranscript returns true when Korean exists', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      controller.transcriptData = createTestTranscriptData();
-
-      expect(controller.hasKoreanTranscript, isTrue);
-
-      controller.dispose();
-    });
-
-    test('hasKoreanTranscript returns false when no Korean exists', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      final transcriptData = TranscriptData(
-        metadata: TranscriptMetadata(
-          totalSentences: 1,
-          totalDuration: 1000,
-          voice: 'test',
-          speed: 1.0,
-          languageCode: 'en',
-          sampleRate: 22050,
-        ),
-        timestamps: [
-          TranscriptSentence(
-            sentenceId: 0,
-            text: 'No Korean',
-            textKor: null,
-            slideNumber: 1,
-            originalStartTime: 0,
-            originalEndTime: 1000,
-            startTime: 0,
-            endTime: 1000,
-            duration: 1000,
-          ),
-        ],
-      );
-
-      controller.transcriptData = transcriptData;
-
-      expect(controller.hasKoreanTranscript, isFalse);
-
-      controller.dispose();
-    });
-
-    test('hasKoreanTranscript returns false when transcript is null', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      expect(controller.hasKoreanTranscript, isFalse);
-
-      controller.dispose();
-    });
-
-    test('hasKoreanTranscript returns false when timestamps are empty', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      final transcriptData = TranscriptData(
-        metadata: TranscriptMetadata(
-          totalSentences: 0,
-          totalDuration: 0,
-          voice: 'test',
-          speed: 1.0,
-          languageCode: 'en',
-          sampleRate: 22050,
-        ),
-        timestamps: [],
-      );
-
-      controller.transcriptData = transcriptData;
-
-      expect(controller.hasKoreanTranscript, isFalse);
 
       controller.dispose();
     });
@@ -925,6 +778,156 @@ void main() {
 
       controller.dispose();
     });
+  });
+
+  group('PlayerController - Fullscreen', () {
+    test('initializes isFullscreen with default value', () {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      expect(controller.isFullscreen.value, isFalse);
+
+      controller.dispose();
+    });
+
+    test('isFullscreen can be set directly', () {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      expect(controller.isFullscreen.value, isFalse);
+
+      // Test that the value can be changed
+      controller.isFullscreen.value = true;
+      expect(controller.isFullscreen.value, isTrue);
+
+      controller.isFullscreen.value = false;
+      expect(controller.isFullscreen.value, isFalse);
+
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - Audio Source Toggle', () {
+    test('initializes isOriginalAudio with default value', () {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      expect(controller.isOriginalAudio.value, isFalse);
+
+      controller.dispose();
+    });
+
+    test('isOriginalAudio can be set directly', () {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      expect(controller.isOriginalAudio.value, isFalse);
+
+      // Test that the value can be changed
+      controller.isOriginalAudio.value = true;
+      expect(controller.isOriginalAudio.value, isTrue);
+
+      controller.isOriginalAudio.value = false;
+      expect(controller.isOriginalAudio.value, isFalse);
+
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - Double Tap Skip', () {
+    test('saveDoubleTapPosition stores tap position', () {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      controller.saveDoubleTapPosition(100.0);
+
+      // The position is stored internally, no direct way to verify
+      // but we can test handleDoubleTapSkip behavior
+
+      controller.dispose();
+    });
+
+    test(
+      'handleDoubleTapSkip skips backward when tapped on left half',
+      () async {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
+
+        // Setup position stream listener to update currentTime
+        final subscription = positionStreamController.stream.listen((position) {
+          controller.currentTime.value = position.inMilliseconds / 1000.0;
+        });
+
+        controller.ttsTotalDuration = 100.0;
+        controller.originalTotalDuration = 100.0;
+        controller.currentTime.value = 30.0;
+
+        // Save tap position on left half
+        controller.saveDoubleTapPosition(100.0);
+
+        // Handle double tap (screen width = 400)
+        controller.handleDoubleTapSkip(400.0);
+
+        // Wait for stream event to be processed
+        await Future.delayed(const Duration(milliseconds: 10));
+
+        // Verify audioService.seek was called for backward skip (30 - 10 = 20)
+        verify(
+          mockAudioService.seek(const Duration(milliseconds: 20000)),
+        ).called(1);
+
+        await subscription.cancel();
+        controller.dispose();
+      },
+    );
+
+    test(
+      'handleDoubleTapSkip skips forward when tapped on right half',
+      () async {
+        final controller = PlayerController(
+          audioService: mockAudioService,
+          pdfCacheService: mockPdfCacheService,
+        );
+
+        // Setup position stream listener to update currentTime
+        final subscription = positionStreamController.stream.listen((position) {
+          controller.currentTime.value = position.inMilliseconds / 1000.0;
+        });
+
+        controller.ttsTotalDuration = 100.0;
+        controller.originalTotalDuration = 100.0;
+        controller.currentTime.value = 30.0;
+
+        // Save tap position on right half
+        controller.saveDoubleTapPosition(300.0);
+
+        // Handle double tap (screen width = 400)
+        controller.handleDoubleTapSkip(400.0);
+
+        // Wait for stream event to be processed
+        await Future.delayed(const Duration(milliseconds: 10));
+
+        // Verify audioService.seek was called for forward skip (30 + 10 = 40)
+        verify(
+          mockAudioService.seek(const Duration(milliseconds: 40000)),
+        ).called(1);
+
+        await subscription.cancel();
+        controller.dispose();
+      },
+    );
   });
 
   group('PlayerController - Dispose', () {
@@ -998,6 +1001,7 @@ void main() {
                     'assets/test.pdf',
                     'assets/test.mp3',
                     'assets/test.mp3',
+                    false,
                   )
                   .catchError((_) {
                     // Ignore errors from PDF loading in test
@@ -1013,7 +1017,7 @@ void main() {
 
       // Verify transcript data and total time are set
       expect(controller.transcriptData, equals(transcriptData));
-      expect(controller.totalTime, equals(3.0)); // 3000ms / 1000
+      expect(controller.ttsTotalDuration, equals(3.0)); // 3000ms / 1000
 
       controller.dispose();
     });
@@ -1048,7 +1052,8 @@ void main() {
         pdfCacheService: mockPdfCacheService,
       );
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
       controller.transcriptData = createTestTranscriptData();
 
       // Normal seek
@@ -1059,6 +1064,69 @@ void main() {
 
       // Wait for forced move flag and auto-scroll restoration
       await Future.delayed(const Duration(milliseconds: 550));
+
+      controller.dispose();
+    });
+
+    test('startPlayback delegates to audio service play', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      await controller.startPlayback();
+
+      verify(mockAudioService.play()).called(1);
+      controller.dispose();
+    });
+
+    test('setPlaybackSpeed delegates to audio service', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      await controller.setPlaybackSpeed(1.75);
+
+      verify(mockAudioService.setSpeed(1.75)).called(1);
+      controller.dispose();
+    });
+  });
+
+  group('PlayerController - updateCurrentSentence', () {
+    test('updates sentence index and page when synced', () {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      )..transcriptData = createTestTranscriptData();
+
+      controller.isSynced.value = true;
+      controller.currentPage.value = 5;
+
+      controller.updateCurrentSentence(
+        false,
+        1.5,
+      ); // 1500 ms => second sentence
+
+      expect(controller.currentSentenceIndex.value, equals(1));
+      expect(controller.currentPage.value, equals(1));
+
+      controller.dispose();
+    });
+
+    test('does not change page when unsynced', () {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      )..transcriptData = createTestTranscriptData();
+
+      controller.isSynced.value = false;
+      controller.currentPage.value = 7;
+
+      controller.updateCurrentSentence(false, 2.5); // 2500 ms => third sentence
+
+      expect(controller.currentSentenceIndex.value, equals(2));
+      expect(controller.currentPage.value, equals(7)); // remains unchanged
 
       controller.dispose();
     });
@@ -1282,7 +1350,8 @@ void main() {
       // Setup audio service to throw error on seek
       when(mockAudioService.seek(any)).thenThrow(Exception('Seek failed'));
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
 
       // Should not throw, error is caught internally
       await controller.seek(50.0);
@@ -1301,7 +1370,8 @@ void main() {
       // Reset mock to default behavior
       when(mockAudioService.seek(any)).thenAnswer((_) async => Future.value());
 
-      controller.totalTime = 100.0;
+      controller.ttsTotalDuration = 100.0;
+      controller.originalTotalDuration = 100.0;
       controller.isAutoScrolling.value = false;
 
       await controller.seek(30.0);

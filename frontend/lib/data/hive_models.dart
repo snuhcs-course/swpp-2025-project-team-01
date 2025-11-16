@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:hive/hive.dart';
-import 'package:re_view/data/models.dart';
 
 part 'hive_models.g.dart'; // 코드 생성 파일
 
@@ -52,10 +51,9 @@ class AppSettings {
     this.language = 'ko',
     this.accessibilityHighContrast = false,
     this.accessibilityReduceMotion = false,
-    this.accessibilityEmphasizeCaptions = true,
+    this.accessibilityEmphasizeCaptions = false,
     this.ttsGender = '남성',
     this.tagColorTheme = '봄',
-    this.hasCompletedTutorial = false,
   });
 
   @HiveField(0)
@@ -78,9 +76,6 @@ class AppSettings {
 
   @HiveField(6)
   String tagColorTheme; // '봄', '여름', '가을', '겨울', '솜사탕', '비비드', '바다'
-
-  @HiveField(7)
-  bool hasCompletedTutorial;
 }
 
 /// UI 상태 (과목 펼침/접힘, 최근 검색어 등)
@@ -147,18 +142,6 @@ class HiveSubject {
       isUncategorized: isUncategorized ?? this.isUncategorized,
     );
   }
-
-  /// Convert to models.dart Subject
-  Subject toSubject() {
-    return Subject(
-      id: id,
-      title: title,
-      favorite: favorite,
-      tagIds: tagIds,
-      lectureIds: lectureIds,
-      isUncategorized: isUncategorized,
-    );
-  }
 }
 
 /// 태그 모델
@@ -182,11 +165,6 @@ class HiveTag {
       color: color ?? this.color,
     );
   }
-
-  /// Convert to models.dart Tag
-  Tag toTag() {
-    return Tag(id: id, name: name, color: color);
-  }
 }
 
 /// 강의 모델 (백엔드에서 생성된 완성품)
@@ -203,6 +181,7 @@ class HiveLecture {
     required this.ttsAudioPath,
     this.thumbnailUrl,
     this.jsonPath,
+    this.langCode,
     this.createdAt,
     this.updatedAt,
   });
@@ -226,10 +205,10 @@ class HiveLecture {
   String? slidePath; // 파일 경로 (PDF)
 
   @HiveField(6)
-  String? originalAudioPath; // 원본 오디오 파일 경로
+  String originalAudioPath; // 원본 오디오 파일 경로
 
   @HiveField(7)
-  String? ttsAudioPath; // TTS 오디오 파일 경로
+  String ttsAudioPath; // TTS 오디오 파일 경로
 
   @HiveField(8)
   String? thumbnailUrl; // 썸네일 이미지 URL
@@ -238,23 +217,13 @@ class HiveLecture {
   String? jsonPath; // 자막/스크립트 JSON 경로
 
   @HiveField(10)
-  DateTime? createdAt;
+  String? langCode; // 언어설정 (en, ko)
 
   @HiveField(11)
-  DateTime? updatedAt;
+  DateTime? createdAt;
 
-  /// models.dart Lecture로 변환 (UI 레이어용)
-  Lecture toLecture() {
-    return Lecture(
-      id: id,
-      subjectId: subjectId,
-      weekLabel: weekLabel,
-      title: title,
-      duration: duration,
-      slidesPath: slidePath, // URL을 path로 사용
-      thumbs: thumbnailUrl != null ? [thumbnailUrl!] : [],
-    );
-  }
+  @HiveField(12)
+  DateTime? updatedAt;
 
   HiveLecture copyWith({
     String? id,
@@ -267,6 +236,7 @@ class HiveLecture {
     String? ttsAudioPath,
     String? thumbnailUrl,
     String? jsonPath,
+    String? langCode,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -281,6 +251,7 @@ class HiveLecture {
       ttsAudioPath: ttsAudioPath ?? this.ttsAudioPath,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       jsonPath: jsonPath ?? this.jsonPath,
+      langCode: langCode ?? this.langCode,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -301,10 +272,12 @@ class HiveLecture {
         title: meta['title'] as String? ?? 'Untitled',
         duration: meta['duration'] as int? ?? 0,
         slidePath: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
-        originalAudioPath: null,
-        ttsAudioPath: null, // 데모는 로컬 파일 사용
+        originalAudioPath: 'assets/lectures/$lectureId/${lectureId}_audio.m4a',
+        ttsAudioPath:
+            'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
+        langCode: lectureId == 'lec_demo_001' ? 'en' : 'ko',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

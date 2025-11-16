@@ -34,6 +34,7 @@ jobs:
 
   frontend-unit-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 7
     defaults:
       run:
         working-directory: ./frontend
@@ -52,17 +53,29 @@ jobs:
       run: flutter pub get
     
     # Add necessary script executions accordingly.
-    - name: Run lecture fetch unit tests
-      run: flutter test test/features/edit/lecture_fetch_test.dart
+    - name: Run core unit tests
+      run: flutter test test/core/
+    
+    - name: Run data model unit tests
+      run: flutter test test/data/
+    
+    - name: Run edit unit tests
+      run: flutter test test/features/edit/
 
     - name: Run player unit tests
       run: flutter test test/features/player/
 
-    - name: Run search screen unit tests
+    - name: Run search unit tests
       run: flutter test test/features/search/search_screen_test.dart
 
-    - name: Run home screen unit tests
+    - name: Run home unit tests
       run: flutter test test/features/home/
+
+    - name: Run settings unit tests
+      run: flutter test test/features/settings/
+
+    - name: Run tags unit tests
+      run: flutter test test/features/tags/
 
   frontend-integration-test:
     runs-on: ubuntu-latest

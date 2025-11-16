@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/device_orientation_helper.dart';
 import 'package:re_view/features/player/player_layout.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
@@ -36,13 +38,11 @@ class _PlayerScreenState extends State<PlayerScreen>
   late final HiveManager _hiveManager;
   bool _isLoading = true;
   bool _wasPlayingBeforePause = false;
+  late final bool _isTablet;
 
   @override
   void initState() {
     super.initState();
-
-    // 시스템 UI 숨기기 (상태바, 네비게이션 바)
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
 
     // 앱 라이프사이클 옵저버 등록
     WidgetsBinding.instance.addObserver(this);
@@ -59,7 +59,18 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     // 프레임이 빌드된 이후에 실행
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadLectureData();
+      if (mounted) {
+        // 태블릿 여부 캐시 (dispose에서 사용)
+        _isTablet = isTabletDevice(context);
+
+        // 태블릿일 때만 방향 고정 (자유 회전 허용)
+        // 폰일 때는 기본 세로 상태 유지 (toggleFullscreen으로 전환)
+        if (_isTablet) {
+          lockToCurrentOrientation(context);
+        }
+
+        _loadLectureData();
+      }
     });
   }
 
@@ -67,9 +78,18 @@ class _PlayerScreenState extends State<PlayerScreen>
   void dispose() {
     // 앱 라이프사이클 옵저버 제거
     WidgetsBinding.instance.removeObserver(this);
-    // 시스템 UI 다시 보이기
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+    // 오디오 및 리소스 정리 (가장 중요!)
     _controller.dispose();
+
+    // 폰에서 PlayerScreen을 나갈 때 세로 모드로 복원
+    if (!_isTablet) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+
     super.dispose();
   }
 
@@ -134,10 +154,11 @@ class _PlayerScreenState extends State<PlayerScreen>
       final lectureId = map['lectureId'] as String?;
 
       if (lectureId == null || lectureId.isEmpty) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko' ? '강의 ID가 없습니다.' : 'Lecture ID is missing.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.lectureIdMissing);
         return;
       }
 
@@ -145,12 +166,16 @@ class _PlayerScreenState extends State<PlayerScreen>
       final hiveLecture = _hiveManager.getLecture(lectureId);
 
       if (hiveLecture == null) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko' ? '강의를 찾을 수 없습니다.' : 'Lecture not found.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.lectureNotFound);
         return;
       }
+
+      // Load lecture from Hive and store Korean status
+      final isKoreanLecture = hiveLecture.langCode == 'ko';
 
       // transcript.json 로드 (HiveLecture에서 경로 가져오기)
       final transcriptPath =
@@ -162,28 +187,26 @@ class _PlayerScreenState extends State<PlayerScreen>
             ? await rootBundle.loadString(transcriptPath)
             : await File(transcriptPath).readAsString();
       } catch (e) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko'
-              ? '자막 파일을 불러올 수 없습니다.'
-              : 'Failed to load transcript file.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.failedToLoadTranscript);
         return;
       }
 
       // 4. JSON 파싱
       TranscriptData? transcriptData;
       try {
-        final transcriptJsonData =
-            json.decode(transcriptJson) as Map<String, dynamic>;
+        final transcriptJsonData = json.decode(transcriptJson);
         transcriptData = TranscriptData.fromJson(transcriptJsonData);
       } catch (e) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko'
-              ? '자막 데이터 형식이 올바르지 않습니다.'
-              : 'Invalid transcript data format.',
-        );
+        if (!mounted) {
+          return;
+        }
+        debugPrint(e.toString());
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.invalidTranscriptFormat);
         return;
       }
 
@@ -192,13 +215,13 @@ class _PlayerScreenState extends State<PlayerScreen>
           hiveLecture.slidePath ??
           'assets/lectures/$lectureId/${lectureId}_slides.pdf';
 
-      final originalAudioPath =
-          hiveLecture.originalAudioPath ??
-          'assets/lectures/$lectureId/lecture_with_slides.m4a';
+      final originalAudioPath = hiveLecture.originalAudioPath;
 
-      final ttsAudioPath =
-          hiveLecture.ttsAudioPath ??
-          'assets/lectures/$lectureId/lecture_with_slides.opus';
+      final ttsAudioPath = isKoreanLecture
+          ? hiveLecture.originalAudioPath
+          : hiveLecture.ttsAudioPath;
+
+      debugPrint('$isKoreanLecture $originalAudioPath, $ttsAudioPath');
 
       // 6. Controller 초기화
       if (!mounted) {
@@ -213,14 +236,14 @@ class _PlayerScreenState extends State<PlayerScreen>
           pdfPath,
           ttsAudioPath,
           originalAudioPath,
+          isKoreanLecture,
         );
       } catch (e) {
-        final language = _hiveManager.settings.language;
-        _handleError(
-          language == 'ko'
-              ? '플레이어 초기화에 실패했습니다.'
-              : 'Failed to initialize player.',
-        );
+        if (!mounted) {
+          return;
+        }
+        final l10n = AppLocalizations.of(context);
+        _handleError(l10n.failedToInitializePlayer);
         return;
       }
 
@@ -228,13 +251,21 @@ class _PlayerScreenState extends State<PlayerScreen>
         setState(() {
           _isLoading = false;
         });
+
+        // OrientationBuilder와 PdfView가 완전히 mount된 후 재생 시작
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _controller.startPlayback();
+          }
+        });
       }
     } catch (e) {
       // 예상하지 못한 에러 처리
-      final language = _hiveManager.settings.language;
-      _handleError(
-        language == 'ko' ? '알 수 없는 오류가 발생했습니다.' : 'An unknown error occurred.',
-      );
+      if (!mounted) {
+        return;
+      }
+      final l10n = AppLocalizations.of(context);
+      _handleError(l10n.unknownError);
     }
   }
 
@@ -246,21 +277,42 @@ class _PlayerScreenState extends State<PlayerScreen>
 
     final highContrast = _hiveManager.settings.accessibilityHighContrast;
 
-    final playerContent = OrientationBuilder(
-      builder: (_, orientation) {
-        final isVertical = orientation == Orientation.portrait;
-        if (isVertical) {
-          return VerticalPlayerLayout(
-            controller: _controller,
-            onBack: () => Navigator.pop(context),
-          );
-        } else {
-          return HorizontalPlayerLayout(
-            controller: _controller,
-            onBack: () => Navigator.pop(context),
-          );
-        }
-      },
+    final playerContent = Container(
+      color: Colors.black,
+      child: SafeArea(
+        child: isTabletDevice(context)
+            ? OrientationBuilder(
+                builder: (context, orientation) {
+                  if (orientation == Orientation.landscape) {
+                    return HorizontalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  } else {
+                    return VerticalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  }
+                },
+              )
+            : ValueListenableBuilder<bool>(
+                valueListenable: _controller.isFullscreen,
+                builder: (_, isFullscreen, __) {
+                  if (isFullscreen) {
+                    return HorizontalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  } else {
+                    return VerticalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  }
+                },
+              ),
+      ),
     );
 
     return Scaffold(

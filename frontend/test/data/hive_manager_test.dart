@@ -13,6 +13,7 @@ HiveSubject buildSubject({
   bool favorite = false,
   List<String>? tagIds,
   List<String>? lectureIds,
+  bool isUncategorized = false,
 }) {
   return HiveSubject(
     id: id,
@@ -20,6 +21,7 @@ HiveSubject buildSubject({
     favorite: favorite,
     tagIds: tagIds ?? const [],
     lectureIds: lectureIds ?? const [],
+    isUncategorized: isUncategorized,
   );
 }
 
@@ -29,8 +31,6 @@ HiveLecture buildLecture({
   required String weekLabel,
   required String title,
   int duration = 3600000, // 밀리초 단위 (1시간)
-  String? originalAudioPath,
-  String? ttsAudioPath,
   String? jsonPath,
   DateTime? createdAt,
   DateTime? updatedAt,
@@ -41,9 +41,9 @@ HiveLecture buildLecture({
     weekLabel: weekLabel,
     title: title,
     duration: duration,
-    slidePath: 'slides/$id.pdf',
-    originalAudioPath: originalAudioPath,
-    ttsAudioPath: ttsAudioPath,
+    slidePath: 'slide$id.pdf',
+    originalAudioPath: 'originalAudio$id.m4a',
+    ttsAudioPath: 'ttsAudio$id.opus',
     thumbnailUrl: 'https://example.com/$id.png',
     jsonPath: jsonPath,
     createdAt: createdAt ?? DateTime(2024, 01, 01),
@@ -100,6 +100,11 @@ void main() {
           favorite: false,
           tagIds: ['t3'],
           lectureIds: ['lec3'],
+        ),
+        'uncategorized': buildSubject(
+          id: 'uncategorized',
+          title: 'Uncategorized',
+          isUncategorized: true,
         ),
       };
 
@@ -207,14 +212,34 @@ void main() {
       manager.removeListener(listener);
     });
 
+    test('lecture reordering is correct in logic', () async {
+      final subjectId = manager.getSubjects()[0].id;
+      await manager.reorderLecture(subjectId, 0, 1);
+      expect(manager.getSubjects()[0].lectureIds[0], 'lec2');
+    });
+
+    test('subject deletion is correct in logic', () async {
+      await manager.deleteSubject('s1');
+      expect(manager.getSubjects().length, 2);
+      expect(manager.getSubjects()[0].id, 's2');
+    });
+
+    test('lecture deletion is correct in logic', () async {
+      await manager.deleteLecture('lec1');
+      expect(manager.getSubjects()[0].lectureIds.length, 1);
+      expect(manager.getSubjects()[0].lectureIds[0], 'lec2');
+    });
+
     test('subject queries and mutations behave correctly', () async {
       final favorites = manager.getSubjects(favoritesOnly: true);
       expect(favorites, hasLength(1));
       expect(favorites.first.id, 's1');
+      expect(favorites.any((subject) => subject.isUncategorized), isFalse);
 
       final tagged = manager.getSubjects(filterTagIds: ['t2']);
       expect(tagged, hasLength(1));
       expect(tagged.first.id, 's1');
+      expect(tagged.any((subject) => subject.isUncategorized), isFalse);
 
       await manager.toggleSubjectFavorite('s2');
       expect(manager.getSubject('s2')?.favorite, isTrue);
@@ -235,8 +260,8 @@ void main() {
       expect(manager.getSubject(newId)?.tagIds, ['t1', 't4']);
       expect(manager.getSubject(newId)?.lectureIds, ['lec1']);
 
-      await manager.deleteSubject(newId);
-      expect(manager.getSubject(newId), isNull);
+      manager.updateSubjectOrder(['s2', 's1', 'uncategorized']);
+      expect(manager.getSubjects()[0].id, 's2');
     });
 
     test('tag sorting prioritizes numeric, Korean, English, and others', () {
@@ -288,8 +313,8 @@ void main() {
           title: 'Transactions',
           duration: 2700,
           slidePath: null,
-          originalAudioPath: null,
-          ttsAudioPath: null,
+          originalAudioPath: 'originalAudio.m4a',
+          ttsAudioPath: 'ttsAudio.opus',
           thumbnailUrl: null,
           jsonPath: null,
           createdAt: DateTime(2024, 02, 01),
@@ -311,9 +336,9 @@ void main() {
         final searchWeek = manager.searchLectures('week 1');
         expect(searchWeek.map((l) => l.id).toSet(), {'lec1', 'lec3'});
 
-        await manager.deleteLecture('lec2');
-        expect(manager.getLecture('lec2'), isNull);
-        expect(manager.getLecturesBySubject('s1').map((l) => l.id), ['lec1']);
+        //await manager.deleteLecture('lec2');
+        //expect(manager.getLecture('lec2'), isNull);
+        //expect(manager.getLecturesBySubject('s1').map((l) => l.id), ['lec1']);
       },
     );
 

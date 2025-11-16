@@ -7,10 +7,21 @@ import 'package:re_view/data/hive_manager.dart';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
-  LectureLoadingService._() {
+  LectureLoadingService._(this._hiveManager) {
     _restoreState();
   }
-  static final LectureLoadingService instance = LectureLoadingService._();
+
+  @visibleForTesting
+  factory LectureLoadingService.createForTest(HiveManager mockHiveManager) {
+    return LectureLoadingService._(mockHiveManager);
+  }
+
+  // coverage:ignore-start
+  static final LectureLoadingService instance = LectureLoadingService._(
+    HiveManager.instance,
+  );
+  final HiveManager _hiveManager;
+  // coverage:ignore-end
 
   // 유저 친화적인 메시지 목록 (한국어)
   static const List<String> _friendlyMessagesKo = [
@@ -42,7 +53,7 @@ class LectureLoadingService extends ChangeNotifier {
 
   /// 현재 언어 설정에 따른 메시지 목록 가져오기
   List<String> get _friendlyMessages {
-    final language = HiveManager.instance.settings.language;
+    final language = _hiveManager.settings.language;
     return language == 'ko' ? _friendlyMessagesKo : _friendlyMessagesEn;
   }
 
@@ -58,6 +69,10 @@ class LectureLoadingService extends ChangeNotifier {
   bool _bubbleOnRight = true;
   double _bubbleX = 24.0; // X position from left edge
   double _bubbleY = 24.0; // Y position from bottom edge
+  bool _hasError = false; // 에러 발생 여부
+  String _errorTitle = ''; // 에러 제목
+  String _errorMessage = ''; // 에러 상세 메시지
+  bool _isCompleted = false; // 완료 뷰 표시 여부
 
   /// 현재 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -89,6 +104,18 @@ class LectureLoadingService extends ChangeNotifier {
   /// 버블의 Y 위치 (하단 가장자리로부터의 거리)
   double get bubbleY => _bubbleY;
 
+  /// 에러 발생 여부
+  bool get hasError => _hasError;
+
+  /// 에러 제목
+  String get errorTitle => _errorTitle;
+
+  /// 에러 상세 메시지
+  String get errorMessage => _errorMessage;
+
+  /// 완료 위젯 노출 여부
+  bool get isCompleted => _isCompleted;
+
   /// 취소 콜백 등록
   void setOnCancel(VoidCallback? callback) {
     _onCancel = callback;
@@ -115,6 +142,10 @@ class LectureLoadingService extends ChangeNotifier {
     _isCancelled = false;
     _isCollapsed = false;
     _bubbleOnRight = true;
+    _hasError = false;
+    _errorTitle = '';
+    _errorMessage = '';
+    _isCompleted = false;
 
     // 주기적으로 메시지 변경 (3-5초마다)
     _startMessageTimer();
@@ -183,9 +214,10 @@ class LectureLoadingService extends ChangeNotifier {
 
     _messageTimer?.cancel();
     _progress = 1.0;
-    final language = HiveManager.instance.settings.language;
+    final language = _hiveManager.settings.language;
     _message = language == 'ko' ? '강의 생성 완료!' : 'Lecture created!';
     _lectureId = lectureId;
+    _isCompleted = true;
     notifyListeners();
     _saveState();
   }
@@ -202,26 +234,40 @@ class LectureLoadingService extends ChangeNotifier {
     _onCancel = null;
     _isCollapsed = false;
     _bubbleOnRight = true;
+    _hasError = false;
+    _errorTitle = '';
+    _errorMessage = '';
+    _isCompleted = false;
     notifyListeners();
     _clearState();
   }
 
   /// 에러 발생 시
-  void setError(String errorMessage) {
+  void setError({String? errorTitle, String? errorMessage}) {
     _messageTimer?.cancel();
-    final language = HiveManager.instance.settings.language;
-    _message = language == 'ko' ? '오류가 발생했어요' : 'An error occurred';
-    notifyListeners();
+    _hasError = true;
+    final language = _hiveManager.settings.language;
 
-    // 3초 후 자동으로 숨김
-    Future.delayed(const Duration(seconds: 3), hideLoading);
+    // 에러 제목 설정
+    _errorTitle =
+        errorTitle ?? (language == 'ko' ? '오류가 발생했습니다' : 'An error occurred');
+
+    // 에러 메시지 설정
+    _errorMessage =
+        errorMessage ??
+        (language == 'ko'
+            ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'
+            : 'Please check your network settings and try again later.');
+
+    notifyListeners();
+    _saveState();
   }
 
   /// 강의 생성 취소
   void cancelLoading() {
     _messageTimer?.cancel();
     _isCancelled = true;
-    final language = HiveManager.instance.settings.language;
+    final language = _hiveManager.settings.language;
     _message = language == 'ko' ? '강의 생성을 취소하는 중..' : 'Cancelling..';
     notifyListeners();
 
@@ -276,6 +322,7 @@ class LectureLoadingService extends ChangeNotifier {
   static const _keyBubbleOnRight = 'lecture_loading_bubble_on_right';
   static const _keyBubbleX = 'lecture_loading_bubble_x';
   static const _keyBubbleY = 'lecture_loading_bubble_y';
+  static const _keyIsCompleted = 'lecture_loading_is_completed';
 
   /// 상태를 SharedPreferences에 저장
   Future<void> _saveState() async {
@@ -289,6 +336,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setBool(_keyBubbleOnRight, _bubbleOnRight);
       await prefs.setDouble(_keyBubbleX, _bubbleX);
       await prefs.setDouble(_keyBubbleY, _bubbleY);
+      await prefs.setBool(_keyIsCompleted, _isCompleted);
     } catch (e) {
       debugPrint('Failed to save loading state: $e');
     }
@@ -306,6 +354,7 @@ class LectureLoadingService extends ChangeNotifier {
       _bubbleOnRight = prefs.getBool(_keyBubbleOnRight) ?? true;
       _bubbleX = prefs.getDouble(_keyBubbleX) ?? 24.0;
       _bubbleY = prefs.getDouble(_keyBubbleY) ?? 24.0;
+      _isCompleted = prefs.getBool(_keyIsCompleted) ?? false;
 
       // 복원 후 UI 업데이트
       if (_isLoading) {
@@ -328,6 +377,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyBubbleOnRight);
       await prefs.remove(_keyBubbleX);
       await prefs.remove(_keyBubbleY);
+      await prefs.remove(_keyIsCompleted);
     } catch (e) {
       debugPrint('Failed to clear loading state: $e');
     }

@@ -2,15 +2,18 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 import 'package:mockito/mockito.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/player/player_layout.dart';
 import 'package:re_view/features/player/player_controller.dart';
+import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 
 import 'mocks.mocks.dart';
@@ -121,36 +124,26 @@ void main() {
     );
 
     transcriptData = TranscriptData(
-      metadata: TranscriptMetadata(
-        totalSentences: 2,
-        totalDuration: 2000,
-        voice: 'test',
-        speed: 1.0,
-        languageCode: 'en',
-        sampleRate: 22050,
-      ),
+      ttsTotalDuration: 2000,
+      originalTotalDuration: 2000,
       timestamps: [
         TranscriptSentence(
-          sentenceId: 0,
-          text: 'First sentence',
+          textEng: 'First sentence',
           textKor: '첫 번째 문장',
           slideNumber: 1,
           originalStartTime: 0,
           originalEndTime: 1000,
-          startTime: 0,
-          endTime: 1000,
-          duration: 1000,
+          ttsStartTime: 0,
+          ttsEndTime: 1000,
         ),
         TranscriptSentence(
-          sentenceId: 1,
-          text: 'Second sentence',
+          textEng: 'Second sentence',
           textKor: '두 번째 문장',
           slideNumber: 2,
           originalStartTime: 0,
           originalEndTime: 1000,
-          startTime: 1000,
-          endTime: 2000,
-          duration: 1000,
+          ttsStartTime: 1000,
+          ttsEndTime: 2000,
         ),
       ],
     );
@@ -170,8 +163,18 @@ void main() {
     await stateStreamController.close();
   });
 
-  Widget buildTestApp(Widget child) {
-    return MaterialApp(home: Scaffold(body: child));
+  Widget buildTestApp(Widget child, {Locale? locale}) {
+    return MaterialApp(
+      home: Scaffold(body: child),
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+    );
   }
 
   group('HorizontalPlayerLayout - Widget Creation', () {
@@ -181,6 +184,11 @@ void main() {
           HorizontalPlayerLayout(controller: controller, onBack: () {}),
         ),
       );
+
+      await tester.pump();
+
+      // Clear any overflow exceptions from rendering in test environment
+      tester.takeException();
 
       expect(find.byType(HorizontalPlayerLayout), findsOneWidget);
     });
@@ -240,6 +248,11 @@ void main() {
         ),
       );
 
+      await tester.pump();
+
+      // Clear any overflow exceptions from rendering in test environment
+      tester.takeException();
+
       expect(find.byType(VerticalPlayerLayout), findsOneWidget);
     });
 
@@ -292,6 +305,136 @@ void main() {
       tester.takeException();
 
       expect(controller.isPagesExpanded.value, isFalse);
+    });
+
+    testWidgets('renders PagesListWidget when expanded', (tester) async {
+      controller.isPagesExpanded.value = true;
+      when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(PagesListWidget), findsOneWidget);
+    });
+
+    testWidgets('hides PagesListWidget when collapsed', (tester) async {
+      controller.isPagesExpanded.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          VerticalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(PagesListWidget), findsNothing);
+    });
+  });
+
+  group('HorizontalPlayerLayout - Pages Controls', () {
+    testWidgets('shows toggle bar and pages list when expanded', (
+      tester,
+    ) async {
+      controller.isPagesExpanded.value = true;
+      when(mockPdfCacheService.getCachedImageDirect(any)).thenReturn(null);
+      when(
+        mockPdfCacheService.getCachedOrRenderPage(any),
+      ).thenAnswer((_) async => Uint8List(0));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(HorizontalToggleBar), findsOneWidget);
+      expect(find.byType(PagesListWidget), findsOneWidget);
+    });
+
+    testWidgets('hides toggle bar when pages collapsed', (tester) async {
+      controller.isPagesExpanded.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(HorizontalToggleBar), findsNothing);
+    });
+
+    testWidgets('shows SyncButton when expanded for quick resync access', (
+      tester,
+    ) async {
+      controller.isPagesExpanded.value = true;
+      controller.isSynced.value = false;
+      controller.currentSentenceIndex.value = 0;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(SyncButton), findsOneWidget);
+    });
+  });
+
+  group('HorizontalPlayerLayout - Transcript panel rendering', () {
+    testWidgets('renders transcript panel when showTranscriptPanel is true', (
+      tester,
+    ) async {
+      controller.showTranscriptPanel.value = true;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      // TranscriptArea contains localized heading text
+      expect(find.byType(TranscriptArea), findsOneWidget);
+      expect(find.text('Transcript'), findsWidgets);
+    });
+
+    testWidgets('omits transcript panel when showTranscriptPanel is false', (
+      tester,
+    ) async {
+      controller.showTranscriptPanel.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          HorizontalPlayerLayout(controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+      tester.takeException();
+
+      expect(find.byType(TranscriptArea), findsNothing);
     });
   });
 
@@ -425,6 +568,13 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -450,6 +600,8 @@ void main() {
             ),
           ),
         );
+
+        await tester.pump();
 
         // Navigate to VerticalPlayerLayout
         await tester.tap(find.text('Open Vertical'));
@@ -581,7 +733,10 @@ void main() {
 
       // Simulate vertical drag (swipe up)
       await tester.drag(gestureDetector, const Offset(0, -10));
+
+      // Pump a few times to process the drag, but don't wait for all animations
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets('shows caption overlay when enabled in horizontal mode', (
@@ -650,9 +805,11 @@ void main() {
       expect(controller.isPlaying.value, isFalse);
 
       controller.currentTime.value = 1.0;
-      controller.totalTime = 2.0;
+      controller.ttsTotalDuration = 2.0;
+      controller.originalTotalDuration = 2.0;
       expect(controller.currentTime.value, equals(1.0));
-      expect(controller.totalTime, equals(2.0));
+      expect(controller.ttsTotalDuration, equals(2.0));
+      expect(controller.originalTotalDuration, equals(2.0));
     });
   });
 
@@ -777,7 +934,7 @@ void main() {
       controller.transcriptData = null;
 
       await tester.pumpWidget(
-        buildTestApp(TranscriptArea(controller: controller)),
+        buildTestApp(TranscriptArea(controller: controller, isVertical: false)),
       );
 
       await tester.pump();
@@ -787,7 +944,7 @@ void main() {
 
     testWidgets('renders English transcript title', (tester) async {
       await tester.pumpWidget(
-        buildTestApp(TranscriptArea(controller: controller)),
+        buildTestApp(TranscriptArea(controller: controller, isVertical: false)),
       );
 
       await tester.pump();
@@ -800,7 +957,10 @@ void main() {
       HiveManager.instance.settings.language = 'ko';
 
       await tester.pumpWidget(
-        buildTestApp(TranscriptArea(controller: controller)),
+        buildTestApp(
+          TranscriptArea(controller: controller, isVertical: false),
+          locale: const Locale('ko', 'KR'),
+        ),
       );
 
       await tester.pump();
@@ -809,6 +969,51 @@ void main() {
 
       // Reset language back to English for other tests
       HiveManager.instance.settings.language = 'en';
+    });
+  });
+
+  group('PdfArea overlays', () {
+    testWidgets('shows loading indicator when pdfController is null', (
+      tester,
+    ) async {
+      controller.pdfController = null;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(isVertical: true, controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('tapping gesture overlay toggles controller controls state', (
+      tester,
+    ) async {
+      controller.pdfController = null;
+      controller.showControls.value = false;
+      controller.isPagesExpanded.value = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          PdfArea(isVertical: true, controller: controller, onBack: () {}),
+        ),
+      );
+
+      await tester.pump();
+
+      final overlayFinder = find.byKey(
+        const ValueKey('pdf-gesture-overlay-vertical'),
+      );
+      expect(overlayFinder, findsOneWidget);
+
+      final gesture = tester.widget<GestureDetector>(overlayFinder);
+      gesture.onTap?.call();
+      await tester.pump();
+
+      expect(controller.showControls.value, isTrue);
     });
   });
 

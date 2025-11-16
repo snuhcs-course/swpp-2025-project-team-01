@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -26,6 +29,7 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<bool> showControls = ValueNotifier(false);
   final ValueNotifier<bool> isPagesExpanded = ValueNotifier(false);
   final ValueNotifier<bool> showTranscriptPanel = ValueNotifier(false);
+  final ValueNotifier<bool> isFullscreen = ValueNotifier(false);
 
   /// 재생 상태
   final ValueNotifier<bool> isPlaying = ValueNotifier(false);
@@ -47,8 +51,11 @@ class PlayerController extends ChangeNotifier {
   PdfController? pdfController;
   PdfDocument? pdfDocument;
   TranscriptData? transcriptData;
-  double totalTime = 0.0;
+  double ttsTotalDuration = 0.0;
+  double originalTotalDuration = 0.0;
   AutoScrollController? transcriptScrollController;
+  double? pdfAspectRatio; // PDF 페이지의 가로/세로 비율 (width/height)
+  bool? isKoreanLecture;
 
   // PDF 뷰와 Transcript의 상태를 유지하기 위한 GlobalKey
   final GlobalKey pdfViewKey = GlobalKey();
@@ -82,20 +89,10 @@ class PlayerController extends ChangeNotifier {
       return '';
     }
     final sentence = transcriptData!.timestamps[currentSentenceIndex.value!];
-    if (isKoreanLanguage.value && sentence.textKor != null) {
-      return sentence.textKor!;
+    if (isKoreanLecture == isOriginalAudio.value) {
+      return sentence.textKor;
     }
-    return sentence.text;
-  }
-
-  /// 한국어 transcript가 있는지 확인
-  bool get hasKoreanTranscript {
-    if (transcriptData == null || transcriptData!.timestamps.isEmpty) {
-      return false;
-    }
-    return transcriptData!.timestamps.any(
-      (sentence) => sentence.textKor != null,
-    );
+    return sentence.textEng;
   }
 
   // ========== 내부 상태 ==========
@@ -115,6 +112,12 @@ class PlayerController extends ChangeNotifier {
   int _currentOriginalStartTime = 0;
   int _currentStartTime = 0;
 
+  // 더블탭 위치 저장
+  double _doubleTapX = 0;
+
+  // PDF 로드 전 임시 파일 목록 (캐시 정리용)
+  List<String>? _initialTempFiles;
+
   // ========== 초기화 메서드 ==========
 
   Future<void> initialize(
@@ -124,9 +127,12 @@ class PlayerController extends ChangeNotifier {
     String pdfPath,
     String audioPath,
     String originalAudioPath,
+    bool isKoreanLec,
   ) async {
     this.transcriptData = transcriptData;
-    totalTime = transcriptData.metadata.totalDuration.toDouble() / 1000;
+    ttsTotalDuration = transcriptData.ttsTotalDuration.toDouble() / 1000;
+    originalTotalDuration =
+        transcriptData.originalTotalDuration.toDouble() / 1000;
 
     // 오디오 경로 저장
     _audioPath = audioPath;
@@ -143,16 +149,20 @@ class PlayerController extends ChangeNotifier {
     final initialPage = transcriptData.timestamps[0].slideNumber;
     await _loadPdfDocument(pdfPath, lectureId, initialPage);
 
+    isKoreanLanguage.value = isKoreanLec;
+    isOriginalAudio.value = isKoreanLec;
+    isKoreanLecture = isKoreanLec;
+
     // 오디오 리스너 설정
     _setupAudioListeners();
 
     // 스크롤 리스너 설정
     _setupScrollListener();
 
-    // 오디오 로드 및 재생 (기본: TTS)
-    await _audioService.loadAudio(audioPath);
-
-    _audioService.play(); // await 제거 - fire-and-forget
+    // 오디오 로드 (재생은 외부에서 startPlayback() 호출)
+    await _audioService.loadAudio(
+      isOriginalAudio.value ? originalAudioPath : audioPath,
+    );
   }
 
   Future<void> _loadPdfDocument(
@@ -160,9 +170,28 @@ class PlayerController extends ChangeNotifier {
     String lectureId,
     int initialPage,
   ) async {
-    pdfDocument = pdfPath.startsWith('assets/')
-        ? await PdfDocument.openAsset(pdfPath)
-        : await PdfDocument.openFile(pdfPath);
+    // PDF 로드 전 임시 디렉토리의 파일 목록 저장
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final files = tempDir.listSync();
+      _initialTempFiles = files.map((file) => file.path).toList();
+    } catch (e) {
+      debugPrint('Failed to capture initial temp files: $e');
+      _initialTempFiles = [];
+    }
+
+    // PDF 문서 로드 with error handling
+    try {
+      pdfDocument = pdfPath.startsWith('assets/')
+          ? await PdfDocument.openAsset(pdfPath)
+          : await PdfDocument.openFile(pdfPath);
+    } on PlatformException catch (e) {
+      debugPrint('❌ Error loading PDF: $e');
+      rethrow; // Re-throw to be caught by caller (player_screen's _loadLectureData)
+    } catch (e) {
+      debugPrint('❌ Unexpected error loading PDF: $e');
+      rethrow;
+    }
 
     _pdfCacheService.setPdfDocument(pdfDocument);
 
@@ -172,7 +201,10 @@ class PlayerController extends ChangeNotifier {
 
     if (cachedThumbnail != null) {
       _pdfCacheService.setCachedImage(1, cachedThumbnail.image.bytes);
-      debugPrint('✅ First page pre-loaded from thumbnail cache for $lectureId');
+      pdfAspectRatio = cachedThumbnail.aspectRatio;
+      debugPrint(
+        '✅ First page pre-loaded from thumbnail cache for $lectureId (aspect ratio: $pdfAspectRatio)',
+      );
     }
 
     // PdfController 생성 시 초기 페이지 설정
@@ -189,7 +221,7 @@ class PlayerController extends ChangeNotifier {
     // 재생 위치 변경 리스너
     _positionSubscription = _audioService.positionStream.listen((position) {
       currentTime.value = position.inMilliseconds / 1000.0;
-      _updateCurrentSentence();
+      updateCurrentSentence(true, currentTime.value);
     });
 
     // 재생 상태 변경 리스너
@@ -245,9 +277,29 @@ class PlayerController extends ChangeNotifier {
   }
 
   void toggleTranscriptLanguage() {
-    if (hasKoreanTranscript) {
-      isKoreanLanguage.value = !isKoreanLanguage.value;
+    isKoreanLanguage.value = !isKoreanLanguage.value;
+  }
+
+  Future<void> toggleFullscreen() async {
+    final willBeFullscreen = !isFullscreen.value;
+
+    // 방향을 먼저 설정한 후 상태 변경
+    if (willBeFullscreen) {
+      // 가로모드 강제
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      // 세로모드 강제
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
     }
+
+    // 방향 설정이 완료된 후 상태 변경
+    isFullscreen.value = willBeFullscreen;
   }
 
   /// 오디오 소스 전환 (Original ↔ TTS)
@@ -287,6 +339,18 @@ class PlayerController extends ChangeNotifier {
     }
   }
 
+  void saveDoubleTapPosition(double x) {
+    _doubleTapX = x;
+  }
+
+  void handleDoubleTapSkip(double screenWidth) {
+    if (_doubleTapX < screenWidth / 2) {
+      skipBackward();
+    } else {
+      skipForward();
+    }
+  }
+
   void handleVerticalDrag(DragUpdateDetails details) {
     // 가로 모드에서만 위로 스와이프 감지
     if (details.delta.dy < -5 && !isPagesExpanded.value) {
@@ -295,6 +359,11 @@ class PlayerController extends ChangeNotifier {
   }
 
   // ========== 재생 제어 메서드 ==========
+
+  /// 초기 재생 시작 (OrientationBuilder가 안정화된 후 호출)
+  Future<void> startPlayback() async {
+    await _audioService.play();
+  }
 
   Future<void> playPause() async {
     if (isPlaying.value) {
@@ -348,12 +417,22 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> skipBackward() async {
-    final newTime = (currentTime.value - 15).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value - 10)
+        .clamp(
+          0,
+          isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration,
+        )
+        .toDouble();
     await seek(newTime);
   }
 
   Future<void> skipForward() async {
-    final newTime = (currentTime.value + 15).clamp(0, totalTime).toDouble();
+    final newTime = (currentTime.value + 10)
+        .clamp(
+          0,
+          isOriginalAudio.value ? originalTotalDuration : ttsTotalDuration,
+        )
+        .toDouble();
     await seek(newTime);
   }
 
@@ -374,8 +453,8 @@ class PlayerController extends ChangeNotifier {
 
   // ========== Transcript 제어 메서드 ==========
 
-  void _updateCurrentSentence() {
-    if (transcriptData == null || _isForcedMove) {
+  void updateCurrentSentence(bool isForced, double seconds) {
+    if (transcriptData == null || (isForced && _isForcedMove)) {
       return;
     }
 
@@ -385,18 +464,17 @@ class PlayerController extends ChangeNotifier {
       // 현재 오디오 모드에 따라 적절한 타이밍 사용
       final startTime = isOriginalAudio.value
           ? sentence.originalStartTime
-          : sentence.startTime;
+          : sentence.ttsStartTime;
       final endTime = isOriginalAudio.value
           ? sentence.originalEndTime
-          : sentence.endTime;
+          : sentence.ttsEndTime;
 
-      if (currentTime.value * 1000 >= startTime &&
-          currentTime.value * 1000 < endTime + 0.2) {
+      if (seconds * 1000 >= startTime && seconds * 1000 < endTime + 0.2) {
         // 4개의 타이밍 모두 별도 변수에 저장
         _currentOriginalStartTime = sentence.originalStartTime;
-        _currentStartTime = sentence.startTime;
+        _currentStartTime = sentence.ttsStartTime;
 
-        _setCurrentSentenceAndPage(i);
+        _setCurrentSentenceAndPage(i, autoScroll: isForced);
         return;
       }
     }
@@ -474,7 +552,13 @@ class PlayerController extends ChangeNotifier {
     _isForcedMove = true;
     isAutoScrolling.value = true;
 
-    await _audioService.seek(Duration(milliseconds: sentence.startTime));
+    await _audioService.seek(
+      Duration(
+        milliseconds: isOriginalAudio.value
+            ? sentence.originalStartTime
+            : sentence.ttsStartTime,
+      ),
+    );
 
     _setCurrentSentenceAndPage(
       index,
@@ -508,7 +592,13 @@ class PlayerController extends ChangeNotifier {
       if (sentence.slideNumber == slideNumber) {
         _isForcedMove = true;
 
-        await _audioService.seek(Duration(milliseconds: sentence.startTime));
+        await _audioService.seek(
+          Duration(
+            milliseconds: isOriginalAudio.value
+                ? sentence.originalStartTime
+                : sentence.ttsStartTime,
+          ),
+        );
 
         _scrollTimer?.cancel();
         isAutoScrolling.value = true;
@@ -525,6 +615,49 @@ class PlayerController extends ChangeNotifier {
     }
   }
 
+  // ========== Cleanup ==========
+
+  /// PDF 로드 중 생성된 임시 파일들을 정리
+  Future<void> _cleanupTempPdfFiles() async {
+    if (_initialTempFiles == null) {
+      debugPrint('⚠️ No initial temp files list - skipping cleanup');
+      return;
+    }
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+
+      if (!tempDir.existsSync()) {
+        debugPrint('⚠️ Temp directory does not exist - skipping cleanup');
+        return;
+      }
+
+      final currentFiles = tempDir.listSync();
+      int deletedCount = 0;
+      int failedCount = 0;
+
+      // 초기 파일 목록에 없는 새로 생성된 파일들만 삭제
+      for (final file in currentFiles) {
+        if (!_initialTempFiles!.contains(file.path) && file is File) {
+          try {
+            await file.delete();
+            deletedCount++;
+            debugPrint('🗑️ Deleted temp PDF file: ${file.path}');
+          } catch (e) {
+            failedCount++;
+            debugPrint('⚠️ Failed to delete temp file ${file.path}: $e');
+          }
+        }
+      }
+
+      debugPrint(
+        '✅ Temp PDF cleanup completed: $deletedCount deleted, $failedCount failed',
+      );
+    } catch (e) {
+      debugPrint('⚠️ Failed to cleanup temp PDF files: $e');
+    }
+  }
+
   // ========== Dispose ==========
 
   @override
@@ -538,6 +671,7 @@ class PlayerController extends ChangeNotifier {
     showControls.dispose();
     isPagesExpanded.dispose();
     showTranscriptPanel.dispose();
+    isFullscreen.dispose();
     isPlaying.dispose();
     isSynced.dispose();
     isCaptionEnabled.dispose();
@@ -555,6 +689,15 @@ class PlayerController extends ChangeNotifier {
     _audioService.dispose();
     pdfController?.dispose();
     transcriptScrollController?.dispose();
+
+    // PDF 리소스 정리
+    pdfDocument?.close();
+    _pdfCacheService.clearCache();
+
+    // 파일 핸들이 완전히 해제될 시간을 주기 위해 짧은 지연 후 cleanup 실행
+    Future.delayed(const Duration(milliseconds: 100), () async {
+      await _cleanupTempPdfFiles();
+    });
 
     super.dispose();
   }

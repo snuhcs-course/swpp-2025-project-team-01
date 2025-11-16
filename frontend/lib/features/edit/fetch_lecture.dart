@@ -93,22 +93,20 @@ Future<String?> requestLecture(
   int audioCount,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String, int, int) onProgress, {
+  Future<void> Function(double, String, String, int, int) onProgress,
+  String langCode,
+  bool isRetry, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
 }) async {
   final http.Client client;
-  final bool shouldCloseClient;
   if (fakeClient != null) {
     client = fakeClient;
-    shouldCloseClient = false;
   } else if (clientToClose != null) {
     client = clientToClose;
-    shouldCloseClient = false;
   } else {
     client = http.Client();
-    shouldCloseClient = true;
   }
   final endpoint =
       endpointOverride ??
@@ -172,66 +170,171 @@ Future<String?> requestLecture(
         contentType: MediaType('audio', 'm4a'),
       ),
     );
+
+    req.fields['lang'] = langCode;
   }
 
   // Use the injected client to send
-  final streamed = await client
-      .send(req)
-      .timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception(
-            'Server connection timeout - Please check if server is running',
-          );
-        },
-      );
-
-  // read chunked SSE-style body
-  final stream = streamed.stream.transform(utf8.decoder);
-
-  String? jobId;
+  bool didArrive = false;
   try {
-    await for (final chunk in stream) {
-      // 취소 확인
-      if (LectureLoadingService.instance.isCancelled) {
-        return null;
-      }
+    final streamed = await client
+        .send(req)
+        .timeout(
+          endpointOverride != null
+              ? const Duration(seconds: 1) // Fast timeout for testing
+              : const Duration(minutes: 5),
+          onTimeout: () {
+            throw Exception(
+              'Server connection timeout - Please check if server is running',
+            );
+          },
+        );
+    didArrive = true;
+    // read chunked SSE-style body
+    final stream = streamed.stream
+        .transform(utf8.decoder)
+        .timeout(
+          endpointOverride != null
+              ? const Duration(milliseconds: 100) // Fast timeout for testing
+              : const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
+          onTimeout: (sink) {
+            debugPrint(
+              'Stream timeout - No updates from server for 30 seconds',
+            );
+            sink.addError(Exception('서버로부터 응답이 없습니다'));
+          },
+        );
 
-      final lines = chunk.split('\n');
-      for (final line in lines) {
-        if (line.startsWith('data: ')) {
-          final jsonData = line.substring(6);
-          final data = jsonDecode(jsonData) as Map<String, dynamic>;
+    String? jobId;
+    try {
+      await for (final chunk in stream) {
+        // 취소 확인
+        if (LectureLoadingService.instance.isCancelled) {
+          return null;
+        }
 
-          jobId = data['job_id'] as String;
+        final lines = chunk.split('\n');
+        for (final line in lines) {
+          if (line.startsWith('data: ')) {
+            final jsonData = line.substring(6);
+            final data = jsonDecode(jsonData) as Map<String, dynamic>;
 
-          // 서버가 0-100 범위로 보낼 수 있으므로 변환
-          final rawProgress = data['progress'];
-          final progress = rawProgress is int
-              ? (rawProgress / 100.0)
-              : (rawProgress as double) > 1.0
-              ? rawProgress / 100.0
-              : rawProgress;
+            jobId = data['job_id'] as String;
 
-          final message = data['message'] as String;
+            // 서버가 0-100 범위로 보낼 수 있으므로 변환
+            final rawProgress = data['progress'];
+            final progress = rawProgress is int
+                ? (rawProgress / 100.0)
+                : (rawProgress as double) > 1.0
+                ? rawProgress / 100.0
+                : rawProgress;
 
-          await onProgress(progress, message, titleText, order, audioCount);
+            final message = data['message'] as String;
 
-          if (data['status'] == 'completed') {
-            return jobId;
-          } else if (data['status'] == 'failed') {
-            return null;
+            await onProgress(progress, message, titleText, order, audioCount);
+
+            if (data['status'] == 'completed') {
+              return jobId;
+            } else if (data['status'] == 'failed') {
+              LectureLoadingService.instance.setError();
+              return null;
+            }
           }
         }
       }
-    }
-  } finally {
-    if (shouldCloseClient) {
-      client.close();
-    }
-  }
+    } catch (e) {
+      // 취소 확인
+      if (LectureLoadingService.instance.isCancelled) {
+        await Future.delayed(Duration(seconds: 1));
+        return null;
+      }
 
-  return jobId;
+      debugPrint('SSE issue triggered');
+      // Use fakeClient if provided (for testing), otherwise create new client
+      final pollingClient = fakeClient ?? http.Client();
+      final shouldCloseClient = fakeClient == null;
+
+      if (jobId == null) {
+        if (shouldCloseClient) {
+          pollingClient.close();
+        }
+        return null;
+      }
+      while (true) {
+        final status = await getJobStatus(
+          jobId,
+          serverAddress,
+          port,
+          pollingClient,
+        );
+        if (status == null || status.$1 == 'failed') {
+          debugPrint('Error during lecture request stream processing: $e');
+          LectureLoadingService.instance.setError();
+          if (shouldCloseClient) {
+            pollingClient.close();
+          }
+          return null;
+        } else if (status.$1 == 'completed') {
+          if (shouldCloseClient) {
+            pollingClient.close();
+          }
+          return jobId;
+        }
+
+        await onProgress(status.$2, 'message', titleText, order, audioCount);
+      }
+    }
+
+    return jobId;
+  } catch (e) {
+    debugPrint('Error during lecture request: $e');
+    if (!didArrive && !isRetry) {
+      final jobId = await requestLecture(
+        slidePath,
+        audioFileEntry,
+        titleText,
+        order,
+        audioCount,
+        serverAddress,
+        port,
+        onProgress,
+        langCode,
+        true,
+      );
+      return jobId;
+    }
+    LectureLoadingService.instance.setError();
+    return null;
+  }
+}
+
+Future<(String, double)?> getJobStatus(
+  String jobId,
+  String serverAddress,
+  String port,
+  http.Client client,
+) async {
+  final statusEndpoint = Uri.parse(
+    'http://$serverAddress:$port/api/synchronize/status/$jobId',
+  );
+  final statusResponse = await client.get(statusEndpoint);
+  if (statusResponse.statusCode == 200) {
+    final jsonData = jsonDecode(statusResponse.body) as Map<String, dynamic>;
+    final String status = jsonData['status'] as String;
+    jobId = jsonData['job_id'] as String;
+
+    // 서버가 0-100 범위로 보낼 수 있으므로 변환
+    final rawProgress = jsonData['progress'];
+    final progress = rawProgress is int
+        ? (rawProgress / 100.0)
+        : (rawProgress as double) > 1.0
+        ? rawProgress / 100.0
+        : rawProgress;
+    await Future.delayed(const Duration(seconds: 2));
+    return (status, progress);
+  } else {
+    return null;
+  }
 }
 
 Future<String?> downloadResult(
@@ -239,7 +342,8 @@ Future<String?> downloadResult(
   String titleText,
   int order,
   String serverAddress,
-  String port, {
+  String port,
+  bool isRetry, {
   http.Client? fakeClient, // for testing
   Directory? tempDirOverride, // for testing
 }) async {
@@ -260,21 +364,36 @@ Future<String?> downloadResult(
 
       return savePath;
     } else {
+      debugPrint('Failed to download result: ${response.statusCode}');
+      LectureLoadingService.instance.setError();
       return null;
     }
-  } finally {
-    if (fakeClient == null) {
-      client.close();
+  } catch (e) {
+    debugPrint('Error during download: $e');
+    if (!isRetry) {
+      final savePath = await downloadResult(
+        jobId,
+        titleText,
+        order,
+        serverAddress,
+        port,
+        true,
+      );
+      return savePath;
     }
+    LectureLoadingService.instance.setError();
+    return null;
   }
 }
 
 Future<List<String>?> unzipResult(
   String zipPath,
   String titleText,
+  String lectureId,
   int order, {
   Directory? documentsDirOverride, // for testing
   bool deleteZip = true, // for test assertions
+  Future<void> Function(File)? deleteZipOverride, // for testing deletion
 }) async {
   final zipFile = File(zipPath);
   if (!zipFile.existsSync()) {
@@ -292,7 +411,7 @@ Future<List<String>?> unzipResult(
 
   for (final file in archive) {
     final extension = path.extension(file.name);
-    final filePath = '$outputDir/${titleText}_$order$extension';
+    final filePath = '$outputDir/$lectureId/${titleText}_$order$extension';
 
     if (file.isFile) {
       // Make sure the parent directory exists
@@ -316,9 +435,13 @@ Future<List<String>?> unzipResult(
   // Unzip 완료 후 zip 파일 삭제
   if (deleteZip) {
     try {
-      await zipFile.delete();
-    } catch (_) {
-      // Ignore deletion errors
+      if (deleteZipOverride != null) {
+        await deleteZipOverride(zipFile);
+      } else {
+        await zipFile.delete();
+      }
+    } catch (e) {
+      debugPrint('Zip file deletion failed: $e');
     }
   }
 
@@ -334,21 +457,17 @@ Future<List<String>?> fetchLecture(
   String slidePath,
   AudioFileEntry audioFileEntry,
   String titleText,
+  String lectureId,
   int order,
   int audioCount,
   String serverAddress,
   String port,
-  Future<void> Function(double, String, String, int, int) onProgress, {
+  String langCode, {
   http.Client? fakeClient, // for testing
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
 }) async {
   debugPrint('🚀 Starting lecture request $order/$audioCount');
-  debugPrint('📤 Server: $serverAddress:$port');
-  debugPrint('📄 Slide: $slidePath');
-  debugPrint('🎵 Audio: ${audioFileEntry.filePath}');
-  debugPrint('📝 Start page: "${audioFileEntry.startPageController.text}"');
-  debugPrint('📝 End page: "${audioFileEntry.endPageController.text}"');
   final jobId = await requestLecture(
     slidePath,
     audioFileEntry,
@@ -358,6 +477,8 @@ Future<List<String>?> fetchLecture(
     serverAddress,
     port,
     onProgress,
+    langCode,
+    false,
     fakeClient: fakeClient,
     endpointOverride: endpointOverride,
     clientToClose: clientToClose,
@@ -373,27 +494,53 @@ Future<List<String>?> fetchLecture(
     order,
     serverAddress,
     port,
+    false,
   );
 
   if (zipPath == null) {
     return null;
   }
 
-  final filePaths = await unzipResult(zipPath, titleText, order);
+  try {
+    final filePaths = await unzipResult(zipPath, titleText, lectureId, order);
 
-  if (filePaths == null) {
+    if (filePaths == null) {
+      LectureLoadingService.instance.setError();
+      return null;
+    }
+
+    // Clean up split PDF files if they were created (multi-audio mode)
+    if (audioCount > 1) {
+      try {
+        final splitPdfPath = slidePath.replaceFirst(
+          RegExp(r'\.pdf$', caseSensitive: false),
+          '_tmp$order.pdf',
+        );
+        final splitPdfFile = File(splitPdfPath);
+        if (splitPdfFile.existsSync()) {
+          await splitPdfFile.delete();
+          debugPrint('Deleted split PDF: $splitPdfPath');
+        }
+      } catch (e) {
+        debugPrint('Failed to delete split PDF: $e');
+      }
+    }
+
+    return filePaths;
+  } catch (e) {
+    debugPrint('Error during unzip: $e');
+    LectureLoadingService.instance.setError();
     return null;
   }
-
-  debugPrint('Finishing lecture request $order/$audioCount');
-  return filePaths;
 }
 
 /// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.
 Future<String?> concatenateAudioFiles(
   List<String> audioPaths,
-  String titleText, {
+  String titleText,
+  String lectureId, {
   Directory? dirOverride, // for testing
+  Future<void> Function(String)? deleteFileOverride, // for testing deletion
 }) async {
   final audioFileList = audioPaths.map((p) => "file '$p'").join('\n');
   final documentsDir = dirOverride ?? await getApplicationDocumentsDirectory();
@@ -401,9 +548,9 @@ Future<String?> concatenateAudioFiles(
   final listFile = '$outputDir/tmp_audio_list.txt';
   String audioOutputPath;
   if (path.extension(audioPaths[0]) == '.opus') {
-    audioOutputPath = '$outputDir/$titleText.opus';
+    audioOutputPath = '$outputDir/$lectureId/$titleText.opus';
   } else {
-    audioOutputPath = '$outputDir/$titleText.m4a';
+    audioOutputPath = '$outputDir/$lectureId/$titleText.m4a';
   }
 
   // Concatenate the audio files
@@ -419,10 +566,14 @@ Future<String?> concatenateAudioFiles(
 
   try {
     for (final audioPath in audioPaths) {
-      await File(audioPath).delete();
+      if (deleteFileOverride != null) {
+        await deleteFileOverride(audioPath);
+      } else {
+        await File(audioPath).delete();
+      }
     }
-  } catch (_) {
-    // Ignore deletion errors
+  } catch (e) {
+    debugPrint('Audio file deletion failed: $e');
   }
 
   return audioOutputPath;
@@ -432,8 +583,10 @@ Future<String?> concatenateAudioFiles(
 Future<String?> concatenateJsonFiles(
   List<String> jsonPaths,
   List<int> pdfStarts,
-  String titleText, {
+  String titleText,
+  String lectureId, {
   Directory? dirOverride, // for testing
+  Future<void> Function(String)? deleteFileOverride, // for testing deletion
 }) async {
   const gapBetweenFiles = 5000;
 
@@ -445,21 +598,11 @@ Future<String?> concatenateJsonFiles(
     final documentsDir =
         dirOverride ?? await getApplicationDocumentsDirectory();
     final outputDir = documentsDir.path;
-    final jsonOutputPath = '$outputDir/$titleText.json';
+    final jsonOutputPath = '$outputDir/$lectureId/$titleText.json';
 
     final List<Map<String, dynamic>> mergedTimestamps = [];
-    int runningSentenceId = 1;
     int originalTimeOffset = 0;
     int ttsTimeOffset = 0;
-
-    int totalSentences = 0;
-    int totalDuration = 0;
-
-    // Metadata
-    String? voice;
-    double? speed;
-    String? languageCode;
-    int? sampleRate;
 
     for (int i = 0; i < jsonPaths.length; i++) {
       final jsonFile = File(jsonPaths[i]);
@@ -470,66 +613,18 @@ Future<String?> concatenateJsonFiles(
       // Actual start index
       final pdfStart = pdfStarts[i];
 
-      final data =
-          jsonDecode(await jsonFile.readAsString()) as Map<String, dynamic>;
+      final List<dynamic> data =
+          jsonDecode(await jsonFile.readAsString()) as List<dynamic>;
 
-      // Validate/collect metadata
-      final meta = data['metadata'] as Map<String, dynamic>;
-      final fileTotalSentences = meta['total_sentences'] as int;
-      final fileTotalDuration = meta['total_duration'] as int;
-      final fileVoice = meta['voice'] as String?;
-      final fileSpeed = meta['speed'] as double?;
-      final fileLanguage = meta['language_code'] as String?;
-      final fileSampleRate = meta['sample_rate'] as int?;
-
-      if (i == 0) {
-        voice = fileVoice;
-        speed = fileSpeed;
-        languageCode = fileLanguage;
-        sampleRate = fileSampleRate;
-      } else {
-        // Metadata consistency check
-        if (voice != null && fileVoice != null && voice != fileVoice) {
-          throw Exception(
-            'Metadata mismatch: voice "$fileVoice" != "$voice" in ${jsonPaths[i]}',
-          );
-        }
-        if (speed != null &&
-            fileSpeed != null &&
-            (speed - fileSpeed).abs() > 1e-9) {
-          throw Exception(
-            'Metadata mismatch: speed $fileSpeed != $speed in ${jsonPaths[i]}',
-          );
-        }
-        if (languageCode != null &&
-            fileLanguage != null &&
-            languageCode != fileLanguage) {
-          throw Exception(
-            'Metadata mismatch: language_code "$fileLanguage" != "$languageCode" in ${jsonPaths[i]}',
-          );
-        }
-        if (sampleRate != null &&
-            fileSampleRate != null &&
-            sampleRate != fileSampleRate) {
-          throw Exception(
-            'Metadata mismatch: sample_rate $fileSampleRate != $sampleRate in ${jsonPaths[i]}',
-          );
-        }
-      }
-
-      final tsList = (data['timestamps'] as List).cast<Map<String, dynamic>>();
+      final tsList = data.cast<Map<String, dynamic>>();
       if (tsList.isEmpty) {
         continue;
       }
 
-      // Update totals
-      totalSentences += fileTotalSentences;
-      totalDuration += fileTotalDuration;
-
       // Determine how much time to offset this file by: append after current last end
       final currentTtsTimelineEnd = mergedTimestamps.isEmpty
           ? 0
-          : mergedTimestamps.last['end_time'] as int;
+          : mergedTimestamps.last['tts_end_time'] as int;
       final currentOriginalTimelineEnd = mergedTimestamps.isEmpty
           ? 0
           : mergedTimestamps.last['original_end_time'] as int;
@@ -540,57 +635,44 @@ Future<String?> concatenateJsonFiles(
 
       // Integrate timestamps with renumbering and offsets
       for (final ts in tsList) {
-        final text = ts['text'] as String? ?? '';
+        final textEng = ts['text_eng'] as String? ?? '';
         final textKor = ts['text_kor'] as String? ?? '';
         final slideNumber = (ts['slide_number'] as num?)?.toInt() ?? 0;
-        final startTime = (ts['start_time'] as num?)?.toInt() ?? 0;
-        final endTime = (ts['end_time'] as num?)?.toInt() ?? startTime;
+        final ttsStartTime = (ts['tts_start_time'] as num?)?.toInt() ?? 0;
+        final ttsEndTime =
+            (ts['tts_end_time'] as num?)?.toInt() ?? ttsStartTime;
         final originalStartTime =
             (ts['original_start_time'] as num?)?.toInt() ?? 0;
         final originalEndTime = (ts['original_end_time'] as num?)?.toInt() ?? 0;
-        final duration =
-            (ts['duration'] as num?)?.toInt() ?? (endTime - startTime);
 
         mergedTimestamps.add({
-          'sentence_id': runningSentenceId++,
-          'text': text,
+          'text_eng': textEng,
           'text_kor': textKor,
           'slide_number': slideNumber + pdfStart - 1,
-          'start_time': startTime + ttsTimeOffset,
-          'end_time': endTime + ttsTimeOffset,
+          'tts_start_time': ttsStartTime + ttsTimeOffset,
+          'tts_end_time': ttsEndTime + ttsTimeOffset,
           'original_start_time': originalStartTime + originalTimeOffset,
           'original_end_time': originalEndTime + originalTimeOffset,
-          'duration': duration,
         });
       }
     }
-
-    totalDuration += (jsonPaths.length - 1) * gapBetweenFiles;
-
-    final output = <String, dynamic>{
-      'metadata': {
-        'total_sentences': totalSentences,
-        'total_duration': totalDuration,
-        'voice': voice,
-        'speed': speed,
-        'language_code': languageCode,
-        'sample_rate': sampleRate,
-      },
-      'timestamps': mergedTimestamps,
-    };
 
     // Write final JSON
     final encoder = const JsonEncoder.withIndent('  ');
     final outFile = File(jsonOutputPath);
     await outFile.create(recursive: true);
-    await outFile.writeAsString(encoder.convert(output));
+    await outFile.writeAsString(encoder.convert(mergedTimestamps));
 
     try {
       for (final jsonPath in jsonPaths) {
-        await File(jsonPath).delete();
+        if (deleteFileOverride != null) {
+          await deleteFileOverride(jsonPath);
+        } else {
+          await File(jsonPath).delete();
+        }
       }
-    } catch (_) {
-      // Ignore deletion errors
+    } catch (e) {
+      debugPrint('JSON file deletion failed: $e');
     }
 
     return jsonOutputPath;
@@ -606,8 +688,19 @@ const _progressChannelDesc = 'Shows task progress';
 const _progressNotificationId = 10042;
 bool _notifierInitialized = false;
 
-final FlutterLocalNotificationsPlugin _notifier =
-    FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin _notifier = FlutterLocalNotificationsPlugin();
+
+/// For testing: allows injecting a mock notifier
+@visibleForTesting
+void setNotifierForTest(FlutterLocalNotificationsPlugin? notifier) {
+  if (notifier != null) {
+    _notifier = notifier;
+    _notifierInitialized = true;
+  } else {
+    _notifier = FlutterLocalNotificationsPlugin();
+    _notifierInitialized = false;
+  }
+}
 
 /// Ensure the notifications plugin is initialized (works in bg isolates too).
 Future<void> _ensureNotificationsInitialized() async {
@@ -616,7 +709,15 @@ Future<void> _ensureNotificationsInitialized() async {
   }
 
   const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const initSettings = InitializationSettings(android: androidInit);
+  const iosInit = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+  const initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit,
+  );
   await _notifier.initialize(initSettings);
 
   // Request notification permission for Android 13+ (API 33+)
@@ -670,18 +771,12 @@ Future<void> onProgress(
     loadingService.startLoading(lectureTitle, audioCount);
   }
 
-  final currentProgress = loadingService.getProgress();
-  if (currentProgress >= 1.0) {
-    // Completed
-    loadingService.completeLoading();
-  } else {
-    // In progress
-    loadingService.updateProgress(progress, order, message);
-  }
+  // 진행도 갱신 (완료 위젯 노출은 마지막 단계에서 처리)
+  loadingService.updateProgress(progress, order, message);
 
   final updatedProgress = loadingService.getProgress();
   final pct = (updatedProgress * 100).round();
-  final isDone = updatedProgress >= 1.0;
+  final isDone = (pct == 100);
 
   // Always show notification during progress to keep background task alive
   // Only skip notification if completed and app is in foreground
@@ -708,13 +803,22 @@ Future<void> onProgress(
       category: AndroidNotificationCategory.progress,
     );
 
+    final iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: isDone,
+    );
+
     final title = 'Generating Lecture: $lectureTitle';
-    final details = NotificationDetails(android: androidDetails);
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _notifier.show(
       _progressNotificationId,
       isDone ? 'Lecture generation finished' : title,
-      isDone ? (message.isEmpty ? 'Completed' : message) : '$message — $pct%',
+      isDone ? null : '${loadingService.message} — $pct%',
       details,
     );
   } else {
@@ -723,9 +827,28 @@ Future<void> onProgress(
   }
 }
 
+// For testing: allows injecting lifecycle state
+AppLifecycleState? Function()? _lifecycleStateOverride;
+
+@visibleForTesting
+void setLifecycleStateForTest(AppLifecycleState? Function()? override) {
+  _lifecycleStateOverride = override;
+}
+
 /// Check if the app is currently in background
 bool _isAppInBackground() {
   try {
+    // Use override for testing
+    if (_lifecycleStateOverride != null) {
+      final state = _lifecycleStateOverride!();
+      if (state == null) {
+        return false;
+      }
+      return state == AppLifecycleState.paused ||
+          state == AppLifecycleState.inactive ||
+          state == AppLifecycleState.detached;
+    }
+
     // WidgetsBinding is available in UI isolate
     final lifecycleState = WidgetsBinding.instance.lifecycleState;
 

@@ -40,12 +40,16 @@ class _DrawerContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    final bool isPortrait = mediaQuery.orientation == Orientation.portrait;
+    final double additionalTopPadding = isPortrait ? mediaQuery.padding.top : 0;
+    final double headingTopPadding = 30.0 + additionalTopPadding;
 
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 30.0, 16.0, 16.0),
+          padding: EdgeInsets.fromLTRB(16.0, headingTopPadding, 16.0, 16.0),
           child: Text(
             l10n.menu,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
@@ -57,13 +61,6 @@ class _DrawerContent extends StatelessWidget {
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, Routes.lectureForm);
-          },
-        ),
-        ListTile(
-          title: Text(l10n.editSubjects),
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.pushNamed(context, Routes.subjectsEdit);
           },
         ),
         ListTile(

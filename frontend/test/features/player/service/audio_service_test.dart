@@ -322,6 +322,253 @@ void main() {
       });
     });
 
+    group('Audio Switching', () {
+      test('should only seek when switching to same audio path', () async {
+        final samePath = 'assets/audio.mp3';
+        when(
+          mockPlayer.setAsset(samePath),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+
+        // Load initial audio
+        await audioService.loadAudio(samePath);
+
+        // Switch to same audio with different position
+        await audioService.switchAudio(samePath, 5000);
+
+        // Should only call seek, not setAsset/setFilePath again
+        verify(mockPlayer.setAsset(samePath)).called(1);
+        verify(mockPlayer.seek(Duration(milliseconds: 5000))).called(1);
+        verifyNever(mockPlayer.setFilePath(any));
+      });
+
+      test(
+        'should load new asset and seek when switching to different audio',
+        () async {
+          final path1 = 'assets/audio1.mp3';
+          final path2 = 'assets/audio2.mp3';
+          when(
+            mockPlayer.setAsset(any),
+          ).thenAnswer((_) async => Duration(seconds: 100));
+          when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+          when(mockPlayer.playing).thenReturn(false);
+
+          // Load initial audio
+          await audioService.loadAudio(path1);
+
+          // Switch to different audio
+          await audioService.switchAudio(path2, 3000);
+
+          verify(mockPlayer.setAsset(path1)).called(1);
+          verify(mockPlayer.setAsset(path2)).called(1);
+          verify(mockPlayer.seek(Duration(milliseconds: 3000))).called(1);
+        },
+      );
+
+      test(
+        'should load new file and seek when switching to different file path',
+        () async {
+          final path1 = '/path/to/audio1.mp3';
+          final path2 = '/path/to/audio2.mp3';
+          when(
+            mockPlayer.setFilePath(any),
+          ).thenAnswer((_) async => Duration(seconds: 100));
+          when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+          when(mockPlayer.playing).thenReturn(false);
+
+          // Load initial audio
+          await audioService.loadAudio(path1);
+
+          // Switch to different audio
+          await audioService.switchAudio(path2, 2000);
+
+          verify(mockPlayer.setFilePath(path1)).called(1);
+          verify(mockPlayer.setFilePath(path2)).called(1);
+          verify(mockPlayer.seek(Duration(milliseconds: 2000))).called(1);
+        },
+      );
+
+      test('should restore playing state when switching audio', () async {
+        final path1 = 'assets/audio1.mp3';
+        final path2 = 'assets/audio2.mp3';
+        when(
+          mockPlayer.setAsset(any),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+        when(mockPlayer.playing).thenReturn(true);
+        when(mockPlayer.play()).thenAnswer((_) async => {});
+
+        // Load initial audio
+        await audioService.loadAudio(path1);
+
+        // Switch to different audio while playing
+        await audioService.switchAudio(path2, 1000);
+
+        verify(mockPlayer.playing).called(1);
+        verify(mockPlayer.play()).called(1);
+      });
+
+      test('should not play when switching audio if not playing', () async {
+        final path1 = 'assets/audio1.mp3';
+        final path2 = 'assets/audio2.mp3';
+        when(
+          mockPlayer.setAsset(any),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+        when(mockPlayer.playing).thenReturn(false);
+
+        // Load initial audio
+        await audioService.loadAudio(path1);
+
+        // Switch to different audio while paused
+        await audioService.switchAudio(path2, 1000);
+
+        verify(mockPlayer.playing).called(1);
+        verifyNever(mockPlayer.play());
+      });
+
+      test('should handle mixed asset and file path switching', () async {
+        final assetPath = 'assets/audio1.mp3';
+        final filePath = '/path/to/audio2.mp3';
+        when(
+          mockPlayer.setAsset(any),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setFilePath(any),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+        when(mockPlayer.playing).thenReturn(false);
+
+        // Load asset audio
+        await audioService.loadAudio(assetPath);
+
+        // Switch to file path audio
+        await audioService.switchAudio(filePath, 500);
+
+        verify(mockPlayer.setAsset(assetPath)).called(1);
+        verify(mockPlayer.setFilePath(filePath)).called(1);
+        verify(mockPlayer.seek(Duration(milliseconds: 500))).called(1);
+      });
+
+      test('should rethrow exception from setAsset during switch', () async {
+        final path1 = 'assets/audio1.mp3';
+        final path2 = 'assets/invalid.mp3';
+        when(
+          mockPlayer.setAsset(path1),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setAsset(path2),
+        ).thenThrow(Exception('Asset not found'));
+        when(mockPlayer.playing).thenReturn(false);
+
+        // Load initial audio
+        await audioService.loadAudio(path1);
+
+        // Switch to invalid audio
+        expect(
+          () => audioService.switchAudio(path2, 1000),
+          throwsA(isA<Exception>()),
+        );
+
+        verify(mockPlayer.setAsset(path2)).called(1);
+      });
+
+      test('should rethrow exception from setFilePath during switch', () async {
+        final path1 = '/path/to/audio1.mp3';
+        final path2 = '/invalid/path.mp3';
+        when(
+          mockPlayer.setFilePath(path1),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(
+          mockPlayer.setFilePath(path2),
+        ).thenThrow(Exception('File not found'));
+        when(mockPlayer.playing).thenReturn(false);
+
+        // Load initial audio
+        await audioService.loadAudio(path1);
+
+        // Switch to invalid audio
+        expect(
+          () => audioService.switchAudio(path2, 1000),
+          throwsA(isA<Exception>()),
+        );
+
+        verify(mockPlayer.setFilePath(path2)).called(1);
+      });
+
+      test('should seek to zero position when targetPositionMs is 0', () async {
+        final path1 = 'assets/audio1.mp3';
+        final path2 = 'assets/audio2.mp3';
+        when(
+          mockPlayer.setAsset(any),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+        when(mockPlayer.playing).thenReturn(false);
+
+        // Load initial audio
+        await audioService.loadAudio(path1);
+
+        // Switch to different audio at position 0
+        await audioService.switchAudio(path2, 0);
+
+        verify(mockPlayer.seek(Duration.zero)).called(1);
+      });
+
+      test('should handle large position values when switching', () async {
+        final path1 = 'assets/audio1.mp3';
+        final path2 = 'assets/audio2.mp3';
+        when(
+          mockPlayer.setAsset(any),
+        ).thenAnswer((_) async => Duration(seconds: 100));
+        when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+        when(mockPlayer.playing).thenReturn(false);
+
+        // Load initial audio
+        await audioService.loadAudio(path1);
+
+        // Switch with large position value (1 hour)
+        final largePosition = 3600000; // 1 hour in milliseconds
+        await audioService.switchAudio(path2, largePosition);
+
+        verify(
+          mockPlayer.seek(Duration(milliseconds: largePosition)),
+        ).called(1);
+      });
+
+      test(
+        'should maintain correct audio path after successful switch',
+        () async {
+          final path1 = 'assets/audio1.mp3';
+          final path2 = 'assets/audio2.mp3';
+          final path3 = 'assets/audio3.mp3';
+          when(
+            mockPlayer.setAsset(any),
+          ).thenAnswer((_) async => Duration(seconds: 100));
+          when(mockPlayer.seek(any)).thenAnswer((_) async => {});
+          when(mockPlayer.playing).thenReturn(false);
+
+          // Load initial audio
+          await audioService.loadAudio(path1);
+
+          // Switch to second audio
+          await audioService.switchAudio(path2, 1000);
+
+          // Try to switch to same audio (should only seek)
+          await audioService.switchAudio(path2, 2000);
+
+          // Switch to third audio
+          await audioService.switchAudio(path3, 3000);
+
+          verify(mockPlayer.setAsset(path1)).called(1);
+          verify(mockPlayer.setAsset(path2)).called(1);
+          verify(mockPlayer.setAsset(path3)).called(1);
+          verify(mockPlayer.seek(Duration(milliseconds: 1000))).called(1);
+          verify(mockPlayer.seek(Duration(milliseconds: 2000))).called(1);
+          verify(mockPlayer.seek(Duration(milliseconds: 3000))).called(1);
+        },
+      );
+    });
+
     group('Edge Cases', () {
       test('should handle concurrent play and seek', () async {
         when(mockPlayer.play()).thenAnswer((_) async => {});

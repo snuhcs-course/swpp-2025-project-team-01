@@ -144,56 +144,55 @@ Color getTextColorForBackground(int backgroundColor) {
 /// 태그에 적용할 수 있는 색상 테마를 정의합니다.
 /// 각 테마는 15개의 색상으로 구성되어 있으며, 태그가 15개를 초과하면 순환 방식으로 색상이 재사용됩니다.
 class TagColorTheme {
-  const TagColorTheme(this.name, this.colors);
+  const TagColorTheme(this.name, this.colors, {this.textColor = Colors.black});
 
   /// 테마 이름 (예: '봄', '여름', '가을')
   final String name;
 
   /// 테마에 포함된 색상 리스트 (ARGB 형식)
   final List<int> colors;
+
+  /// 태그 텍스트에 사용할 색상 (기본: 검정)
+  final Color textColor;
 }
 
 /// 사용 가능한 모든 태그 색상 테마
 const List<TagColorTheme> tagColorThemes = [
   TagColorTheme('봄', [
-    0xFFE9C9D4,
-    0xFFE0E5A2,
-    0xFFD8DD80,
-    0xFFD1739B,
-    0xFFF1E8C1,
-    0xFFDA95AA,
-    0xFFE3E38D,
-    0xFFBD5D5E,
-    0xFFA2AD61,
-    0xFFC596A6,
+    0xFFF5C8C4,
+    0xFFFFE7AB,
+    0xFFC5DBA9,
+    0xFFF59C9A,
+    0xFF9ECCF0,
+    0xFFFFBE98,
+    0xFFEBCFFF,
   ]),
   TagColorTheme('여름', [
-    0xFFDBC880,
-    0xFFE0C44B,
-    0xFF526373,
-    0xFFF0E8C3,
-    0xFFF1E491,
-    0xFFC2C2BE,
-    0xFF9CB0C5,
+    0xFFF5C74D,
+    0xFFF3D58D,
+    0xFFB3D9E0,
+    0xFFE1E5C7,
+    0xFF92ADA4,
+    0xFF8F9ECE,
+    0xFF2E4365,
   ]),
   TagColorTheme('가을', [
-    0xFFAF4B47,
-    0xFFB5C3C4,
-    0xFF933F33,
-    0xFFCFA992,
-    0xFFA75A48,
-    0xFF9AAAAE,
-    0xFFE1C5AE,
-    0xFFEDDECB,
-    0xFFD1D9D7,
+    0xFFE7BC89,
+    0xFFDA8825,
+    0xFFC55B31,
+    0xFFA3A380,
+    0xFF72524A,
+    0xFFB79C9B,
     0xFFA3C1D1,
   ]),
   TagColorTheme('겨울', [
-    0xFF705C50,
-    0xFFCBDFEA,
-    0xFFC8C2BC,
-    0xFF4B3935,
-    0xFFFAF3E0,
+    0xFF75889C,
+    0xFFB6C6D4,
+    0xFFE1DBD3,
+    0xFFBAA49F,
+    0xFFCFACB0,
+    0xFFE3E1EB,
+    0xFFD9E2E9,
   ]),
   TagColorTheme('솜사탕', [
     0xFFDC97B4,
@@ -203,9 +202,6 @@ const List<TagColorTheme> tagColorThemes = [
     0xFFEDD769,
     0xFFD0D271,
     0xFFD9C5FB,
-    0xFFF1E591,
-    0xFF93C2BC,
-    0xFF95B4E3,
   ]),
   TagColorTheme('비비드', [
     0xFFC65067,
@@ -217,14 +213,14 @@ const List<TagColorTheme> tagColorThemes = [
     0xFF74AA84,
   ]),
   TagColorTheme('바다', [
-    0xFFACBFD4,
-    0xFF15253F,
-    0xFF354E6B,
-    0xFF889BB0,
+    0xFF02182E,
+    0xFF022F56,
+    0xFF3E6985,
+    0xFF314B6E,
     0xFF405066,
     0xFF263C42,
     0xFF566C86,
-  ]),
+  ], textColor: Colors.white),
 ];
 
 /// 테마 이름으로 테마 객체 찾기
@@ -235,6 +231,11 @@ TagColorTheme getTagColorTheme(String name) {
     (t) => t.name == name,
     orElse: () => tagColorThemes[0],
   );
+}
+
+/// 태그 테마 이름으로 텍스트 색상을 반환
+Color getTagThemeTextColor(String name) {
+  return getTagColorTheme(name).textColor;
 }
 
 /// ThemeData 확장 - 라이트 색상 스킴 접근을 위한 확장

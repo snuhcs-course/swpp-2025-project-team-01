@@ -24,8 +24,6 @@ void main() {
       routes: {
         Routes.lectureForm: (context) =>
             const Scaffold(body: Text('Lecture Form Screen')),
-        Routes.subjectsEdit: (context) =>
-            const Scaffold(body: Text('Subjects Edit Screen')),
         Routes.tagsEdit: (context) =>
             const Scaffold(body: Text('Tags Edit Screen')),
         Routes.settings: (context) =>
@@ -101,7 +99,6 @@ void main() {
       // Check if menu items are displayed
       expect(find.text('Menu'), findsOneWidget);
       expect(find.text('Create Lecture'), findsOneWidget);
-      expect(find.text('Edit Subjects'), findsOneWidget);
       expect(find.text('Edit Tags'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(find.byType(Divider), findsNWidgets(2));
@@ -128,13 +125,12 @@ void main() {
 
       // Find ListTiles
       final listTiles = tester.widgetList<ListTile>(find.byType(ListTile));
-      expect(listTiles.length, 4);
+      expect(listTiles.length, 3);
 
       // Check order
       expect((listTiles.elementAt(0).title as Text).data, 'Create Lecture');
-      expect((listTiles.elementAt(1).title as Text).data, 'Edit Subjects');
-      expect((listTiles.elementAt(2).title as Text).data, 'Edit Tags');
-      expect((listTiles.elementAt(3).title as Text).data, 'Settings');
+      expect((listTiles.elementAt(1).title as Text).data, 'Edit Tags');
+      expect((listTiles.elementAt(2).title as Text).data, 'Settings');
     });
 
     testWidgets('should have correct padding for menu title', (
@@ -193,34 +189,6 @@ void main() {
 
       // Should navigate to lecture form screen
       expect(find.text('Lecture Form Screen'), findsOneWidget);
-      expect(find.text('Home'), findsNothing);
-    });
-
-    testWidgets('should navigate to subjects edit from drawer', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        createTestApp(
-          home: Scaffold(
-            appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
-            body: const Center(child: Text('Home')),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Open the drawer
-      final ScaffoldState state = tester.firstState(find.byType(Scaffold));
-      state.openDrawer();
-      await tester.pumpAndSettle();
-
-      // Tap on "Edit Subjects"
-      await tester.tap(find.text('Edit Subjects'));
-      await tester.pumpAndSettle();
-
-      // Should navigate to subjects edit screen
-      expect(find.text('Subjects Edit Screen'), findsOneWidget);
       expect(find.text('Home'), findsNothing);
     });
 
@@ -328,7 +296,6 @@ void main() {
       // Check if menu items are displayed in Korean
       expect(find.text('메뉴'), findsOneWidget);
       expect(find.text('강의 생성'), findsOneWidget);
-      expect(find.text('과목 수정'), findsOneWidget);
       expect(find.text('태그 수정'), findsOneWidget);
       expect(find.text('설정'), findsOneWidget);
     });
@@ -418,7 +385,6 @@ void main() {
       // Should show menu items
       expect(find.text('Menu'), findsOneWidget);
       expect(find.text('Create Lecture'), findsOneWidget);
-      expect(find.text('Edit Subjects'), findsOneWidget);
       expect(find.text('Edit Tags'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(find.byType(Divider), findsNWidgets(2));
@@ -593,39 +559,6 @@ void main() {
       expect(find.text('Menu'), findsNothing);
     });
 
-    testWidgets('should navigate to subjects edit from dialog', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        createTestApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              appBar: AppBar(title: const Text('Test')),
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
-                  child: const Text('Show Drawer'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Show dialog
-      await tester.tap(find.text('Show Drawer'));
-      await tester.pumpAndSettle();
-
-      // Tap on "Edit Subjects"
-      await tester.tap(find.text('Edit Subjects'));
-      await tester.pumpAndSettle();
-
-      // Should navigate and close dialog
-      expect(find.text('Subjects Edit Screen'), findsOneWidget);
-      expect(find.text('Menu'), findsNothing);
-    });
-
     testWidgets('should navigate to tags edit from dialog', (
       WidgetTester tester,
     ) async {
@@ -789,7 +722,6 @@ void main() {
       // Check Korean text
       expect(find.text('메뉴'), findsOneWidget);
       expect(find.text('강의 생성'), findsOneWidget);
-      expect(find.text('과목 수정'), findsOneWidget);
       expect(find.text('태그 수정'), findsOneWidget);
       expect(find.text('설정'), findsOneWidget);
     });

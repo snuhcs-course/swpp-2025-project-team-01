@@ -1,10 +1,13 @@
 // 홈 전용 위젯: 필터/즐겨찾기 pill, 태그 칩, 과목 패널, 강의 카드
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:reorderables/reorderables.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/core/thumbnail_cache_manager.dart';
-import 'package:re_view/data/models.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/shared/widgets.dart';
@@ -48,16 +51,19 @@ class EmptyStateMessage extends StatelessWidget {
 }
 
 /// 공통 Pill 버튼 위젯 (FilterPill, FavoritePill의 베이스)
-class _PillButton extends StatelessWidget {
-  const _PillButton({
+class PillButton extends StatelessWidget {
+  const PillButton({
+    super.key,
     required this.onTap,
     required this.active,
     required this.child,
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
   });
 
   final VoidCallback onTap;
   final bool active;
   final Widget child;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
@@ -81,10 +87,7 @@ class _PillButton extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: child,
-          ),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
@@ -113,7 +116,7 @@ class FilterPill extends StatelessWidget {
         ? (isDark ? Colors.black : Colors.white)
         : (isDark ? Colors.white : Colors.black87);
 
-    return _PillButton(
+    return PillButton(
       onTap: onTap,
       active: active,
       child: Row(
@@ -135,30 +138,52 @@ class FilterPill extends StatelessWidget {
 
 /// 즐겨찾기 pill 버튼 위젯
 class FavoritePill extends StatelessWidget {
-  const FavoritePill({
-    super.key,
-    required this.active,
-    required this.onTap,
-    required this.label,
-  });
+  const FavoritePill({super.key, required this.active, required this.onTap});
 
   final bool active;
   final VoidCallback onTap;
-  final String label;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final AppHighlights h = context.highlights;
-    final Color fg = active
-        ? (isDark ? Colors.black : Colors.white)
-        : (isDark ? Colors.white : Colors.black87);
     final Color starColor = active
         ? h.important
         : (isDark ? Colors.white : Colors.black87);
     final IconData starIcon = active ? Icons.star : Icons.star_border;
 
-    return _PillButton(
+    return PillButton(
+      onTap: onTap,
+      active: active,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Icon(starIcon, size: 18, color: starColor),
+    );
+  }
+}
+
+// 수정 모드 pill 버튼 위젯
+class EditPill extends StatelessWidget {
+  const EditPill({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color fg = active
+        ? (isDark ? Colors.black : Colors.white)
+        : (isDark ? Colors.white : Colors.black87);
+
+    return PillButton(
       onTap: onTap,
       active: active,
       child: Row(
@@ -166,7 +191,7 @@ class FavoritePill extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(starIcon, size: 18, color: starColor),
+          Icon(icon, size: 18, color: fg),
           const SizedBox(width: 6),
           Text(
             label,
@@ -187,7 +212,7 @@ class TagChips extends StatelessWidget {
     required this.onToggle,
   });
 
-  final List<Tag> tags;
+  final List<HiveTag> tags;
   final Set<String> selected;
   final ValueChanged<String> onToggle;
 
@@ -197,7 +222,7 @@ class TagChips extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: List.generate(tags.length, (i) {
-        final Tag t = tags[i];
+        final HiveTag t = tags[i];
         final bool isSel = selected.contains(t.id);
         return SelectableTagPill(
           tag: t,
@@ -219,14 +244,22 @@ class SubjectPanel extends StatefulWidget {
     required this.onToggleFavorite,
     required this.onOpenLecture,
     this.onLectureUpdated,
+    this.showEdit = false,
+    this.onEditSubject,
+    this.onEditLecture,
+    this.reorderIndex,
   });
 
-  final Subject subject;
-  final List<Tag> tags;
+  final HiveSubject subject;
+  final List<HiveTag> tags;
   final List<HiveLecture> lectures;
   final VoidCallback onToggleFavorite;
   final ValueChanged<HiveLecture> onOpenLecture;
   final VoidCallback? onLectureUpdated;
+  final bool showEdit;
+  final VoidCallback? onEditSubject;
+  final VoidCallback? onEditLecture;
+  final int? reorderIndex;
 
   @override
   State<SubjectPanel> createState() => _SubjectPanelState();
@@ -234,6 +267,7 @@ class SubjectPanel extends StatefulWidget {
 
 class _SubjectPanelState extends State<SubjectPanel>
     with SingleTickerProviderStateMixin {
+  late List<HiveLecture> _lectures; // local mutable order
   late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
@@ -241,8 +275,9 @@ class _SubjectPanelState extends State<SubjectPanel>
   @override
   void initState() {
     super.initState();
-    // Repository에서 저장된 상태 로드
+    // 저장된 상태 로드
     expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
+    _lectures = List.of(widget.lectures);
 
     final reduceMotion =
         HiveManager.instance.settings.accessibilityReduceMotion;
@@ -262,6 +297,29 @@ class _SubjectPanelState extends State<SubjectPanel>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant SubjectPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If parent data changed (e.g., new lectures loaded), refresh local copy
+    if (oldWidget.lectures != widget.lectures) {
+      _lectures = List.of(widget.lectures);
+    }
+  }
+
+  void _onReorder(int oldIndex, int newIndex) async {
+    setState(() {
+      final item = _lectures.removeAt(oldIndex);
+      _lectures.insert(newIndex, item);
+    });
+    // persist the new order
+    await HiveManager.instance.reorderLecture(
+      widget.subject.id,
+      oldIndex,
+      newIndex,
+    );
+    widget.onLectureUpdated?.call();
   }
 
   void _toggleExpanded() {
@@ -324,13 +382,18 @@ class _SubjectPanelState extends State<SubjectPanel>
                 : widget.tags, // 미분류는 태그 숨김
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
-            favoriteIcon: widget.subject.isUncategorized
+            favoriteOrDrag: widget.subject.isUncategorized
                 ? null // 미분류는 즐겨찾기 아이콘 숨김
+                : widget.showEdit
+                ? Icons.drag_indicator
                 : (widget.subject.favorite ? Icons.star : Icons.star_border),
             onToggleFavorite: widget.subject.isUncategorized
                 ? null // 미분류는 즐겨찾기 토글 불가
                 : widget.onToggleFavorite,
             favoriteIconColor: h.important,
+            showEdit: !widget.subject.isUncategorized && widget.showEdit,
+            onEditSubject: widget.onEditSubject,
+            reorderIndex: widget.reorderIndex,
           ),
 
           // 강의 그리드 (2열) - 애니메이션 적용
@@ -339,26 +402,46 @@ class _SubjectPanelState extends State<SubjectPanel>
               sizeFactor: _expandAnimation,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: widget.lectures
-                      .map(
-                        (lec) => SizedBox(
-                          width:
-                              (MediaQuery.of(context).size.width -
-                                  32 -
-                                  28 -
-                                  12) /
-                              2, // (화면 - 좌우패딩 - 카드패딩 - 간격) / 2
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // 실제 SubjectPanel의 너비를 기준으로 계산
+                    final cardWidth = (constraints.maxWidth - 12) / 2;
+                    // build lecture tiles
+                    final children = [
+                      for (final lec in _lectures)
+                        SizedBox(
+                          key: ValueKey(lec.id),
+                          width: cardWidth,
                           child: LectureCard(
                             lec: lec,
-                            onTap: widget.onOpenLecture,
+                            onTap: widget.showEdit
+                                ? (_) {}
+                                : widget.onOpenLecture,
                             onUpdated: widget.onLectureUpdated,
+                            showEdit: widget.showEdit,
+                            onEditLecture: widget.onEditLecture,
                           ),
                         ),
-                      )
-                      .toList(),
+                    ];
+                    return widget.showEdit
+                        ? ReorderableWrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            needsLongPressDraggable: false,
+                            onReorder: _onReorder,
+                            buildDraggableFeedback:
+                                (context, constraints, child) {
+                                  // lifted feedback while dragging
+                                  return Material(
+                                    elevation: 6,
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: child,
+                                  );
+                                },
+                            children: children,
+                          )
+                        : Wrap(spacing: 12, runSpacing: 12, children: children);
+                  },
                 ),
               ),
             ),
@@ -376,19 +459,21 @@ class LectureCard extends StatefulWidget {
     required this.lec,
     required this.onTap,
     this.onUpdated,
+    this.showEdit = false,
+    this.onEditLecture,
   });
 
   final HiveLecture lec;
   final ValueChanged<HiveLecture> onTap;
   final VoidCallback? onUpdated;
+  final bool showEdit;
+  final VoidCallback? onEditLecture;
 
   @override
   State<LectureCard> createState() => _LectureCardState();
 }
 
 class _LectureCardState extends State<LectureCard> {
-  PdfDocument? _pdfDocument;
-  PdfPage? _pdfPage;
   PdfPageImage? _cachedImage; // 렌더링된 이미지 (로컬 참조용)
   double? _aspectRatio; // PDF 페이지의 aspect ratio
   bool _isLoading = true;
@@ -398,24 +483,6 @@ class _LectureCardState extends State<LectureCard> {
   void initState() {
     super.initState();
     _loadPdf();
-  }
-
-  @override
-  void didUpdateWidget(LectureCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // 강의 내용이 변경되면 PDF 다시 로드
-    if (oldWidget.lec.slidePath != widget.lec.slidePath ||
-        oldWidget.lec.id != widget.lec.id) {
-      _pdfPage?.close();
-      _pdfDocument?.close();
-      _pdfDocument = null;
-      _pdfPage = null;
-      _cachedImage = null;
-      _aspectRatio = null;
-      _isLoading = true;
-      _error = null;
-      _loadPdf();
-    }
   }
 
   Future<void> _loadPdf() async {
@@ -441,13 +508,29 @@ class _LectureCardState extends State<LectureCard> {
     }
 
     // 2. 캐시에 없으면 PDF 로드 및 렌더링
+    PdfDocument? document;
+    PdfPage? page;
+    Set<String>? beforeFiles;
+
     try {
+      // PDF 열기 전 캐시 디렉토리의 파일 목록 저장
+      try {
+        final cacheDir = await getTemporaryDirectory();
+        beforeFiles = cacheDir.listSync().map((f) => f.path).toSet();
+        debugPrint('📂 Cache files before PDF open: ${beforeFiles.length}');
+      } catch (e) {
+        debugPrint('⚠️ Failed to list cache directory: $e');
+      }
+
       // assets 경로인지 파일 시스템 경로인지 확인
       final bool isAsset = widget.lec.slidePath!.startsWith('assets/');
-      final PdfDocument document = isAsset
+      document = isAsset
           ? await PdfDocument.openAsset(widget.lec.slidePath!)
           : await PdfDocument.openFile(widget.lec.slidePath!);
-      final PdfPage page = await document.getPage(1);
+
+      debugPrint('📄 Opened PDF: ${widget.lec.slidePath}');
+
+      page = await document.getPage(1);
 
       // aspect ratio 계산
       final double aspectRatio = page.width / page.height;
@@ -459,6 +542,40 @@ class _LectureCardState extends State<LectureCard> {
         format: PdfPageImageFormat.png,
       );
 
+      // PDF document와 page를 사용 후 즉시 닫기
+      await page.close();
+      await document.close();
+      debugPrint('🔒 Closed PDF document and page');
+
+      // 새로 생긴 캐시 파일 찾아서 삭제
+      if (beforeFiles != null) {
+        try {
+          final cacheDir = await getTemporaryDirectory();
+          final afterFiles = cacheDir.listSync();
+          int deletedCount = 0;
+
+          for (final file in afterFiles) {
+            if (!beforeFiles.contains(file.path) && file is File) {
+              try {
+                await file.delete();
+                deletedCount++;
+                debugPrint('🗑️ Deleted cache file: ${file.path}');
+              } catch (e) {
+                debugPrint('⚠️ Failed to delete ${file.path}: $e');
+              }
+            }
+          }
+
+          if (deletedCount > 0) {
+            debugPrint(
+              '✅ Cleaned up $deletedCount cache files for lecture: ${widget.lec.id}',
+            );
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to cleanup cache files: $e');
+        }
+      }
+
       if (image != null) {
         // 3. 글로벌 캐시에 aspect ratio와 함께 저장
         cacheManager.put(widget.lec.id, image, aspectRatio);
@@ -466,34 +583,36 @@ class _LectureCardState extends State<LectureCard> {
 
       if (mounted) {
         setState(() {
-          _pdfDocument = document;
-          _pdfPage = page;
           _cachedImage = image;
           _aspectRatio = aspectRatio;
           _isLoading = false;
         });
       }
     } catch (e) {
+      // 에러 발생 시에도 document와 page 정리
+      try {
+        await page?.close();
+        await document?.close();
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
           _error = e.toString();
           _isLoading = false;
         });
       }
+      debugPrint('❌ Error loading PDF: $e');
     }
   }
 
   @override
   void dispose() {
-    _pdfPage?.close();
-    _pdfDocument?.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final theme = Theme.of(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -519,22 +638,52 @@ class _LectureCardState extends State<LectureCard> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardTheme.color ?? theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: _buildThumbnail(),
               ),
               const SizedBox(height: 10),
-              Text(
-                widget.lec.weekLabel,
-                style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
-              ),
-              Text(
-                widget.lec.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: textColor),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.lec.weekLabel,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: theme.textTheme.bodyMedium?.fontWeight,
+                          ),
+                        ),
+                        Text(
+                          widget.lec.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 수정 버튼 (수정 모드일 때)
+                  widget.showEdit
+                      ? Visibility(
+                          visible: widget.showEdit,
+                          maintainState: true,
+                          maintainAnimation: true,
+                          maintainSize: true,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.edit,
+                              size: 20,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            onPressed: () => _showLectureDetailDialog(context),
+                          ),
+                        )
+                      : SizedBox.shrink(),
+                ],
               ),
             ],
           ),
@@ -544,9 +693,13 @@ class _LectureCardState extends State<LectureCard> {
   }
 
   Widget _buildThumbnail() {
+    final theme = Theme.of(context);
     return AspectRatio(
       aspectRatio: 16 / 9,
-      child: Container(color: Colors.white, child: _buildThumbnailContent()),
+      child: Container(
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
+        child: _buildThumbnailContent(),
+      ),
     );
   }
 
@@ -641,126 +794,97 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final manager = HiveManager.instance;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
 
     // 모든 과목 가져오기 (미분류 포함)
-    final allSubjects = manager
-        .getSubjects()
-        .map((hs) => hs.toSubject())
-        .toList();
+    final allSubjects = manager.getSubjects().toList();
 
     return AlertDialog(
+      backgroundColor: theme.dialogTheme.backgroundColor,
       titlePadding: EdgeInsets.zero,
-      title: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1D1D1D),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
-          ),
+      title: DialogHeaderTitle(title: l10n.lectureDetails),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: screenHeight * 0.7 - keyboardHeight,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              l10n.lectureDetails,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
-        ),
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _weekController,
-              decoration: InputDecoration(
-                labelText: l10n.week,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(
-                labelText: l10n.lectureTitle,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // 과목 선택 드롭다운
-            DropdownButtonFormField<String>(
-              initialValue: _selectedSubjectId,
-              decoration: InputDecoration(
-                labelText: l10n.isKorean ? '과목' : 'Subject',
-                border: const OutlineInputBorder(),
-              ),
-              items: allSubjects.map((subject) {
-                return DropdownMenuItem<String>(
-                  value: subject.id,
-                  child: Text(
-                    subject.isUncategorized
-                        ? l10n.uncategorized
-                        : subject.title,
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedSubjectId = newValue;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-            // 강의 시간 정보
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.lectureLength,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    _formatDuration(widget.lecture.duration),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 과목 선택 드롭다운
+              DropdownButtonFormField<String>(
+                initialValue: _selectedSubjectId,
+                decoration: InputDecoration(
+                  labelText: l10n.isKorean ? '과목' : 'Subject',
+                  border: const OutlineInputBorder(),
+                ),
+                items: allSubjects.map((subject) {
+                  return DropdownMenuItem<String>(
+                    value: subject.id,
+                    child: Text(
+                      subject.isUncategorized
+                          ? l10n.uncategorized
+                          : subject.title,
                     ),
-                  ),
-                ],
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedSubjectId = newValue;
+                    });
+                  }
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: _weekController,
+                decoration: InputDecoration(
+                  labelText: l10n.week,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: l10n.lectureTitle,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // 강의 시간 정보
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.lectureLength,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _formatDuration(widget.lecture.duration),
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
