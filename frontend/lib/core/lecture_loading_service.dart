@@ -7,10 +7,21 @@ import 'package:re_view/data/hive_manager.dart';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
-  LectureLoadingService._() {
+  LectureLoadingService._(this._hiveManager) {
     _restoreState();
   }
-  static final LectureLoadingService instance = LectureLoadingService._();
+
+  @visibleForTesting
+  factory LectureLoadingService.createForTest(HiveManager mockHiveManager) {
+    return LectureLoadingService._(mockHiveManager);
+  }
+
+  // coverage:ignore-start
+  static final LectureLoadingService instance = LectureLoadingService._(
+    HiveManager.instance,
+  );
+  final HiveManager _hiveManager;
+  // coverage:ignore-end
 
   // 유저 친화적인 메시지 목록 (한국어)
   static const List<String> _friendlyMessagesKo = [
@@ -42,7 +53,7 @@ class LectureLoadingService extends ChangeNotifier {
 
   /// 현재 언어 설정에 따른 메시지 목록 가져오기
   List<String> get _friendlyMessages {
-    final language = HiveManager.instance.settings.language;
+    final language = _hiveManager.settings.language;
     return language == 'ko' ? _friendlyMessagesKo : _friendlyMessagesEn;
   }
 
@@ -203,7 +214,7 @@ class LectureLoadingService extends ChangeNotifier {
 
     _messageTimer?.cancel();
     _progress = 1.0;
-    final language = HiveManager.instance.settings.language;
+    final language = _hiveManager.settings.language;
     _message = language == 'ko' ? '강의 생성 완료!' : 'Lecture created!';
     _lectureId = lectureId;
     _isCompleted = true;
@@ -235,7 +246,7 @@ class LectureLoadingService extends ChangeNotifier {
   void setError({String? errorTitle, String? errorMessage}) {
     _messageTimer?.cancel();
     _hasError = true;
-    final language = HiveManager.instance.settings.language;
+    final language = _hiveManager.settings.language;
 
     // 에러 제목 설정
     _errorTitle =
@@ -256,7 +267,7 @@ class LectureLoadingService extends ChangeNotifier {
   void cancelLoading() {
     _messageTimer?.cancel();
     _isCancelled = true;
-    final language = HiveManager.instance.settings.language;
+    final language = _hiveManager.settings.language;
     _message = language == 'ko' ? '강의 생성을 취소하는 중..' : 'Cancelling..';
     notifyListeners();
 

@@ -336,6 +336,7 @@ class VideoControlsOverlay extends StatelessWidget {
                       isVertical: isVertical,
                       onBack: onBack,
                       isOriginalAudio: controller.isOriginalAudio.value,
+                      isKoreanLecture: controller.isKoreanLecture ?? true,
                       onAudioToggle: controller.toggleAudioSource,
                       onSpeedChanged: controller.setPlaybackSpeed,
                       isSynced: controller.isSynced.value,
@@ -576,7 +577,9 @@ class TranslationButton extends StatelessWidget {
             : (isDark ? colorScheme.onSecondaryContainer : Colors.white);
 
         return InkWell(
-          onTap: controller.toggleTranscriptLanguage,
+          onTap: (controller.isKoreanLecture ?? true)
+              ? () {}
+              : controller.toggleTranscriptLanguage,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

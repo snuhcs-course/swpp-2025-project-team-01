@@ -212,6 +212,24 @@ void main() {
       manager.removeListener(listener);
     });
 
+    test('lecture reordering is correct in logic', () async {
+      final subjectId = manager.getSubjects()[0].id;
+      await manager.reorderLecture(subjectId, 0, 1);
+      expect(manager.getSubjects()[0].lectureIds[0], 'lec2');
+    });
+
+    test('subject deletion is correct in logic', () async {
+      await manager.deleteSubject('s1');
+      expect(manager.getSubjects().length, 2);
+      expect(manager.getSubjects()[0].id, 's2');
+    });
+
+    test('lecture deletion is correct in logic', () async {
+      await manager.deleteLecture('lec1');
+      expect(manager.getSubjects()[0].lectureIds.length, 1);
+      expect(manager.getSubjects()[0].lectureIds[0], 'lec2');
+    });
+
     test('subject queries and mutations behave correctly', () async {
       final favorites = manager.getSubjects(favoritesOnly: true);
       expect(favorites, hasLength(1));
@@ -242,8 +260,8 @@ void main() {
       expect(manager.getSubject(newId)?.tagIds, ['t1', 't4']);
       expect(manager.getSubject(newId)?.lectureIds, ['lec1']);
 
-      //await manager.deleteSubject(newId);
-      //expect(manager.getSubject(newId), isNull);
+      manager.updateSubjectOrder(['s2', 's1', 'uncategorized']);
+      expect(manager.getSubjects()[0].id, 's2');
     });
 
     test('tag sorting prioritizes numeric, Korean, English, and others', () {
