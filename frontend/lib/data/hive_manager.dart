@@ -626,9 +626,15 @@ class HiveManager extends ChangeNotifier {
     for (final subject in subjects.values) {
       if (subject.lectureIds.contains(lectureId)) {
         final lecture = getLecture(lectureId)!;
-        await File(lecture.originalAudioPath).delete();
-        await File(lecture.ttsAudioPath).delete();
-        await File(lecture.jsonPath!).delete();
+        try {
+          await File(lecture.originalAudioPath).delete();
+          if (lecture.langCode == 'en') {
+            await File(lecture.ttsAudioPath).delete();
+          }
+          await File(lecture.jsonPath!).delete();
+        } catch (_) {
+          // Ignore deletion errors
+        }
         final updatedIds = subject.lectureIds
             .where((id) => id != lectureId)
             .toList();
