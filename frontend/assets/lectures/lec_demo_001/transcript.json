@@ -1,6 +1,6 @@
 [
   {
-    "text_eng": "Every lecture perfectly captured.",
+    "text_eng": "Every lecture, perfectly captured.",
     "text_kor": "모든 강의 내용이 완벽하게 담겨 있습니다.",
     "slide_number": 2,
     "tts_start_time": 0,
@@ -18,8 +18,8 @@
     "original_end_time": 7300
   },
   {
-    "text_eng": "My name is Lere, Mask of the Review, and your guide to this app today.",
-    "text_kor": "제 이름은 레레(Lere)입니다. 저는 ‘리뷰의 전문가(Mask of the Review)’이며, 오늘 이 앱을 사용하는 데 있어 여러분의 가이드가 되어 드리겠습니다.",
+    "text_eng": "My name is Lere, Maskot of the Review, and your guide to this app today.",
+    "text_kor": "제 이름은 레레(Lere)입니다. 저는 ‘리뷰의 마스코트(Maskot of the Review)’이며, 오늘 이 앱을 사용하는 데 있어 여러분의 가이드가 되어 드리겠습니다.",
     "slide_number": 2,
     "tts_start_time": 4825,
     "tts_end_time": 9350,
