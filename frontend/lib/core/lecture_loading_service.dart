@@ -8,10 +8,21 @@ import 'package:re_view/data/hive_manager.dart';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
-  LectureLoadingService._() {
+  LectureLoadingService._(this._hiveManager) {
     _restoreState();
   }
-  static final LectureLoadingService instance = LectureLoadingService._();
+
+  @visibleForTesting
+  factory LectureLoadingService.createForTest(HiveManager mockHiveManager) {
+    return LectureLoadingService._(mockHiveManager);
+  }
+
+  // coverage:ignore-start
+  static final LectureLoadingService instance = LectureLoadingService._(
+    HiveManager.instance,
+  );
+  final HiveManager _hiveManager;
+  // coverage:ignore-end
 
   Timer? _messageTimer;
   int _currentMessageIndex = 0;

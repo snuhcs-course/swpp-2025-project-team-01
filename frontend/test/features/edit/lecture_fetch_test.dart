@@ -26,7 +26,7 @@ void main() {
   group('Split PDF', () {
     test('Success', () async {
       final inputFilePath =
-          'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf';
+          'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf';
       final bytes = await File(inputFilePath).readAsBytes();
       final originalPdf = PdfDocument(inputBytes: bytes);
       final originalSize = originalPdf.pages[2].size;
@@ -131,7 +131,7 @@ void main() {
     test('Fail on endpoint', () async {
       // Minimal fake inputs
       final slide = File(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
       );
       final audio = await tempFile('audio.m4a', [4, 5, 6]);
 
@@ -198,7 +198,7 @@ void main() {
 
       try {
         File(
-          'assets/lectures/lec_demo_002/lec_demo_002_slides_tmp0.pdf',
+          'assets/lectures/lec_demo_001/lec_demo_001_slides_tmp0.pdf',
         ).delete();
       } catch (_) {
         // Ignore deletion errors
