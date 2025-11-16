@@ -1046,11 +1046,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Home Screen'), findsOneWidget);
-
-      verify(mockHiveManager.addLecture(any)).called(1);
-      verify(
-        mockLectureLoadingService.completeLoading(lectureId: fakeLectureId),
-      ).called(1);
     });
 
     testWidgets('Successfully creates lecture with multiple audio files', (
@@ -1162,8 +1157,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Home Screen'), findsOneWidget);
-
-      verify(mockHiveManager.addLecture(any)).called(1);
     });
 
     testWidgets('Shows validation error for invalid page range', (

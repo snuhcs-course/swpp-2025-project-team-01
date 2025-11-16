@@ -31,7 +31,7 @@ void main() {
 
   group('Split PDF', () {
     const inputFilePath =
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf';
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf';
 
     test('Splits PDF range and preserves page size', () async {
       final bytes = await File(inputFilePath).readAsBytes();
@@ -379,7 +379,7 @@ void main() {
 
     test('Returns null when endpoint connection fails', () async {
       final slide = File(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
       );
       final audio = await tempFile('audio.m4a', [4, 5, 6]);
 
@@ -418,7 +418,7 @@ void main() {
 
       // Clean up any split PDF files that might have been created
       final splitPdfPath =
-          'assets/lectures/lec_demo_002/lec_demo_002_slides_tmp0.pdf';
+          'assets/lectures/lec_demo_001/lec_demo_001_slides_tmp0.pdf';
       final splitFile = File(splitPdfPath);
       if (splitFile.existsSync()) {
         await splitFile.delete();
@@ -657,7 +657,7 @@ void main() {
       service.hideLoading();
 
       final result = await fetchLecture(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         audioEntry,
         'TestLecture',
         'lecId',
@@ -698,7 +698,7 @@ void main() {
       service.hideLoading();
 
       final result = await fetchLecture(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         audioEntry,
         'TestLecture',
         'lecId',
@@ -752,7 +752,7 @@ void main() {
       service.hideLoading();
 
       final result = await fetchLecture(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         audioEntry,
         'UnzipError',
         'lecId',
@@ -1231,7 +1231,7 @@ void main() {
   group('Additional edge cases', () {
     test('Handles invalid requestLecture inputs', () async {
       final slide = File(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
       );
       final tempDir = await Directory.systemTemp.createTemp('edge_test_');
       final audio = await File(
@@ -1391,7 +1391,7 @@ void main() {
 
       service.hideLoading();
       final jobId1 = await requestLecture(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         audioEntry,
         'PollTest',
         1,
@@ -1441,7 +1441,7 @@ void main() {
 
       service.hideLoading();
       final jobId2 = await requestLecture(
-        'assets/lectures/lec_demo_002/lec_demo_002_slides.pdf',
+        'assets/lectures/lec_demo_001/lec_demo_001_slides.pdf',
         audioEntry,
         'FailPollTest',
         1,
