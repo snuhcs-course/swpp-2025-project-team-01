@@ -19,10 +19,10 @@ void main() {
   late Directory testDirectory;
 
   ThemeData buildTheme() => ThemeData.from(colorScheme: lightScheme).copyWith(
-        extensions: <ThemeExtension<dynamic>>[
-          AppHighlights.fromScheme(lightScheme),
-        ],
-      );
+    extensions: <ThemeExtension<dynamic>>[
+      AppHighlights.fromScheme(lightScheme),
+    ],
+  );
 
   // Helper function to build dialog with localization support
   Widget buildDialogTest({
@@ -41,10 +41,7 @@ void main() {
       theme: buildTheme(),
       home: Scaffold(
         body: Center(
-          child: LectureCard(
-            lec: lecture,
-            onTap: (_) {},
-          ),
+          child: LectureCard(lec: lecture, onTap: (_) {}),
         ),
       ),
     );
@@ -451,10 +448,7 @@ void main() {
 
         // Should show Korean text
         expect(find.text('강의 삭제'), findsOneWidget);
-        expect(
-          find.textContaining('이 강의를 삭제하시겠습니까?'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('이 강의를 삭제하시겠습니까?'), findsOneWidget);
       });
 
       testWidgets('cancel in confirmation keeps both dialogs open', (

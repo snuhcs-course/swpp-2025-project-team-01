@@ -489,20 +489,14 @@ void main() {
 
       // Initially collapsed - should show up arrow
       expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
-      expect(
-        HiveManager.instance.getSubjectExpandedState(subject.id),
-        isFalse,
-      );
+      expect(HiveManager.instance.getSubjectExpandedState(subject.id), isFalse);
 
       // Tap the header to expand
       await tester.tap(find.byIcon(Icons.keyboard_arrow_up));
       await tester.pump();
 
       // Should now be expanded
-      expect(
-        HiveManager.instance.getSubjectExpandedState(subject.id),
-        isTrue,
-      );
+      expect(HiveManager.instance.getSubjectExpandedState(subject.id), isTrue);
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
   });

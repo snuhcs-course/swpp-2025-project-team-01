@@ -608,11 +608,10 @@ void main() {
       expect(observer.pushedRoutes, isNotEmpty);
     });
 
-    testWidgets('reorders subjects when onReorder is called in edit mode', (
-      tester,
-    ) async {
-
-    });
+    testWidgets(
+      'reorders subjects when onReorder is called in edit mode',
+      (tester) async {},
+    );
 
     testWidgets('shows SubjectEditDialog when subject edit is invoked', (
       tester,
@@ -959,7 +958,10 @@ void main() {
     });
   });
 
-  Widget buildDialogTestApp(Widget Function() dialogBuilder, {Locale locale = const Locale('en')}) {
+  Widget buildDialogTestApp(
+    Widget Function() dialogBuilder, {
+    Locale locale = const Locale('en'),
+  }) {
     final theme = ThemeData.from(
       colorScheme: lightScheme,
     ).copyWith(extensions: [AppHighlights.fromScheme(lightScheme)]);
@@ -1003,9 +1005,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(
-          () => CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          ),
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
         ),
       );
       await tester.pumpAndSettle();
@@ -1029,9 +1029,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(
-          () => CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          ),
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
         ),
       );
       await tester.pumpAndSettle();
@@ -1073,9 +1071,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(
-          () => CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          ),
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
         ),
       );
       await tester.pumpAndSettle();
@@ -1104,9 +1100,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(
-          () => CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          ),
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
         ),
       );
       await tester.pumpAndSettle();
@@ -1145,16 +1139,14 @@ void main() {
       });
 
       await tester.pumpWidget(
-        buildDialogTestApp(
-          () {
-            final subject = HiveManager.instance.getSubject('s1')!;
-            return SubjectEditDialog(
-              subject: subject,
-              initialTagIds: ['t1'],
-              allTags: HiveManager.instance.getTags(),
-            );
-          },
-        ),
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
       );
       await tester.pumpAndSettle();
 
@@ -1185,16 +1177,14 @@ void main() {
       });
 
       await tester.pumpWidget(
-        buildDialogTestApp(
-          () {
-            final subject = HiveManager.instance.getSubject('s1')!;
-            return SubjectEditDialog(
-              subject: subject,
-              initialTagIds: ['t1'],
-              allTags: HiveManager.instance.getTags(),
-            );
-          },
-        ),
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
       );
       await tester.pumpAndSettle();
 
@@ -1235,16 +1225,14 @@ void main() {
       });
 
       await tester.pumpWidget(
-        buildDialogTestApp(
-          () {
-            final subject = HiveManager.instance.getSubject('s1')!;
-            return SubjectEditDialog(
-              subject: subject,
-              initialTagIds: ['t1'],
-              allTags: HiveManager.instance.getTags(),
-            );
-          },
-        ),
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
       );
       await tester.pumpAndSettle();
 
@@ -1290,16 +1278,14 @@ void main() {
       });
 
       await tester.pumpWidget(
-        buildDialogTestApp(
-          () {
-            final subject = HiveManager.instance.getSubject('s1')!;
-            return SubjectEditDialog(
-              subject: subject,
-              initialTagIds: ['t0'],
-              allTags: HiveManager.instance.getTags(),
-            );
-          },
-        ),
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t0'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
       );
       await tester.pumpAndSettle();
 
@@ -1340,16 +1326,14 @@ void main() {
       });
 
       await tester.pumpWidget(
-        buildDialogTestApp(
-          () {
-            final subject = HiveManager.instance.getSubject('s1')!;
-            return SubjectEditDialog(
-              subject: subject,
-              initialTagIds: ['t1'],
-              allTags: HiveManager.instance.getTags(),
-            );
-          },
-        ),
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
       );
       await tester.pumpAndSettle();
 
@@ -1393,16 +1377,14 @@ void main() {
       });
 
       await tester.pumpWidget(
-        buildDialogTestApp(
-          () {
-            final subject = HiveManager.instance.getSubject('s1')!;
-            return SubjectEditDialog(
-              subject: subject,
-              initialTagIds: ['t1'],
-              allTags: HiveManager.instance.getTags(),
-            );
-          },
-        ),
+        buildDialogTestApp(() {
+          final subject = HiveManager.instance.getSubject('s1')!;
+          return SubjectEditDialog(
+            subject: subject,
+            initialTagIds: ['t1'],
+            allTags: HiveManager.instance.getTags(),
+          );
+        }),
       );
       await tester.pumpAndSettle();
 
@@ -1447,6 +1429,6 @@ void main() {
           subject.tagIds.remove(newTag.id);
         }
       });
-    });    
+    });
   });
 }
