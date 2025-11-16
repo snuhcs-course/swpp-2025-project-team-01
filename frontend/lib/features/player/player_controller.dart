@@ -172,9 +172,18 @@ class PlayerController extends ChangeNotifier {
       _initialTempFiles = [];
     }
 
-    pdfDocument = pdfPath.startsWith('assets/')
-        ? await PdfDocument.openAsset(pdfPath)
-        : await PdfDocument.openFile(pdfPath);
+    // PDF 문서 로드 with error handling
+    try {
+      pdfDocument = pdfPath.startsWith('assets/')
+          ? await PdfDocument.openAsset(pdfPath)
+          : await PdfDocument.openFile(pdfPath);
+    } on PlatformException catch (e) {
+      debugPrint('❌ Error loading PDF: $e');
+      rethrow; // Re-throw to be caught by caller (player_screen's _loadLectureData)
+    } catch (e) {
+      debugPrint('❌ Unexpected error loading PDF: $e');
+      rethrow;
+    }
 
     _pdfCacheService.setPdfDocument(pdfDocument);
 
