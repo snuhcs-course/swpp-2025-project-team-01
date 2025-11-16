@@ -509,6 +509,23 @@ Future<List<String>?> fetchLecture(
       return null;
     }
 
+    // Clean up split PDF files if they were created (multi-audio mode)
+    if (audioCount > 1) {
+      try {
+        final splitPdfPath = slidePath.replaceFirst(
+          RegExp(r'\.pdf$', caseSensitive: false),
+          '_tmp$order.pdf',
+        );
+        final splitPdfFile = File(splitPdfPath);
+        if (splitPdfFile.existsSync()) {
+          await splitPdfFile.delete();
+          debugPrint('Deleted split PDF: $splitPdfPath');
+        }
+      } catch (e) {
+        debugPrint('Failed to delete split PDF: $e');
+      }
+    }
+
     return filePaths;
   } catch (e) {
     debugPrint('Error during unzip: $e');

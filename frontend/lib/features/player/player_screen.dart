@@ -38,6 +38,7 @@ class _PlayerScreenState extends State<PlayerScreen>
   late final HiveManager _hiveManager;
   bool _isLoading = true;
   bool _wasPlayingBeforePause = false;
+  late final bool _isTablet;
 
   @override
   void initState() {
@@ -59,7 +60,14 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 프레임이 빌드된 이후에 실행
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        lockToCurrentOrientation(context);
+        // 태블릿 여부 캐시 (dispose에서 사용)
+        _isTablet = isTabletDevice(context);
+
+        // 태블릿일 때만 방향 고정 (자유 회전 허용)
+        // 폰일 때는 기본 세로 상태 유지 (toggleFullscreen으로 전환)
+        if (_isTablet) {
+          lockToCurrentOrientation(context);
+        }
 
         _loadLectureData();
       }
@@ -71,7 +79,16 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 앱 라이프사이클 옵저버 제거
     WidgetsBinding.instance.removeObserver(this);
 
+    // 오디오 및 리소스 정리 (가장 중요!)
     _controller.dispose();
+
+    // 폰에서 PlayerScreen을 나갈 때 세로 모드로 복원
+    if (!_isTablet) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
 
     super.dispose();
   }
@@ -184,6 +201,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (!mounted) {
           return;
         }
+        debugPrint(e.toString());
         final l10n = AppLocalizations.of(context);
         _handleError(l10n.invalidTranscriptFormat);
         return;
@@ -254,22 +272,38 @@ class _PlayerScreenState extends State<PlayerScreen>
     final playerContent = Container(
       color: Colors.black,
       child: SafeArea(
-        child: ValueListenableBuilder<bool>(
-          valueListenable: _controller.isFullscreen,
-          builder: (_, isFullscreen, __) {
-            if (isFullscreen) {
-              return HorizontalPlayerLayout(
-                controller: _controller,
-                onBack: () => Navigator.pop(context),
-              );
-            } else {
-              return VerticalPlayerLayout(
-                controller: _controller,
-                onBack: () => Navigator.pop(context),
-              );
-            }
-          },
-        ),
+        child: isTabletDevice(context)
+            ? OrientationBuilder(
+                builder: (context, orientation) {
+                  if (orientation == Orientation.landscape) {
+                    return HorizontalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  } else {
+                    return VerticalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  }
+                },
+              )
+            : ValueListenableBuilder<bool>(
+                valueListenable: _controller.isFullscreen,
+                builder: (_, isFullscreen, __) {
+                  if (isFullscreen) {
+                    return HorizontalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  } else {
+                    return VerticalPlayerLayout(
+                      controller: _controller,
+                      onBack: () => Navigator.pop(context),
+                    );
+                  }
+                },
+              ),
       ),
     );
 

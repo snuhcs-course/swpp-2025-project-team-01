@@ -3,6 +3,7 @@ import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:re_view/core/localization/app_localizations.dart';
+import 'package:re_view/core/device_orientation_helper.dart';
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -198,6 +199,9 @@ class PdfArea extends StatelessWidget {
                 }
                 return Positioned.fill(
                   child: GestureDetector(
+                    key: ValueKey(
+                      'pdf-gesture-overlay-${isVertical ? 'vertical' : 'horizontal'}',
+                    ),
                     behavior: HitTestBehavior.opaque,
                     onVerticalDragUpdate: isVertical
                         ? null
@@ -388,6 +392,7 @@ class VideoControlsOverlay extends StatelessWidget {
                       onTranscriptToggle: controller.toggleTranscriptPanel,
                       isFullscreen: controller.isFullscreen.value,
                       onFullscreenToggle: controller.toggleFullscreen,
+                      isTablet: isTabletDevice(context),
                     );
                   },
                 ),

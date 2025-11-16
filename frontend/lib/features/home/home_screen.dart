@@ -70,13 +70,17 @@ class _HomeScreenState extends State<HomeScreen>
 
   /// Player로 이동하고 돌아올 때 orientation 재설정
   Future<void> _navigateToPlayer(String lectureId) async {
+    // PlayerScreen 활성화 중에는 HomeScreen의 orientation 관찰 중단
+    WidgetsBinding.instance.removeObserver(this);
+
     await Navigator.pushNamed(
       context,
       Routes.player,
       arguments: {'lectureId': lectureId},
     );
 
-    // Player에서 돌아온 후 orientation 재설정
+    // Player에서 돌아온 후 observer 재등록 및 orientation 재설정
+    WidgetsBinding.instance.addObserver(this);
     if (mounted) {
       lockToCurrentOrientation(context);
     }

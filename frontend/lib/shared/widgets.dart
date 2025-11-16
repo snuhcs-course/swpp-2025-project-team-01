@@ -180,12 +180,12 @@ class LectureLoadingBar extends StatelessWidget {
 
         final Widget child;
         if (service.isCollapsed) {
-          child = _CollapsedBubbleOverlay(
+          child = CollapsedBubbleOverlay(
             key: const ValueKey('collapsed-bubble'),
             service: service,
           );
         } else {
-          child = _ExpandedLoadingOverlay(
+          child = ExpandedLoadingOverlay(
             key: const ValueKey('expanded-bar'),
             service: service,
             context: buildContext,
@@ -204,8 +204,8 @@ class LectureLoadingBar extends StatelessWidget {
 }
 
 /// 둥근모서리 + 그림자 카드 컨테이너
-class _ExpandedLoadingOverlay extends StatelessWidget {
-  const _ExpandedLoadingOverlay({
+class ExpandedLoadingOverlay extends StatelessWidget {
+  const ExpandedLoadingOverlay({
     super.key,
     required this.service,
     required this.context,
@@ -233,23 +233,23 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
             }
             service.collapseToBubble(alignRight: velocity > 0);
           },
-          child: _RoundedCard(
+          child: RoundedCard(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               child: hasError
-                  ? _ErrorView(
+                  ? ErrorView(
                       key: const ValueKey('error'),
                       errorTitle: service.errorTitle,
                       errorMessage: service.errorMessage,
                     )
                   : isCompleted
-                  ? _CompletedView(
+                  ? CompletedView(
                       key: const ValueKey('completed'),
                       context: context,
                     )
-                  : _LoadingView(
+                  : LoadingView(
                       key: const ValueKey('loading'),
                       title: service.lectureTitle,
                       message: service.message,
@@ -263,17 +263,16 @@ class _ExpandedLoadingOverlay extends StatelessWidget {
   }
 }
 
-class _CollapsedBubbleOverlay extends StatefulWidget {
-  const _CollapsedBubbleOverlay({super.key, required this.service});
+class CollapsedBubbleOverlay extends StatefulWidget {
+  const CollapsedBubbleOverlay({super.key, required this.service});
 
   final LectureLoadingService service;
 
   @override
-  State<_CollapsedBubbleOverlay> createState() =>
-      _CollapsedBubbleOverlayState();
+  State<CollapsedBubbleOverlay> createState() => _CollapsedBubbleOverlayState();
 }
 
-class _CollapsedBubbleOverlayState extends State<_CollapsedBubbleOverlay> {
+class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
   late double _dragX;
   late double _dragY;
 
@@ -382,8 +381,8 @@ class _CollapsedBubbleOverlayState extends State<_CollapsedBubbleOverlay> {
   }
 }
 
-class _RoundedCard extends StatelessWidget {
-  const _RoundedCard({required this.child});
+class RoundedCard extends StatelessWidget {
+  const RoundedCard({super.key, required this.child});
 
   final Widget child;
 
@@ -409,8 +408,8 @@ class _RoundedCard extends StatelessWidget {
 }
 
 /// 로딩 중 화면
-class _LoadingView extends StatelessWidget {
-  const _LoadingView({
+class LoadingView extends StatelessWidget {
+  const LoadingView({
     super.key,
     required this.title,
     required this.message,
@@ -536,8 +535,8 @@ class _LoadingView extends StatelessWidget {
 }
 
 /// 완료 화면 (요청: 배경이미지 위주, 카드 라운드 유지)
-class _CompletedView extends StatelessWidget {
-  const _CompletedView({super.key, required this.context});
+class CompletedView extends StatelessWidget {
+  const CompletedView({super.key, required this.context});
 
   final BuildContext context;
 
@@ -647,8 +646,8 @@ class _CompletedView extends StatelessWidget {
 }
 
 /// 에러 화면
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({
+class ErrorView extends StatelessWidget {
+  const ErrorView({
     super.key,
     required this.errorTitle,
     required this.errorMessage,
