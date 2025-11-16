@@ -33,6 +33,12 @@ void main() {
       await IntegrationTestHelpers.initializeHive();
     });
 
+    setUp(() async {
+      // Clean up Hive between tests to ensure clean state
+      await IntegrationTestHelpers.cleanupHive();
+      await IntegrationTestHelpers.initializeHive();
+    });
+
     tearDownAll(() async {
       // Cleanup Hive after all tests
       await IntegrationTestHelpers.cleanupHive();

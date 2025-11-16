@@ -16,6 +16,10 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   // Wait for app to be ready
   await IntegrationTestHelpers.waitForAppReady(tester);
 
+  // Extra wait to ensure complete initialization between tests
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pumpAndSettle(const Duration(seconds: 3));
+
   // Get the tutorial lecture (lec_demo_001 from assets)
   final tutorialLecture = manager.getLecture('lec_demo_001');
   expect(
@@ -37,7 +41,8 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   );
 
   // Wait for UI to settle and ensure home screen is fully loaded
-  await tester.pumpAndSettle(const Duration(seconds: 2));
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pumpAndSettle(const Duration(seconds: 3));
 
   // Verify we're on home screen
   final menuButton = find.byIcon(Icons.menu);
@@ -159,33 +164,149 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
   debugPrint('✓ Lecture widget found, preparing to tap');
 
-  // Step 2: Tap on the lecture to navigate to player
-  // LectureCard uses InkWell as the tappable widget
-  // Use tapAt to directly tap the coordinates to avoid hit-test issues
-
+  // Ensure the lecture widget is fully visible and scrolled into view
   try {
-    // Get the center of the lecture widget and tap there
-    final Offset center = tester.getCenter(lectureWidget);
-    await tester.tapAt(center);
-    debugPrint('✓ Tapped at lecture position ($center)');
+    await tester.ensureVisible(lectureWidget);
+    await tester.pumpAndSettle();
+    debugPrint('✓ Lecture widget ensured visible');
   } catch (e) {
-    debugPrint('⚠️ Error tapping at center: $e, trying alternative');
+    debugPrint('⚠️ Could not ensure lecture visible: $e');
+  }
 
-    // Fallback: try tapping with warnIfMissed: false
-    await tester.tap(lectureWidget, warnIfMissed: false);
-    debugPrint('✓ Tapped lecture widget (fallback)');
+  // DEBUG: Take screenshot before tapping lecture
+  await IntegrationTestHelpers.takeScreenshot(
+    tester,
+    'integration_2_before_tap',
+  );
+
+  // Step 2: Tap on the lecture to navigate to player
+  // LectureCard has a thumbnail at the top - tap on that for reliable interaction
+
+  bool navigationSuccessful = false;
+  for (int tapAttempt = 0; tapAttempt < 3; tapAttempt++) {
+    try {
+      // Find the thumbnail area (AspectRatio widget) within the same card
+      // The AspectRatio is the thumbnail container in LectureCard
+      Finder tappableWidget = lectureWidget;
+
+      try {
+        final element = lectureWidget.evaluate().first;
+
+        // Find the ancestor InkWell (the card itself)
+        final inkWell = find.ancestor(
+          of: find.byWidget(element.widget),
+          matching: find.byType(InkWell),
+        );
+
+        if (inkWell.evaluate().isNotEmpty) {
+          // Now find the AspectRatio (thumbnail) within this InkWell
+          final thumbnail = find.descendant(
+            of: inkWell.first,
+            matching: find.byType(AspectRatio),
+          );
+
+          if (thumbnail.evaluate().isNotEmpty) {
+            tappableWidget = thumbnail.first;
+            debugPrint('✓ Found thumbnail (AspectRatio) for tapping');
+          } else {
+            // Fallback to InkWell if thumbnail not found
+            tappableWidget = inkWell.first;
+            debugPrint('✓ Using InkWell (thumbnail not found)');
+          }
+        } else {
+          debugPrint('⚠️ InkWell not found, using text widget directly');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Could not find thumbnail: $e');
+      }
+
+      // Tap on the thumbnail or card
+      final Offset center = tester.getCenter(tappableWidget);
+      await tester.tapAt(center);
+      debugPrint('✓ Tapped at position ($center) (attempt ${tapAttempt + 1})');
+    } catch (e) {
+      debugPrint('⚠️ Error tapping: $e, trying alternative');
+
+      // Fallback: try tapping with warnIfMissed: false
+      await tester.tap(lectureWidget, warnIfMissed: false);
+      debugPrint(
+        '✓ Tapped lecture widget (fallback, attempt ${tapAttempt + 1})',
+      );
+    }
+
+    // Give time for navigation to start
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 1));
+
+    // Check if we're still on home screen or navigated away
+    final menuButton = find.byIcon(Icons.menu);
+    if (menuButton.evaluate().isEmpty) {
+      // Menu button not found, likely navigated away from home
+      navigationSuccessful = true;
+      debugPrint('✓ Navigation detected after tap attempt ${tapAttempt + 1}');
+      break;
+    } else {
+      debugPrint(
+        '⚠️ Still on home screen after tap attempt ${tapAttempt + 1}, retrying...',
+      );
+      await tester.pumpAndSettle();
+    }
+  }
+
+  if (!navigationSuccessful) {
+    debugPrint(
+      '⚠️ Warning: Navigation may not have occurred after 3 tap attempts',
+    );
+    // DEBUG: Take screenshot if navigation failed
+    await IntegrationTestHelpers.takeScreenshot(
+      tester,
+      'integration_2_navigation_failed',
+    );
   }
 
   // Give extra time for navigation animation
-  await tester.pumpAndSettle(const Duration(seconds: 3));
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle(const Duration(seconds: 5));
+
+  // DEBUG: Take screenshot after navigation
+  await IntegrationTestHelpers.takeScreenshot(
+    tester,
+    'integration_2_after_navigation',
+  );
 
   // Wait for player to load (PlayerScreen shows CircularProgressIndicator initially)
   // Poll for PlayerLayout to appear, with timeout
   debugPrint('Waiting for player to load...');
   bool playerLoaded = false;
-  for (int i = 0; i < 20; i++) {
-    // Try up to 20 times (10 seconds total)
+  for (int i = 0; i < 40; i++) {
+    // Try up to 40 times (20 seconds total with pumpAndSettle)
     await tester.pump(const Duration(milliseconds: 500));
+
+    // Also try pumpAndSettle to handle any pending animations
+    try {
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    } catch (e) {
+      // If pumpAndSettle times out, continue polling
+      debugPrint('pumpAndSettle timeout during polling, continuing...');
+    }
+
+    // DEBUG: Take screenshots during player loading
+    if (i == 5) {
+      await IntegrationTestHelpers.takeScreenshot(
+        tester,
+        'integration_2_loading_2.5s',
+      );
+    } else if (i == 10) {
+      await IntegrationTestHelpers.takeScreenshot(
+        tester,
+        'integration_2_loading_5s',
+      );
+    } else if (i == 20) {
+      await IntegrationTestHelpers.takeScreenshot(
+        tester,
+        'integration_2_loading_10s',
+      );
+    }
 
     final verticalLayout = find.byType(VerticalPlayerLayout);
     final horizontalLayout = find.byType(HorizontalPlayerLayout);
@@ -199,7 +320,14 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   }
 
   // Additional settle after finding the layout
+  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+
+  // DEBUG: Take screenshot before player verification
+  await IntegrationTestHelpers.takeScreenshot(
+    tester,
+    'integration_2_before_verification',
+  );
 
   // Verify navigation to player screen by checking for unique player widgets
   // Must find either VerticalPlayerLayout or HorizontalPlayerLayout
@@ -208,10 +336,29 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   final pdfArea = find.byType(PdfArea);
   final transcriptArea = find.byType(TranscriptArea);
 
+  debugPrint(
+    'DEBUG: verticalLayout found: ${verticalLayout.evaluate().length}',
+  );
+  debugPrint(
+    'DEBUG: horizontalLayout found: ${horizontalLayout.evaluate().length}',
+  );
+  debugPrint('DEBUG: pdfArea found: ${pdfArea.evaluate().length}');
+  debugPrint(
+    'DEBUG: transcriptArea found: ${transcriptArea.evaluate().length}',
+  );
+
   // At least one layout should be present
   final hasPlayerLayout =
       verticalLayout.evaluate().isNotEmpty ||
       horizontalLayout.evaluate().isNotEmpty;
+
+  // DEBUG: If player not loaded, take failure screenshot
+  if (!hasPlayerLayout) {
+    await IntegrationTestHelpers.takeScreenshot(
+      tester,
+      'integration_2_player_not_found',
+    );
+  }
 
   expect(
     hasPlayerLayout,

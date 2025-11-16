@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
@@ -68,7 +69,9 @@ class IntegrationTestHelpers {
 
       // Debug every 2 seconds
       if (splashAttempts % 20 == 0 && splashAttempts > 0) {
-        debugPrint('Still waiting for home screen... (${splashAttempts * 100}ms)');
+        debugPrint(
+          'Still waiting for home screen... (${splashAttempts * 100}ms)',
+        );
       }
 
       splashAttempts++;
@@ -277,7 +280,8 @@ class IntegrationTestHelpers {
 
       // If we see home screen indicators, we're done
       if (menuButton.evaluate().isNotEmpty &&
-          (addButton.evaluate().isNotEmpty || searchButton.evaluate().isNotEmpty)) {
+          (addButton.evaluate().isNotEmpty ||
+              searchButton.evaluate().isNotEmpty)) {
         debugPrint('✓ On home screen (attempt $attempts)');
         break;
       }
@@ -501,5 +505,17 @@ class IntegrationTestHelpers {
     await tester.pumpAndSettle();
     stopwatch.stop();
     return stopwatch.elapsedMilliseconds;
+  }
+
+  /// Take a screenshot for debugging
+  static Future<void> takeScreenshot(WidgetTester tester, String name) async {
+    try {
+      // Get the integration test binding
+      final binding = IntegrationTestWidgetsFlutterBinding.instance;
+      await binding.takeScreenshot(name);
+      debugPrint('📸 Screenshot saved: $name');
+    } catch (e) {
+      debugPrint('⚠️ Failed to take screenshot "$name": $e');
+    }
   }
 }
