@@ -34,6 +34,7 @@ jobs:
 
   frontend-unit-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 7
     defaults:
       run:
         working-directory: ./frontend
