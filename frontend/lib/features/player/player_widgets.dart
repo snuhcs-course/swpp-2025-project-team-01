@@ -594,6 +594,7 @@ class TopControlBar extends StatelessWidget {
     required this.isVertical,
     required this.onBack,
     required this.isOriginalAudio,
+    required this.isKoreanLecture,
     required this.onAudioToggle,
     required this.onSpeedChanged,
     required this.isSynced,
@@ -605,6 +606,7 @@ class TopControlBar extends StatelessWidget {
 
   final VoidCallback onBack;
   final bool isOriginalAudio;
+  final bool isKoreanLecture;
   final VoidCallback onAudioToggle;
   final ValueChanged<double> onSpeedChanged;
   final bool isSynced;
@@ -621,7 +623,7 @@ class TopControlBar extends StatelessWidget {
           const Spacer(),
           AudioSourceButton(
             isOriginalAudio: isOriginalAudio,
-            onPressed: onAudioToggle,
+            onPressed: isKoreanLecture ? () {} : onAudioToggle,
             isVertical: isVertical,
           ),
           const SizedBox(width: 8),

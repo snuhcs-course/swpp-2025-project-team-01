@@ -1133,13 +1133,17 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final isSuccess = !results.contains(null);
       if (isSuccess) {
         for (int i = 0; i < results.length; i++) {
-          ttsAudioPaths.add(results[i]![0]);
+          if (langCode == 'en') {
+            ttsAudioPaths.add(results[i]![0]); // TTS only for English lectures
+          }
           jsonPaths.add(results[i]![1]);
         }
       } else {
         for (int i = 0; i < results.length; i++) {
           if (results[i] != null) {
-            await File(results[i]![0]).delete();
+            if (langCode == 'en') {
+              await File(results[i]![0]).delete();
+            }
             await File(results[i]![1]).delete();
           }
         }
@@ -1151,7 +1155,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // 4. 음성 파일이 여러 개일 경우 통합 처리
       String? originalAudioPath;
-      String? ttsAudioPath;
+      String? ttsAudioPath; // null for Korean lectures
       String? jsonPath;
       int? duration;
 
@@ -1161,11 +1165,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           titleText,
           lectureId,
         );
-        ttsAudioPath = await _concatenateAudioFiles(
-          ttsAudioPaths,
-          titleText,
-          lectureId,
-        );
+        if (langCode == 'en') {
+          ttsAudioPath = await _concatenateAudioFiles(
+            ttsAudioPaths,
+            titleText,
+            lectureId,
+          );
+        }
         jsonPath = await _concatenateJsonFiles(
           jsonPaths,
           pdfStarts,
@@ -1174,7 +1180,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         );
 
         if (originalAudioPath == null ||
-            ttsAudioPath == null ||
+            (ttsAudioPath == null && langCode == 'en') ||
             jsonPath == null) {
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
@@ -1200,8 +1206,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           );
           return;
         }
-
-        ttsAudioPath = ttsAudioPaths[0];
+        if (langCode == 'en') {
+          ttsAudioPath = ttsAudioPaths[0];
+        }
         jsonPath = jsonPaths[0];
       }
 
@@ -1220,7 +1227,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         duration: duration,
         slidePath: _slidePdfPath,
         originalAudioPath: originalAudioPath,
-        ttsAudioPath: ttsAudioPath,
+        ttsAudioPath: ttsAudioPath ?? originalAudioPath,
         jsonPath: jsonPath,
         langCode: langCode,
         createdAt: DateTime.now(),

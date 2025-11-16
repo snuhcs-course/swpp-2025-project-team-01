@@ -217,7 +217,7 @@ class HiveLecture {
   String? jsonPath; // 자막/스크립트 JSON 경로
 
   @HiveField(10)
-  String? langCode; // 자막/스크립트 JSON 경로
+  String? langCode; // 언어설정 (en, ko)
 
   @HiveField(11)
   DateTime? createdAt;
@@ -277,7 +277,7 @@ class HiveLecture {
             'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
-        langCode: 'en',
+        langCode: lectureId == 'lec_demo_001' ? 'en' : 'ko',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
