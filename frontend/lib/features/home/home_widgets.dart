@@ -646,6 +646,7 @@ class _LectureCardState extends State<LectureCard> {
               ),
               const SizedBox(height: 10),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
