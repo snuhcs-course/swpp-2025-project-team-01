@@ -910,7 +910,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         .where((e) => (e.filePath ?? '').isNotEmpty)
         .toList();
     for (int i = 0; i < effectiveAudios.length; i++) {
-      try { 
+      try {
         final audioFile = File(effectiveAudios[i].filePath!);
         await audioFile.delete();
         await audioFile.parent.delete();
