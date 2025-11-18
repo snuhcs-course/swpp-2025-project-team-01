@@ -207,7 +207,7 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
-  
+
       await _dismissSnackBarsAndPump(tester);
       await tester.pumpWidget(Container());
       await tester.pump();
