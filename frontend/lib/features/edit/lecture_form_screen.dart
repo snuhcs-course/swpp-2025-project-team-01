@@ -898,7 +898,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   Future<void> _cleanUpFiles() async {
     if (_slidePdfPath != null) {
       try {
-        await File(_slidePdfPath!).delete();
+        final slideFile = File(_slidePdfPath!);
+        await slideFile.delete();
+        await slideFile.parent.delete();
       } catch (_) {
         // Ignore deletion errors
       }
@@ -909,7 +911,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         .toList();
     for (int i = 0; i < effectiveAudios.length; i++) {
       try { 
-        await File(effectiveAudios[i].filePath!).delete();
+        final audioFile = File(effectiveAudios[i].filePath!);
+        await audioFile.delete();
+        await audioFile.parent.delete();
       } catch (_) {
         // Ignore deletion errors
       }
