@@ -59,7 +59,7 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             // 5. 도움말: 기본 안내 및 튜토리얼
-            _buildNavigationTile(context, 'Help', Routes.settingsHelp),
+            _buildNavigationTile(context, l10n.help, Routes.settingsHelp),
           ],
         ),
       ),

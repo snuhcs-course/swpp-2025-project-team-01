@@ -52,10 +52,11 @@ class AppLocalizations {
   String get displayMode => isKorean ? '디스플레이 모드' : 'Display Mode';
   String get accessibility => isKorean ? '접근성' : 'Accessibility';
   String get tts => isKorean ? 'TTS 설정' : 'TTS Configurations';
-  String get language => isKorean ? '언어' : 'Language';
+  String get language => isKorean ? '언어 / Language' : 'Language / 언어';
   String get lightMode => isKorean ? '라이트 모드' : 'Light Mode';
   String get darkMode => isKorean ? '다크 모드' : 'Dark Mode';
   String get systemSettings => isKorean ? '시스템 설정' : 'System Settings';
+  String get help => isKorean ? '도움말' : 'Help';
 
   // FAQ
   String get howToFindLecture =>

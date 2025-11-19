@@ -86,9 +86,7 @@ class _TtsScreenState extends State<TtsScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.tts),
-      ),
+      appBar: AppBar(title: Text(l10n.tts)),
       backgroundColor: isDark
           ? theme.scaffoldBackgroundColor
           : const Color(0xFFF5F5F5),
@@ -97,7 +95,9 @@ class _TtsScreenState extends State<TtsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle(l10n.isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender'),
+            _buildSectionTitle(
+              l10n.isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender',
+            ),
             const SizedBox(height: 12),
             _buildGenderButtons(l10n.isKorean),
             const SizedBox(height: 8),

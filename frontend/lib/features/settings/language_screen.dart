@@ -67,7 +67,9 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
     return Scaffold(
       // 상단 앱바 (한영 모두 표시)
-      appBar: AppBar(title: Text(l10n.isKorean ? '언어 / Language' : 'Language / 언어')),
+      appBar: AppBar(
+        title: Text(l10n.isKorean ? '언어 / Language' : 'Language / 언어'),
+      ),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
 
       // 언어 선택 라디오 버튼 목록
@@ -84,10 +86,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 children: <Widget>[
                   RadioListTile<String>(
                     value: 'ko',
-                    title: const Text(
-                      '한국어',
-                      style: TextStyle(fontSize: 18),
-                    ),
+                    title: const Text('한국어', style: TextStyle(fontSize: 18)),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 8,
