@@ -232,7 +232,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         title: Text(l10n.isKorean ? '강의 생성' : 'Create Lecture'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            _cleanUpFiles();
+            Navigator.pop(context);
+          },
         ),
       ),
       // backgroundColor는 테마의 scaffoldBackgroundColor 사용
@@ -892,6 +895,31 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     );
   }
 
+  Future<void> _cleanUpFiles() async {
+    if (_slidePdfPath != null) {
+      try {
+        final slideFile = File(_slidePdfPath!);
+        await slideFile.delete();
+        await slideFile.parent.delete();
+      } catch (_) {
+        // Ignore deletion errors
+      }
+    }
+
+    final effectiveAudios = _audioFiles
+        .where((e) => (e.filePath ?? '').isNotEmpty)
+        .toList();
+    for (int i = 0; i < effectiveAudios.length; i++) {
+      try {
+        final audioFile = File(effectiveAudios[i].filePath!);
+        await audioFile.delete();
+        await audioFile.parent.delete();
+      } catch (_) {
+        // Ignore deletion errors
+      }
+    }
+  }
+
   // ========== 강의 생성 메서드 ==========
 
   /// 강의 생성 처리
@@ -1140,6 +1168,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         }
       } else {
         for (int i = 0; i < results.length; i++) {
+          await _cleanUpFiles();
           if (results[i] != null) {
             if (langCode == 'en') {
               await File(results[i]![0]).delete();
@@ -1182,6 +1211,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         if (originalAudioPath == null ||
             (ttsAudioPath == null && langCode == 'en') ||
             jsonPath == null) {
+          for (int i = 0; i < results.length; i++) {
+            await _cleanUpFiles();
+            if (results[i] != null) {
+              if (langCode == 'en') {
+                await File(results[i]![0]).delete();
+              }
+              await File(results[i]![1]).delete();
+            }
+          }
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
