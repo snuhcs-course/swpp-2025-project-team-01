@@ -484,7 +484,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                   }),
                 ],
               ),
-              const SizedBox(height: 12)
+              const SizedBox(height: 12),
             ],
           ),
         ),
