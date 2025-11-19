@@ -67,9 +67,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
     return Scaffold(
       // 상단 앱바 (한영 모두 표시)
-      appBar: AppBar(
-        title: Text(l10n.isKorean ? '언어 / Language' : 'Language / 언어'),
-      ),
+      appBar: AppBar(title: Text(l10n.language)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
 
       // 언어 선택 라디오 버튼 목록
