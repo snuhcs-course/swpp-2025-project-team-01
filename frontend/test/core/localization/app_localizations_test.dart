@@ -147,8 +147,8 @@ void main() {
       });
 
       test('language returns correct translation', () {
-        expect(koreanLocalizations.language, '언어');
-        expect(englishLocalizations.language, 'Language');
+        expect(koreanLocalizations.language, '언어 / Language');
+        expect(englishLocalizations.language, 'Language / 언어');
       });
 
       test('lightMode returns correct translation', () {

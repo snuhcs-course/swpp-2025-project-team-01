@@ -47,8 +47,7 @@ void main() {
       ),
     );
 
-    await tester.pump(); // 로딩 시작
-    await tester.pump(const Duration(seconds: 1)); // 로딩 완료 대기
+    await tester.pumpAndSettle();
   }
 
   group('tts_screen.dart: Widget Test', () {
@@ -58,21 +57,13 @@ void main() {
         expect(find.byType(Scaffold), findsOneWidget);
       });
 
-      testWidgets('AppBar title should be "TTS" with close button', (
-        tester,
-      ) async {
+      testWidgets('AppBar title should be "TTS 설정"', (tester) async {
         await pumpTtsScreen(tester);
-        expect(
-          find.descendant(of: find.byType(AppBar), matching: find.text('TTS')),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: find.byType(AppBar),
-            matching: find.byIcon(Icons.close),
-          ),
-          findsOneWidget,
-        );
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        expect(appBar.title, isA<Text>());
+
+        final titleText = appBar.title as Text;
+        expect(titleText.data, 'TTS 설정');
       });
 
       testWidgets('Korean labels should be displayed in Korean locale', (

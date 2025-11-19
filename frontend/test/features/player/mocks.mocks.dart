@@ -436,6 +436,19 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> reorderLecture(
+    String? subjectId,
+    int? oldIndex,
+    int? newIndex,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#reorderLecture, [subjectId, oldIndex, newIndex]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   List<_i2.HiveTag> getTags() =>
       (super.noSuchMethod(
             Invocation.method(#getTags, []),
