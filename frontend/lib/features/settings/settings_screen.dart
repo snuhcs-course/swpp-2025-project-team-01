@@ -42,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             // 2. TTS: 음성 성별, 악센트, 재생 속도 설정
-            _buildNavigationTile(context, 'TTS', Routes.settingsTts),
+            _buildNavigationTile(context, l10n.tts, Routes.settingsTts),
 
             // 3. 접근성: 고대비, 모션 줄이기, 자막 강조
             _buildNavigationTile(
