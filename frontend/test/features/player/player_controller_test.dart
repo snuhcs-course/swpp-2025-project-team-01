@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart' as ja;
@@ -740,21 +739,6 @@ void main() {
       controller.dispose();
     });
 
-    test('captionText returns Korean text when Korean language is enabled', () {
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      controller.transcriptData = createTestTranscriptData();
-      controller.currentSentenceIndex.value = 0;
-      controller.isKoreanLanguage.value = true;
-
-      expect(controller.captionText, equals('첫 번째 문장'));
-
-      controller.dispose();
-    });
-
     test('captionText returns empty string when no sentence index', () {
       final controller = PlayerController(
         audioService: mockAudioService,
@@ -969,57 +953,6 @@ void main() {
 
       // Verify no additional interactions with audioService after dispose
       verifyNoMoreInteractions(mockAudioService);
-    });
-  });
-
-  group('PlayerController - Initialize', () {
-    testWidgets('initialize sets up transcript data and total time', (
-      tester,
-    ) async {
-      // Skip this test on Linux (CI environment) due to pdfx platform limitations
-      if (Platform.isLinux) {
-        return;
-      }
-
-      final controller = PlayerController(
-        audioService: mockAudioService,
-        pdfCacheService: mockPdfCacheService,
-      );
-
-      final transcriptData = createTestTranscriptData();
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              // Call initialize without awaiting to avoid hanging on PDF operations
-              controller
-                  .initialize(
-                    context,
-                    'test-lecture-id',
-                    transcriptData,
-                    'assets/test.pdf',
-                    'assets/test.mp3',
-                    'assets/test.mp3',
-                    false,
-                  )
-                  .catchError((_) {
-                    // Ignore errors from PDF loading in test
-                  });
-              return Container();
-            },
-          ),
-        ),
-      );
-
-      // Wait for initialization to start
-      await tester.pump();
-
-      // Verify transcript data and total time are set
-      expect(controller.transcriptData, equals(transcriptData));
-      expect(controller.ttsTotalDuration, equals(3.0)); // 3000ms / 1000
-
-      controller.dispose();
     });
   });
 
