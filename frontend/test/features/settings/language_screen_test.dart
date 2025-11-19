@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/settings/language_screen.dart';
@@ -26,8 +28,19 @@ void main() {
   // 테스트 헬퍼: 화면 펌핑
   Future<void> pumpLanguageScreen(WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: LanguageScreen(hiveManager: mockHiveManager)),
+      MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: LanguageScreen(hiveManager: mockHiveManager),
+      ),
     );
+
+    await tester.pumpAndSettle();
   }
 
   group('language_screen.dart: Widget Test', () {
@@ -45,7 +58,7 @@ void main() {
         // [Then] - 라디오 그룹이 한국어여야 함
         final koRadioGroup = tester.widget<RadioGroup<String>>(
           find.ancestor(
-            of: find.text('한국어 / Korean'),
+            of: find.text('한국어'),
             matching: find.byType(RadioGroup<String>),
           ),
         );
@@ -73,7 +86,7 @@ void main() {
         // [Then]
         final koRadioGroup = tester.widget<RadioGroup<String>>(
           find.ancestor(
-            of: find.text('한국어 / Korean'),
+            of: find.text('한국어'),
             matching: find.byType(RadioGroup<String>),
           ),
         );
@@ -88,21 +101,21 @@ void main() {
         expect(enRadioGroup.groupValue, 'en');
       });
 
-      testWidgets('AppBar title should display "언어 / Language"', (
+      testWidgets('AppBar title should display "Language / 언어"', (
         tester,
       ) async {
+        // [Given]
+        when(mockSettings.language).thenReturn('en');
+
         // [When]
         await pumpLanguageScreen(tester);
 
         // [Then]
-        expect(find.byType(AppBar), findsOneWidget);
-        expect(
-          find.descendant(
-            of: find.byType(AppBar),
-            matching: find.text('언어 / Language'),
-          ),
-          findsOneWidget,
-        );
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        expect(appBar.title, isA<Text>());
+
+        final titleText = appBar.title as Text;
+        expect(titleText.data, 'Language / 언어');
       });
     });
 
@@ -115,7 +128,7 @@ void main() {
         await pumpLanguageScreen(tester);
 
         // [When]
-        await tester.tap(find.text('한국어 / Korean'));
+        await tester.tap(find.text('한국어'));
         await tester.pumpAndSettle();
 
         // [Then]
@@ -183,7 +196,7 @@ void main() {
 
           final initialRadioGroup = tester.widget<RadioGroup<String>>(
             find.ancestor(
-              of: find.text('한국어 / Korean'),
+              of: find.text('한국어'),
               matching: find.byType(RadioGroup<String>),
             ),
           );
@@ -201,7 +214,7 @@ void main() {
           // [Then]
           final updatedRadioGroup = tester.widget<RadioGroup<String>>(
             find.ancestor(
-              of: find.text('한국어 / Korean'),
+              of: find.text('한국어'),
               matching: find.byType(RadioGroup<String>),
             ),
           );

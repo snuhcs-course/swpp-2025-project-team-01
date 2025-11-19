@@ -73,8 +73,8 @@ void main() {
           expect(find.text(l10n.displayMode), findsOneWidget);
           expect(find.text(l10n.accessibility), findsOneWidget);
           expect(find.text(l10n.language), findsOneWidget);
-          expect(find.text('TTS'), findsOneWidget);
-          expect(find.text('Help'), findsOneWidget);
+          expect(find.text(l10n.tts), findsOneWidget);
+          expect(find.text(l10n.help), findsOneWidget);
         },
       );
 
@@ -117,7 +117,7 @@ void main() {
       ) async {
         await pumpAndGetL10n(tester);
 
-        await tester.tap(find.text('TTS'));
+        await tester.tap(find.text('TTS 설정'));
         await tester.pumpAndSettle();
 
         verify(
@@ -185,7 +185,7 @@ void main() {
       ) async {
         await pumpAndGetL10n(tester);
 
-        await tester.tap(find.text('Help'));
+        await tester.tap(find.text('도움말'));
         await tester.pumpAndSettle();
 
         verify(
