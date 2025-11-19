@@ -702,7 +702,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       )
                     : Text(
                         l10n.isKorean ? '생성하기' : 'Create',
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
               ),
             ),

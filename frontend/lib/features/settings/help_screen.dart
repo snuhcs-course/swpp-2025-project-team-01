@@ -12,7 +12,7 @@ class HelpScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Help')),
+      appBar: AppBar(title: Text(l10n.help)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -65,17 +65,7 @@ class HelpScreen extends StatelessWidget {
             answer: l10n.useUnsyncButton,
           ),
           const SizedBox(height: 24),
-          l10n.isKorean
-              ? _InfoCard(
-                  title: '한국어 강의도 지원되나요?',
-                  body:
-                      '  현재 개발 중에 있으며 11월 중으로 만나보실 수 있습니다!\n'
-                      '  기대해주세요 :)',
-                )
-              : _InfoCard(
-                  title: l10n.buyCoffee,
-                  body: '  https://buymeacoffee.com',
-                ),
+          _InfoCard(title: l10n.buyCoffee, body: '  https://buymeacoffee.com'),
         ],
       ),
     );
