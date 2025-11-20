@@ -514,7 +514,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
               TextSpan(text: tagName),
               TextSpan(
                 text: l10n.isKorean
-                    ? '"는\n다음 과목에서 사용 중입니다:\n\n'
+                    ? '"은(는)\n다음 과목에서 사용 중입니다:\n\n'
                     : '"\n is used in the following subjects:\n\n',
               ),
               ...subjectSpans,
