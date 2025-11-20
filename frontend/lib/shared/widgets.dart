@@ -866,6 +866,131 @@ class DialogHeaderTitle extends StatelessWidget {
   }
 }
 
+/// 삭제 경고 다이얼로그 위젯
+///
+/// 검은색 헤더와 회색 본문을 가진 표준 경고 다이얼로그입니다.
+/// 내부 텍스트는 [body] 파라미터로 커스터마이즈.
+class DeleteWarningDialog extends StatelessWidget {
+  const DeleteWarningDialog({
+    super.key,
+    required this.body,
+    required this.onConfirm,
+    required this.yesText,
+    required this.noText,
+    required this.warningText,
+  });
+
+  final Widget body;
+  final VoidCallback onConfirm;
+  final String yesText;
+  final String noText;
+  final String warningText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: const BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  warningText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            // Body
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8E8E8),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  body,
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      // "예" 버튼
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5A5A5A),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pop(context, true);
+                              onConfirm();
+                            },
+                            child: Text(
+                              yesText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // "아니오" 버튼
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC0C0C0),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text(
+                              noText,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// 과목 패널 헤더 위젯 (홈 화면 & 과목 수정 화면 공통)
 ///
 /// 검은 배경의 헤더로 과목 제목, 태그, 펼침/접기 버튼을 표시합니다.
