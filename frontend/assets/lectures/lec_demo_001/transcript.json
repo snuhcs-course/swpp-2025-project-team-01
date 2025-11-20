@@ -2,7 +2,7 @@
   {
     "text_eng": "Every lecture, perfectly captured.",
     "text_kor": "모든 강의 내용이 완벽하게 담겨 있습니다.",
-    "slide_number": 2,
+    "slide_number": 1,
     "tts_start_time": 0,
     "tts_end_time": 2575,
     "original_start_time": 4260,
@@ -11,16 +11,16 @@
   {
     "text_eng": "Welcome to Review.",
     "text_kor": "리뷰(Review)에 오신 것을 환영합니다.",
-    "slide_number": 2,
+    "slide_number": 1,
     "tts_start_time": 2775,
     "tts_end_time": 4625,
     "original_start_time": 6420,
     "original_end_time": 7300
   },
   {
-    "text_eng": "My name is Lere, Maskot of the Review, and your guide to this app today.",
-    "text_kor": "제 이름은 레레(Lere)입니다. 저는 ‘리뷰의 마스코트(Maskot of the Review)’이며, 오늘 이 앱을 사용하는 데 있어 여러분의 가이드가 되어 드리겠습니다.",
-    "slide_number": 2,
+    "text_eng": "My name is Rere, Maskot of the Review, and your guide to this app today.",
+    "text_kor": "제 이름은 레레(Rere)입니다. 저는 ‘리뷰의 마스코트(Maskot of the Review)’이며, 오늘 이 앱을 사용하는 데 있어 여러분의 가이드가 되어 드리겠습니다.",
+    "slide_number": 1,
     "tts_start_time": 4825,
     "tts_end_time": 9350,
     "original_start_time": 7520,
@@ -54,9 +54,9 @@
     "original_end_time": 25020
   },
   {
-    "text_eng": "To add in your subjects or lectures, tap the edit button next to the plus sign.",
+    "text_eng": "To add your subjects or lectures, tap the edit button next to the plus sign.",
     "text_kor": "수강 과목이나 강의 내용을 추가하려면 ‘+’ 기호 옆에 있는 편집 버튼을 탭하세요.",
-    "slide_number": 3,
+    "slide_number": 2,
     "tts_start_time": 22725,
     "tts_end_time": 27675,
     "original_start_time": 25660,
@@ -209,7 +209,7 @@
   {
     "text_eng": "In landscape mode, you'll find two extra buttons below the play bar.",
     "text_kor": "랜드스케이프 모드에서는 플레이 바 아래에 두 개의 추가 버튼이 있습니다.",
-    "slide_number": 4,
+    "slide_number": 5,
     "tts_start_time": 107800,
     "tts_end_time": 112300,
     "original_start_time": 121860,
@@ -218,7 +218,7 @@
   {
     "text_eng": "Use them to view subtitles and transcript alongside your lecture.",
     "text_kor": "강의를 들으면서 자막과 대본을 함께 볼 수 있도록 이 도구들을 활용하세요.",
-    "slide_number": 4,
+    "slide_number": 5,
     "tts_start_time": 112500,
     "tts_end_time": 117175,
     "original_start_time": 126760,
@@ -227,7 +227,7 @@
   {
     "text_eng": "You can also swipe out lightly from the button button up to access the PDF navigator here as well, even in landscape mode.",
     "text_kor": "랜드스케이프 모드에서도 버튼을 위로 살짝 스와이프하면 PDF 네비게이터에 접근할 수 있습니다.",
-    "slide_number": 4,
+    "slide_number": 5,
     "tts_start_time": 117375,
     "tts_end_time": 125275,
     "original_start_time": 131620,
@@ -236,7 +236,7 @@
   {
     "text_eng": "When you exit the player and return to the home screen, you can access various settings from the menu button at the top left.",
     "text_kor": "플레이어를 종료하고 홈 화면으로 돌아가면, 왼쪽 상단에 있는 메뉴 버튼을 통해 다양한 설정을 확인할 수 있습니다.",
-    "slide_number": 4,
+    "slide_number": 6,
     "tts_start_time": 125475,
     "tts_end_time": 132750,
     "original_start_time": 141480,
@@ -245,7 +245,7 @@
   {
     "text_eng": "If you ever feel unsure about how something works, open the help tab at the bottom for quick guidance.",
     "text_kor": "어떤 것이 어떻게 작동하는지 확신이 서지 않을 때는 하단에 있는 ‘도움말’ 탭을 열어 간단한 안내를 받으세요.",
-    "slide_number": 4,
+    "slide_number": 6,
     "tts_start_time": 132950,
     "tts_end_time": 139000,
     "original_start_time": 150380,
@@ -253,8 +253,8 @@
   },
   {
     "text_eng": "That's all for today.",
-    "text_kor": "오늘은 여기까지입니다.",
-    "slide_number": 4,
+    "text_kor": "제 설명은 여기까지입니다.",
+    "slide_number": 6,
     "tts_start_time": 139200,
     "tts_end_time": 141050,
     "original_start_time": 156920,
@@ -262,8 +262,8 @@
   },
   {
     "text_eng": "Thank you for joining me and may it really help you shine brighter in your learning journey.",
-    "text_kor": "제 곁에 함께해 주셔서 감사합니다. 이 자료가 여러분의 학습 여정에서 더욱 빛나는 모습을 발휘하는 데 큰 도움이 되기를 바랍니다.",
-    "slide_number": 4,
+    "text_kor": "함께해 주셔서 감사합니다. 이 자료가 여러분이 학습 여정에서 더욱 빛나는 모습을 발휘하는 데 큰 도움이 되기를 바랍니다.",
+    "slide_number": 6,
     "tts_start_time": 141250,
     "tts_end_time": 146475,
     "original_start_time": 158180,
