@@ -255,6 +255,7 @@ async def run_pipeline_in_executor(
     pdf_path: str,
     lecture_name: str,
     language: str = "en",
+    tts_gender: str = "f",
     progress_callback: Callable[[JobStatus, float, str], None] | None = None
 ) -> PipelineOutput:
     """
@@ -267,6 +268,7 @@ async def run_pipeline_in_executor(
         pdf_path: Path to PDF file
         lecture_name: Name for this lecture
         language: Language code for ASR transcription ('en' for English, 'ko' for Korean)
+        tts_gender: TTS voice gender ('m' for male, 'f' for female)
         progress_callback: Optional callback to report progress (status, progress, message)
     """
 
@@ -289,6 +291,7 @@ async def run_pipeline_in_executor(
         audio_path = audio_path,
         pdf_path = pdf_path,
         language = language,
+        tts_gender = tts_gender,
         lecture_name = lecture_name,
         sentence_splitter = simple_sentence_splitter,
         save_intermediate = False,
@@ -322,7 +325,7 @@ async def cleanup_old_jobs():
         except Exception as e:
             print(f"⚠️  Error in cleanup task: {e}")
 
-async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str, language: str = "en"):
+async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str, language: str = "en", tts_gender: str = "f"):
     """Background task to process a lecture synchronization job."""
     global jobs, pipeline_queue
     job_info = jobs[job_id]
@@ -356,6 +359,7 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
             pdf_path = str(pdf_path),
             lecture_name = lecture_name,
             language = language,
+            tts_gender = tts_gender,
             progress_callback = update_progress
         )
 
@@ -441,7 +445,8 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
 async def synchronize_stream(
     audio: UploadFile = File(..., description = 'Lecture audio file (mp3, wav, etc.)'),
     lecture_note: UploadFile = File(..., description = 'Lecture slides PDF'),
-    lang: str = Form('en')
+    lang: str = Form('en'),
+    tts_gender: str = Form('f')
 ):
     """
     Synchronize lecture audio with slides with real-time progress updates via SSE.
@@ -453,6 +458,7 @@ async def synchronize_stream(
         audio: Lecture audio file
         lecture_note: Lecture slides PDF file
         lang: Language code for ASR transcription ('en' for English, 'ko' for Korean)
+        tts_gender: TTS voice gender ('m' for male/am_michael, 'f' for female/af_heart)
 
     Returns:
         SSE stream with progress updates and final job_id
@@ -464,6 +470,11 @@ async def synchronize_stream(
     # Validate lang parameter
     if lang not in ["en", "ko"]:
         raise HTTPException(status_code = 400, detail = 'Invalid lang parameter. Must be "en" or "ko"')
+
+    # Validate tts_gender parameter
+    if tts_gender not in ["m", "f"]:
+        raise HTTPException(status_code = 400, detail = 'Invalid tts_gender parameter. Must be "m" or "f"')
+
     # Generate unique job ID and lecture name using full UUID for uniqueness
     job_id = str(uuid.uuid4())
     lecture_name = f"lecture_{job_id}"
@@ -493,8 +504,8 @@ async def synchronize_stream(
             content = await lecture_note.read()
             await f.write(content)
 
-        # Start background processing with language parameter
-        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name, language=lang))
+        # Start background processing with language and gender parameters
+        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name, language=lang, tts_gender=tts_gender))
 
         # SSE generator with disconnect detection
         async def event_generator():
@@ -693,7 +704,7 @@ if __name__ == '__main__':
     uvicorn.run(
         app,
         host='0.0.0.0',
-        port=8001,  # Match client's port
+        port=8080,  # Match client's port
         timeout_keep_alive=300,  # 5 minutes keep-alive
         limit_concurrency=10,
         limit_max_requests=1000
