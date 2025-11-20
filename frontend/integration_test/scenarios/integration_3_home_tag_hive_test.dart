@@ -158,9 +158,7 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
   );
 
   // Tap filter pill to show tags
-  final filterPill = find.byWidgetPredicate(
-    (widget) => widget is FilterPill,
-  );
+  final filterPill = find.byWidgetPredicate((widget) => widget is FilterPill);
 
   expect(filterPill, findsOneWidget, reason: 'Filter pill should be visible');
 
@@ -210,5 +208,7 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
   await tester.tap(filterPill);
   await tester.pumpAndSettle();
 
-  debugPrint('✅ Integration 3 passed: Tag successfully added, persisted, and visible in UI');
+  debugPrint(
+    '✅ Integration 3 passed: Tag successfully added, persisted, and visible in UI',
+  );
 }

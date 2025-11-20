@@ -222,7 +222,8 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
   expect(
     hasPlayerLayout,
     true,
-    reason: 'Player screen should show player layout. PlayerLoaded: $playerLoaded',
+    reason:
+        'Player screen should show player layout. PlayerLoaded: $playerLoaded',
   );
 
   expect(pdfArea, findsOneWidget, reason: 'Player screen should show PDF area');
@@ -268,7 +269,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
 
     // Perform double tap
     await tester.tapAt(pdfCenter);
-    await tester.pump(const Duration(milliseconds: 50)); // Short delay between taps
+    await tester.pump(
+      const Duration(milliseconds: 50),
+    ); // Short delay between taps
     await tester.tapAt(pdfCenter);
 
     await tester.pumpAndSettle(const Duration(milliseconds: 500));

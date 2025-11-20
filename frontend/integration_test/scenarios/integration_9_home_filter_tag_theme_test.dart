@@ -55,9 +55,7 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   debugPrint('Tags available for testing: ${tags.length}');
 
   // Step 1: Tap on filter pill button to see all tags and their colors
-  final filterPill = find.byWidgetPredicate(
-    (widget) => widget is FilterPill,
-  );
+  final filterPill = find.byWidgetPredicate((widget) => widget is FilterPill);
 
   expect(
     filterPill,
@@ -81,8 +79,7 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   // Verify we can see tags with their colors
   // Tags are displayed as SelectableTagPill widgets
   final tagPills = find.byWidgetPredicate(
-    (widget) =>
-        widget.runtimeType.toString() == 'SelectableTagPill',
+    (widget) => widget.runtimeType.toString() == 'SelectableTagPill',
   );
 
   expect(
@@ -96,7 +93,9 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   // Record initial colors of tags
   final firstTag = tags.first;
   final initialFirstTagColor = firstTag.color;
-  debugPrint('First tag initial color: 0x${initialFirstTagColor.toRadixString(16)}');
+  debugPrint(
+    'First tag initial color: 0x${initialFirstTagColor.toRadixString(16)}',
+  );
 
   // Step 2: Tap on one filter to test tag filtering
   // Find the first tag pill and tap it
@@ -291,12 +290,13 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     reason: 'Theme should have changed from initial theme',
   );
 
-  debugPrint('✓ Verified color theme changed from $initialTheme to $savedTheme');
+  debugPrint(
+    '✓ Verified color theme changed from $initialTheme to $savedTheme',
+  );
 
   // Step 5ii: Tap on one filter and confirm that tag filter functions the same
   final tagPillsAfterThemeChange = find.byWidgetPredicate(
-    (widget) =>
-        widget.runtimeType.toString() == 'SelectableTagPill',
+    (widget) => widget.runtimeType.toString() == 'SelectableTagPill',
   );
 
   expect(

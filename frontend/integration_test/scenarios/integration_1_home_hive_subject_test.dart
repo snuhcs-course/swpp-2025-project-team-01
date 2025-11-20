@@ -59,7 +59,9 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
       final widget = element.widget as Text;
       debugPrint('  - ${widget.data}');
     }
-    throw Exception('Add Subject option not found. Searched for "Add Subject" and "과목 추가"');
+    throw Exception(
+      'Add Subject option not found. Searched for "Add Subject" and "과목 추가"',
+    );
   }
 
   // Step 2: Tap 'Add subject'
