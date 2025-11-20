@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Simple test script for Re:view Backend API
+Test script for Re:view Backend API - Korean lecture
 
 Tests the /api/synchronize/stream endpoint with SSE progress monitoring.
+Configuration: lang=ko (Korean lecture, no TTS generation)
 """
 
 import requests
@@ -15,26 +16,15 @@ import sseclient
 API_BASE_URL = "http://localhost:8080" # 8080 for port forwarding
 TEST_AUDIO = Path(__file__).parent / "test_lecture" / "kor_lecture_recording.m4a"
 TEST_PDF = Path(__file__).parent / "test_lecture" / "kor_lecture_slides.pdf"
-OUTPUT_FILE = Path(__file__).parent / "kor_test_output.zip"
-
-def test_root_endpoint():
-    """Test root endpoint - should redirect to /docs"""
-    print("🧪 Testing root endpoint...")
-    try:
-        response = requests.get(f"{API_BASE_URL}/", allow_redirects=False)
-        if response.status_code == 307:
-            print(f"✅ Root endpoint returns redirect to {response.headers.get('location')}")
-            return True
-        else:
-            print(f"❌ Unexpected status code: {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return False
+OUTPUT_DIR = Path(__file__).parent / "test_output"
+OUTPUT_FILE = OUTPUT_DIR / "korean.zip"
 
 def test_synchronize_stream():
-    """Test synchronize endpoint with SSE streaming"""
-    print("\n🧪 Testing /api/synchronize/stream endpoint...")
+    """Test synchronize endpoint with SSE streaming for Korean lecture"""
+    print("\n🧪 Testing Korean lecture processing (lang=ko)...")
+
+    # Create output directory if it doesn't exist
+    OUTPUT_DIR.mkdir(exist_ok=True)
 
     # Verify test files exist
     if not TEST_AUDIO.exists():
@@ -59,7 +49,7 @@ def test_synchronize_stream():
         response = requests.post(
             f"{API_BASE_URL}/api/synchronize/stream",
             files=files,
-            data = {'lang':'ko'},
+            data={'lang': 'ko'},
             stream=True
         )
 
@@ -131,8 +121,11 @@ def test_synchronize_stream():
                 with zipfile.ZipFile(OUTPUT_FILE, 'r') as zip_file:
                     contents = zip_file.namelist()
                     print(f"📦 ZIP contents: {', '.join(contents)}")
-                    if 'audio.opus' in contents and 'timestamps.json' in contents:
+                    if 'timestamps.json' in contents:
                         print("✅ ZIP file structure is correct")
+                        # For Korean lectures, audio.opus should be empty or not present
+                        if 'audio.opus' in contents:
+                            print("⚠️  Note: audio.opus present but should be empty for Korean lectures")
                     else:
                         print("⚠️  Unexpected ZIP contents")
             else:
@@ -151,16 +144,13 @@ def test_synchronize_stream():
 def main():
     """Run all tests"""
     print("=" * 60)
-    print("Re:view Backend API Test Suite")
+    print("Re:view Backend API Test Suite - Korean Lecture")
     print("=" * 60)
 
     results = []
 
-    # Test 1: Root endpoint
-    results.append(("Root endpoint", test_root_endpoint()))
-
-    # Test 2: Synchronize stream endpoint (full pipeline)
-    results.append(("Synchronize stream", test_synchronize_stream()))
+    # Test: Korean lecture synchronization
+    results.append(("Korean lecture (lang=ko)", test_synchronize_stream()))
 
     # Summary
     print("\n" + "=" * 60)

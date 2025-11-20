@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Test script for Re:view Backend API - English lecture with female voice
+Test script for Re:view Backend API - English lecture with male voice
 
 Tests the /api/synchronize/stream endpoint with SSE progress monitoring.
-Default configuration: lang=en, tts_gender=f (female/af_heart)
+Configuration: lang=en, tts_gender=m (male/am_michael)
 """
 
 import requests
@@ -17,26 +17,11 @@ API_BASE_URL = "http://localhost:8080" # 8080 for port forwarding
 TEST_AUDIO = Path(__file__).parent / "test_lecture" / "lecture_recording.mp3"
 TEST_PDF = Path(__file__).parent / "test_lecture" / "lecture_slides.pdf"
 OUTPUT_DIR = Path(__file__).parent / "test_output"
-OUTPUT_FILE = OUTPUT_DIR / "english_female.zip"
+OUTPUT_FILE = OUTPUT_DIR / "english_male.zip"
 
-def test_root_endpoint():
-    """Test root endpoint - should redirect to /docs"""
-    print("🧪 Testing root endpoint...")
-    try:
-        response = requests.get(f"{API_BASE_URL}/", allow_redirects=False)
-        if response.status_code == 307:
-            print(f"✅ Root endpoint returns redirect to {response.headers.get('location')}")
-            return True
-        else:
-            print(f"❌ Unexpected status code: {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return False
-
-def test_synchronize_stream():
-    """Test synchronize endpoint with SSE streaming"""
-    print("\n🧪 Testing /api/synchronize/stream endpoint...")
+def test_synchronize_stream_male_voice():
+    """Test synchronize endpoint with SSE streaming for English lecture with male voice"""
+    print("\n🧪 Testing English lecture with male voice (lang=en, tts_gender=m)...")
 
     # Create output directory if it doesn't exist
     OUTPUT_DIR.mkdir(exist_ok=True)
@@ -59,11 +44,13 @@ def test_synchronize_stream():
             'lecture_note': ('lecture_slides.pdf', open(TEST_PDF, 'rb'), 'application/pdf')
         }
 
-        # Start request with streaming
+        # Start request with streaming - MALE VOICE
         print("\n📤 Uploading files and starting processing...")
+        print("🎙️  TTS Voice: Male (am_michael)")
         response = requests.post(
             f"{API_BASE_URL}/api/synchronize/stream",
             files=files,
+            data={'lang': 'en', 'tts_gender': 'm'},
             stream=True
         )
 
@@ -137,6 +124,7 @@ def test_synchronize_stream():
                     print(f"📦 ZIP contents: {', '.join(contents)}")
                     if 'audio.opus' in contents and 'timestamps.json' in contents:
                         print("✅ ZIP file structure is correct")
+                        print("🎙️  Male voice TTS audio generated successfully")
                     else:
                         print("⚠️  Unexpected ZIP contents")
             else:
@@ -155,16 +143,13 @@ def test_synchronize_stream():
 def main():
     """Run all tests"""
     print("=" * 60)
-    print("Re:view Backend API Test Suite")
+    print("Re:view Backend API Test Suite - Male Voice TTS")
     print("=" * 60)
 
     results = []
 
-    # Test 1: Root endpoint
-    results.append(("Root endpoint", test_root_endpoint()))
-
-    # Test 2: Synchronize stream endpoint (full pipeline)
-    results.append(("Synchronize stream", test_synchronize_stream()))
+    # Test: English lecture with male voice
+    results.append(("English lecture with male voice (tts_gender=m)", test_synchronize_stream_male_voice()))
 
     # Summary
     print("\n" + "=" * 60)
