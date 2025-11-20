@@ -30,19 +30,37 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
   expect(addButton, findsOneWidget, reason: 'Add button should exist');
 
   await tester.tap(addButton);
+  await tester.pump(); // Start the animation
+
+  debugPrint('✓ Tapped add button (+)');
+
+  // Wait for overlay animation to complete (180ms animation + buffer)
+  await tester.pump(const Duration(milliseconds: 200));
   await tester.pumpAndSettle();
 
-  // Verify add menu is open by looking for 'Add subject' option
-  final addSubjectOption = find.text('Add subject');
+  // Verify add menu is open by looking for 'Add Subject' option
+  final addSubjectOption = find.text('Add Subject');
   final addSubjectOptionKo = find.text('과목 추가');
-  final foundOption = addSubjectOption.evaluate().isNotEmpty
-      ? addSubjectOption
-      : addSubjectOptionKo;
-  expect(
-    foundOption,
-    findsOneWidget,
-    reason: 'Add subject option should be visible',
-  );
+
+  Finder? foundOption;
+  if (addSubjectOption.evaluate().isNotEmpty) {
+    foundOption = addSubjectOption;
+    debugPrint('✓ Found "Add Subject" option');
+  } else if (addSubjectOptionKo.evaluate().isNotEmpty) {
+    foundOption = addSubjectOptionKo;
+    debugPrint('✓ Found "과목 추가" option');
+  }
+
+  if (foundOption == null) {
+    // Debug: print all visible text widgets
+    debugPrint('Available text widgets after tapping add button:');
+    final allTexts = find.byType(Text);
+    for (final element in allTexts.evaluate().take(20)) {
+      final widget = element.widget as Text;
+      debugPrint('  - ${widget.data}');
+    }
+    throw Exception('Add Subject option not found. Searched for "Add Subject" and "과목 추가"');
+  }
 
   // Step 2: Tap 'Add subject'
   await tester.tap(foundOption);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/features/home/home_widgets.dart';
 import '../helpers/test_helpers.dart';
 
 /// Integration Test 3: Home + Tag + Hive (Add Tag)
@@ -108,6 +109,10 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
   await IntegrationTestHelpers.navigateBack(tester);
   await tester.pumpAndSettle();
 
+  // Navigate back to home from manage screen
+  await IntegrationTestHelpers.navigateBack(tester);
+  await tester.pumpAndSettle();
+
   // Step 3: Verify tag was added to Hive
   final updatedTags = manager.getTags();
   expect(
@@ -141,5 +146,69 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
     reason: 'Tag in Hive should have correct name',
   );
 
-  debugPrint('✅ Integration 3 passed: Tag successfully added and persisted');
+  debugPrint('✓ Tag verified in Hive');
+
+  // Step 4: Verify tag is visible in UI by opening filter pill
+  // Verify we're on home screen
+  final menuButtonOnHome = find.byIcon(Icons.menu);
+  expect(
+    menuButtonOnHome,
+    findsOneWidget,
+    reason: 'Should be back on home screen',
+  );
+
+  // Tap filter pill to show tags
+  final filterPill = find.byWidgetPredicate(
+    (widget) => widget is FilterPill,
+  );
+
+  expect(filterPill, findsOneWidget, reason: 'Filter pill should be visible');
+
+  await tester.tap(filterPill);
+  await tester.pumpAndSettle();
+
+  debugPrint('✓ Tapped filter pill to show tags');
+
+  // Look for the newly created tag in the UI
+  // Try multiple approaches to find the tag
+  Finder? tagInUI = find.text('Integration Test Tag');
+
+  if (tagInUI.evaluate().isEmpty) {
+    // Try with textContaining
+    tagInUI = find.textContaining('Integration Test Tag');
+  }
+
+  if (tagInUI.evaluate().isEmpty) {
+    // Try to find by checking all Text widgets
+    tagInUI = find.byWidgetPredicate(
+      (widget) =>
+          widget is Text &&
+          widget.data != null &&
+          widget.data!.contains('Integration Test Tag'),
+    );
+  }
+
+  if (tagInUI.evaluate().isEmpty) {
+    // Debug: print all visible text widgets
+    debugPrint('Available text widgets in filter area:');
+    final allTexts = find.byType(Text);
+    for (final element in allTexts.evaluate().take(30)) {
+      final widget = element.widget as Text;
+      debugPrint('  - ${widget.data}');
+    }
+  }
+
+  expect(
+    tagInUI.evaluate().isNotEmpty,
+    true,
+    reason: 'Newly created tag should be visible in filter pills',
+  );
+
+  debugPrint('✓ Tag verified in UI');
+
+  // Close filter pill
+  await tester.tap(filterPill);
+  await tester.pumpAndSettle();
+
+  debugPrint('✅ Integration 3 passed: Tag successfully added, persisted, and visible in UI');
 }
