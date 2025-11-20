@@ -106,8 +106,8 @@ void main() {
       });
 
       test('editSubjects returns correct translation', () {
-        expect(koreanLocalizations.editSubjects, '과목 수정');
-        expect(englishLocalizations.editSubjects, 'Edit Subjects');
+        expect(koreanLocalizations.editSubjects, '과목 정보 수정');
+        expect(englishLocalizations.editSubjects, 'Edit Subjects Info');
       });
 
       test('editTags returns correct translation', () {
@@ -234,8 +234,8 @@ void main() {
       });
 
       test('editingSubjects returns correct translation', () {
-        expect(koreanLocalizations.editingSubjects, '과목 수정');
-        expect(englishLocalizations.editingSubjects, 'Edit Subjects');
+        expect(koreanLocalizations.editingSubject, '과목 수정');
+        expect(englishLocalizations.editingSubject, 'Edit Subjects');
       });
 
       test('deleteSubject returns correct translation', () {
@@ -387,8 +387,8 @@ void main() {
       });
 
       test('lectureDetails returns correct translation', () {
-        expect(koreanLocalizations.lectureDetails, '강의 상세정보');
-        expect(englishLocalizations.lectureDetails, 'Lecture Details');
+        expect(koreanLocalizations.editLecture, '강의 정보 수정');
+        expect(englishLocalizations.editLecture, 'Edit Lecture Info');
       });
 
       test('week returns correct translation', () {
