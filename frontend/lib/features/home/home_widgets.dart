@@ -795,191 +795,141 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final manager = HiveManager.instance;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
 
     // 모든 과목 가져오기 (미분류 포함)
     final allSubjects = manager.getSubjects().toList();
 
-    return AlertDialog(
-      backgroundColor: theme.dialogTheme.backgroundColor,
-      titlePadding: EdgeInsets.zero,
-      title: DialogHeaderTitle(title: l10n.editLecture),
-      content: SizedBox(
-        width: 400,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: screenHeight * 0.7 - keyboardHeight,
+    return EditDialog(
+      title: l10n.editLecture,
+      deleteLabel: l10n.isKorean ? '삭제' : 'Delete',
+      completeLabel: l10n.complete,
+      onDelete: () async {
+        final bool? confirm = await showDialog<bool>(
+          context: context,
+          barrierColor: Colors.black87,
+          builder: (context) => DeleteWarningDialog(
+            warningText: l10n.warning,
+            yesText: l10n.yes,
+            noText: l10n.no,
+            onConfirm: () async {
+              await manager.deleteLecture(widget.lecture.id);
+            },
+            body: Text(
+              l10n.isKorean
+                  ? '이 강의를 삭제하시겠습니까?\n삭제한 강의는 복구할 수 없습니다.'
+                  : 'Are you sure you want to\ndelete this lecture?\nThis action is irreversible.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                height: 1.5,
+              ),
+            ),
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        );
+
+        if (confirm == true && context.mounted) {
+          Navigator.pop(context, true);
+        }
+      },
+      onComplete: () async {
+        final weekText = _weekController.text.trim();
+        final titleText = _titleController.text.trim();
+
+        if (weekText.isNotEmpty && titleText.isNotEmpty) {
+          await manager.updateLectureMetadata(
+            widget.lecture.id,
+            weekLabel: weekText,
+            title: titleText,
+          );
+        }
+
+        // 과목이 변경되었으면 이동
+        if (_selectedSubjectId != widget.lecture.subjectId) {
+          await manager.moveLectureToSubject(
+            widget.lecture.id,
+            _selectedSubjectId,
+          );
+        }
+
+        if (context.mounted) {
+          Navigator.pop(context, true);
+        }
+      },
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 과목 선택 드롭다운
+          DropdownButtonFormField<String>(
+            initialValue: _selectedSubjectId,
+            decoration: InputDecoration(
+              labelText: l10n.subject,
+              border: const OutlineInputBorder(),
+            ),
+            items: allSubjects.map((subject) {
+              return DropdownMenuItem<String>(
+                value: subject.id,
+                child: Text(
+                  subject.isUncategorized ? l10n.uncategorized : subject.title,
+                ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _selectedSubjectId = newValue;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _weekController,
+            decoration: InputDecoration(
+              labelText: l10n.week,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _titleController,
+            decoration: InputDecoration(
+              labelText: l10n.lectureTitle,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // 강의 시간 정보
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // 과목 선택 드롭다운
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedSubjectId,
-                  decoration: InputDecoration(
-                    labelText: l10n.subject,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: allSubjects.map((subject) {
-                    return DropdownMenuItem<String>(
-                      value: subject.id,
-                      child: Text(
-                        subject.isUncategorized
-                            ? l10n.uncategorized
-                            : subject.title,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedSubjectId = newValue;
-                      });
-                    }
-                  },
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.lectureLength,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _weekController,
-                  decoration: InputDecoration(
-                    labelText: l10n.week,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: l10n.lectureTitle,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // 강의 시간 정보
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.lectureLength,
-                            style: theme.textTheme.titleSmall,
-                          ),
-                        ],
-                      ),
-                      Text(
-                        _formatDuration(widget.lecture.duration),
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                    ],
-                  ),
+                Text(
+                  _formatDuration(widget.lecture.duration),
+                  style: theme.textTheme.bodyLarge,
                 ),
               ],
             ),
           ),
-        ),
+        ],
       ),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      actions: [
-        // 하단 버튼: 삭제 / 완료
-        Row(
-          children: [
-            // 삭제 버튼 (왼쪽)
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
-                onPressed: () async {
-                  final bool? confirm = await showDialog<bool>(
-                    context: context,
-                    barrierColor: Colors.black87,
-                    builder: (context) => DeleteWarningDialog(
-                      warningText: l10n.warning,
-                      yesText: l10n.yes,
-                      noText: l10n.no,
-                      onConfirm: () async {
-                        await manager.deleteLecture(widget.lecture.id);
-                      },
-                      body: Text(
-                        l10n.isKorean
-                            ? '이 강의를 삭제하시겠습니까?\n삭제한 강의는 복구할 수 없습니다.'
-                            : 'Are you sure you want to\ndelete this lecture?\nThis action is irreversible.',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 18,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  );
-
-                  if (confirm == true && context.mounted) {
-                    Navigator.pop(context, true);
-                  }
-                },
-                icon: const Icon(Icons.delete_outline, size: 20),
-                label: Text(l10n.isKorean ? '삭제' : 'Delete'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // 완료 버튼 (오른쪽)
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
-                onPressed: () async {
-                  final weekText = _weekController.text.trim();
-                  final titleText = _titleController.text.trim();
-
-                  if (weekText.isNotEmpty && titleText.isNotEmpty) {
-                    await manager.updateLectureMetadata(
-                      widget.lecture.id,
-                      weekLabel: weekText,
-                      title: titleText,
-                    );
-                  }
-
-                  // 과목이 변경되었으면 이동
-                  if (_selectedSubjectId != widget.lecture.subjectId) {
-                    await manager.moveLectureToSubject(
-                      widget.lecture.id,
-                      _selectedSubjectId,
-                    );
-                  }
-
-                  if (context.mounted) {
-                    Navigator.pop(context, true);
-                  }
-                },
-                child: Text(l10n.complete),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

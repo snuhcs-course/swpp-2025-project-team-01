@@ -399,136 +399,86 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final screenHeight = MediaQuery.of(context).size.height;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    return AlertDialog(
-      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
-      titlePadding: EdgeInsets.zero,
-      title: DialogHeaderTitle(title: l10n.editingSubject),
-      content: SizedBox(
-        width: 400,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: screenHeight * 0.7 - keyboardHeight,
+    return EditDialog(
+      title: l10n.editingSubject,
+      deleteLabel: l10n.delete,
+      completeLabel: l10n.complete,
+      onDelete: () async {
+        final result = await showDeleteConfirmationDialog(widget.subject);
+        if (result == true && context.mounted) {
+          Navigator.pop(context, true);
+        }
+      },
+      onComplete: () {
+        final newTitle = _nameController.text.trim();
+        if (newTitle.isEmpty) {
+          _showSnackBar(l10n.pleaseEnterSubjectName);
+          return;
+        }
+        final manager = HiveManager.instance;
+        manager.updateSubject(
+          widget.subject.id,
+          title: newTitle,
+          tagIds: _selectedTagIds.toList(),
+        );
+        Navigator.pop(context, true);
+      },
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ========== 과목 이름 입력 ==========
+          Text(
+            l10n.subjectName,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ========== 과목 이름 입력 ==========
-                Text(
-                  l10n.subjectName,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    hintText: l10n.isKorean
-                        ? '예) 소프트웨어 개발의 원리와 실습'
-                        : 'ex) Software Development Principles and Practice',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Text(
-                  l10n.editTags2,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ...widget.allTags.map((tag) {
-                      final isSelected = _selectedTagIds.contains(tag.id);
-                      return SelectableTagPill(
-                        tag: tag,
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedTagIds.remove(tag.id);
-                            } else {
-                              _selectedTagIds.add(tag.id);
-                            }
-                          });
-                        },
-                      );
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
+          const SizedBox(height: 8),
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              hintText: l10n.isKorean
+                  ? '예) 소프트웨어 개발의 원리와 실습'
+                  : 'ex) Software Development Principles and Practice',
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 16),
+
+          Text(
+            l10n.editTags2,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ...widget.allTags.map((tag) {
+                final isSelected = _selectedTagIds.contains(tag.id);
+                return SelectableTagPill(
+                  tag: tag,
+                  selected: isSelected,
+                  onSelected: (_) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedTagIds.remove(tag.id);
+                      } else {
+                        _selectedTagIds.add(tag.id);
+                      }
+                    });
+                  },
+                );
+              }),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
       ),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      actions: [
-        // 하단 버튼: 삭제 / 완료
-        Row(
-          children: [
-            // 삭제 버튼 (왼쪽)
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
-                onPressed: () async {
-                  final result = await showDeleteConfirmationDialog(
-                    widget.subject,
-                  );
-                  if (result == true && context.mounted) {
-                    Navigator.pop(context, true);
-                  }
-                },
-                icon: const Icon(Icons.delete_outline, size: 20),
-                label: Text(l10n.delete),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // 완료 버튼 (오른쪽)
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
-                onPressed: () {
-                  final newTitle = _nameController.text.trim();
-                  if (newTitle.isEmpty) {
-                    _showSnackBar(l10n.pleaseEnterSubjectName);
-                    return;
-                  }
-                  final manager = HiveManager.instance;
-                  manager.updateSubject(
-                    widget.subject.id,
-                    title: newTitle,
-                    tagIds: _selectedTagIds.toList(),
-                  );
-                  Navigator.pop(context, true);
-                },
-                child: Text(l10n.complete),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

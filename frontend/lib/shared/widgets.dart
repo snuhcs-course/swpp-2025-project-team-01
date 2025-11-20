@@ -866,6 +866,90 @@ class DialogHeaderTitle extends StatelessWidget {
   }
 }
 
+/// 수정 다이얼로그 공통 위젯
+///
+/// DialogHeaderTitle, 스크롤 가능한 content, 삭제/완료 버튼을 포함하는 표준 수정 다이얼로그입니다.
+/// 내부 콘텐츠는 [content] 파라미터로 커스터마이즈.
+class EditDialog extends StatelessWidget {
+  const EditDialog({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.onDelete,
+    required this.onComplete,
+    required this.deleteLabel,
+    required this.completeLabel,
+  });
+
+  final String title;
+  final Widget content;
+  final VoidCallback onDelete;
+  final VoidCallback onComplete;
+  final String deleteLabel;
+  final String completeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      backgroundColor: theme.dialogTheme.backgroundColor,
+      titlePadding: EdgeInsets.zero,
+      title: DialogHeaderTitle(title: title),
+      content: SizedBox(
+        width: 400,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.7 - keyboardHeight,
+          ),
+          child: SingleChildScrollView(
+            child: content,
+          ),
+        ),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      actions: [
+        Row(
+          children: [
+            // 삭제 버튼 (왼쪽)
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline, size: 20),
+                label: Text(deleteLabel),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 완료 버튼 (오른쪽)
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+                onPressed: onComplete,
+                child: Text(completeLabel),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 /// 삭제 경고 다이얼로그 위젯
 ///
 /// 검은색 헤더와 회색 본문을 가진 표준 경고 다이얼로그입니다.
