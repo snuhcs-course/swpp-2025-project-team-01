@@ -39,6 +39,7 @@ class AppLocalizations {
   String get menu => isKorean ? '메뉴' : 'Menu';
   String get filter => isKorean ? '필터' : 'Filter';
   String get editMode => isKorean ? '수정' : 'Edit';
+  String get archive => isKorean ? '보관함' : 'Archive';
   String get addLecture => isKorean ? '강의 생성' : 'Create Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get editTags => isKorean ? '태그 수정' : 'Edit Tags';
@@ -47,6 +48,8 @@ class AppLocalizations {
   String get noSubjectsWithSelectedTags => isKorean
       ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
       : 'No subjects match the selected tags.';
+  String get noArchivedSubjects =>
+      isKorean ? '보관된 과목이 없습니다.' : 'There are no archived subjects.';
 
   // 설정 화면
   String get displayMode => isKorean ? '디스플레이 모드' : 'Display Mode';

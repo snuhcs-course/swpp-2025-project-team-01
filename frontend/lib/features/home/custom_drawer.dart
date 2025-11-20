@@ -57,6 +57,14 @@ class _DrawerContent extends StatelessWidget {
         ),
         const Divider(),
         ListTile(
+          title: Text(l10n.archive),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, Routes.archive);
+          },
+        ),
+        const Divider(),
+        ListTile(
           title: Text(l10n.addLecture),
           onTap: () {
             Navigator.pop(context);
