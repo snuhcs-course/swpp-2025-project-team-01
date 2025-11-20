@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _showSubjectEditDialog(HiveSubject subject) async {
-    final result = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => SubjectEditDialog(
@@ -137,9 +137,13 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
 
-    if (!mounted || result == null) {
-      _refreshSubjects(_manager.getSubjects());
+    if (!mounted) {
       return;
+    }
+
+    // 수정 모드에서 과목 목록을 항상 새로고침하여 태그 변경사항 반영
+    if (editModeEnabled) {
+      _refreshSubjects(_manager.getSubjects());
     }
   }
 
