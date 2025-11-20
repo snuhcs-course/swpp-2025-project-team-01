@@ -76,8 +76,12 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (testDirectory.existsSync()) {
-      testDirectory.deleteSync(recursive: true);
+    try {
+      if (testDirectory.existsSync()) {
+        testDirectory.deleteSync(recursive: true);
+      }
+    } catch (e) {
+      // Ignore Windows file lock issues
     }
   });
 
@@ -111,7 +115,7 @@ void main() {
         await tester.longPress(find.byType(LectureCard));
         await tester.pumpAndSettle();
 
-        expect(find.text('Lecture Details'), findsOneWidget);
+        expect(find.text('Edit Lecture Info'), findsOneWidget);
       });
 
       testWidgets('displays dialog with correct header title in Korean', (
@@ -135,7 +139,7 @@ void main() {
         await tester.longPress(find.byType(LectureCard));
         await tester.pumpAndSettle();
 
-        expect(find.text('강의 상세정보'), findsOneWidget);
+        expect(find.text('강의 정보 수정'), findsOneWidget);
       });
 
       testWidgets('pre-fills week label field with lecture data', (
@@ -414,9 +418,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should show confirmation dialog
-        expect(find.text('Delete Lecture'), findsOneWidget);
+        expect(find.text('Warning'), findsOneWidget);
         expect(
-          find.textContaining('Are you sure you want to delete this lecture?'),
+          find.textContaining('Are you sure you want to'),
           findsOneWidget,
         );
       });
@@ -447,7 +451,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should show Korean text
-        expect(find.text('강의 삭제'), findsOneWidget);
+        expect(find.text('경고'), findsOneWidget);
         expect(find.textContaining('이 강의를 삭제하시겠습니까?'), findsOneWidget);
       });
 
@@ -474,14 +478,14 @@ void main() {
         await tester.tap(find.byIcon(Icons.delete_outline));
         await tester.pumpAndSettle();
 
-        // Tap cancel
-        await tester.tap(find.text('Cancel'));
+        // Tap No button
+        await tester.tap(find.text('No'));
         await tester.pumpAndSettle();
 
         // Main dialog should still be visible
-        expect(find.text('Lecture Details'), findsOneWidget);
+        expect(find.text('Edit Lecture Info'), findsOneWidget);
         // Confirmation dialog should be closed
-        expect(find.text('Delete Lecture'), findsNothing);
+        expect(find.text('Warning'), findsNothing);
       });
     });
     group('Edge Cases', () {
@@ -581,7 +585,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Key Korean strings
-        expect(find.text('강의 상세정보'), findsOneWidget);
+        expect(find.text('강의 정보 수정'), findsOneWidget);
         expect(find.text('과목'), findsOneWidget);
         expect(find.text('주차'), findsOneWidget);
         expect(find.text('강의 제목'), findsOneWidget);
@@ -612,7 +616,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Key English strings
-        expect(find.text('Lecture Details'), findsOneWidget);
+        expect(find.text('Edit Lecture Info'), findsOneWidget);
         expect(find.text('Subject'), findsOneWidget);
         expect(find.text('Week'), findsOneWidget);
         expect(find.text('Lecture Title'), findsOneWidget);

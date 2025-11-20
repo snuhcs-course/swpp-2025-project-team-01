@@ -79,8 +79,12 @@ void main() {
 
   tearDownAll(() async {
     // Finally, clean up test directory
-    if (testDirectory.existsSync()) {
-      testDirectory.deleteSync(recursive: true);
+    try {
+      if (testDirectory.existsSync()) {
+        testDirectory.deleteSync(recursive: true);
+      }
+    } catch (e) {
+      // Ignore Windows file lock issues
     }
   });
 
@@ -1217,19 +1221,11 @@ void main() {
     ) async {
       updateTestData((data) {
         data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
-        data.subjects['s1'] = makeSubject(
-          id: 's1',
-          title: 'Test Subject',
-          tagIds: ['t1'],
-        );
       });
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          final subject = HiveManager.instance.getSubject('s1')!;
-          return SubjectEditDialog(
-            subject: subject,
-            initialTagIds: ['t1'],
+          return CreateSubjectDialog(
             allTags: HiveManager.instance.getTags(),
           );
         }),
@@ -1246,6 +1242,10 @@ void main() {
       // Find the add tag button (ActionChip with '+')
       final addTagButton = find.widgetWithText(ActionChip, '+');
       expect(addTagButton, findsOneWidget);
+
+      // Ensure the add tag button is visible
+      await tester.ensureVisible(addTagButton);
+      await tester.pumpAndSettle();
 
       // Tap the add tag button
       await tester.tap(addTagButton);
@@ -1266,23 +1266,14 @@ void main() {
       // Create 15 tags (maximum allowed)
       updateTestData((data) {
         data.tags.clear(); // Clear existing tags from previous tests
-        data.subjects.clear(); // Clear existing subjects from previous tests
         for (int i = 0; i < 15; i++) {
           data.tags['t$i'] = makeTag(id: 't$i', name: 'Tag$i');
         }
-        data.subjects['s1'] = makeSubject(
-          id: 's1',
-          title: 'Test Subject',
-          tagIds: ['t0'],
-        );
       });
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          final subject = HiveManager.instance.getSubject('s1')!;
-          return SubjectEditDialog(
-            subject: subject,
-            initialTagIds: ['t0'],
+          return CreateSubjectDialog(
             allTags: HiveManager.instance.getTags(),
           );
         }),
@@ -1293,8 +1284,13 @@ void main() {
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
 
+      // Ensure the add tag button is visible
+      final addTagButton = find.widgetWithText(ActionChip, '+');
+      await tester.ensureVisible(addTagButton);
+      await tester.pumpAndSettle();
+
       // Tap the add tag button
-      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.tap(addTagButton);
       await tester.pump();
 
       // Wait for async operations
@@ -1316,21 +1312,12 @@ void main() {
     ) async {
       updateTestData((data) {
         data.tags.clear(); // Clear existing tags from previous tests
-        data.subjects.clear(); // Clear existing subjects from previous tests
         data.tags['t1'] = makeTag(id: 't1', name: 'ExistingTag');
-        data.subjects['s1'] = makeSubject(
-          id: 's1',
-          title: 'Test Subject',
-          tagIds: ['t1'],
-        );
       });
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          final subject = HiveManager.instance.getSubject('s1')!;
-          return SubjectEditDialog(
-            subject: subject,
-            initialTagIds: ['t1'],
+          return CreateSubjectDialog(
             allTags: HiveManager.instance.getTags(),
           );
         }),
@@ -1341,8 +1328,13 @@ void main() {
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
 
+      // Ensure the add tag button is visible
+      final addTagButton = find.widgetWithText(ActionChip, '+');
+      await tester.ensureVisible(addTagButton);
+      await tester.pumpAndSettle();
+
       // Tap the add tag button
-      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.tap(addTagButton);
       await tester.pump();
 
       // Enter a duplicate tag name in the second TextField
@@ -1369,19 +1361,11 @@ void main() {
     testWidgets('_addNewTag creates a new tag successfully', (tester) async {
       updateTestData((data) {
         data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
-        data.subjects['s1'] = makeSubject(
-          id: 's1',
-          title: 'Test Subject',
-          tagIds: ['t1'],
-        );
       });
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          final subject = HiveManager.instance.getSubject('s1')!;
-          return SubjectEditDialog(
-            subject: subject,
-            initialTagIds: ['t1'],
+          return CreateSubjectDialog(
             allTags: HiveManager.instance.getTags(),
           );
         }),
@@ -1394,8 +1378,13 @@ void main() {
       await tester.tap(find.text('Open Dialog'));
       await tester.pumpAndSettle();
 
+      // Ensure the add tag button is visible
+      final addTagButton = find.widgetWithText(ActionChip, '+');
+      await tester.ensureVisible(addTagButton);
+      await tester.pumpAndSettle();
+
       // Tap the add tag button to show creation UI
-      await tester.tap(find.widgetWithText(ActionChip, '+'));
+      await tester.tap(addTagButton);
       await tester.pump();
 
       // Enter a new tag name in the second TextField (first is subject name)
