@@ -52,8 +52,13 @@ Backend API for lecture synchronization using AI inference pipeline.
 backend/
 ├── setup.sh                 # Installation script
 ├── main.py                  # FastAPI application
-├── test.py                  # API test script
 ├── README.md
+├── test/                    # Test files directory
+│   ├── test.py              # English lecture test (female voice)
+│   ├── test_korean.py       # Korean lecture test
+│   ├── test_male_voice.py   # English lecture test (male voice)
+│   ├── test_lecture/        # Test input files
+│   └── test_output/         # Test output files (auto-generated)
 └── inference_models/        # AI inference pipeline package
     ├── __init__.py
     ├── lecture_pipeline.py  # Main pipeline orchestration
@@ -329,7 +334,7 @@ All error responses include a `detail` field with error message.
 2. **Prepare test files**:
    - Place a lecture audio file (e.g., `lecture_recording.mp3`)
    - Place a lecture slides PDF (e.g., `lecture_slides.pdf`)
-   - Update file paths in [test.py](test.py) if needed
+   - Update file paths in [test/test.py](test/test.py) if needed
 
 ### Method 1: Python Test Scripts (Recommended)
 
@@ -338,19 +343,19 @@ The easiest way to test all endpoints including SSE streaming. Three test script
 **Test 1: Basic test with English lecture (female voice, default)**
 ```bash
 cd backend
-python test.py
+python test/test.py
 ```
 
 **Test 2: Korean lecture test**
 ```bash
 cd backend
-python test_korean.py
+python test/test_korean.py
 ```
 
 **Test 3: English lecture with male voice**
 ```bash
 cd backend
-python test_male_voice.py
+python test/test_male_voice.py
 ```
 
 **Example output:**
