@@ -821,7 +821,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                 DropdownButtonFormField<String>(
                   initialValue: _selectedSubjectId,
                   decoration: InputDecoration(
-                    labelText: l10n.isKorean ? '과목' : 'Subject',
+                    labelText: l10n.subject,
                     border: const OutlineInputBorder(),
                   ),
                   items: allSubjects.map((subject) {
@@ -911,26 +911,117 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                 onPressed: () async {
                   final bool? confirm = await showDialog<bool>(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(l10n.deleteLecture),
-                      content: Text(
-                        l10n.isKorean
-                            ? '이 강의를 삭제하시겠습니까? 삭제한 강의는 복구할 수 없습니다.'
-                            : 'Are you sure you want to delete this lecture? This action is irreversible.',
+                    barrierColor: Colors.black87,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.transparent,
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Header
+                            Container(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              decoration: const BoxDecoration(
+                                color: Colors.black87,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  l10n.warning,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Body
+                            Container(
+                              padding: const EdgeInsets.all(32),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFE8E8E8),
+                                borderRadius: BorderRadius.vertical(
+                                  bottom: Radius.circular(20),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    l10n.isKorean
+                                        ? '이 강의를 삭제하시겠습니까?\n삭제한 강의는 복구할 수 없습니다.'
+                                        : 'Are you sure you want to\ndelete this lecture?\nThis action is irreversible.',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 18,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Row(
+                                    children: [
+                                      // "예" 버튼
+                                      Expanded(
+                                        child: Container(
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF5A5A5A),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: Text(
+                                              l10n.yes,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // "아니오" 버튼
+                                      Expanded(
+                                        child: Container(
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFC0C0C0),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: Text(
+                                              l10n.no,
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(l10n.cancel),
-                        ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(l10n.isKorean ? '삭제' : 'Delete'),
-                        ),
-                      ],
                     ),
                   );
 

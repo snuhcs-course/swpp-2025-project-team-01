@@ -520,6 +520,26 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
   /// 다이얼로그 본문 빌드
   Widget _buildDialogBody(String tagName, List<HiveSubject> usingSubjects) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    // 과목 이름들을 TextSpan으로 변환
+    final subjectSpans = <TextSpan>[];
+    for (int i = 0; i < usingSubjects.length; i++) {
+      subjectSpans.add(
+        TextSpan(
+          text: usingSubjects[i].title,
+          style: TextStyle(
+            color: primaryColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+      if (i < usingSubjects.length - 1) {
+        subjectSpans.add(const TextSpan(text: '\n'));
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: const BoxDecoration(
@@ -528,16 +548,29 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       ),
       child: Column(
         children: [
-          Text(
-            l10n.tagDeleteWarning(
-              tagName,
-              usingSubjects.map((s) => s.title).toList(),
-            ),
+          RichText(
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-              height: 1.5,
+            text: TextSpan(
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                height: 1.5,
+              ),
+              children: [
+                TextSpan(text: l10n.isKorean ? '태그 "' : 'Tag "'),
+                TextSpan(text: tagName),
+                TextSpan(
+                  text: l10n.isKorean
+                      ? '"는\n다음 과목에서 사용 중입니다:\n\n'
+                      : '"\n is used in the following subjects:\n\n',
+                ),
+                ...subjectSpans,
+                TextSpan(
+                  text: l10n.isKorean
+                      ? '\n\n삭제하시겠습니까?'
+                      : '\n\nDo you want to delete it?',
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
