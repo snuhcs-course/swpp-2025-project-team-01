@@ -701,11 +701,4 @@ async def root():
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(
-        app,
-        host='0.0.0.0',
-        port=8080,  # Match client's port
-        timeout_keep_alive=300,  # 5 minutes keep-alive
-        limit_concurrency=10,
-        limit_max_requests=1000
-    )
+    uvicorn.run(app, host = '0.0.0.0', port = 8080)
