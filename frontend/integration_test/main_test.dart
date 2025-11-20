@@ -10,6 +10,8 @@ import 'scenarios/integration_4_home_lecture_hive_test.dart';
 import 'scenarios/integration_5_home_settings_language_test.dart';
 import 'scenarios/integration_6_home_settings_motion_test.dart';
 import 'scenarios/integration_7_home_edit_hive_test.dart';
+import 'scenarios/integration_8_home_player_extended_test.dart';
+import 'scenarios/integration_9_home_filter_tag_theme_test.dart';
 
 /// Main Integration Test Suite
 ///
@@ -24,6 +26,8 @@ import 'scenarios/integration_7_home_edit_hive_test.dart';
 /// 5. Home + Settings: Language change
 /// 6. Home + Settings: Reduced motion performance
 /// 7. Home (Edit) + Hive: Delete lecture
+/// 8. Home + Player: Extended features (double tap skip, language toggle)
+/// 9. Home (Filter) + Tag (Theme): Tag filtering and color theme changes
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -98,6 +102,22 @@ void main() {
       // Start app fresh for this test
       app.main();
       await runIntegration7Test(tester);
+    });
+
+    testWidgets('Integration 8: Home + Player (Extended Features)', (
+      WidgetTester tester,
+    ) async {
+      // Start app fresh for this test
+      app.main();
+      await runIntegration8Test(tester);
+    });
+
+    testWidgets('Integration 9: Home (Filter) + Tag (Theme)', (
+      WidgetTester tester,
+    ) async {
+      // Start app fresh for this test
+      app.main();
+      await runIntegration9Test(tester);
     });
   });
 }
