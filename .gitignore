@@ -36,7 +36,7 @@ backend/venv/
 
 # AI Inference test data
 backend/pipeline_output/
-backend/test_output/
+backend/test/test_output/
 
 # Keystore files
 *.jks
