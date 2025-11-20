@@ -805,101 +805,108 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     return AlertDialog(
       backgroundColor: theme.dialogTheme.backgroundColor,
       titlePadding: EdgeInsets.zero,
-      title: DialogHeaderTitle(title: l10n.lectureDetails),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.7 - keyboardHeight,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 과목 선택 드롭다운
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSubjectId,
-                decoration: InputDecoration(
-                  labelText: l10n.isKorean ? '과목' : 'Subject',
-                  border: const OutlineInputBorder(),
+      title: DialogHeaderTitle(title: l10n.editLecture),
+      content: SizedBox(
+        width: 400,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.7 - keyboardHeight,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 과목 선택 드롭다운
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedSubjectId,
+                  decoration: InputDecoration(
+                    labelText: l10n.isKorean ? '과목' : 'Subject',
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: allSubjects.map((subject) {
+                    return DropdownMenuItem<String>(
+                      value: subject.id,
+                      child: Text(
+                        subject.isUncategorized
+                            ? l10n.uncategorized
+                            : subject.title,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedSubjectId = newValue;
+                      });
+                    }
+                  },
                 ),
-                items: allSubjects.map((subject) {
-                  return DropdownMenuItem<String>(
-                    value: subject.id,
-                    child: Text(
-                      subject.isUncategorized
-                          ? l10n.uncategorized
-                          : subject.title,
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedSubjectId = newValue;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _weekController,
-                decoration: InputDecoration(
-                  labelText: l10n.week,
-                  border: const OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _weekController,
+                  decoration: InputDecoration(
+                    labelText: l10n.week,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: l10n.lectureTitle,
-                  border: const OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    labelText: l10n.lectureTitle,
+                    border: const OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              // 강의 시간 정보
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 20),
+                // 강의 시간 정보
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.lectureLength,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                        ],
+                      ),
+                      Text(
+                        _formatDuration(widget.lecture.duration),
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          l10n.lectureLength,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ],
-                    ),
-                    Text(
-                      _formatDuration(widget.lecture.duration),
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        // 하단 버튼: 삭제 / 완료
+        // 하단 버튼: 삭제 / 취소 / 완료
         Row(
           children: [
             // 삭제 버튼 (왼쪽)
-            Expanded(
+            SizedBox(
+              width: 95,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
                 ),
                 onPressed: () async {
                   final bool? confirm = await showDialog<bool>(
@@ -938,9 +945,23 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                 label: Text(l10n.isKorean ? '삭제' : 'Delete'),
               ),
             ),
+            const Spacer(),
+            // 취소 버튼 (오른쪽)
+            SizedBox(
+              width: 81,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: BorderSide(color: theme.colorScheme.primary, width: 1),
+                ),
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(l10n.cancel),
+              ),
+            ),
             const SizedBox(width: 12),
             // 완료 버튼 (오른쪽)
-            Expanded(
+            SizedBox(
+              width: 81,
               child: FilledButton(
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),

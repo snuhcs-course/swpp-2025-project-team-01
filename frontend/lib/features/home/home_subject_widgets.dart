@@ -115,168 +115,180 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
       backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
       titlePadding: EdgeInsets.zero,
       title: DialogHeaderTitle(title: AppLocalizations.of(context).addSubject),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.7 - keyboardHeight,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: l10n.subjectName,
-                  hintText: l10n.isKorean
-                      ? '예) 소프트웨어 개발의 원리와 실습'
-                      : 'ex) Software Development Principles and Practice',
+      content: SizedBox(
+        width: 400,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.7 - keyboardHeight,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    labelText: l10n.subjectName,
+                    hintText: l10n.isKorean
+                        ? '예) 소프트웨어 개발의 원리와 실습'
+                        : 'ex) Software Development Principles and Practice',
+                  ),
+                  autofocus: true,
                 ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context).selectTagsOptional,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context).selectTagsOptional,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.maxFinite,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.allTags.map((tag) {
-                    final isSelected = _selectedTagIds.contains(tag.id);
-                    return SelectableTagPill(
-                      tag: tag,
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() {
-                          if (isSelected) {
-                            _selectedTagIds.remove(tag.id);
-                          } else {
-                            _selectedTagIds.add(tag.id);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.maxFinite,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: widget.allTags.map((tag) {
+                      final isSelected = _selectedTagIds.contains(tag.id);
+                      return SelectableTagPill(
+                        tag: tag,
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setState(() {
+                            if (isSelected) {
+                              _selectedTagIds.remove(tag.id);
+                            } else {
+                              _selectedTagIds.add(tag.id);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
                 ),
-              ),
-              // 태그 추가 버튼
-              ActionChip(
-                label: Text(
-                  '+',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(fontSize: 18),
-                ),
-                onPressed: _addNewTag,
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                elevation: Theme.of(context).chipTheme.elevation ?? 2,
-                side: Theme.of(context).chipTheme.side,
-              ),
-              const SizedBox(height: 12),
-              if (_isCreatingTag)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
+                // 태그 추가 버튼
+                ActionChip(
+                  label: Text(
+                    '+',
+                    style: Theme.of(
                       context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+                    ).textTheme.titleMedium?.copyWith(fontSize: 18),
+                  ),
+                  onPressed: _addNewTag,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  elevation: Theme.of(context).chipTheme.elevation ?? 2,
+                  side: Theme.of(context).chipTheme.side,
+                ),
+                const SizedBox(height: 12),
+                if (_isCreatingTag)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
                       color: Theme.of(
                         context,
-                      ).colorScheme.primary.withValues(alpha: 0.3),
-                      width: 1.5,
+                      ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.isKorean ? '태그 추가' : 'Add Tag',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _tagNameController,
+                                decoration: InputDecoration(
+                                  hintText: l10n.newTag,
+                                  border: const OutlineInputBorder(),
+                                  contentPadding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    10,
+                                    12,
+                                    10,
+                                  ),
+                                  filled: true,
+                                  fillColor: Theme.of(
+                                    context,
+                                  ).colorScheme.surface,
+                                ),
+                                enableIMEPersonalizedLearning: false,
+                                autofocus: true,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              onPressed: () {
+                                final manager = HiveManager.instance;
+                                final newTitle = _tagNameController.text.trim();
+                                String newName = newTitle.isEmpty
+                                    ? l10n.newTag
+                                    : newTitle;
+                                if (newName == l10n.newTag) {
+                                  int counter = 1;
+                                  while (manager.getTags().any(
+                                    (tag) => tag.name == newName,
+                                  )) {
+                                    newName = '${l10n.newTag} ($counter)';
+                                    counter++;
+                                  }
+                                }
+                                // Avoid duplicates
+                                if (manager
+                                    .getTags()
+                                    .map((t) => t.name)
+                                    .contains(newName)) {
+                                  _showSnackBar(l10n.duplicateTagName);
+                                  _tagCompleter?.complete(null);
+                                } else {
+                                  // Complete the future that _addNewTag() is awaiting
+                                  _tagCompleter?.complete(newName);
+                                }
+                              },
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
+                              ),
+                              child: Text(l10n.isKorean ? '적용' : 'Apply'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.isKorean ? '태그 추가' : 'Add Tag',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _tagNameController,
-                              decoration: InputDecoration(
-                                hintText: l10n.newTag,
-                                border: const OutlineInputBorder(),
-                                contentPadding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  10,
-                                  12,
-                                  10,
-                                ),
-                                filled: true,
-                                fillColor: Theme.of(
-                                  context,
-                                ).colorScheme.surface,
-                              ),
-                              enableIMEPersonalizedLearning: false,
-                              autofocus: true,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          FilledButton(
-                            onPressed: () {
-                              final manager = HiveManager.instance;
-                              final newTitle = _tagNameController.text.trim();
-                              String newName = newTitle.isEmpty
-                                  ? l10n.newTag
-                                  : newTitle;
-                              if (newName == l10n.newTag) {
-                                int counter = 1;
-                                while (manager.getTags().any(
-                                  (tag) => tag.name == newName,
-                                )) {
-                                  newName = '${l10n.newTag} ($counter)';
-                                  counter++;
-                                }
-                              }
-                              // Avoid duplicates
-                              if (manager
-                                  .getTags()
-                                  .map((t) => t.name)
-                                  .contains(newName)) {
-                                _showSnackBar(l10n.duplicateTagName);
-                                _tagCompleter?.complete(null);
-                              } else {
-                                // Complete the future that _addNewTag() is awaiting
-                                _tagCompleter?.complete(newName);
-                              }
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 14,
-                              ),
-                            ),
-                            child: Text(l10n.isKorean ? '적용' : 'Apply'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              if (_isCreatingTag) const SizedBox(height: 12),
-            ],
+                if (_isCreatingTag) const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),
       actions: [
-        TextButton(
+        OutlinedButton(
           onPressed: () => Navigator.pop(context),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 1,
+            ),
+          ),
           child: Text(AppLocalizations.of(context).cancel),
         ),
         FilledButton(
@@ -425,82 +437,88 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     return AlertDialog(
       backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
       titlePadding: EdgeInsets.zero,
-      title: DialogHeaderTitle(title: l10n.editSubjects),
-      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.7 - keyboardHeight,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ========== 과목 이름 입력 ==========
-              Text(
-                l10n.subjectName,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  hintText: l10n.isKorean
-                      ? '예) 소프트웨어 개발의 원리와 실습'
-                      : 'ex) Software Development Principles and Practice',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+      title: DialogHeaderTitle(title: l10n.editingSubject),
+      content: SizedBox(
+        width: 400,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.7 - keyboardHeight,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ========== 과목 이름 입력 ==========
+                Text(
+                  l10n.subjectName,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    hintText: l10n.isKorean
+                        ? '예) 소프트웨어 개발의 원리와 실습'
+                        : 'ex) Software Development Principles and Practice',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              Text(
-                l10n.editTags2,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ...widget.allTags.map((tag) {
-                    final isSelected = _selectedTagIds.contains(tag.id);
-                    return SelectableTagPill(
-                      tag: tag,
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() {
-                          if (isSelected) {
-                            _selectedTagIds.remove(tag.id);
-                          } else {
-                            _selectedTagIds.add(tag.id);
-                          }
-                        });
-                      },
-                    );
-                  }),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
+                Text(
+                  l10n.editTags2,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ...widget.allTags.map((tag) {
+                      final isSelected = _selectedTagIds.contains(tag.id);
+                      return SelectableTagPill(
+                        tag: tag,
+                        selected: isSelected,
+                        onSelected: (_) {
+                          setState(() {
+                            if (isSelected) {
+                              _selectedTagIds.remove(tag.id);
+                            } else {
+                              _selectedTagIds.add(tag.id);
+                            }
+                          });
+                        },
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        // 하단 버튼: 삭제 / 완료
+        // 하단 버튼: 삭제 / 취소 / 완료
         Row(
           children: [
             // 삭제 버튼 (왼쪽)
-            Expanded(
+            SizedBox(
+              width: 95,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
                 ),
                 onPressed: () async {
                   final result = await showDeleteConfirmationDialog(
@@ -514,9 +532,26 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                 label: Text(l10n.isKorean ? '삭제' : 'Delete'),
               ),
             ),
+            const Spacer(),
+            // 취소 버튼 (오른쪽)
+            SizedBox(
+              width: 81,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1,
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(l10n.cancel),
+              ),
+            ),
             const SizedBox(width: 12),
             // 완료 버튼 (오른쪽)
-            Expanded(
+            SizedBox(
+              width: 81,
               child: FilledButton(
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
