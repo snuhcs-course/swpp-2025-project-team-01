@@ -893,19 +893,18 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        // 하단 버튼: 삭제 / 취소 / 완료
+        // 하단 버튼: 삭제 / 완료
         Row(
           children: [
             // 삭제 버튼 (왼쪽)
-            SizedBox(
-              width: 95,
+            Expanded(
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 12,
+                    horizontal: 16,
+                    vertical: 10,
                   ),
                 ),
                 onPressed: () async {
@@ -941,26 +940,15 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                 label: Text(l10n.isKorean ? '삭제' : 'Delete'),
               ),
             ),
-            const Spacer(),
-            // 취소 버튼 (오른쪽)
-            SizedBox(
-              width: 81,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: BorderSide(color: theme.colorScheme.primary, width: 1),
-                ),
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.cancel),
-              ),
-            ),
             const SizedBox(width: 12),
             // 완료 버튼 (오른쪽)
-            SizedBox(
-              width: 81,
+            Expanded(
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
                 onPressed: () async {
                   final weekText = _weekController.text.trim();

@@ -473,19 +473,18 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        // 하단 버튼: 삭제 / 취소 / 완료
+        // 하단 버튼: 삭제 / 완료
         Row(
           children: [
             // 삭제 버튼 (왼쪽)
-            SizedBox(
-              width: 95,
+            Expanded(
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 12,
+                    horizontal: 16,
+                    vertical: 10,
                   ),
                 ),
                 onPressed: () async {
@@ -500,29 +499,15 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                 label: Text(l10n.delete),
               ),
             ),
-            const Spacer(),
-            // 취소 버튼 (오른쪽)
-            SizedBox(
-              width: 81,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 1,
-                  ),
-                ),
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l10n.cancel),
-              ),
-            ),
             const SizedBox(width: 12),
             // 완료 버튼 (오른쪽)
-            SizedBox(
-              width: 81,
+            Expanded(
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
                 onPressed: () {
                   final newTitle = _nameController.text.trim();
