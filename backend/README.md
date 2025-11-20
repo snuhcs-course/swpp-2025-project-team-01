@@ -52,8 +52,13 @@ Backend API for lecture synchronization using AI inference pipeline.
 backend/
 ├── setup.sh                 # Installation script
 ├── main.py                  # FastAPI application
-├── test.py                  # API test script
 ├── README.md
+├── test/                    # Test files directory
+│   ├── test.py              # English lecture test (female voice)
+│   ├── test_korean.py       # Korean lecture test
+│   ├── test_male_voice.py   # English lecture test (male voice)
+│   ├── test_lecture/        # Test input files
+│   └── test_output/         # Test output files (auto-generated)
 └── inference_models/        # AI inference pipeline package
     ├── __init__.py
     ├── lecture_pipeline.py  # Main pipeline orchestration
@@ -81,6 +86,7 @@ Start a lecture synchronization job and receive real-time progress updates via S
   - `audio` (file, required): Lecture audio file (mp3, wav, etc.)
   - `lecture_note` (file, required): Lecture slides PDF file
   - `lang` (string, optional): Lecture language code (`en` for English, `ko` for Korean). Default: `en`
+  - `tts_gender` (string, optional): TTS voice gender for English lectures (`m` for male/am_michael, `f` for female/af_heart). Default: `f`. Note: This parameter only affects English lectures as Korean lectures do not generate TTS audio.
 
 #### Response
 
@@ -328,15 +334,28 @@ All error responses include a `detail` field with error message.
 2. **Prepare test files**:
    - Place a lecture audio file (e.g., `lecture_recording.mp3`)
    - Place a lecture slides PDF (e.g., `lecture_slides.pdf`)
-   - Update file paths in [test.py](test.py) if needed
+   - Update file paths in [test/test.py](test/test.py) if needed
 
-### Method 1: Python Test Script (Recommended)
+### Method 1: Python Test Scripts (Recommended)
 
-The easiest way to test all endpoints including SSE streaming:
+The easiest way to test all endpoints including SSE streaming. Three test scripts are available:
 
+**Test 1: Basic test with English lecture (female voice, default)**
 ```bash
 cd backend
-python test.py
+python test/test.py
+```
+
+**Test 2: Korean lecture test**
+```bash
+cd backend
+python test/test_korean.py
+```
+
+**Test 3: English lecture with male voice**
+```bash
+cd backend
+python test/test_male_voice.py
 ```
 
 **Example output:**
@@ -385,6 +404,36 @@ Test Summary
 Total: 2/2 tests passed
 
 🎉 All tests passed!
+```
+
+### Method 2: cURL Examples
+
+Test the API using cURL commands:
+
+**English lecture with female voice (default):**
+```bash
+curl -X POST "http://localhost:8080/api/synchronize/stream" \
+  -F "audio=@lecture_recording.mp3" \
+  -F "lecture_note=@lecture_slides.pdf" \
+  -F "lang=en" \
+  -F "tts_gender=f"
+```
+
+**English lecture with male voice:**
+```bash
+curl -X POST "http://localhost:8080/api/synchronize/stream" \
+  -F "audio=@lecture_recording.mp3" \
+  -F "lecture_note=@lecture_slides.pdf" \
+  -F "lang=en" \
+  -F "tts_gender=m"
+```
+
+**Korean lecture (TTS gender parameter is ignored):**
+```bash
+curl -X POST "http://localhost:8080/api/synchronize/stream" \
+  -F "audio=@lecture_recording.mp3" \
+  -F "lecture_note=@lecture_slides.pdf" \
+  -F "lang=ko"
 ```
 
 ---

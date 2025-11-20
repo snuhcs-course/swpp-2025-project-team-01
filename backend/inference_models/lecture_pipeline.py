@@ -200,6 +200,7 @@ class LecturePipeline:
         audio_path: str,
         pdf_path: str,
         language: str = "en",
+        tts_gender: str = "f",
         lecture_name: str | None = None,
         sentence_splitter: Callable[[str], list[str]] | None = None,
         save_intermediate: bool = True,
@@ -212,6 +213,7 @@ class LecturePipeline:
             audio_path: Path to lecture audio file
             pdf_path: Path to lecture PDF file
             language: Language code for ASR transcription ('en' for English, 'ko' for Korean)
+            tts_gender: TTS voice gender ('m' for male/am_michael, 'f' for female/af_heart)
             lecture_name: Optional lecture name for output files
             sentence_splitter: Optional function to split transcript into sentences
             save_intermediate: Save intermediate results (WAV, transcript, matching.json)
@@ -463,6 +465,11 @@ class LecturePipeline:
 
             # Generate WAV file first (intermediate)
             output_wav_path = os.path.join(lecture_output_dir, "reconstructed.wav")
+
+            # Set TTS voice based on gender
+            tts_voice = 'am_michael' if tts_gender == 'm' else 'af_heart'
+            self.tts.voice = tts_voice
+            print(f"Using TTS voice: {tts_voice} (gender: {tts_gender})")
 
             # Create a wrapper callback for TTS progress
             def tts_progress_callback(progress: float, message: str):
