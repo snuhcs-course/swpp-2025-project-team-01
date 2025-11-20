@@ -65,20 +65,10 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     reason: 'Filter pill should be visible on home screen',
   );
 
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_9_before_filter',
-  );
-
   await tester.tap(filterPill);
   await tester.pumpAndSettle();
 
   debugPrint('✓ Tapped filter pill to show tags');
-
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_9_filter_expanded',
-  );
 
   // Verify TagChips widget is now visible
   final tagChips = find.byType(TagChips);
@@ -115,11 +105,6 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     await tester.pumpAndSettle();
     debugPrint('✓ Tapped on first tag to filter');
 
-    await IntegrationTestHelpers.takeScreenshot(
-      tester,
-      'integration_9_tag_selected',
-    );
-
     // The tag should now be selected (filter is active)
     // Verify by checking if subjects are filtered
     // (We can't directly check internal state, but the UI should update)
@@ -141,11 +126,6 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   debugPrint('✓ Tapped filter pill again to deactivate filter');
-
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_9_filter_deactivated',
-  );
 
   // Verify tag chips are now hidden
   final tagChipsAfterDeactivation = find.byType(TagChips);
@@ -203,11 +183,6 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
 
   debugPrint('✓ Navigated to tags tab');
 
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_9_tags_screen',
-  );
-
   // Step 4: Change tag color theme
   // Find the color theme selector - look for Radio buttons
   // The themes are displayed with Radio buttons
@@ -260,11 +235,6 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     }
   }
 
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_9_theme_changed',
-  );
-
   // Wait for theme to be applied
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
@@ -289,11 +259,6 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     reason: 'Should be back on home screen',
   );
 
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_9_back_to_home',
-  );
-
   // Step 5i: Tap on filter pill button again to verify color theme has changed
   final filterPillAfterReturn = find.byWidgetPredicate(
     (widget) => widget is FilterPill,
@@ -303,11 +268,6 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   debugPrint('✓ Tapped filter pill again to verify color changes');
-
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_9_filter_after_theme_change',
-  );
 
   // Verify tag colors have changed
   final updatedTags = manager.getTags();
@@ -350,11 +310,6 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     await tester.tap(tagPillsAfterThemeChange.first);
     await tester.pumpAndSettle();
     debugPrint('✓ Tapped on tag to test filtering still works');
-
-    await IntegrationTestHelpers.takeScreenshot(
-      tester,
-      'integration_9_filter_after_theme',
-    );
   }
 
   debugPrint('✓ Verified tag filtering still works after theme change');

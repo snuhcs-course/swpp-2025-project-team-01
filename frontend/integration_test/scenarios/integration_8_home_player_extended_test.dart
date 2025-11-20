@@ -121,11 +121,6 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
   }
 
   // Step 2: Tap on the lecture to navigate to player
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_8_before_navigation',
-  );
-
   bool navigationSuccessful = false;
   for (int tapAttempt = 0; tapAttempt < 3; tapAttempt++) {
     try {
@@ -187,11 +182,6 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
   // Wait for player to load
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle(const Duration(seconds: 5));
-
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_8_after_navigation',
-  );
 
   // Wait for PlayerLayout to appear
   debugPrint('Waiting for player to load...');
@@ -268,11 +258,6 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
 
   await tester.pump(const Duration(milliseconds: 500));
 
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_8_before_double_tap',
-  );
-
   // Now perform double tap
   // We need to tap on the PdfArea widget itself
   if (pdfArea.evaluate().isNotEmpty) {
@@ -288,11 +273,6 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
 
     await tester.pumpAndSettle(const Duration(milliseconds: 500));
     debugPrint('✓ Double tapped on PDF area');
-
-    await IntegrationTestHelpers.takeScreenshot(
-      tester,
-      'integration_8_after_double_tap',
-    );
   }
 
   // Note: We can't easily verify the time skip without access to the controller,
@@ -325,22 +305,12 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     reason: 'Language button should be visible on transcript panel',
   );
 
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_8_before_language_toggle',
-  );
-
   // Tap the language button
   if (languageButton != null) {
     await tester.tap(languageButton);
     await tester.pumpAndSettle(const Duration(seconds: 1));
     debugPrint('✓ Tapped language button');
   }
-
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_8_after_language_toggle',
-  );
 
   // Verify language has changed
   final newKorButton = find.text('KOR');
