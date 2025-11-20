@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:http/http.dart' as http;
@@ -172,6 +173,9 @@ Future<String?> requestLecture(
     );
 
     req.fields['lang'] = langCode;
+    req.fields['tts_gender'] = HiveManager.instance.settings.ttsGender == '남성'
+        ? 'm'
+        : 'f';
   }
 
   // Use the injected client to send
