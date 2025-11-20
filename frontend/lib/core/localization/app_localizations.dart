@@ -135,15 +135,12 @@ class AppLocalizations {
   String get uncategorized => isKorean ? '미분류' : 'Uncategorized';
   String get editingSubject => isKorean ? '과목 정보 수정' : 'Edit Subject Info';
   String get deleteSubject => isKorean ? '과목 삭제' : 'Delete Subject';
-  String get deleteSubjectWarning1 => isKorean
-      ? '과목 삭제 시 해당 과목의\n'
-      : 'Deleting a subject will also\n';
-  String get deleteSubjectWarning2 => isKorean
-      ? '강의들까지 전부 삭제'
-      : 'delete all its lectures.';
-  String get deleteSubjectWarning3 => isKorean
-      ? '됩니다.\n\n삭제하시겠습니까?'
-      : '\n\nDo you want to delete?';
+  String get deleteSubjectWarning1 =>
+      isKorean ? '과목 삭제 시 해당 과목의\n' : 'Deleting a subject will also\n';
+  String get deleteSubjectWarning2 =>
+      isKorean ? '강의들까지 전부 삭제' : 'delete all its lectures.';
+  String get deleteSubjectWarning3 =>
+      isKorean ? '됩니다.\n\n삭제하시겠습니까?' : '\n\nDo you want to delete?';
   String get editTags2 => isKorean ? '태그 수정' : 'Edit Tags';
   String get editComplete => isKorean ? '수정 완료' : 'Complete';
   String get addSubject => isKorean ? '과목 추가' : 'Add Subject';

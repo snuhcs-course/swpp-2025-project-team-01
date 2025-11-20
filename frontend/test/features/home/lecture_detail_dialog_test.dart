@@ -419,10 +419,7 @@ void main() {
 
         // Should show confirmation dialog
         expect(find.text('Warning'), findsOneWidget);
-        expect(
-          find.textContaining('Are you sure you want to'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Are you sure you want to'), findsOneWidget);
       });
 
       testWidgets('confirmation dialog shows Korean text in Korean locale', (

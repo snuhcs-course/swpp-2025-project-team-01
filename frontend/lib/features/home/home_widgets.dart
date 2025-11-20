@@ -915,10 +915,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                   children: [
                     const Icon(Icons.access_time, size: 20),
                     const SizedBox(width: 8),
-                    Text(
-                      l10n.lectureLength,
-                      style: theme.textTheme.titleSmall,
-                    ),
+                    Text(l10n.lectureLength, style: theme.textTheme.titleSmall),
                   ],
                 ),
                 Text(

@@ -485,10 +485,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       subjectSpans.add(
         TextSpan(
           text: usingSubjects[i].title,
-          style: TextStyle(
-            color: primaryColor,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
         ),
       );
       if (i < usingSubjects.length - 1) {

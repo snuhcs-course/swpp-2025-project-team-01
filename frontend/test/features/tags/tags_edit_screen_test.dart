@@ -634,8 +634,8 @@ void main() {
       expect(
         find.byWidgetPredicate(
           (widget) =>
-            widget is RichText &&
-            widget.text.toPlainText().contains('Subject A'),
+              widget is RichText &&
+              widget.text.toPlainText().contains('Subject A'),
         ),
         findsOneWidget,
       );

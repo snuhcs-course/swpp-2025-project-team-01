@@ -441,18 +441,12 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
                   ? '예) 소프트웨어 개발의 원리와 실습'
                   : 'ex) Software Development Principles and Practice',
               border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
           const SizedBox(height: 16),
 
-          Text(
-            l10n.editTags2,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(l10n.editTags2, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,

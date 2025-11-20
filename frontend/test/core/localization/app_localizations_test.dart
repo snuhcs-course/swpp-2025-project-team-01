@@ -244,10 +244,7 @@ void main() {
       });
 
       test('deleteSubjectWarning1 returns correct translation', () {
-        expect(
-          koreanLocalizations.deleteSubjectWarning1,
-          '과목 삭제 시 해당 과목의\n',
-        );
+        expect(koreanLocalizations.deleteSubjectWarning1, '과목 삭제 시 해당 과목의\n');
         expect(
           englishLocalizations.deleteSubjectWarning1,
           'Deleting a subject will also\n',
@@ -255,10 +252,7 @@ void main() {
       });
 
       test('deleteSubjectWarning2 returns correct translation', () {
-        expect(
-          koreanLocalizations.deleteSubjectWarning2,
-          '강의들까지 전부 삭제',
-        );
+        expect(koreanLocalizations.deleteSubjectWarning2, '강의들까지 전부 삭제');
         expect(
           englishLocalizations.deleteSubjectWarning2,
           'delete all its lectures.',
@@ -266,10 +260,7 @@ void main() {
       });
 
       test('deleteSubjectWarning3 returns correct translation', () {
-        expect(
-          koreanLocalizations.deleteSubjectWarning3,
-          '됩니다.\n\n삭제하시겠습니까?',
-        );
+        expect(koreanLocalizations.deleteSubjectWarning3, '됩니다.\n\n삭제하시겠습니까?');
         expect(
           englishLocalizations.deleteSubjectWarning3,
           '\n\nDo you want to delete?',

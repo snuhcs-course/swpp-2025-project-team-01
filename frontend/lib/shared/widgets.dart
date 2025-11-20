@@ -904,9 +904,7 @@ class EditDialog extends StatelessWidget {
           constraints: BoxConstraints(
             maxHeight: screenHeight * 0.7 - keyboardHeight,
           ),
-          child: SingleChildScrollView(
-            child: content,
-          ),
+          child: SingleChildScrollView(child: content),
         ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -976,9 +974,7 @@ class DeleteWarningDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 400),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -987,9 +983,7 @@ class DeleteWarningDialog extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: const BoxDecoration(
                 color: Colors.black87,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Center(
                 child: Text(

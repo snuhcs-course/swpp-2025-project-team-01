@@ -1225,9 +1225,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          return CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          );
+          return CreateSubjectDialog(allTags: HiveManager.instance.getTags());
         }),
       );
       await tester.pumpAndSettle();
@@ -1273,9 +1271,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          return CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          );
+          return CreateSubjectDialog(allTags: HiveManager.instance.getTags());
         }),
       );
       await tester.pumpAndSettle();
@@ -1317,9 +1313,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          return CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          );
+          return CreateSubjectDialog(allTags: HiveManager.instance.getTags());
         }),
       );
       await tester.pumpAndSettle();
@@ -1365,9 +1359,7 @@ void main() {
 
       await tester.pumpWidget(
         buildDialogTestApp(() {
-          return CreateSubjectDialog(
-            allTags: HiveManager.instance.getTags(),
-          );
+          return CreateSubjectDialog(allTags: HiveManager.instance.getTags());
         }),
       );
       await tester.pumpAndSettle();
