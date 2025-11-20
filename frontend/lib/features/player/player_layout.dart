@@ -577,9 +577,7 @@ class TranslationButton extends StatelessWidget {
             : (isDark ? colorScheme.onSecondaryContainer : Colors.white);
 
         return InkWell(
-          onTap: (controller.isKoreanLecture ?? true)
-              ? () {}
-              : controller.toggleTranscriptLanguage,
+          onTap: controller.toggleTranscriptLanguage,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
