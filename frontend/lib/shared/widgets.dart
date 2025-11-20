@@ -951,7 +951,7 @@ class SubjectPanelHeader extends StatelessWidget {
                       ? (reorderIndex != null
                             ? Padding(
                                 padding: const EdgeInsets.only(left: 10),
-                                child: ReorderableDelayedDragStartListener(
+                                child: ReorderableDragStartListener(
                                   index: reorderIndex!, // ← required
                                   child: Icon(
                                     Icons.drag_indicator,
