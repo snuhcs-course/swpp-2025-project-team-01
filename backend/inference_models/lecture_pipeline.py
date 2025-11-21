@@ -204,7 +204,8 @@ class LecturePipeline:
         lecture_name: str | None = None,
         sentence_splitter: Callable[[str], list[str]] | None = None,
         save_intermediate: bool = True,
-        progress_callback: Callable[[str, float, str], None] | None = None
+        progress_callback: Callable[[str, float, str], None] | None = None,
+        cancellation_checker: Callable[[], None] | None = None
     ) -> PipelineOutput:
         """
         Run the complete lecture reconstruction pipeline.
@@ -220,10 +221,22 @@ class LecturePipeline:
             progress_callback: Optional callback function(stage: str, progress: float, message: str)
                              stage is one of: "processing_asr", "processing_matching", "processing_translation", "processing_tts"
                              progress is 0-100 representing percentage completion within that stage
+            cancellation_checker: Optional callback to check if job should be cancelled.
+                                Should raise asyncio.CancelledError when cancellation is requested.
 
         Returns:
             PipelineOutput object with paths to Opus audio and timestamps.json
         """
+        # Helper to check cancellation
+        def check_cancellation():
+            if cancellation_checker:
+                try:
+                    cancellation_checker()
+                except Exception as e:
+                    # Re-raise cancellation errors
+                    if "CancelledError" in str(type(e).__name__):
+                        print("🚫 Pipeline cancellation detected")
+                        raise
         # Generate lecture name if not provided
         if lecture_name is None:
             lecture_name = f"lecture_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -273,6 +286,9 @@ class LecturePipeline:
         print(f"STEP 1/{4 if self.enable_translation else 3}: ASR - Transcribing Audio")
         print("="*60)
 
+        # Check cancellation before starting ASR
+        check_cancellation()
+
         if progress_callback:
             progress_callback("processing_asr", 10.0, "Starting ASR processing...")
 
@@ -320,6 +336,9 @@ class LecturePipeline:
         print("\n" + "="*60)
         print(f"STEP 2/{4 if self.enable_translation else 3}: Slide Matching - Matching to PDF Slides")
         print("="*60)
+
+        # Check cancellation before starting slide matching
+        check_cancellation()
 
         if progress_callback:
             if is_korean_lecture:
@@ -402,6 +421,9 @@ class LecturePipeline:
                 print("STEP 3/4: Translation - Translating to Korean")
             print("="*60)
 
+            # Check cancellation before starting translation
+            check_cancellation()
+
             if progress_callback:
                 if is_korean_lecture:
                     progress_callback("processing_translation", 80.0, "Starting translation...")
@@ -458,6 +480,9 @@ class LecturePipeline:
             print("\n" + "="*60)
             print(f"STEP {4 if self.enable_translation else 3}/{4 if self.enable_translation else 3}: TTS - Generating Audio with Slide Alignment")
             print("="*60)
+
+            # Check cancellation before starting TTS
+            check_cancellation()
 
             tts_start_progress = 80.0 if self.enable_translation else 70.0
             if progress_callback:
