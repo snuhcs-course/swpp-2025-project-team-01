@@ -36,6 +36,7 @@ class JobStatus(str, Enum):
     CREATING_OUTPUT = "creating_output"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 # Job Information
 class JobInfo:
@@ -51,6 +52,8 @@ class JobInfo:
         self.downloaded = False  # Track if file has been downloaded by client
         self.audio_path: Path | None = None  # Track uploaded audio file for cleanup
         self.pdf_path: Path | None = None  # Track uploaded PDF file for cleanup
+        self.cancel_requested = False  # Track if cancellation has been requested
+        self.cancelled_at: datetime | None = None  # Track when cancellation was requested
 
 # Global variables
 pipeline_queue: asyncio.Queue[LecturePipeline] | None = None
@@ -256,7 +259,8 @@ async def run_pipeline_in_executor(
     lecture_name: str,
     language: str = "en",
     tts_gender: str = "f",
-    progress_callback: Callable[[JobStatus, float, str], None] | None = None
+    progress_callback: Callable[[JobStatus, float, str], None] | None = None,
+    cancellation_checker: Callable[[], None] | None = None
 ) -> PipelineOutput:
     """
     Run ML pipeline in a thread pool to avoid blocking event loop.
@@ -270,6 +274,7 @@ async def run_pipeline_in_executor(
         language: Language code for ASR transcription ('en' for English, 'ko' for Korean)
         tts_gender: TTS voice gender ('m' for male, 'f' for female)
         progress_callback: Optional callback to report progress (status, progress, message)
+        cancellation_checker: Optional callback to check if job should be cancelled
     """
 
     # Wrapper to convert pipeline progress to job progress
@@ -285,7 +290,7 @@ async def run_pipeline_in_executor(
             status = status_map.get(stage, JobStatus.PROCESSING_ASR)
             progress_callback(status, progress, message)
 
-    # Run the pipeline with progress callback
+    # Run the pipeline with progress callback and cancellation checker
     output = await asyncio.to_thread(
         pipeline_instance.run,
         audio_path = audio_path,
@@ -295,13 +300,14 @@ async def run_pipeline_in_executor(
         lecture_name = lecture_name,
         sentence_splitter = simple_sentence_splitter,
         save_intermediate = False,
-        progress_callback = pipeline_progress_wrapper
+        progress_callback = pipeline_progress_wrapper,
+        cancellation_checker = cancellation_checker
     )
 
     return output
 
 async def cleanup_old_jobs():
-    """Background task to clean up old completed jobs (non-downloaded files after 30 minutes)."""
+    """Background task to clean up old completed/failed/cancelled jobs (non-downloaded files after 30 minutes)."""
     global jobs
     while True:
         try:
@@ -310,7 +316,7 @@ async def cleanup_old_jobs():
             jobs_to_remove = []
 
             for job_id, job_info in jobs.items():
-                if job_info.status in [JobStatus.COMPLETED, JobStatus.FAILED]:
+                if job_info.status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
                     if job_info.completed_at:
                         age = current_time - job_info.completed_at
                         # Clean up if not downloaded after retention period
@@ -318,7 +324,7 @@ async def cleanup_old_jobs():
                             jobs_to_remove.append(job_id)
                             # Clean up all job files
                             await cleanup_job_files(job_info)
-                            print(f"🧹 Cleaned up non-downloaded job: {job_id} (age: {age.total_seconds()/60:.1f} min)")
+                            print(f"🧹 Cleaned up job: {job_id} (status: {job_info.status}, age: {age.total_seconds()/60:.1f} min)")
 
             for job_id in jobs_to_remove:
                 del jobs[job_id]
@@ -330,6 +336,12 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
     global jobs, pipeline_queue
     job_info = jobs[job_id]
 
+    # Helper function to check cancellation
+    def check_cancellation():
+        if job_info.cancel_requested:
+            print(f"🚫 Job {job_id} cancelled at checkpoint")
+            raise asyncio.CancelledError("Job cancelled by user")
+
     # Track uploaded files for cleanup
     job_info.audio_path = audio_path
     job_info.pdf_path = pdf_path
@@ -340,10 +352,16 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
     print(f"Processing job with language: {language}")
 
     try:
+        # Check cancellation before starting
+        check_cancellation()
+
         # Update job status
         job_info.status = JobStatus.UPLOADING
         job_info.progress = 5.0
         job_info.message = "Files uploaded, waiting for processing..."
+
+        # Check cancellation after upload
+        check_cancellation()
 
         # Define progress callback
         def update_progress(status: JobStatus, progress: float, message: str):
@@ -360,8 +378,12 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
             lecture_name = lecture_name,
             language = language,
             tts_gender = tts_gender,
-            progress_callback = update_progress
+            progress_callback = update_progress,
+            cancellation_checker = check_cancellation
         )
+
+        # Check cancellation before creating ZIP
+        check_cancellation()
 
         # Verify output files exist
         timestamps_file_path = Path(output.timestamps_file)
@@ -401,6 +423,22 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
         job_info.message = "Processing completed successfully!"
         job_info.output_path = zip_path
         job_info.completed_at = datetime.now()
+
+    except asyncio.CancelledError:
+        # Handle cancellation
+        print(f"🚫 Job {job_id} was cancelled")
+        job_info.status = JobStatus.CANCELLED
+        job_info.message = "Job cancelled by user"
+        job_info.completed_at = datetime.now()
+
+        # Clean up on cancellation
+        try:
+            output_dir = OUTPUT_DIR / lecture_name
+            if output_dir.exists():
+                await asyncio.to_thread(shutil.rmtree, output_dir)
+                print(f"🧹 Cleaned up output directory for cancelled job: {job_id}")
+        except Exception as cleanup_error:
+            print(f"⚠️  Error during cleanup: {cleanup_error}")
 
     except Exception as e:
         import traceback
@@ -543,6 +581,17 @@ async def synchronize_stream(
                             })
                         }
                         break
+                    elif job.status == JobStatus.CANCELLED:
+                        yield {
+                            "event": "cancelled",
+                            "data": json.dumps({
+                                "job_id": job_id,
+                                "status": job.status,
+                                "message": job.message,
+                                "cancelled_at": job.cancelled_at.isoformat() if job.cancelled_at else None
+                            })
+                        }
+                        break
                     elif job.status == JobStatus.FAILED:
                         yield {
                             "event": "error",
@@ -626,6 +675,48 @@ async def get_job_status(job_id: str):
         "error": job.error,
         "created_at": job.created_at.isoformat(),
         "completed_at": job.completed_at.isoformat() if job.completed_at else None
+    }
+
+@app.post('/api/synchronize/cancel/{job_id}')
+async def cancel_job(job_id: str):
+    """
+    Cancel a running synchronization job.
+
+    The job will be cancelled at the next stage boundary.
+    Already completed stages won't be rolled back.
+
+    Args:
+        job_id: The unique job identifier
+
+    Returns:
+        JSON object with cancellation status
+
+    Raises:
+        404: Job not found
+        400: Job cannot be cancelled (already completed/failed/cancelled)
+    """
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code = 404, detail = 'Job not found')
+
+    # Check if job can be cancelled
+    if job.status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
+        raise HTTPException(
+            status_code = 400,
+            detail = f'Job cannot be cancelled. Current status: {job.status}'
+        )
+
+    # Set cancellation flag
+    job.cancel_requested = True
+    job.cancelled_at = datetime.now()
+
+    print(f"🚫 Cancellation requested for job: {job_id} (status: {job.status})")
+
+    return {
+        "job_id": job_id,
+        "message": "Cancellation requested. Job will stop at next stage boundary.",
+        "current_status": job.status,
+        "cancelled_at": job.cancelled_at.isoformat()
     }
 
 @app.get('/api/synchronize/download/{job_id}')

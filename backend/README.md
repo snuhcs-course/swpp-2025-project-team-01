@@ -124,6 +124,16 @@ Server-Sent Events (SSE) stream with JSON data.
    }
    ```
 
+4. **`cancelled`** - Job cancelled by user
+   ```json
+   {
+     "job_id": "550e8400-e29b-41d4-a716-446655440000",
+     "status": "cancelled",
+     "message": "Job cancelled by user",
+     "cancelled_at": "2025-11-21T10:30:45.123456"
+   }
+   ```
+
 **Status Values:**
 - `pending` - Job created, waiting to start
 - `uploading` - Files uploaded, waiting for processing
@@ -142,6 +152,7 @@ Server-Sent Events (SSE) stream with JSON data.
 - `creating_output` - Creating final output ZIP file (95-100%)
 - `completed` - Job completed successfully
 - `failed` - Job failed with error
+- `cancelled` - Job cancelled by user request
 
 **Progress Range:** 0.0 to 100.0
 
@@ -180,7 +191,57 @@ Query the current status of a synchronization job.
 
 ---
 
-### 3. Download Result
+### 3. Cancel Job
+
+**`POST /api/synchronize/cancel/{job_id}`**
+
+Cancel a running synchronization job.
+
+#### Request
+
+- **Path Parameter**: `job_id` (string) - Unique job identifier
+
+#### Response
+
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "message": "Cancellation requested. Job will stop at next stage boundary.",
+  "current_status": "processing_asr",
+  "cancelled_at": "2025-11-21T10:30:45.123456"
+}
+```
+
+#### Status Codes
+
+- `200` - Cancellation request accepted
+- `404` - Job not found
+- `400` - Job cannot be cancelled (already completed, failed, or cancelled)
+
+#### Important Notes
+
+- **Stage boundary cancellation**: Jobs are cancelled at the next stage boundary (between ASR, Matching, Translation, TTS stages)
+- **Cannot interrupt GPU inference**: Cancellation cannot stop a stage that's currently executing
+- **Automatic cleanup**: All uploaded files and intermediate outputs are automatically cleaned up
+- **SSE notification**: The SSE stream will send a `cancelled` event when cancellation completes
+
+**Cancellation Checkpoints:**
+- Before ASR starts
+- After ASR completes, before Slide Matching
+- After Slide Matching completes, before Translation
+- After Translation completes, before TTS
+- Before creating output ZIP
+
+**Example Error Response (400):**
+```json
+{
+  "detail": "Job cannot be cancelled. Current status: completed"
+}
+```
+
+---
+
+### 4. Download Result
 
 **`GET /api/synchronize/download/{job_id}`**
 
@@ -304,9 +365,10 @@ The `timestamps.json` file in the downloaded ZIP contains an array of timestamp 
 ### File Cleanup
 
 Automatic file management:
-1. **Uploaded files**: Deleted after pipeline processing
+1. **Uploaded files**: Deleted after pipeline processing (completion, failure, or cancellation)
 2. **Output ZIP files**: Deleted immediately after download OR after 30 minutes if not downloaded
 3. **Job metadata**: Removed after file download or timeout
+4. **Cancelled jobs**: All associated files (uploaded files, intermediate outputs) are cleaned up immediately upon cancellation
 
 ### Error Handling
 
@@ -338,7 +400,7 @@ All error responses include a `detail` field with error message.
 
 ### Method 1: Python Test Scripts (Recommended)
 
-The easiest way to test all endpoints including SSE streaming. Three test scripts are available:
+The easiest way to test all endpoints including SSE streaming. Four test suites are available:
 
 **Test 1: Basic test with English lecture (female voice, default)**
 ```bash
@@ -357,6 +419,18 @@ python test/test_korean.py
 cd backend
 python test/test_male_voice.py
 ```
+
+**Test 4: Job cancellation test**
+```bash
+cd backend
+python test/test_cancellation.py
+```
+
+This test suite validates the job cancellation feature with 4 scenarios:
+- Cancel job during processing (expected: successful cancellation)
+- Cancel already completed job (expected: 400 error)
+- Cancel non-existent job (expected: 404 error)
+- Cancel job immediately after starting (expected: early cancellation)
 
 **Example output:**
 ```

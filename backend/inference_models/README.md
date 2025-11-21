@@ -124,7 +124,9 @@ results = pipeline.run(
     language='en',            # 'en' for English, 'ko' for Korean
     lecture_name='my_lecture',
     sentence_splitter=simple_sentence_splitter,  # Split transcript into sentences (or None for full transcript)
-    save_intermediate=True                 # Save intermediate results
+    save_intermediate=True,                # Save intermediate results
+    progress_callback=None,                # Optional: callback for progress updates
+    cancellation_checker=None              # Optional: callback to check for cancellation requests
 )
 ```
 
@@ -328,6 +330,47 @@ processor.unload_model()  # Free GPU memory
 ```
 
 The `LecturePipeline` automatically unloads models between stages to prevent VRAM overflow.
+
+### Cancellation Support
+
+The pipeline supports graceful cancellation at stage boundaries:
+
+```python
+import asyncio
+
+# Define a cancellation checker
+cancel_requested = False
+
+def check_cancellation():
+    if cancel_requested:
+        raise asyncio.CancelledError("Job cancelled by user")
+
+# Run pipeline with cancellation support
+try:
+    results = pipeline.run(
+        audio_path='lecture.mp3',
+        pdf_path='slides.pdf',
+        language='en',
+        cancellation_checker=check_cancellation
+    )
+except asyncio.CancelledError:
+    print("Pipeline was cancelled")
+    # Clean up resources
+```
+
+**Cancellation Checkpoints:**
+- Before ASR starts
+- After ASR completes, before Slide Matching
+- After Slide Matching completes, before Translation
+- After Translation completes, before TTS
+
+**Important Notes:**
+- Cancellation occurs at stage boundaries only
+- Cannot interrupt GPU inference mid-stage
+- Already completed stages are not rolled back
+- Resources are automatically cleaned up on cancellation
+
+This feature is primarily used by the FastAPI backend to support user-initiated job cancellation via the `/api/synchronize/cancel/{job_id}` endpoint.
 
 ## Configuration Options
 
