@@ -374,14 +374,13 @@ class VideoControlsOverlay extends StatelessWidget {
                     controller.isCaptionEnabled,
                     controller.showTranscriptPanel,
                     controller.isFullscreen,
+                    controller.actualAudioDuration,
                   ]),
                   builder: (context, _) {
                     return BottomControlBar(
                       isVertical: isVertical,
                       currentTime: controller.currentTime.value,
-                      totalTime: controller.isOriginalAudio.value
-                          ? controller.originalTotalDuration
-                          : controller.ttsTotalDuration,
+                      totalTime: controller.actualAudioDuration.value,
                       onTimeChanged: (seconds) {
                         // 슬라이더 움직일 때 즉시 PDF 페이지 업데이트
                         controller.seek(seconds);

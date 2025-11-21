@@ -7,6 +7,7 @@ class AudioService {
 
   final ja.AudioPlayer _player;
   String? _currentAudioPath;
+  Duration? get duration => _player.duration;
 
   /// 오디오 파일 로드 및 재생 준비
   /// [path]가 'assets/'로 시작하면 asset으로, '/'로 시작하면 파일로 처리
@@ -74,6 +75,7 @@ class AudioService {
   /// 리소스 정리
   Future<void> dispose() => _player.dispose();
 
+  Stream<Duration?> get durationStream => _player.durationStream;
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<ja.PlayerState> get stateStream => _player.playerStateStream;
 }
