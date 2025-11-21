@@ -432,8 +432,6 @@ This test suite validates the job cancellation feature with 4 scenarios:
 - Cancel non-existent job (expected: 404 error)
 - Cancel job immediately after starting (expected: early cancellation)
 
-See [test/README_CANCELLATION.md](test/README_CANCELLATION.md) for detailed documentation.
-
 **Example output:**
 ```
 ============================================================
