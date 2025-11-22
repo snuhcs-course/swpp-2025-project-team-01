@@ -630,7 +630,15 @@ void main() {
       // [Then]
       expect(find.byType(Dialog), findsOneWidget);
       expect(find.text('경고'), findsOneWidget);
-      expect(find.textContaining('Subject A'), findsOneWidget);
+      // Verify RichText contains subject name using widget predicate
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText &&
+              widget.text.toPlainText().contains('Subject A'),
+        ),
+        findsOneWidget,
+      );
 
       // [When]
       await tester.tap(find.text('아니오'));

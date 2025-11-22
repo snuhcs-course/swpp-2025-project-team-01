@@ -133,11 +133,14 @@ class AppLocalizations {
   String get subject => isKorean ? '과목' : 'Subject';
   String get subjects => isKorean ? '과목' : 'Subjects';
   String get uncategorized => isKorean ? '미분류' : 'Uncategorized';
-  String get editingSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
+  String get editingSubject => isKorean ? '과목 정보 수정' : 'Edit Subject Info';
   String get deleteSubject => isKorean ? '과목 삭제' : 'Delete Subject';
-  String get deleteSubjectWarning => isKorean
-      ? '과목 삭제 시\n해당 과목의 강의들까지 전부\n삭제됩니다.\n\n삭제하시겠습니까?'
-      : 'Deleting a subject will also\ndelete all its lectures.\n\nDo you want to delete?';
+  String get deleteSubjectWarning1 =>
+      isKorean ? '과목 삭제 시 해당 과목의\n' : 'Deleting a subject will also\n';
+  String get deleteSubjectWarning2 =>
+      isKorean ? '강의들까지 전부 삭제' : 'delete all its lectures.';
+  String get deleteSubjectWarning3 =>
+      isKorean ? '됩니다.\n\n삭제하시겠습니까?' : '\n\nDo you want to delete?';
   String get editTags2 => isKorean ? '태그 수정' : 'Edit Tags';
   String get editComplete => isKorean ? '수정 완료' : 'Complete';
   String get addSubject => isKorean ? '과목 추가' : 'Add Subject';
@@ -176,7 +179,7 @@ class AppLocalizations {
   // 강의
   String get lecture => isKorean ? '강의' : 'Lecture';
   String get lectures => isKorean ? '강의' : 'Lectures';
-  String get lectureDetails => isKorean ? '강의 상세정보' : 'Lecture Details';
+  String get editLecture => isKorean ? '강의 정보 수정' : 'Edit Lecture Info';
   String get week => isKorean ? '주차' : 'Week';
   String get lectureTitle => isKorean ? '강의 제목' : 'Lecture Title';
   String get lectureLength => isKorean ? '강의 길이' : 'Lecture Length';
