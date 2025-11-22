@@ -132,7 +132,6 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _showSubjectEditDialog(HiveSubject subject) async {
     await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
       builder: (context) => SubjectEditDialog(
         subject: subject,
         initialTagIds: subject.tagIds,
