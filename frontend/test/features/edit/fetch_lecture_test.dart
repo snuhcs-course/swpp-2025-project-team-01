@@ -222,6 +222,7 @@ void main() {
           'data: {"job_id":"cancel123","progress":10.0,"message":"Starting","status":"running"}\n\n',
         ),
       );
+      service.addJobId('cancel123');
       await Future.delayed(Duration(milliseconds: 50));
       service.cancelLoading();
       await Future.delayed(Duration(milliseconds: 50));
