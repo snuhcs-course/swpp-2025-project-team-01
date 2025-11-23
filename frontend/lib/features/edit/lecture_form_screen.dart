@@ -713,8 +713,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     return _audioFiles.length > 1;
   }
 
-  /// 토스트 메시지 표시
-  void _showToast(String message) {
+  /// 스낵바 메시지 표시
+  void _showSnackBar(String message) {
     if (!mounted) {
       return;
     }
@@ -758,7 +758,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           _slidePdfPath = pdfPath;
           _pdfPageCount = null;
         });
-        _showToast(l10n.couldntDeterminePage);
+        _showSnackBar(l10n.couldntDeterminePage);
       }
     }
   }
@@ -776,7 +776,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // m4a 파일만 허용
       if (!filePath.toLowerCase().endsWith('.m4a')) {
-        _showToast(l10n.onlyM4aAllowed);
+        _showSnackBar(l10n.onlyM4aAllowed);
         return;
       }
 
@@ -913,19 +913,19 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     // 과목 선택이 없으면 미분류로 처리
     _selectedSubjectId ??= 'uncategorized';
     if (_weekController.text.trim().isEmpty) {
-      _showToast(l10n.pleaseEnterWeek);
+      _showSnackBar(l10n.pleaseEnterWeek);
       return;
     }
     if (_titleController.text.trim().isEmpty) {
-      _showToast(l10n.pleaseEnterLectureTitle);
+      _showSnackBar(l10n.pleaseEnterLectureTitle);
       return;
     }
     if (_slidePdfPath == null) {
-      _showToast(l10n.pleaseUploadPdf);
+      _showSnackBar(l10n.pleaseUploadPdf);
       return;
     }
     if (_audioFiles.isEmpty || _audioFiles[0].filePath == null) {
-      _showToast(l10n.pleaseUploadAudio);
+      _showSnackBar(l10n.pleaseUploadAudio);
       return;
     }
 
@@ -943,7 +943,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final endText = entry.endPageController.text.trim();
 
       if (startText.isEmpty || endText.isEmpty) {
-        _showToast(l10n.pleaseEnterRangeForAudio(i));
+        _showSnackBar(l10n.pleaseEnterRangeForAudio(i));
         return;
       }
 
@@ -952,27 +952,27 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final endPage = int.tryParse(endText);
 
       if (startPage == null || endPage == null) {
-        _showToast(l10n.pageNumbersMustBeNumgers(i));
+        _showSnackBar(l10n.pageNumbersMustBeNumgers(i));
         return;
       }
 
       if (startPage < 1 || endPage < 1) {
-        _showToast(l10n.pageNumbersMustBeAtLeastOne(i));
+        _showSnackBar(l10n.pageNumbersMustBeAtLeastOne(i));
         return;
       }
 
       if (startPage > endPage) {
-        _showToast(l10n.startMustBeGreaterThanEnd(i));
+        _showSnackBar(l10n.startMustBeGreaterThanEnd(i));
         return;
       }
 
       if (pdfTotalPages != null) {
         if (startPage > pdfTotalPages) {
-          _showToast(l10n.startExceedsTotal(i, startPage, pdfTotalPages));
+          _showSnackBar(l10n.startExceedsTotal(i, startPage, pdfTotalPages));
           return;
         }
         if (endPage > pdfTotalPages) {
-          _showToast(l10n.endExceedsTotal(i, endPage, pdfTotalPages));
+          _showSnackBar(l10n.endExceedsTotal(i, endPage, pdfTotalPages));
           return;
         }
       } else {
@@ -980,7 +980,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         if (fallbackTotalPages == null) {
           fallbackTotalPages = endPage;
         } else if (endPage > fallbackTotalPages) {
-          _showToast(l10n.endExceedsTotal(i, endPage, fallbackTotalPages));
+          _showSnackBar(l10n.endExceedsTotal(i, endPage, fallbackTotalPages));
           return;
         }
       }
@@ -1029,7 +1029,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       if (mounted) {
         setState(() => _isCreating = false);
-        _showToast(l10n.lectureCreationCancelled);
+        _showSnackBar(l10n.lectureCreationCancelled);
       }
       // Disable background execution when cancelled
       if (backgroundEnabled && Platform.isAndroid) {
@@ -1115,7 +1115,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             await File(results[i]![1]).delete();
           }
         }
-        _showToast(l10n.lectureGenerationFailed);
+        _showSnackBar(l10n.lectureGenerationFailed);
         return;
       }
 
@@ -1157,7 +1157,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               await File(results[i]![1]).delete();
             }
           }
-          _showToast(l10n.lectureGenerationFailed);
+          _showSnackBar(l10n.lectureGenerationFailed);
           return;
         }
       } else {
@@ -1174,7 +1174,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           originalAudioPath = permanentAudioPath;
         } catch (e) {
           debugPrint('Failed to copy original audio to permanent storage: $e');
-          _showToast(l10n.lectureGenerationFailed);
+          _showSnackBar(l10n.lectureGenerationFailed);
           return;
         }
         if (langCode == 'en') {
@@ -1267,12 +1267,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       _loadingService.completeLoading(lectureId: generatedLecture.id);
 
       // 7. 성공 메시지
-      _showToast(l10n.lectureCreatedSuccessfully);
+      _showSnackBar(l10n.lectureCreatedSuccessfully);
     } catch (e) {
       // 8. 에러 처리
       _loadingService.hideLoading();
       if (mounted) {
-        _showToast(l10n.failedLectureCreation(e));
+        _showSnackBar(l10n.failedLectureCreation(e));
       }
     } finally {
       // 9. 로딩 종료 및 클라이언트 정리
