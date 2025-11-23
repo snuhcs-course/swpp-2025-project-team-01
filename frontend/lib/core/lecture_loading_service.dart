@@ -1,9 +1,10 @@
 // 렉처 생성 로딩 상태를 전역으로 관리하는 서비스
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
@@ -23,39 +24,19 @@ class LectureLoadingService extends ChangeNotifier {
   final HiveManager _hiveManager;
   // coverage:ignore-end
 
-  // 유저 친화적인 메시지 목록 (한국어)
-  static const List<String> _friendlyMessagesKo = [
-    '열심히 강의를 받아적는 중..',
-    '강의 내용을 정리하고 있어요',
-    '음성 파일을 듣고 있어요',
-    '슬라이드와 음성을 매칭하는 중..',
-    '강의 노트를 작성하고 있어요',
-    '중요한 부분을 체크하고 있어요',
-    '강의를 분석하고 있어요',
-    '거의 다 됐어요!',
-  ];
-
-  // 유저 친화적인 메시지 목록 (영어)
-  static const List<String> _friendlyMessagesEn = [
-    'Taking notes from the lecture..',
-    'Organizing lecture content',
-    'Listening to the audio file',
-    'Matching slides with audio..',
-    'Writing lecture notes',
-    'Highlighting key points',
-    'Analyzing the lecture',
-    'Almost done!',
-  ];
-
   Timer? _messageTimer;
   int _currentMessageIndex = 0;
   final Random _random = Random();
 
-  /// 현재 언어 설정에 따른 메시지 목록 가져오기
-  List<String> get _friendlyMessages {
+  /// 현재 언어 설정에 따른 AppLocalizations 인스턴스 가져오기
+  AppLocalizations get _l10n {
     final language = _hiveManager.settings.language;
-    return language == 'ko' ? _friendlyMessagesKo : _friendlyMessagesEn;
+    final locale = Locale(language);
+    return AppLocalizations(locale);
   }
+
+  /// 현재 언어 설정에 따른 메시지 목록 가져오기
+  List<String> get _friendlyMessages => _l10n.friendlyMessages;
 
   bool _isLoading = false;
   List<double> _progressLists = <double>[];
@@ -214,8 +195,7 @@ class LectureLoadingService extends ChangeNotifier {
 
     _messageTimer?.cancel();
     _progress = 1.0;
-    final language = _hiveManager.settings.language;
-    _message = language == 'ko' ? '강의 생성 완료!' : 'Lecture created!';
+    _message = _l10n.lectureCreationComplete;
     _lectureId = lectureId;
     _isCompleted = true;
     notifyListeners();
@@ -246,18 +226,12 @@ class LectureLoadingService extends ChangeNotifier {
   void setError({String? errorTitle, String? errorMessage}) {
     _messageTimer?.cancel();
     _hasError = true;
-    final language = _hiveManager.settings.language;
 
     // 에러 제목 설정
-    _errorTitle =
-        errorTitle ?? (language == 'ko' ? '오류가 발생했습니다' : 'An error occurred');
+    _errorTitle = errorTitle ?? _l10n.errorOccurred;
 
     // 에러 메시지 설정
-    _errorMessage =
-        errorMessage ??
-        (language == 'ko'
-            ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'
-            : 'Please check your network settings and try again later.');
+    _errorMessage = errorMessage ?? _l10n.errorDefaultMessage;
 
     notifyListeners();
     _saveState();
@@ -267,8 +241,7 @@ class LectureLoadingService extends ChangeNotifier {
   void cancelLoading() {
     _messageTimer?.cancel();
     _isCancelled = true;
-    final language = _hiveManager.settings.language;
-    _message = language == 'ko' ? '강의 생성을 취소하는 중..' : 'Cancelling..';
+    _message = _l10n.cancelling;
     notifyListeners();
 
     // 취소 콜백 실행

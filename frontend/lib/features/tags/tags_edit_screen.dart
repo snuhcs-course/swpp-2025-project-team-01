@@ -510,19 +510,11 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
               height: 1.5,
             ),
             children: [
-              TextSpan(text: l10n.isKorean ? '태그 "' : 'Tag "'),
+              TextSpan(text: l10n.tagDeleteWarning1),
               TextSpan(text: tagName),
-              TextSpan(
-                text: l10n.isKorean
-                    ? '"은(는)\n다음 과목에서 사용 중입니다:\n\n'
-                    : '"\n is used in the following subjects:\n\n',
-              ),
+              TextSpan(text: l10n.tagDeleteWarning2),
               ...subjectSpans,
-              TextSpan(
-                text: l10n.isKorean
-                    ? '\n\n삭제하시겠습니까?'
-                    : '\n\nDo you want to delete it?',
-              ),
+              TextSpan(text: l10n.tagDeleteWarning3),
             ],
           ),
         ),

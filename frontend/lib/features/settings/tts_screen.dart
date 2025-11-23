@@ -95,9 +95,7 @@ class _TtsScreenState extends State<TtsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle(
-              l10n.isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender',
-            ),
+            _buildSectionTitle(l10n.ttsVoiceGender),
             const SizedBox(height: 12),
             _buildGenderButtons(l10n.isKorean),
             const SizedBox(height: 8),

@@ -1,6 +1,7 @@
 // 자주 쓰는 작은 위젯들
 import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -423,8 +424,7 @@ class LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final language = HiveManager.instance.settings.language;
-    final isKorean = language == 'ko';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -454,7 +454,7 @@ class LoadingView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isKorean ? '강의 생성 중…' : 'Creating Lecture…',
+                        l10n.lectureCreating,
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -479,7 +479,7 @@ class LoadingView extends StatelessWidget {
                           vertical: 6,
                         ),
                       ),
-                      child: Text(isKorean ? '취소' : 'Cancel'),
+                      child: Text(l10n.cancel),
                     ),
                   ],
                 ),
@@ -490,16 +490,14 @@ class LoadingView extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: isKorean ? '강의명: ' : 'Lecture: ',
+                        text: l10n.lectureName,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade400,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       TextSpan(
-                        text: title.isEmpty
-                            ? (isKorean ? '제목 없음' : 'Untitled')
-                            : title,
+                        text: title.isEmpty ? (l10n.untitled) : title,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade300,
                         ),
@@ -544,8 +542,7 @@ class CompletedView extends StatelessWidget {
   Widget build(BuildContext widgetContext) {
     final textTheme = Theme.of(context).textTheme;
     final service = LectureLoadingService.instance;
-    final language = HiveManager.instance.settings.language;
-    final isKorean = language == 'ko';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -571,7 +568,7 @@ class CompletedView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isKorean ? '강의 생성 완료!' : 'Lecture Created!',
+                        l10n.lectureCreationComplete,
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -593,9 +590,7 @@ class CompletedView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isKorean
-                      ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
-                      : 'Lecture creation completed.\nCheck out the result.',
+                  l10n.lectureCreationCompleted,
                   style: textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade300,
                   ),
@@ -622,7 +617,7 @@ class CompletedView extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: Text(isKorean ? '강의 바로가기' : 'Go to Lecture'),
+                    label: Text(l10n.goToLecture),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF7FAB0),
                       foregroundColor: Colors.black87,
