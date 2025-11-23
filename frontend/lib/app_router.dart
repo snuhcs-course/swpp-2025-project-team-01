@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:re_view/features/home/home_screen.dart';
 import 'package:re_view/features/search/search_screen.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
-import 'package:re_view/features/edit/subject_tag_screen.dart';
 import 'package:re_view/features/player/player_screen.dart';
 import 'package:re_view/features/settings/display_mode_screen.dart';
 import 'package:re_view/features/settings/accessibility_mode.dart';
@@ -46,8 +45,6 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SearchScreen());
       case Routes.lectureForm:
         return MaterialPageRoute(builder: (_) => const LectureFormScreen());
-      case Routes.subjectTag:
-        return MaterialPageRoute(builder: (_) => const SubjectTagScreen());
       case Routes.player:
         return MaterialPageRoute(
           builder: (_) => PlayerScreen(args: s.arguments),

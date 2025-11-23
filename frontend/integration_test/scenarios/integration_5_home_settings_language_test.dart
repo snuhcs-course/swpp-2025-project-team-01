@@ -72,7 +72,7 @@ Future<void> runIntegration5Test(WidgetTester tester) async {
   // Find the radio button for target language
   final targetLangRadio = targetLanguage == 'en'
       ? find.text('English')
-      : find.text('한국어 / Korean');
+      : find.text('한국어');
 
   expect(
     targetLangRadio,

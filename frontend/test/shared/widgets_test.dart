@@ -383,7 +383,7 @@ void main() {
 
         final dragHandleFinder = find.descendant(
           of: headerFinder,
-          matching: find.byType(ReorderableDelayedDragStartListener),
+          matching: find.byType(ReorderableDragStartListener),
         );
         expect(dragHandleFinder, findsOneWidget);
       },

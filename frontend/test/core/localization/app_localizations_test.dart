@@ -234,8 +234,8 @@ void main() {
       });
 
       test('editingSubjects returns correct translation', () {
-        expect(koreanLocalizations.editingSubjects, '과목 수정');
-        expect(englishLocalizations.editingSubjects, 'Edit Subjects');
+        expect(koreanLocalizations.editingSubject, '과목 정보 수정');
+        expect(englishLocalizations.editingSubject, 'Edit Subject Info');
       });
 
       test('deleteSubject returns correct translation', () {
@@ -243,14 +243,27 @@ void main() {
         expect(englishLocalizations.deleteSubject, 'Delete Subject');
       });
 
-      test('deleteSubjectWarning returns correct translation', () {
+      test('deleteSubjectWarning1 returns correct translation', () {
+        expect(koreanLocalizations.deleteSubjectWarning1, '과목 삭제 시 해당 과목의\n');
         expect(
-          koreanLocalizations.deleteSubjectWarning,
-          '과목 삭제 시\n해당 과목의 강의들까지 전부\n삭제됩니다.\n\n삭제하시겠습니까?',
+          englishLocalizations.deleteSubjectWarning1,
+          'Deleting a subject will also\n',
         );
+      });
+
+      test('deleteSubjectWarning2 returns correct translation', () {
+        expect(koreanLocalizations.deleteSubjectWarning2, '강의들까지 전부 삭제');
         expect(
-          englishLocalizations.deleteSubjectWarning,
-          'Deleting a subject will also\ndelete all its lectures.\n\nDo you want to delete?',
+          englishLocalizations.deleteSubjectWarning2,
+          'delete all its lectures.',
+        );
+      });
+
+      test('deleteSubjectWarning3 returns correct translation', () {
+        expect(koreanLocalizations.deleteSubjectWarning3, '됩니다.\n\n삭제하시겠습니까?');
+        expect(
+          englishLocalizations.deleteSubjectWarning3,
+          '\n\nDo you want to delete?',
         );
       });
 
@@ -387,8 +400,8 @@ void main() {
       });
 
       test('lectureDetails returns correct translation', () {
-        expect(koreanLocalizations.lectureDetails, '강의 상세정보');
-        expect(englishLocalizations.lectureDetails, 'Lecture Details');
+        expect(koreanLocalizations.editLecture, '강의 정보 수정');
+        expect(englishLocalizations.editLecture, 'Edit Lecture Info');
       });
 
       test('week returns correct translation', () {

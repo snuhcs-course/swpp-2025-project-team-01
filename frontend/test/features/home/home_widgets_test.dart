@@ -103,8 +103,12 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (testDirectory.existsSync()) {
-      testDirectory.deleteSync(recursive: true);
+    try {
+      if (testDirectory.existsSync()) {
+        testDirectory.deleteSync(recursive: true);
+      }
+    } catch (e) {
+      // Ignore Windows file lock issues
     }
   });
 

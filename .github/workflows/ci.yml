@@ -77,29 +77,6 @@ jobs:
     - name: Run tags unit tests
       run: flutter test test/features/tags/
 
-  frontend-integration-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.35.4'
-        channel: 'stable'
-        cache: true
-    
-    - name: Get dependencies
-      run: flutter pub get
-
-    # Add necessary script executions accordingly.
-    #- name: Run integration tests
-    #  run: flutter test integration_test
-
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:
     runs-on: ubuntu-latest

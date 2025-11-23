@@ -2,16 +2,16 @@
   {
     "text_eng": "Hello, and welcome to the review app!",
     "text_kor": "리뷰 앱에 오신 여러분 반가워요.",
-    "slide_number": 3,
+    "slide_number": 1,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 0,
     "original_end_time": 2140
   },
   {
-    "text_eng": "I’m the reviewer from the app called Ascott Lelala.",
-    "text_kor": "저는 리뷰 앱 아스코트 레레라고 해요.",
-    "slide_number": 3,
+    "text_eng": "My name is Rere, Mascot of Re:View.",
+    "text_kor": "저는 리뷰 앱 마스코트 레레라고 해요.",
+    "slide_number": 1,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 2380,
@@ -20,7 +20,7 @@
   {
     "text_eng": "From now on, I will explain step by step how to use the app.",
     "text_kor": "지금부터 앱 사용법을 차근차근 알려드릴게요.",
-    "slide_number": 3,
+    "slide_number": 1,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 4680,
@@ -28,8 +28,8 @@
   },
   {
     "text_eng": "The screen you are seeing now is the home screen.",
-    "text_kor": "지금 보이시는 화면은 홈 화면이에요.",
-    "slide_number": 3,
+    "text_kor": "지금 보시는 화면은 홈 화면이에요.",
+    "slide_number": 2,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 7360,
@@ -38,7 +38,7 @@
   {
     "text_eng": "You can gather and view all the lectures that were created previously in a single, organized collection.",
     "text_kor": "이전에 생성한 강의를 광별로 모아서 볼 수 있어요.",
-    "slide_number": 3,
+    "slide_number": 2,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 9700,
@@ -47,7 +47,7 @@
   {
     "text_eng": "If you want to create a new lecture or add a course, please click the plus button at the top.",
     "text_kor": "새로운 강의를 생성하거나 과목을 추가하고 싶으시면 상단에 플러스 버튼을 눌러주세요.",
-    "slide_number": 3,
+    "slide_number": 2,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 12580,
@@ -83,7 +83,7 @@
   {
     "text_eng": "By selecting a lecture from the home screen, you can proceed to the player screen.",
     "text_kor": "홈 화면에서 강의를 택하면 플레이어 화면으로 넘어갈 수 있어요.",
-    "slide_number": 3,
+    "slide_number": 4,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 33520,
@@ -91,8 +91,8 @@
   },
   {
     "text_eng": "The screen you are seeing right now is exactly the one I am referring to.",
-    "text_kor": "지금 보고 계신 화면은 바로 이 화면이에요.",
-    "slide_number": 3,
+    "text_kor": "지금 보고 계신 화면이 바로 이 화면이에요.",
+    "slide_number": 4,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 37860,
@@ -101,7 +101,7 @@
   {
     "text_eng": "If it’s in landscape mode, please switch it to portrait mode and then enter.",
     "text_kor": "가로 모드시라면 세로로 전환하고 들어주세요.",
-    "slide_number": 3,
+    "slide_number": 4,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 40280,
@@ -110,7 +110,7 @@
   {
     "text_eng": "Can you see the three buttons in the top right corner?",
     "text_kor": "우측 상단에 3개의 버튼이 보이시나요?",
-    "slide_number": 3,
+    "slide_number": 4,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 43600,
@@ -216,8 +216,8 @@
     "original_end_time": 90860
   },
   {
-    "text_eng": "Try tapping the “Language” button in the script to switch between languages.",
-    "text_kor": "대본여 언어 버튼을 탭해 언어 간 전환을 시도해보세요.",
+    "text_eng": "Try tapping the “Language” button to the right of script to switch between languages.",
+    "text_kor": "대본 옆 언어 버튼을 탭해 언어 간 전환을 시도해보세요.",
     "slide_number": 4,
     "tts_start_time": 0,
     "tts_end_time": 0,
@@ -227,7 +227,7 @@
   {
     "text_eng": "In landscape mode, two more buttons are added at the bottom of the play bar.",
     "text_kor": "가로모드에서는 플레이 바 하단에 버튼이 두 개 더 생겨요.",
-    "slide_number": 4,
+    "slide_number": 5,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 95460,
@@ -236,7 +236,7 @@
   {
     "text_eng": "If you would like to view the script, please use the “Subtitles” and “Script” buttons to access it together.",
     "text_kor": "대본을 보고 싶으시면 자막 및 대본 버튼을 활용해서 함께 이용해보세요.",
-    "slide_number": 4,
+    "slide_number": 5,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 98620,
@@ -245,7 +245,7 @@
   {
     "text_eng": "You can simply swipe the screen slightly upwards to use it in landscape mode – without needing the PDF viewer.",
     "text_kor": "화면을 가볍게 위로 쓸어 올리면 PDF 탐색기 없이 가로모드에서도 이용하실 수 있어요.",
-    "slide_number": 4,
+    "slide_number": 5,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 103340,
@@ -254,15 +254,15 @@
   {
     "text_eng": "You can close the player screen and access various settings from the home screen by using the menu button in the top-left corner.",
     "text_kor": "플레이어 화면을 종료하고 홈 화면에서 좌상단 메뉴 버튼을 통해 다양한 설정이 가능해요.",
-    "slide_number": 5,
+    "slide_number": 6,
     "tts_start_time": 0,
     "tts_end_time": 0,
     "original_start_time": 109100,
     "original_end_time": 113880
   },
   {
-    "text_eng": "Especially when the usage is confusing, make use of the “Home” and “Help” tabs.",
-    "text_kor": "특히 이용법이 헷갈릴 때는 가장 및 헬프 탭을 활용해보세요.",
+    "text_eng": "Especially when the usage is confusing, make use of the ”Help” tab.",
+    "text_kor": "특히 이용법이 헷갈릴 때는 가장 밑 헬프 탭을 활용해보세요.",
     "slide_number": 6,
     "tts_start_time": 0,
     "tts_end_time": 0,
@@ -279,8 +279,8 @@
     "original_end_time": 119500
   },
   {
-    "text_eng": "Lere will be by your side as you navigate the paths ahead.",
-    "text_kor": "여러분의 앞날을 레레가 함께 할게요.",
+    "text_eng": "Rere will be by your side as you navigate the paths ahead.",
+    "text_kor": "여러분의 앞날에 레레가 함께 할게요.",
     "slide_number": 6,
     "tts_start_time": 0,
     "tts_end_time": 0,
