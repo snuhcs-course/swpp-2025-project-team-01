@@ -98,7 +98,11 @@ class DefaultFlutterBackgroundWrapper implements FlutterBackgroundInterface {
 
   @override
   Future<bool> disableBackgroundExecution() {
-    return FlutterBackground.disableBackgroundExecution();
+    if (FlutterBackground.isBackgroundExecutionEnabled) {
+      return FlutterBackground.disableBackgroundExecution();
+    } else {
+      return Future(false as FutureOr<bool> Function());
+    }
   }
 }
 

@@ -294,7 +294,7 @@ class LectureLoadingService extends ChangeNotifier {
       try {
         final response = await client.post(endpoint);
         if (response.statusCode == 200 || response.statusCode == 400) {
-          return;
+          // Good
         } else {
           throw HttpException('Connection Error triggered');
         }
