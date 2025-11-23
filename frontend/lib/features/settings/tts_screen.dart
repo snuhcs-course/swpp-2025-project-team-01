@@ -40,11 +40,11 @@ class _TtsScreenState extends State<TtsScreen> {
   /// HiveManager에서 저장된 TTS 설정 불러오기
   Future<void> _loadSettings() async {
     if (mounted) {
-        setState(() {
-          final ttsGender = _hiveManager.settings.ttsGender;
-          _gender = ttsGender == '남성' ? '여성' : ttsGender;
-        });
-      }
+      setState(() {
+        final ttsGender = _hiveManager.settings.ttsGender;
+        _gender = ttsGender == '남성' ? '여성' : ttsGender;
+      });
+    }
   }
 
   /// 음성 성별 저장 및 예시 음성 재생
