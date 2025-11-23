@@ -792,7 +792,9 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
   }
 
   String _formatDate(DateTime? dateTime, bool isKorean) {
-    if (dateTime == null) return isKorean ? '알 수 없음' : 'Unknown';
+    if (dateTime == null) {
+      return isKorean ? '알 수 없음' : 'Unknown';
+    }
 
     // 절대 날짜 포맷만 표시
     final year = dateTime.year;
