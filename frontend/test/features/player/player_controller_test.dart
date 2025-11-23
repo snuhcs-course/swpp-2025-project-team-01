@@ -5,7 +5,12 @@ import 'package:just_audio/just_audio.dart' as ja;
 import 'package:mockito/mockito.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
-
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 import 'mocks.mocks.dart';
 
 void main() {
@@ -15,10 +20,569 @@ void main() {
   late MockPdfCacheService mockPdfCacheService;
   late StreamController<Duration> positionStreamController;
   late StreamController<ja.PlayerState> stateStreamController;
+  late Directory tempDir;
+  late String tempPdfPath;
+
+  // Minimal valid PDF bytes
+  final kMinimalPdfBytes = Uint8List.fromList([
+    0x25,
+    0x50,
+    0x44,
+    0x46,
+    0x2d,
+    0x31,
+    0x2e,
+    0x34,
+    0x0a,
+    0x25,
+    0xc3,
+    0xa4,
+    0xc3,
+    0xbc,
+    0xc3,
+    0xb6,
+    0xc3,
+    0x9f,
+    0x0a,
+    0x32,
+    0x20,
+    0x30,
+    0x20,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x4c,
+    0x65,
+    0x6e,
+    0x67,
+    0x74,
+    0x68,
+    0x20,
+    0x33,
+    0x3e,
+    0x3e,
+    0x0a,
+    0x73,
+    0x74,
+    0x72,
+    0x65,
+    0x61,
+    0x6d,
+    0x0a,
+    0x42,
+    0x54,
+    0x0a,
+    0x45,
+    0x54,
+    0x0a,
+    0x65,
+    0x6e,
+    0x64,
+    0x73,
+    0x74,
+    0x72,
+    0x65,
+    0x61,
+    0x6d,
+    0x0a,
+    0x65,
+    0x6e,
+    0x64,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x31,
+    0x20,
+    0x30,
+    0x20,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x54,
+    0x79,
+    0x70,
+    0x65,
+    0x2f,
+    0x50,
+    0x61,
+    0x67,
+    0x65,
+    0x2f,
+    0x50,
+    0x61,
+    0x72,
+    0x65,
+    0x6e,
+    0x74,
+    0x20,
+    0x33,
+    0x20,
+    0x30,
+    0x20,
+    0x52,
+    0x2f,
+    0x52,
+    0x65,
+    0x73,
+    0x6f,
+    0x75,
+    0x72,
+    0x63,
+    0x65,
+    0x73,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x46,
+    0x6f,
+    0x6e,
+    0x74,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x46,
+    0x31,
+    0x20,
+    0x34,
+    0x20,
+    0x30,
+    0x20,
+    0x52,
+    0x3e,
+    0x3e,
+    0x3e,
+    0x3e,
+    0x2f,
+    0x4d,
+    0x65,
+    0x64,
+    0x69,
+    0x61,
+    0x42,
+    0x6f,
+    0x78,
+    0x5b,
+    0x30,
+    0x20,
+    0x30,
+    0x20,
+    0x32,
+    0x30,
+    0x30,
+    0x20,
+    0x32,
+    0x30,
+    0x30,
+    0x5d,
+    0x2f,
+    0x43,
+    0x6f,
+    0x6e,
+    0x74,
+    0x65,
+    0x6e,
+    0x74,
+    0x73,
+    0x20,
+    0x32,
+    0x20,
+    0x30,
+    0x20,
+    0x52,
+    0x3e,
+    0x3e,
+    0x0a,
+    0x65,
+    0x6e,
+    0x64,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x33,
+    0x20,
+    0x30,
+    0x20,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x54,
+    0x79,
+    0x70,
+    0x65,
+    0x2f,
+    0x50,
+    0x61,
+    0x67,
+    0x65,
+    0x73,
+    0x2f,
+    0x4b,
+    0x69,
+    0x64,
+    0x73,
+    0x5b,
+    0x31,
+    0x20,
+    0x30,
+    0x20,
+    0x52,
+    0x5d,
+    0x2f,
+    0x43,
+    0x6f,
+    0x75,
+    0x6e,
+    0x74,
+    0x20,
+    0x31,
+    0x3e,
+    0x3e,
+    0x0a,
+    0x65,
+    0x6e,
+    0x64,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x34,
+    0x20,
+    0x30,
+    0x20,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x54,
+    0x79,
+    0x70,
+    0x65,
+    0x2f,
+    0x46,
+    0x6f,
+    0x6e,
+    0x74,
+    0x2f,
+    0x53,
+    0x75,
+    0x62,
+    0x74,
+    0x79,
+    0x70,
+    0x65,
+    0x2f,
+    0x54,
+    0x79,
+    0x70,
+    0x65,
+    0x31,
+    0x2f,
+    0x42,
+    0x61,
+    0x73,
+    0x65,
+    0x46,
+    0x6f,
+    0x6e,
+    0x74,
+    0x2f,
+    0x54,
+    0x69,
+    0x6d,
+    0x65,
+    0x73,
+    0x2d,
+    0x52,
+    0x6f,
+    0x6d,
+    0x61,
+    0x6e,
+    0x3e,
+    0x3e,
+    0x0a,
+    0x65,
+    0x6e,
+    0x64,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x35,
+    0x20,
+    0x30,
+    0x20,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x54,
+    0x79,
+    0x70,
+    0x65,
+    0x2f,
+    0x43,
+    0x61,
+    0x74,
+    0x61,
+    0x6c,
+    0x6f,
+    0x67,
+    0x2f,
+    0x50,
+    0x61,
+    0x67,
+    0x65,
+    0x73,
+    0x20,
+    0x33,
+    0x20,
+    0x30,
+    0x20,
+    0x52,
+    0x3e,
+    0x3e,
+    0x0a,
+    0x65,
+    0x6e,
+    0x64,
+    0x6f,
+    0x62,
+    0x6a,
+    0x0a,
+    0x78,
+    0x72,
+    0x65,
+    0x66,
+    0x0a,
+    0x30,
+    0x20,
+    0x36,
+    0x0a,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x20,
+    0x36,
+    0x35,
+    0x35,
+    0x33,
+    0x35,
+    0x20,
+    0x66,
+    0x20,
+    0x0a,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x37,
+    0x33,
+    0x20,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x20,
+    0x6e,
+    0x20,
+    0x0a,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x31,
+    0x39,
+    0x20,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x20,
+    0x6e,
+    0x20,
+    0x0a,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x31,
+    0x37,
+    0x30,
+    0x20,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x20,
+    0x6e,
+    0x20,
+    0x0a,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x32,
+    0x33,
+    0x33,
+    0x20,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x20,
+    0x6e,
+    0x20,
+    0x0a,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x33,
+    0x31,
+    0x36,
+    0x20,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x30,
+    0x20,
+    0x6e,
+    0x20,
+    0x0a,
+    0x74,
+    0x72,
+    0x61,
+    0x69,
+    0x6c,
+    0x65,
+    0x72,
+    0x0a,
+    0x3c,
+    0x3c,
+    0x2f,
+    0x53,
+    0x69,
+    0x7a,
+    0x65,
+    0x20,
+    0x36,
+    0x2f,
+    0x52,
+    0x6f,
+    0x6f,
+    0x74,
+    0x20,
+    0x35,
+    0x20,
+    0x30,
+    0x20,
+    0x52,
+    0x3e,
+    0x3e,
+    0x0a,
+    0x73,
+    0x74,
+    0x61,
+    0x72,
+    0x74,
+    0x78,
+    0x72,
+    0x65,
+    0x66,
+    0x0a,
+    0x33,
+    0x36,
+    0x35,
+    0x0a,
+    0x25,
+    0x25,
+    0x45,
+    0x4f,
+    0x46,
+    0x0a,
+  ]);
 
   setUp(() {
     mockAudioService = MockAudioService();
     mockPdfCacheService = MockPdfCacheService();
+
+    // Setup temp directory and file
+    tempDir = Directory.systemTemp.createTempSync();
+    tempPdfPath = '${tempDir.path}/test.pdf';
+    File(tempPdfPath).writeAsBytesSync(kMinimalPdfBytes);
+
+    // Mock path_provider
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getTemporaryDirectory') {
+              return tempDir.path;
+            }
+            return null;
+          },
+        );
+
+    // Mock SystemChrome (flutter/platform)
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('flutter/platform', JSONMethodCodec()),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'SystemChrome.setPreferredOrientations') {
+              return null;
+            }
+            return null;
+          },
+        );
 
     // Reset mocks to clear any previous interactions
     reset(mockAudioService);
@@ -62,6 +626,21 @@ void main() {
   tearDown(() async {
     await positionStreamController.close();
     await stateStreamController.close();
+    try {
+      tempDir.deleteSync(recursive: true);
+    } catch (_) {}
+
+    // Clear mocks
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('flutter/platform', JSONMethodCodec()),
+          null,
+        );
   });
 
   TranscriptData createTestTranscriptData() {
@@ -1315,4 +1894,215 @@ void main() {
       controller.dispose();
     });
   });
+  group('PlayerController - Initialize & Full Coverage', () {
+    testWidgets('initialize loads PDF and audio correctly', (tester) async {
+      final controller = TestPlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      final transcriptData = createTestTranscriptData();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Container();
+            },
+          ),
+        ),
+      );
+
+      final BuildContext context = tester.element(find.byType(Container));
+
+      await controller.initialize(
+        context,
+        'lecture1',
+        transcriptData,
+        tempPdfPath,
+        'audio.mp3',
+        'original.mp3',
+        false,
+      );
+
+      expect(controller.transcriptData, equals(transcriptData));
+      expect(controller.isKoreanLanguage.value, isFalse);
+      expect(controller.isOriginalAudio.value, isFalse);
+      verify(mockAudioService.loadAudio('audio.mp3')).called(1);
+
+      controller.dispose();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets('toggleFullscreen changes orientation and state', (
+      tester,
+    ) async {
+      final controller = TestPlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      expect(controller.isFullscreen.value, isFalse);
+
+      await controller.toggleFullscreen();
+      expect(controller.isFullscreen.value, isTrue);
+
+      await controller.toggleFullscreen();
+      expect(controller.isFullscreen.value, isFalse);
+
+      controller.dispose();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets('toggleAudioSource switches audio and seeks', (tester) async {
+      final controller = TestPlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      final transcriptData = createTestTranscriptData();
+
+      await tester.pumpWidget(MaterialApp(home: Container()));
+      final BuildContext context = tester.element(find.byType(Container));
+
+      await controller.initialize(
+        context,
+        'lecture1',
+        transcriptData,
+        tempPdfPath,
+        'audio.mp3',
+        'original.mp3',
+        false,
+      );
+
+      expect(controller.isOriginalAudio.value, isFalse);
+
+      await controller.toggleAudioSource();
+
+      expect(controller.isOriginalAudio.value, isTrue);
+      verify(mockAudioService.switchAudio('original.mp3', any)).called(1);
+
+      await controller.toggleAudioSource();
+
+      expect(controller.isOriginalAudio.value, isFalse);
+      verify(mockAudioService.switchAudio('audio.mp3', any)).called(1);
+
+      controller.dispose();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets('isAudioOriginal true scenarios', (tester) async {
+      final controller = TestPlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      final transcriptData = createTestTranscriptData();
+
+      await tester.pumpWidget(MaterialApp(home: Container()));
+      final BuildContext context = tester.element(find.byType(Container));
+
+      await controller.initialize(
+        context,
+        'lecture1',
+        transcriptData,
+        tempPdfPath,
+        'audio.mp3',
+        'original.mp3',
+        true,
+      );
+
+      expect(controller.isOriginalAudio.value, isTrue);
+      expect(controller.isKoreanLanguage.value, isTrue);
+
+      controller.updateCurrentSentence(false, 0.5);
+      expect(controller.currentSentenceIndex.value, equals(0));
+
+      await controller.seek(0.5);
+      verify(mockAudioService.seek(any)).called(1);
+
+      controller.dispose();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+
+    testWidgets('cleanupTempPdfFiles deletes new temp files', (tester) async {
+      final controller = TestPlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+      );
+
+      final transcriptData = createTestTranscriptData();
+      await tester.pumpWidget(MaterialApp(home: Container()));
+      final BuildContext context = tester.element(find.byType(Container));
+
+      // Set initial files manually since we override loadPdfDocument
+      controller.initialTempFiles = [tempPdfPath];
+
+      await controller.initialize(
+        context,
+        'lecture1',
+        transcriptData,
+        tempPdfPath,
+        'audio.mp3',
+        'original.mp3',
+        false,
+      );
+
+      final newTempFile = File('${tempDir.path}/new_temp.pdf');
+      newTempFile.writeAsBytesSync([1, 2, 3]);
+
+      controller.dispose();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(newTempFile.existsSync(), isFalse);
+
+      expect(File(tempPdfPath).existsSync(), isTrue);
+    });
+  });
+}
+
+class MockPdfDocument extends Mock implements PdfDocument {
+  @override
+  int get pagesCount => 5;
+
+  @override
+  Future<void> close() => Future.value();
+}
+
+class TestPlayerController extends PlayerController {
+  TestPlayerController({
+    required super.audioService,
+    required super.pdfCacheService,
+  });
+
+  final MockPdfDocument mockPdfDocument = MockPdfDocument();
+
+  @override
+  Future<void> loadPdfDocument(
+    String pdfPath,
+    String lectureId,
+    int initialPage,
+  ) async {
+    pdfDocument = mockPdfDocument;
+    // We don't set initialTempFiles here, we set it manually in test if needed
+
+    // Set currentPage
+    currentPage.value = initialPage;
+
+    // We don't initialize pdfController because it's hard to mock
+    // But if other methods use pdfController, they might fail.
+    // Let's see if we can mock PdfController?
+    // PdfController is a class.
+    // But PlayerController instantiates it: pdfController = PdfController(...).
+    // We can't override that unless we extract it to a factory method.
+    // But for now, let's see if tests pass without pdfController being fully functional.
+    // jumpToPage uses pdfController.
+    // If pdfController is null, jumpToPage might throw or do nothing?
+    // In PlayerController: pdfController?.jumpToPage(page);
+    // It uses ?. so it's safe if null.
+    // But initialize sets it.
+
+    // If we don't set pdfController, jumpToPage won't do anything on the controller, but currentPage will update.
+    // This is acceptable for these tests.
+  }
 }
