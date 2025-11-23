@@ -275,7 +275,7 @@ class LectureLoadingService extends ChangeNotifier {
   }
 
   /// 강의 생성 취소
-  Future<void> cancelLoading() async {
+  Future<void> cancelLoading({http.Client? fakeClient}) async {
     _messageTimer?.cancel();
     _isCancelled = true;
     final language = _hiveManager.settings.language;
@@ -288,7 +288,7 @@ class LectureLoadingService extends ChangeNotifier {
       final endpoint = Uri.parse(
         'http://$_serverAddress:$_port/api/synchronize/cancel/$jobId',
       );
-      final client = http.Client();
+      final client = fakeClient ?? http.Client();
       final req = http.MultipartRequest('POST', endpoint);
       req.fields['job_id'] = jobId;
       try {

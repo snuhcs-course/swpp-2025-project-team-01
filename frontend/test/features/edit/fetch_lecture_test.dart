@@ -224,7 +224,7 @@ void main() {
       );
       service.addJobId('cancel123');
       await Future.delayed(Duration(milliseconds: 50));
-      service.cancelLoading();
+      service.cancelLoading(fakeClient: fakeClient);
       await Future.delayed(Duration(milliseconds: 50));
       await controller.close();
 

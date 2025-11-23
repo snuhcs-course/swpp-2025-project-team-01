@@ -6,6 +6,7 @@
 import 'dart:async' as _i7;
 import 'dart:ui' as _i6;
 
+import 'package:http/http.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i4;
 import 'package:re_view/core/lecture_loading_service.dart' as _i5;
@@ -292,9 +293,9 @@ class MockLectureLoadingService extends _i1.Mock
       );
 
   @override
-  _i7.Future<void> cancelLoading() =>
+  _i7.Future<void> cancelLoading({_i8.Client? fakeClient}) =>
       (super.noSuchMethod(
-            Invocation.method(#cancelLoading, []),
+            Invocation.method(#cancelLoading, [], {#fakeClient: fakeClient}),
             returnValue: _i7.Future<void>.value(),
             returnValueForMissingStub: _i7.Future<void>.value(),
           )
