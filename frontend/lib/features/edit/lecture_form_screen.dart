@@ -265,9 +265,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 if (_selectedLanguage == 'ko') const SizedBox(height: 8),
                 if (_selectedLanguage == 'ko')
                   Text(
-                    l10n.isKorean
-                        ? '한국어 강의는 TTS 음성이 제공되지 않습니다.'
-                        : 'TTS audio will not be provided for Korean lectures.',
+                    l10n.noTtsForKorean,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,

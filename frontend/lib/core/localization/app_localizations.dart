@@ -184,6 +184,9 @@ class AppLocalizations {
   String get lectureTitle => isKorean ? '강의 제목' : 'Lecture Title';
   String get lectureLength => isKorean ? '강의 길이' : 'Lecture Length';
   String get deleteLecture => isKorean ? '강의 삭제' : 'Delete Lecture';
+  String get noTtsForKorean => isKorean
+      ? '한국어 강의는 TTS 음성이 제공되지 않습니다.'
+      : 'TTS audio will not be provided for Korean lectures.';
 
   // 검색 화면
   String get searchLecture => isKorean ? '강의 검색' : 'Search Lectures';
