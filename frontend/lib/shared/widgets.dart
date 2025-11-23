@@ -275,6 +275,7 @@ class CollapsedBubbleOverlay extends StatefulWidget {
 class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
   late double _dragX;
   late double _dragY;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -292,7 +293,11 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
 
     return Stack(
       children: [
-        Positioned(
+        AnimatedPositioned(
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
           left: _dragX,
           bottom: _dragY,
           child: SafeArea(
@@ -300,14 +305,16 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onPanStart: (details) {
-                // Prevent tap from triggering during drag
+                setState(() {
+                  _isDragging = true;
+                });
               },
               onPanUpdate: (details) {
                 setState(() {
-                  // Update position during drag
+                  // Update position during drag (allow free movement temporarily)
                   _dragX = (_dragX + details.delta.dx).clamp(
-                    0.0,
-                    screenSize.width - bubbleSize - safeArea.right,
+                    -(bubbleSize * 0.1),
+                    screenSize.width - bubbleSize * 0.9 - safeArea.right,
                   );
                   _dragY = (_dragY - details.delta.dy).clamp(
                     0.0,
@@ -316,6 +323,22 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                 });
               },
               onPanEnd: (details) {
+                // Snap to left or right side with 10% clipping
+                final screenCenter = screenSize.width / 2;
+                final isOnLeftSide = _dragX < screenCenter - bubbleSize / 2;
+
+                setState(() {
+                  _isDragging = false;
+                  if (isOnLeftSide) {
+                    // Snap to left with 10% clipped
+                    _dragX = -(bubbleSize * 0.1);
+                  } else {
+                    // Snap to right with 10% clipped
+                    _dragX =
+                        screenSize.width - bubbleSize * 0.9 - safeArea.right;
+                  }
+                });
+
                 // Save final position when drag ends
                 widget.service.updateBubblePosition(_dragX, _dragY);
               },

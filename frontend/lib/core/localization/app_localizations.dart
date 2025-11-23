@@ -183,6 +183,7 @@ class AppLocalizations {
   String get week => isKorean ? '주차' : 'Week';
   String get lectureTitle => isKorean ? '강의 제목' : 'Lecture Title';
   String get lectureLength => isKorean ? '강의 길이' : 'Lecture Length';
+  String get createdAt => isKorean ? '생성일' : 'Created';
   String get deleteLecture => isKorean ? '강의 삭제' : 'Delete Lecture';
   String get noTtsForKorean => isKorean
       ? '한국어 강의는 TTS 음성이 제공되지 않습니다.'

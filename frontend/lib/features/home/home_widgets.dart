@@ -791,6 +791,39 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     return '$minutes:${secs.toString().padLeft(2, '0')}';
   }
 
+  String _formatDate(DateTime? dateTime, bool isKorean) {
+    if (dateTime == null) {
+      return isKorean ? '알 수 없음' : 'Unknown';
+    }
+
+    // 절대 날짜 포맷만 표시
+    final year = dateTime.year;
+    final month = dateTime.month;
+    final day = dateTime.day;
+
+    return isKorean
+        ? '$year년 $month월 $day일'
+        : '${_monthName(month)} $day, $year';
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -921,6 +954,34 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                 Text(
                   _formatDuration(widget.lecture.duration),
                   style: theme.textTheme.bodyLarge,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 생성일 정보
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 20),
+                    const SizedBox(width: 8),
+                    Text(l10n.createdAt, style: theme.textTheme.titleSmall),
+                  ],
+                ),
+                Expanded(
+                  child: Text(
+                    _formatDate(widget.lecture.createdAt, l10n.isKorean),
+                    style: theme.textTheme.bodyMedium,
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ],
             ),
