@@ -177,7 +177,7 @@ void main() {
     });
 
     test('Handles cancellation during SSE stream', () async {
-      final controller = StreamController<List<int>>();
+      final controller = StreamController<List<int>>.broadcast();
       final fakeClient = FakeStreamingClient((req) async {
         return http.StreamedResponse(
           controller.stream,
