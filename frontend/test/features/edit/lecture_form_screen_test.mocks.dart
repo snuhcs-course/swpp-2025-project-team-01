@@ -609,6 +609,12 @@ class MockLectureLoadingService extends _i1.Mock
   );
 
   @override
+  void addJobId(String? jobId) => super.noSuchMethod(
+    Invocation.method(#addJobId, [jobId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   double getProgress() =>
       (super.noSuchMethod(Invocation.method(#getProgress, []), returnValue: 0.0)
           as double);
@@ -651,10 +657,13 @@ class MockLectureLoadingService extends _i1.Mock
       );
 
   @override
-  void cancelLoading() => super.noSuchMethod(
-    Invocation.method(#cancelLoading, []),
-    returnValueForMissingStub: null,
-  );
+  _i5.Future<void> cancelLoading() =>
+      (super.noSuchMethod(
+            Invocation.method(#cancelLoading, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
   void collapseToBubble({required bool? alignRight}) => super.noSuchMethod(

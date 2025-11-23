@@ -3,6 +3,7 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'dart:async' as _i7;
 import 'dart:ui' as _i6;
 
 import 'package:mockito/mockito.dart' as _i1;
@@ -243,6 +244,12 @@ class MockLectureLoadingService extends _i1.Mock
   );
 
   @override
+  void addJobId(String? jobId) => super.noSuchMethod(
+    Invocation.method(#addJobId, [jobId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   double getProgress() =>
       (super.noSuchMethod(Invocation.method(#getProgress, []), returnValue: 0.0)
           as double);
@@ -285,10 +292,13 @@ class MockLectureLoadingService extends _i1.Mock
       );
 
   @override
-  void cancelLoading() => super.noSuchMethod(
-    Invocation.method(#cancelLoading, []),
-    returnValueForMissingStub: null,
-  );
+  _i7.Future<void> cancelLoading() =>
+      (super.noSuchMethod(
+            Invocation.method(#cancelLoading, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
 
   @override
   void collapseToBubble({required bool? alignRight}) => super.noSuchMethod(
