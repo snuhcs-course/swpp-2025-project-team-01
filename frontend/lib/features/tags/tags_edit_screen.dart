@@ -475,124 +475,55 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     String tagName,
     List<HiveSubject> usingSubjects,
   ) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    // 과목 이름들을 TextSpan으로 변환
+    final subjectSpans = <TextSpan>[];
+    for (int i = 0; i < usingSubjects.length; i++) {
+      subjectSpans.add(
+        TextSpan(
+          text: usingSubjects[i].title,
+          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+        ),
+      );
+      if (i < usingSubjects.length - 1) {
+        subjectSpans.add(const TextSpan(text: '\n'));
+      }
+    }
+
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDialogHeader(),
-              _buildDialogBody(tagName, usingSubjects),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 다이얼로그 헤더 빌드
-  Widget _buildDialogHeader() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: const BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Center(
-        child: Text(
-          l10n.warning,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 다이얼로그 본문 빌드
-  Widget _buildDialogBody(String tagName, List<HiveSubject> usingSubjects) {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: const BoxDecoration(
-        color: Color(0xFFE8E8E8),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            l10n.tagDeleteWarning(
-              tagName,
-              usingSubjects.map((s) => s.title).toList(),
-            ),
-            textAlign: TextAlign.center,
+      builder: (_) => DeleteWarningDialog(
+        warningText: l10n.warning,
+        yesText: l10n.yes,
+        noText: l10n.no,
+        onConfirm: () {},
+        body: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
             style: const TextStyle(
               color: Colors.black,
               fontSize: 18,
               height: 1.5,
             ),
-          ),
-          const SizedBox(height: 24),
-          Row(
             children: [
-              Expanded(child: _buildConfirmButton()),
-              const SizedBox(width: 12),
-              Expanded(child: _buildCancelButton()),
+              TextSpan(text: l10n.isKorean ? '태그 "' : 'Tag "'),
+              TextSpan(text: tagName),
+              TextSpan(
+                text: l10n.isKorean
+                    ? '"은(는)\n다음 과목에서 사용 중입니다:\n\n'
+                    : '"\n is used in the following subjects:\n\n',
+              ),
+              ...subjectSpans,
+              TextSpan(
+                text: l10n.isKorean
+                    ? '\n\n삭제하시겠습니까?'
+                    : '\n\nDo you want to delete it?',
+              ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 다이얼로그 확인 버튼
-  Widget _buildConfirmButton() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFF5A5A5A),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextButton(
-        onPressed: () => Navigator.pop(context, true),
-        child: Text(
-          l10n.yes,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 다이얼로그 취소 버튼
-  Widget _buildCancelButton() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFFC0C0C0),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextButton(
-        onPressed: () => Navigator.pop(context, false),
-        child: Text(
-          l10n.no,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
           ),
         ),
       ),

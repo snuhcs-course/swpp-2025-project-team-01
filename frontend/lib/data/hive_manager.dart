@@ -136,8 +136,11 @@ class HiveManager extends ChangeNotifier {
       subjects['uncategorized'] = existing.copyWith(isUncategorized: true);
     }
 
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    final langCode = locale.languageCode;
+
     _appData = AppData(
-      settings: AppSettings(),
+      settings: AppSettings(language: langCode),
       subjects: subjects,
       tags: tags,
       lectures: lectures,

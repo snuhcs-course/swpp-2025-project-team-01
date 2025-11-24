@@ -275,6 +275,7 @@ class CollapsedBubbleOverlay extends StatefulWidget {
 class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
   late double _dragX;
   late double _dragY;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -292,7 +293,11 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
 
     return Stack(
       children: [
-        Positioned(
+        AnimatedPositioned(
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
           left: _dragX,
           bottom: _dragY,
           child: SafeArea(
@@ -300,14 +305,16 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onPanStart: (details) {
-                // Prevent tap from triggering during drag
+                setState(() {
+                  _isDragging = true;
+                });
               },
               onPanUpdate: (details) {
                 setState(() {
-                  // Update position during drag
+                  // Update position during drag (allow free movement temporarily)
                   _dragX = (_dragX + details.delta.dx).clamp(
-                    0.0,
-                    screenSize.width - bubbleSize - safeArea.right,
+                    -(bubbleSize * 0.1),
+                    screenSize.width - bubbleSize * 0.9 - safeArea.right,
                   );
                   _dragY = (_dragY - details.delta.dy).clamp(
                     0.0,
@@ -316,6 +323,22 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                 });
               },
               onPanEnd: (details) {
+                // Snap to left or right side with 10% clipping
+                final screenCenter = screenSize.width / 2;
+                final isOnLeftSide = _dragX < screenCenter - bubbleSize / 2;
+
+                setState(() {
+                  _isDragging = false;
+                  if (isOnLeftSide) {
+                    // Snap to left with 10% clipped
+                    _dragX = -(bubbleSize * 0.1);
+                  } else {
+                    // Snap to right with 10% clipped
+                    _dragX =
+                        screenSize.width - bubbleSize * 0.9 - safeArea.right;
+                  }
+                });
+
                 // Save final position when drag ends
                 widget.service.updateBubblePosition(_dragX, _dragY);
               },
@@ -866,6 +889,209 @@ class DialogHeaderTitle extends StatelessWidget {
   }
 }
 
+/// 수정 다이얼로그 공통 위젯
+///
+/// DialogHeaderTitle, 스크롤 가능한 content, 삭제/완료 버튼을 포함하는 표준 수정 다이얼로그입니다.
+/// 내부 콘텐츠는 [content] 파라미터로 커스터마이즈.
+class EditDialog extends StatelessWidget {
+  const EditDialog({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.onDelete,
+    required this.onComplete,
+    required this.deleteLabel,
+    required this.completeLabel,
+  });
+
+  final String title;
+  final Widget content;
+  final VoidCallback onDelete;
+  final VoidCallback onComplete;
+  final String deleteLabel;
+  final String completeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      backgroundColor: theme.dialogTheme.backgroundColor,
+      titlePadding: EdgeInsets.zero,
+      title: DialogHeaderTitle(title: title),
+      content: SizedBox(
+        width: 400,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.7 - keyboardHeight,
+          ),
+          child: SingleChildScrollView(child: content),
+        ),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      actions: [
+        Row(
+          children: [
+            // 삭제 버튼 (왼쪽)
+            Expanded(
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline, size: 20),
+                label: Text(deleteLabel),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 완료 버튼 (오른쪽)
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+                onPressed: onComplete,
+                child: Text(completeLabel),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// 삭제 경고 다이얼로그 위젯
+///
+/// 검은색 헤더와 회색 본문을 가진 표준 경고 다이얼로그입니다.
+/// 내부 텍스트는 [body] 파라미터로 커스터마이즈.
+class DeleteWarningDialog extends StatelessWidget {
+  const DeleteWarningDialog({
+    super.key,
+    required this.body,
+    required this.onConfirm,
+    required this.yesText,
+    required this.noText,
+    required this.warningText,
+  });
+
+  final Widget body;
+  final VoidCallback onConfirm;
+  final String yesText;
+  final String noText;
+  final String warningText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: const BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Center(
+                child: Text(
+                  warningText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            // Body
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8E8E8),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  body,
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      // "예" 버튼
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5A5A5A),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pop(context, true);
+                              onConfirm();
+                            },
+                            child: Text(
+                              yesText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // "아니오" 버튼
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC0C0C0),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text(
+                              noText,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// 과목 패널 헤더 위젯 (홈 화면 & 과목 수정 화면 공통)
 ///
 /// 검은 배경의 헤더로 과목 제목, 태그, 펼침/접기 버튼을 표시합니다.
@@ -951,7 +1177,7 @@ class SubjectPanelHeader extends StatelessWidget {
                       ? (reorderIndex != null
                             ? Padding(
                                 padding: const EdgeInsets.only(left: 10),
-                                child: ReorderableDelayedDragStartListener(
+                                child: ReorderableDragStartListener(
                                   index: reorderIndex!, // ← required
                                   child: Icon(
                                     Icons.drag_indicator,

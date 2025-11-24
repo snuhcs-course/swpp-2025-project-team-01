@@ -98,7 +98,11 @@ class DefaultFlutterBackgroundWrapper implements FlutterBackgroundInterface {
 
   @override
   Future<bool> disableBackgroundExecution() {
-    return FlutterBackground.disableBackgroundExecution();
+    if (FlutterBackground.isBackgroundExecutionEnabled) {
+      return FlutterBackground.disableBackgroundExecution();
+    } else {
+      return Future(false as FutureOr<bool> Function());
+    }
   }
 }
 
@@ -232,7 +236,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         title: Text(l10n.isKorean ? '강의 생성' : 'Create Lecture'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            _cleanUpFiles();
+            Navigator.pop(context);
+          },
         ),
       ),
       // backgroundColor는 테마의 scaffoldBackgroundColor 사용
@@ -255,6 +262,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 _buildSectionTitle(l10n.isKorean ? '강의 언어' : 'Spoken Language'),
                 const SizedBox(height: 8),
                 _buildLanguageDropdown(l10n, subjects),
+                if (_selectedLanguage == 'ko') const SizedBox(height: 8),
+                if (_selectedLanguage == 'ko')
+                  Text(
+                    l10n.noTtsForKorean,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
+                  ),
                 const SizedBox(height: 20),
 
                 // ========== 강의 주차 입력 섹션 ==========
@@ -699,7 +716,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       )
                     : Text(
                         l10n.isKorean ? '생성하기' : 'Create',
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
               ),
             ),
@@ -890,6 +909,31 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _cleanUpFiles() async {
+    if (_slidePdfPath != null) {
+      try {
+        final slideFile = File(_slidePdfPath!);
+        await slideFile.delete();
+        await slideFile.parent.delete();
+      } catch (_) {
+        // Ignore deletion errors
+      }
+    }
+
+    final effectiveAudios = _audioFiles
+        .where((e) => (e.filePath ?? '').isNotEmpty)
+        .toList();
+    for (int i = 0; i < effectiveAudios.length; i++) {
+      try {
+        final audioFile = File(effectiveAudios[i].filePath!);
+        await audioFile.delete();
+        await audioFile.parent.delete();
+      } catch (_) {
+        // Ignore deletion errors
+      }
+    }
   }
 
   // ========== 강의 생성 메서드 ==========
@@ -1140,6 +1184,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         }
       } else {
         for (int i = 0; i < results.length; i++) {
+          await _cleanUpFiles();
           if (results[i] != null) {
             if (langCode == 'en') {
               await File(results[i]![0]).delete();
@@ -1182,6 +1227,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         if (originalAudioPath == null ||
             (ttsAudioPath == null && langCode == 'en') ||
             jsonPath == null) {
+          for (int i = 0; i < results.length; i++) {
+            await _cleanUpFiles();
+            if (results[i] != null) {
+              if (langCode == 'en') {
+                await File(results[i]![0]).delete();
+              }
+              await File(results[i]![1]).delete();
+            }
+          }
           _showToast(
             l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
           );
