@@ -1,10 +1,15 @@
 // 렉처 생성 로딩 상태를 전역으로 관리하는 서비스
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
+
+const String _serverAddress = '147.46.78.61';
+const String _port = '8001';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
@@ -54,6 +59,8 @@ class LectureLoadingService extends ChangeNotifier {
   String _errorTitle = ''; // 에러 제목
   String _errorMessage = ''; // 에러 상세 메시지
   bool _isCompleted = false; // 완료 뷰 표시 여부
+
+  final Set<String> _jobIds = <String>{};
 
   /// 현재 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -163,6 +170,10 @@ class LectureLoadingService extends ChangeNotifier {
     });
   }
 
+  void addJobId(String jobId) {
+    _jobIds.add(jobId);
+  }
+
   /// 현재 진행도
   double getProgress() {
     return _progress;
@@ -238,14 +249,34 @@ class LectureLoadingService extends ChangeNotifier {
   }
 
   /// 강의 생성 취소
-  void cancelLoading() {
+  Future<void> cancelLoading({http.Client? fakeClient}) async {
     _messageTimer?.cancel();
     _isCancelled = true;
     _message = _l10n.cancelling;
     notifyListeners();
-
     // 취소 콜백 실행
     _onCancel?.call();
+
+    for (String jobId in _jobIds) {
+      final endpoint = Uri.parse(
+        'http://$_serverAddress:$_port/api/synchronize/cancel/$jobId',
+      );
+      final client = fakeClient ?? http.Client();
+      final req = http.MultipartRequest('POST', endpoint);
+      req.fields['job_id'] = jobId;
+      try {
+        final response = await client.post(endpoint);
+        if (response.statusCode == 200 || response.statusCode == 400) {
+          // Good
+        } else {
+          throw HttpException('Connection Error triggered');
+        }
+      } catch (_) {
+        // Retry once
+        await client.post(endpoint);
+      }
+    }
+    _jobIds.clear();
 
     // 1초 후 숨김
     Future.delayed(const Duration(seconds: 1), hideLoading);

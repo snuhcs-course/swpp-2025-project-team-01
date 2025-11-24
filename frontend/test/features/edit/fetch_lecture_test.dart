@@ -182,7 +182,7 @@ void main() {
     });
 
     test('Handles cancellation during SSE stream', () async {
-      final controller = StreamController<List<int>>();
+      final controller = StreamController<List<int>>.broadcast();
       final fakeClient = FakeStreamingClient((req) async {
         return http.StreamedResponse(
           controller.stream,
@@ -227,8 +227,9 @@ void main() {
           'data: {"job_id":"cancel123","progress":10.0,"message":"Starting","status":"running"}\n\n',
         ),
       );
+      service.addJobId('cancel123');
       await Future.delayed(Duration(milliseconds: 50));
-      service.cancelLoading();
+      service.cancelLoading(fakeClient: fakeClient);
       await Future.delayed(Duration(milliseconds: 50));
       await controller.close();
 

@@ -190,10 +190,14 @@ class AppLocalizations {
   String get lectureWeek => isKorean ? '강의 주차' : 'Lecture Week';
   String get lectureTitle => isKorean ? '강의 제목' : 'Lecture Title';
   String get lectureLength => isKorean ? '강의 길이' : 'Lecture Length';
+  String get createdAt => isKorean ? '생성일' : 'Created';
   String get deleteLecture => isKorean ? '강의 삭제' : 'Delete Lecture';
   String get deleteLectureWarning => isKorean
       ? '이 강의를 삭제하시겠습니까?\n삭제한 강의는 복구할 수 없습니다.'
       : 'Are you sure you want to\ndelete this lecture?\nThis action is irreversible.';
+  String get noTtsForKorean => isKorean
+      ? '한국어 강의는 TTS 음성이 제공되지 않습니다.'
+      : 'TTS audio will not be provided for Korean lectures.';
 
   // 강의 생성
   String get selectSubject => isKorean ? '과목 선택' : 'Select Subject';

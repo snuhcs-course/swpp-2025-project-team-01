@@ -224,6 +224,7 @@ Future<String?> requestLecture(
             final data = jsonDecode(jsonData) as Map<String, dynamic>;
 
             jobId = data['job_id'] as String;
+            LectureLoadingService.instance.addJobId(jobId);
 
             // 서버가 0-100 범위로 보낼 수 있으므로 변환
             final rawProgress = data['progress'];

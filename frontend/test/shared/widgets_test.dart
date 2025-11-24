@@ -509,28 +509,65 @@ void main() {
       verify(mockService.expandFromBubble()).called(1);
     });
 
-    testWidgets(
-      'drag updates visual position and calls updateBubblePosition on pan end',
-      (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(body: CollapsedBubbleOverlay(service: mockService)),
-          ),
-        );
+    testWidgets('drag left snaps to left side with 10% clipping', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: CollapsedBubbleOverlay(service: mockService)),
+        ),
+      );
 
-        final gestureFinder = find.byType(GestureDetector);
-        expect(gestureFinder, findsOneWidget);
+      final gestureFinder = find.byType(GestureDetector);
+      expect(gestureFinder, findsOneWidget);
 
-        await tester.drag(gestureFinder, const Offset(40, -20));
-        await tester.pumpAndSettle();
+      // Drag to the right (but not enough to reach right side)
+      await tester.drag(gestureFinder, const Offset(40, -20));
+      await tester.pumpAndSettle();
 
-        verify(mockService.updateBubblePosition(any, any)).called(1);
+      verify(mockService.updateBubblePosition(any, any)).called(1);
 
-        final positioned = tester.widget<Positioned>(find.byType(Positioned));
-        expect(positioned.left, greaterThan(0.0));
-        expect(positioned.bottom, greaterThan(0.0));
-      },
-    );
+      // After drag ends, bubble should snap to left side
+      // Initial position (32, 48) + drag (40, -20) = (72, 68)
+      // Screen center is 400, so 72 < 356 (400 - bubbleSize/2)
+      // Therefore it snaps to the left side with 10% clipping
+      final positioned = tester.widget<AnimatedPositioned>(
+        find.byType(AnimatedPositioned),
+      );
+      const bubbleSize = 88.0;
+      expect(positioned.left, equals(-(bubbleSize * 0.1)));
+      expect(positioned.bottom, greaterThan(0.0));
+    });
+
+    testWidgets('drag right snaps to right side with 10% clipping', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: CollapsedBubbleOverlay(service: mockService)),
+        ),
+      );
+
+      final gestureFinder = find.byType(GestureDetector);
+      expect(gestureFinder, findsOneWidget);
+
+      // Drag far to the right to reach right side
+      await tester.drag(gestureFinder, const Offset(500, -20));
+      await tester.pumpAndSettle();
+
+      verify(mockService.updateBubblePosition(any, any)).called(1);
+
+      // After drag ends, bubble should snap to right side
+      // Screen width is 800, bubbleSize is 88
+      // Right position: 800 - 88 * 0.9 - 0 (safeArea.right) = 720.8
+      final positioned = tester.widget<AnimatedPositioned>(
+        find.byType(AnimatedPositioned),
+      );
+      const bubbleSize = 88.0;
+      const screenWidth = 800.0; // Default test screen width
+      expect(positioned.left, equals(screenWidth - bubbleSize * 0.9));
+      expect(positioned.bottom, greaterThan(0.0));
+    });
   });
 
   group('ExpandedLoadingOverlay and inner views', () {
