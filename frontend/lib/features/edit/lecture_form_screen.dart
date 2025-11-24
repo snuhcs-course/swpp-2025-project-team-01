@@ -228,7 +228,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   @override
   Widget build(BuildContext context) {
     _l10n = AppLocalizations.of(context);
-    final subjects = _hive.getSubjects();
+    final subjects = _hive.getSubjects().where((s) {
+      return !s.isArchived;
+    }).toList();
 
     return Scaffold(
       // 상단 앱바 - 뒤로가기 버튼과 제목
@@ -335,7 +337,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 과목 선택 드롭다운 위젯
   /// 사용자가 강의를 소속시킬 과목을 선택하거나 "선택 안 함"을 선택할 수 있습니다.
-  Widget _buildSubjectDropdown(AppLocalizations l10n, List<dynamic> subjects) {
+  Widget _buildSubjectDropdown(
+    AppLocalizations l10n,
+    List<HiveSubject> subjects,
+  ) {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
@@ -381,8 +386,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 // 기존 과목 리스트 (미분류 제외)
                 ...subjects
                     .where((s) {
-                      final subject = s as HiveSubject;
-                      return !subject.isUncategorized;
+                      return !s.isUncategorized;
                     })
                     .map(
                       (s) => DropdownMenuItem<String?>(
