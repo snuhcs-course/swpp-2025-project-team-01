@@ -98,7 +98,11 @@ class DefaultFlutterBackgroundWrapper implements FlutterBackgroundInterface {
 
   @override
   Future<bool> disableBackgroundExecution() {
-    return FlutterBackground.disableBackgroundExecution();
+    if (FlutterBackground.isBackgroundExecutionEnabled) {
+      return FlutterBackground.disableBackgroundExecution();
+    } else {
+      return Future(false as FutureOr<bool> Function());
+    }
   }
 }
 
@@ -258,6 +262,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 _buildSectionTitle(l10n.isKorean ? '강의 언어' : 'Spoken Language'),
                 const SizedBox(height: 8),
                 _buildLanguageDropdown(l10n, subjects),
+                if (_selectedLanguage == 'ko') const SizedBox(height: 8),
+                if (_selectedLanguage == 'ko')
+                  Text(
+                    l10n.noTtsForKorean,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
+                  ),
                 const SizedBox(height: 20),
 
                 // ========== 강의 주차 입력 섹션 ==========
