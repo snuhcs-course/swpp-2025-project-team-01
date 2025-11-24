@@ -1176,7 +1176,7 @@ class SubjectPanelHeader extends StatelessWidget {
     this.showEdit = false,
     this.isArchivedSubject = false,
     this.onEditSubject,
-    this.onReturnArchivedSubject,
+    this.onUnarchiveSubject,
     this.reorderIndex,
   });
 
@@ -1195,7 +1195,7 @@ class SubjectPanelHeader extends StatelessWidget {
   final bool showEdit;
   final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
-  final VoidCallback? onReturnArchivedSubject;
+  final VoidCallback? onUnarchiveSubject;
   final int? reorderIndex;
 
   @override
@@ -1292,17 +1292,11 @@ class SubjectPanelHeader extends StatelessWidget {
                     onPressed: () async => onEditSubject?.call(),
                   ),
                 ),
-                // 되돌리기 버튼 (보관함에 있는 과목)
+                // 보관함에 있는 과목일 경우
                 if (isArchivedSubject)
-                  Visibility(
-                    visible: isArchivedSubject,
-                    maintainState: true,
-                    maintainAnimation: true,
-                    maintainSize: true,
-                    child: IconButton(
-                      icon: Icon(Icons.reply, size: 20, color: iconColor),
-                      onPressed: () async => onReturnArchivedSubject?.call(),
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.reply, size: 20, color: iconColor),
+                    onPressed: () async => onUnarchiveSubject?.call(),
                   ),
                 // 펼침/접기 버튼
                 IconButton(

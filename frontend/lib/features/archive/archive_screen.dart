@@ -17,7 +17,7 @@ class ArchiveScreen extends StatefulWidget {
 class _ArchiveScreenState extends State<ArchiveScreen>
     with WidgetsBindingObserver {
   late final HiveManager _manager = HiveManager.instance;
-  List<HiveSubject> archivedSubjects = [];
+  List<HiveSubject> _archivedSubjects = [];
 
   /// Player로 이동하고 돌아올 때 orientation 재설정
   Future<void> _navigateToPlayer(String lectureId) async {
@@ -84,7 +84,7 @@ class _ArchiveScreenState extends State<ArchiveScreen>
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    archivedSubjects = _manager.archivedSubjects.values.where((subject) {
+    _archivedSubjects = _manager.archivedSubjects.values.where((subject) {
       // 미분류 과목은 강의가 있을 때만 표시
       if (subject.isUncategorized) {
         return false;
@@ -105,7 +105,7 @@ class _ArchiveScreenState extends State<ArchiveScreen>
       body: CustomScrollView(
         slivers: [
           // 과목 패널 리스트 또는 빈 상태 메시지
-          if (archivedSubjects.isEmpty)
+          if (_archivedSubjects.isEmpty)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -123,9 +123,9 @@ class _ArchiveScreenState extends State<ArchiveScreen>
                     : 1,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childCount: archivedSubjects.length,
+                childCount: _archivedSubjects.length,
                 itemBuilder: (context, i) {
-                  final HiveSubject s = archivedSubjects[i];
+                  final HiveSubject s = _archivedSubjects[i];
                   final lectures = _manager.getLecturesBySubject(s.id);
                   return SubjectPanel(
                     key: ValueKey(s.id),
@@ -138,7 +138,7 @@ class _ArchiveScreenState extends State<ArchiveScreen>
                     onOpenLecture: (HiveLecture lec) {
                       _navigateToPlayer(lec.id);
                     },
-                    onReturnArchivedSubject: () {
+                    onUnarchiveSubject: () {
                       _showUnarchiveConfirmationDialog(s);
                     },
                     showEdit: false,

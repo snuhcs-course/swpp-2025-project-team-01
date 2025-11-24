@@ -248,7 +248,7 @@ class SubjectPanel extends StatefulWidget {
     this.isArchivedSubject = false,
     this.onEditSubject,
     this.onEditLecture,
-    this.onReturnArchivedSubject,
+    this.onUnarchiveSubject,
     this.reorderIndex,
   });
 
@@ -262,7 +262,7 @@ class SubjectPanel extends StatefulWidget {
   final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
   final VoidCallback? onEditLecture;
-  final VoidCallback? onReturnArchivedSubject;
+  final VoidCallback? onUnarchiveSubject;
   final int? reorderIndex;
 
   @override
@@ -399,7 +399,7 @@ class _SubjectPanelState extends State<SubjectPanel>
             showEdit: !widget.subject.isUncategorized && widget.showEdit,
             isArchivedSubject: widget.isArchivedSubject,
             onEditSubject: widget.onEditSubject,
-            onReturnArchivedSubject: widget.onReturnArchivedSubject,
+            onUnarchiveSubject: widget.onUnarchiveSubject,
             reorderIndex: widget.reorderIndex,
           ),
 

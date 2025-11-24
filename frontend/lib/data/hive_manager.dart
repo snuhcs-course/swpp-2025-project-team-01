@@ -415,6 +415,7 @@ class HiveManager extends ChangeNotifier {
       final archivedSubject = subject.copyWith(
         isArchived: true,
         favorite: false,
+        tagIds: [],
       );
       subjects.remove(id);
       archivedSubjects[id] = archivedSubject;

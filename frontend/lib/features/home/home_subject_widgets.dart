@@ -396,6 +396,44 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     );
   }
 
+  Future<bool?> showArchiveConfirmationDialog(HiveSubject subject) {
+    final l10n = AppLocalizations.of(context);
+
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => DeleteWarningDialog(
+        warningText: l10n.isKorean ? '보관' : 'Archive',
+        yesText: l10n.yes,
+        noText: l10n.no,
+        onConfirm: () async {
+          final manager = HiveManager.instance;
+          await manager.archiveSubject(subject.id);
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            // nothing to do here
+          });
+        },
+        body: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+              height: 1.5,
+            ),
+            children: [
+              TextSpan(text: l10n.archiveConfirmText(subject.title)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -425,13 +463,9 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
         );
         Navigator.pop(context, true);
       },
-      onArchive: () {
-        final manager = HiveManager.instance;
-        manager.archiveSubject(widget.subject.id);
-        setState(() {
-          // Nothing to do here
-        });
-        if (context.mounted) {
+      onArchive: () async {
+        final result = await showArchiveConfirmationDialog(widget.subject);
+        if (result == true && context.mounted) {
           Navigator.pop(context, true);
         }
       },
