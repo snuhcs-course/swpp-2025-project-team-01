@@ -98,10 +98,11 @@ void main() {
 
       // Check if menu items are displayed
       expect(find.text('Menu'), findsOneWidget);
+      expect(find.text('Archive'), findsOneWidget);
       expect(find.text('Create Lecture'), findsOneWidget);
       expect(find.text('Edit Tags'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
-      expect(find.byType(Divider), findsNWidgets(2));
+      expect(find.byType(Divider), findsNWidgets(3));
     });
 
     testWidgets('should display menu items in correct order', (
@@ -125,12 +126,13 @@ void main() {
 
       // Find ListTiles
       final listTiles = tester.widgetList<ListTile>(find.byType(ListTile));
-      expect(listTiles.length, 3);
+      expect(listTiles.length, 4);
 
       // Check order
-      expect((listTiles.elementAt(0).title as Text).data, 'Create Lecture');
-      expect((listTiles.elementAt(1).title as Text).data, 'Edit Tags');
-      expect((listTiles.elementAt(2).title as Text).data, 'Settings');
+      expect((listTiles.elementAt(0).title as Text).data, 'Archive');
+      expect((listTiles.elementAt(1).title as Text).data, 'Create Lecture');
+      expect((listTiles.elementAt(2).title as Text).data, 'Edit Tags');
+      expect((listTiles.elementAt(3).title as Text).data, 'Settings');
     });
 
     testWidgets('should have correct padding for menu title', (
@@ -384,10 +386,11 @@ void main() {
 
       // Should show menu items
       expect(find.text('Menu'), findsOneWidget);
+      expect(find.text('Archive'), findsOneWidget);
       expect(find.text('Create Lecture'), findsOneWidget);
       expect(find.text('Edit Tags'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
-      expect(find.byType(Divider), findsNWidgets(2));
+      expect(find.byType(Divider), findsNWidgets(3));
     });
 
     testWidgets('should align dialog to left side', (
