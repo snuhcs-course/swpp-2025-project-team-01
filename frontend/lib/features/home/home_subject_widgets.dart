@@ -425,9 +425,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
               fontSize: 18,
               height: 1.5,
             ),
-            children: [
-              TextSpan(text: l10n.archiveConfirmText(subject.title)),
-            ],
+            children: [TextSpan(text: l10n.archiveConfirmText(subject.title))],
           ),
         ),
       ),
