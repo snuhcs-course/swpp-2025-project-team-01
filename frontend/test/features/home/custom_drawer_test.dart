@@ -129,9 +129,9 @@ void main() {
       expect(listTiles.length, 4);
 
       // Check order
-      expect((listTiles.elementAt(0).title as Text).data, 'Archive');
-      expect((listTiles.elementAt(1).title as Text).data, 'Create Lecture');
-      expect((listTiles.elementAt(2).title as Text).data, 'Edit Tags');
+      expect((listTiles.elementAt(0).title as Text).data, 'Create Lecture');
+      expect((listTiles.elementAt(1).title as Text).data, 'Edit Tags');
+      expect((listTiles.elementAt(2).title as Text).data, 'Archive');
       expect((listTiles.elementAt(3).title as Text).data, 'Settings');
     });
 
