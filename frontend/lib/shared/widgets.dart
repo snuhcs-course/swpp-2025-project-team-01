@@ -936,64 +936,99 @@ class EditDialog extends StatelessWidget {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                // 삭제 버튼 (왼쪽)
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+        if (archiveLabel != null)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  // 삭제 버튼 (왼쪽)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      label: Text(deleteLabel),
                     ),
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    label: Text(deleteLabel),
                   ),
-                ),
-                const SizedBox(width: 12),
-                // 완료 버튼 (오른쪽)
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                  const SizedBox(width: 12),
+                  // 완료 버튼 (오른쪽)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
+                      onPressed: onArchive,
+                      icon: const Icon(Icons.archive, size: 20),
+                      label: Text(archiveLabel!),
                     ),
-                    onPressed: onComplete,
-                    child: Text(completeLabel),
                   ),
-                ),
-              ],
-            ),
-            // 보관 버튼
-            if (archiveLabel != null)
+                ],
+              ),
+              // 보관 버튼
               Padding(
                 padding: const EdgeInsets.only(top: 12),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onComplete,
+                  child: Text(completeLabel),
+                ),
+              ),
+            ],
+          ),
+        if (archiveLabel == null)
+          Row(
+            children: [
+              // 삭제 버튼 (왼쪽)
+              Expanded(
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.grey,
+                    backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 10,
                     ),
                   ),
-                  onPressed: onArchive,
+                  onPressed: onDelete,
                   icon: const Icon(Icons.delete_outline, size: 20),
-                  label: Text(archiveLabel!),
+                  label: Text(deleteLabel),
                 ),
               ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              // 완료 버튼 (오른쪽)
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onComplete,
+                  child: Text(completeLabel),
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }

@@ -429,6 +429,8 @@ class HiveManager extends ChangeNotifier {
       final unarchivedSubject = subject.copyWith(isArchived: false);
       archivedSubjects.remove(id);
       subjects[id] = unarchivedSubject;
+      subjectOrder.remove(id);
+      subjectOrder.insert(0, id);
       await _save();
     }
   }

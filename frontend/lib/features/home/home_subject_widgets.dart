@@ -428,6 +428,9 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
       onArchive: () {
         final manager = HiveManager.instance;
         manager.archiveSubject(widget.subject.id);
+        setState(() {
+          // Nothing to do here
+        });
         if (context.mounted) {
           Navigator.pop(context, true);
         }
