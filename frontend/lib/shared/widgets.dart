@@ -1163,6 +1163,7 @@ class SubjectPanelHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.tags,
+    required this.id,
     required this.expanded,
     required this.onToggleExpanded,
     this.panelRadius = 22.0,
@@ -1177,11 +1178,13 @@ class SubjectPanelHeader extends StatelessWidget {
     this.isArchivedSubject = false,
     this.onEditSubject,
     this.onUnarchiveSubject,
+    this.onDeleteSubject,
     this.reorderIndex,
   });
 
   final String title;
   final List<HiveTag> tags;
+  final String id;
   final bool expanded;
   final VoidCallback onToggleExpanded;
   final double panelRadius;
@@ -1196,6 +1199,7 @@ class SubjectPanelHeader extends StatelessWidget {
   final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
   final VoidCallback? onUnarchiveSubject;
+  final VoidCallback? onDeleteSubject;
   final int? reorderIndex;
 
   @override
@@ -1293,6 +1297,11 @@ class SubjectPanelHeader extends StatelessWidget {
                   ),
                 ),
                 // 보관함에 있는 과목일 경우
+                if (isArchivedSubject)
+                  IconButton(
+                    icon: Icon(Icons.delete, size: 20, color: iconColor),
+                    onPressed: () async => onDeleteSubject?.call(),
+                  ),
                 if (isArchivedSubject)
                   IconButton(
                     icon: Icon(Icons.reply, size: 20, color: iconColor),

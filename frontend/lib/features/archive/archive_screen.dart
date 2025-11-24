@@ -75,6 +75,52 @@ class _ArchiveScreenState extends State<ArchiveScreen>
     );
   }
 
+  Future<bool?> _showDeleteConfirmationDialog(HiveSubject subject) {
+    final l10n = AppLocalizations.of(context);
+
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => DeleteWarningDialog(
+        warningText: l10n.warning,
+        yesText: l10n.yes,
+        noText: l10n.no,
+        onConfirm: () {
+          final manager = HiveManager.instance;
+          manager.deleteSubject(subject.id);
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            // nothing to do here
+          });
+        },
+        body: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+              height: 1.5,
+            ),
+            children: [
+              TextSpan(text: l10n.deleteSubjectWarning1),
+              TextSpan(
+                text: l10n.deleteSubjectWarning2,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextSpan(text: l10n.deleteSubjectWarning3),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -140,6 +186,9 @@ class _ArchiveScreenState extends State<ArchiveScreen>
                     },
                     onUnarchiveSubject: () {
                       _showUnarchiveConfirmationDialog(s);
+                    },
+                    onDeleteSubject: () {
+                      _showDeleteConfirmationDialog(s);
                     },
                     showEdit: false,
                     isArchivedSubject: true,

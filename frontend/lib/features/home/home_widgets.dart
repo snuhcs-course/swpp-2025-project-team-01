@@ -249,6 +249,7 @@ class SubjectPanel extends StatefulWidget {
     this.onEditSubject,
     this.onEditLecture,
     this.onUnarchiveSubject,
+    this.onDeleteSubject,
     this.reorderIndex,
   });
 
@@ -263,6 +264,7 @@ class SubjectPanel extends StatefulWidget {
   final VoidCallback? onEditSubject;
   final VoidCallback? onEditLecture;
   final VoidCallback? onUnarchiveSubject;
+  final VoidCallback? onDeleteSubject;
   final int? reorderIndex;
 
   @override
@@ -384,6 +386,7 @@ class _SubjectPanelState extends State<SubjectPanel>
             tags: widget.subject.isUncategorized
                 ? []
                 : widget.tags, // 미분류는 태그 숨김
+            id: widget.subject.id,
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
             favoriteOrDrag:
@@ -400,6 +403,7 @@ class _SubjectPanelState extends State<SubjectPanel>
             isArchivedSubject: widget.isArchivedSubject,
             onEditSubject: widget.onEditSubject,
             onUnarchiveSubject: widget.onUnarchiveSubject,
+            onDeleteSubject: widget.onDeleteSubject,
             reorderIndex: widget.reorderIndex,
           ),
 
