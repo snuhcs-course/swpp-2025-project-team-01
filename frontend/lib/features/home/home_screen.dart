@@ -196,6 +196,8 @@ class _HomeScreenState extends State<HomeScreen>
           // 미분류 과목은 강의가 있을 때만 표시
           if (subject.isUncategorized) {
             return subject.lectureIds.isNotEmpty;
+          } else if (subject.isArchived) {
+            return false;
           }
           return true;
         })

@@ -386,7 +386,8 @@ class _SubjectPanelState extends State<SubjectPanel>
                 : widget.tags, // 미분류는 태그 숨김
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
-            favoriteOrDrag: widget.subject.isUncategorized
+            favoriteOrDrag:
+                widget.subject.isUncategorized || widget.subject.isArchived
                 ? null // 미분류는 즐겨찾기 아이콘 숨김
                 : widget.showEdit
                 ? Icons.drag_indicator

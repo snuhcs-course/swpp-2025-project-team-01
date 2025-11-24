@@ -412,7 +412,10 @@ class HiveManager extends ChangeNotifier {
   Future<void> archiveSubject(String id) async {
     final subject = subjects[id];
     if (subject != null) {
-      final archivedSubject = subject.copyWith(isArchived: true);
+      final archivedSubject = subject.copyWith(
+        isArchived: true,
+        favorite: false,
+      );
       subjects.remove(id);
       archivedSubjects[id] = archivedSubject;
       subjectOrder.remove(id);

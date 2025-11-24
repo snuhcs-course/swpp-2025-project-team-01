@@ -980,13 +980,13 @@ class EditDialog extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 12),
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
+                    backgroundColor: Colors.grey,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
                     ),
+                  ),
                   onPressed: onArchive,
                   icon: const Icon(Icons.delete_outline, size: 20),
                   label: Text(archiveLabel!),

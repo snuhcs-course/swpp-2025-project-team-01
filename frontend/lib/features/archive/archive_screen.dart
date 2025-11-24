@@ -17,6 +17,7 @@ class ArchiveScreen extends StatefulWidget {
 class _ArchiveScreenState extends State<ArchiveScreen>
     with WidgetsBindingObserver {
   late final HiveManager _manager = HiveManager.instance;
+  List<HiveSubject> archivedSubjects = [];
 
   /// Player로 이동하고 돌아올 때 orientation 재설정
   Future<void> _navigateToPlayer(String lectureId) async {
@@ -46,9 +47,16 @@ class _ArchiveScreenState extends State<ArchiveScreen>
         warningText: l10n.unarchive,
         yesText: l10n.yes,
         noText: l10n.no,
-        onConfirm: () {
+        onConfirm: () async {
           final manager = HiveManager.instance;
-          manager.unarchiveSubject(subject.id);
+          await manager.unarchiveSubject(subject.id);
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            // nothing to do here
+          });
         },
         body: RichText(
           textAlign: TextAlign.center,
@@ -76,9 +84,13 @@ class _ArchiveScreenState extends State<ArchiveScreen>
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final archivedSubjects = _manager.subjects.values
-        .where((s) => s.isArchived)
-        .toList();
+    archivedSubjects = _manager.archivedSubjects.values.where((subject) {
+      // 미분류 과목은 강의가 있을 때만 표시
+      if (subject.isUncategorized) {
+        return false;
+      }
+      return subject.isArchived;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
