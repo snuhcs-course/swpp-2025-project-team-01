@@ -11,6 +11,7 @@ class AppData extends HiveObject {
   AppData({
     AppSettings? settings,
     Map<String, HiveSubject>? subjects,
+    Map<String, HiveSubject>? archivedSubjects,
     Map<String, HiveTag>? tags,
     Map<String, HiveLecture>? lectures,
     UiState? uiState,
@@ -18,6 +19,7 @@ class AppData extends HiveObject {
   }) {
     this.settings = settings ?? AppSettings();
     this.subjects = subjects ?? {};
+    this.archivedSubjects = archivedSubjects ?? {};
     this.tags = tags ?? {};
     this.lectures = lectures ?? {};
     this.uiState = uiState ?? UiState();
@@ -31,15 +33,18 @@ class AppData extends HiveObject {
   late Map<String, HiveSubject> subjects;
 
   @HiveField(2)
-  late Map<String, HiveTag> tags;
+  late Map<String, HiveSubject> archivedSubjects;
 
   @HiveField(3)
-  late UiState uiState;
+  late Map<String, HiveTag> tags;
 
   @HiveField(4)
-  late Map<String, HiveLecture> lectures;
+  late UiState uiState;
 
   @HiveField(5)
+  late Map<String, HiveLecture> lectures;
+
+  @HiveField(6)
   late List<String> subjectOrder;
 }
 

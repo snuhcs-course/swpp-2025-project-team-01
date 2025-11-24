@@ -245,8 +245,10 @@ class SubjectPanel extends StatefulWidget {
     required this.onOpenLecture,
     this.onLectureUpdated,
     this.showEdit = false,
+    this.isArchivedSubject = false,
     this.onEditSubject,
     this.onEditLecture,
+    this.onReturnArchivedSubject,
     this.reorderIndex,
   });
 
@@ -257,8 +259,10 @@ class SubjectPanel extends StatefulWidget {
   final ValueChanged<HiveLecture> onOpenLecture;
   final VoidCallback? onLectureUpdated;
   final bool showEdit;
+  final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
   final VoidCallback? onEditLecture;
+  final VoidCallback? onReturnArchivedSubject;
   final int? reorderIndex;
 
   @override
@@ -392,7 +396,9 @@ class _SubjectPanelState extends State<SubjectPanel>
                 : widget.onToggleFavorite,
             favoriteIconColor: h.important,
             showEdit: !widget.subject.isUncategorized && widget.showEdit,
+            isArchivedSubject: widget.isArchivedSubject,
             onEditSubject: widget.onEditSubject,
+            onReturnArchivedSubject: widget.onReturnArchivedSubject,
             reorderIndex: widget.reorderIndex,
           ),
 

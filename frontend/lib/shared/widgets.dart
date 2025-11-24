@@ -902,14 +902,18 @@ class EditDialog extends StatelessWidget {
     required this.onComplete,
     required this.deleteLabel,
     required this.completeLabel,
+    this.onArchive,
+    this.archiveLabel,
   });
 
   final String title;
   final Widget content;
   final VoidCallback onDelete;
   final VoidCallback onComplete;
+  final VoidCallback? onArchive;
   final String deleteLabel;
   final String completeLabel;
+  final String? archiveLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -932,38 +936,62 @@ class EditDialog extends StatelessWidget {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        Row(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // 삭제 버튼 (왼쪽)
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+            Row(
+              children: [
+                // 삭제 버튼 (왼쪽)
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    label: Text(deleteLabel),
                   ),
                 ),
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline, size: 20),
-                label: Text(deleteLabel),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // 완료 버튼 (오른쪽)
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                const SizedBox(width: 12),
+                // 완료 버튼 (오른쪽)
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    onPressed: onComplete,
+                    child: Text(completeLabel),
                   ),
                 ),
-                onPressed: onComplete,
-                child: Text(completeLabel),
-              ),
+              ],
             ),
+            // 보관 버튼
+            if (archiveLabel != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                  onPressed: onArchive,
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  label: Text(archiveLabel!),
+                ),
+              ),
           ],
         ),
       ],
@@ -1111,7 +1139,9 @@ class SubjectPanelHeader extends StatelessWidget {
     this.onLongPress,
     this.titleEndPadding = 0,
     this.showEdit = false,
+    this.isArchivedSubject = false,
     this.onEditSubject,
+    this.onReturnArchivedSubject,
     this.reorderIndex,
   });
 
@@ -1128,7 +1158,9 @@ class SubjectPanelHeader extends StatelessWidget {
   final VoidCallback? onLongPress;
   final double titleEndPadding;
   final bool showEdit;
+  final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
+  final VoidCallback? onReturnArchivedSubject;
   final int? reorderIndex;
 
   @override
@@ -1225,6 +1257,18 @@ class SubjectPanelHeader extends StatelessWidget {
                     onPressed: () async => onEditSubject?.call(),
                   ),
                 ),
+                // 되돌리기 버튼 (보관함에 있는 과목)
+                if (isArchivedSubject)
+                  Visibility(
+                    visible: isArchivedSubject,
+                    maintainState: true,
+                    maintainAnimation: true,
+                    maintainSize: true,
+                    child: IconButton(
+                      icon: Icon(Icons.reply, size: 20, color: iconColor),
+                      onPressed: () async => onReturnArchivedSubject?.call(),
+                    ),
+                  ),
                 // 펼침/접기 버튼
                 IconButton(
                   icon: Icon(

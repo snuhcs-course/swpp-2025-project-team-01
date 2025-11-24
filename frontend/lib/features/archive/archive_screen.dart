@@ -6,6 +6,7 @@ import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/home/home_widgets.dart';
+import 'package:re_view/shared/widgets.dart';
 
 class ArchiveScreen extends StatefulWidget {
   const ArchiveScreen({super.key});
@@ -33,6 +34,37 @@ class _ArchiveScreenState extends State<ArchiveScreen>
     if (mounted) {
       lockToCurrentOrientation(context);
     }
+  }
+
+  Future<bool?> _showUnarchiveConfirmationDialog(HiveSubject subject) {
+    final l10n = AppLocalizations.of(context);
+
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => DeleteWarningDialog(
+        warningText: l10n.unarchive,
+        yesText: l10n.yes,
+        noText: l10n.no,
+        onConfirm: () {
+          final manager = HiveManager.instance;
+          manager.unarchiveSubject(subject.id);
+        },
+        body: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+              height: 1.5,
+            ),
+            children: [
+              TextSpan(text: l10n.unarchiveConfirmText(subject.title)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -94,10 +126,11 @@ class _ArchiveScreenState extends State<ArchiveScreen>
                     onOpenLecture: (HiveLecture lec) {
                       _navigateToPlayer(lec.id);
                     },
-                    onLectureUpdated: () {
-                      // Repository가 notifyListeners()를 호출하므로 setState 불필요
+                    onReturnArchivedSubject: () {
+                      _showUnarchiveConfirmationDialog(s);
                     },
                     showEdit: false,
+                    isArchivedSubject: true,
                   );
                 },
               ),
