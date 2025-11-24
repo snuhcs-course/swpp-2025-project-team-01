@@ -43,7 +43,3 @@ backend/pipeline_output/
 
 # vscode
 .vscode
-# 하지만 Flutter 프로젝트의 공유 설정은 포함
-!frontend/.vscode/
-frontend/.vscode/*
-!frontend/.vscode/settings.json
