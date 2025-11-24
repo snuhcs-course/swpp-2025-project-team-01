@@ -278,10 +278,10 @@ void main() {
       });
 
       test('subjectNameHint returns correct translation', () {
-        expect(koreanLocalizations.subjectNameHint, '예) 소프트웨어 개발의 원리와 실제');
+        expect(koreanLocalizations.subjectNameHint, '예) 소프트웨어 개발의 원리와 실습');
         expect(
           englishLocalizations.subjectNameHint,
-          'e.g.) Principles of Software Development',
+          'e.g.) Software Development Principles and Practices',
         );
       });
 
@@ -375,15 +375,27 @@ void main() {
         );
       });
 
-      test('tagDeleteWarning returns correct translation', () {
-        final subjects = ['과목1', '과목2'];
+      test('tagDeleteWarning1 returns correct translation', () {
+        expect(koreanLocalizations.tagDeleteWarning1, '태그 "');
+        expect(englishLocalizations.tagDeleteWarning1, 'Tag "');
+      });
+
+      test('tagDeleteWarning2 returns correct translation', () {
         expect(
-          koreanLocalizations.tagDeleteWarning('테스트', subjects),
-          '태그 "테스트"는\n다음 과목에서 사용 중입니다:\n\n과목1\n과목2\n\n삭제하시겠습니까?',
+          koreanLocalizations.tagDeleteWarning2,
+          '"은(는)\n다음 과목에서 사용 중입니다:\n\n',
         );
         expect(
-          englishLocalizations.tagDeleteWarning('test', subjects),
-          'Tag "test" is used in the following subjects:\n\n과목1\n과목2\n\nDo you want to delete it?',
+          englishLocalizations.tagDeleteWarning2,
+          '"\n is used in the following subjects:\n\n',
+        );
+      });
+
+      test('tagDeleteWarning3 returns correct translation', () {
+        expect(koreanLocalizations.tagDeleteWarning3, '\n\n삭제하시겠습니까?');
+        expect(
+          englishLocalizations.tagDeleteWarning3,
+          '\n\nDo you want to delete it?',
         );
       });
     });

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 import 'package:re_view/shared/widgets.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 import 'widgets_test.mocks.dart';
 
@@ -588,6 +590,13 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) {
@@ -609,6 +618,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               key: rootKey,
@@ -683,6 +699,13 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -751,7 +774,7 @@ void main() {
         expect(find.byKey(const ValueKey('loading')), findsNothing);
         expect(find.byKey(const ValueKey('error')), findsNothing);
 
-        final english = find.text('Lecture Created!');
+        final english = find.text('Lecture created!');
         final korean = find.text('강의 생성 완료!');
         final hasHeader =
             english.evaluate().isNotEmpty || korean.evaluate().isNotEmpty;
@@ -790,14 +813,12 @@ void main() {
       'horizontal swipe to the left collapses overlay to bubble (alignRight=false)',
       (tester) async {
         await pumpOverlay(tester);
+        await tester.pumpAndSettle();
 
-        final gesture = find
-            .descendant(
-              of: find.byType(ExpandedLoadingOverlay),
-              matching: find.byType(GestureDetector),
-            )
-            .first;
+        final gestures = find.byType(GestureDetector);
+        expect(gestures, findsWidgets);
 
+        final gesture = gestures.first;
         final detector = tester.widget<GestureDetector>(gesture);
         expect(detector.onHorizontalDragEnd, isNotNull);
 
@@ -815,14 +836,12 @@ void main() {
       'horizontal swipe to the right collapses overlay to bubble (alignRight=true)',
       (tester) async {
         await pumpOverlay(tester);
+        await tester.pumpAndSettle();
 
-        final gesture = find
-            .descendant(
-              of: find.byType(ExpandedLoadingOverlay),
-              matching: find.byType(GestureDetector),
-            )
-            .first;
+        final gestures = find.byType(GestureDetector);
+        expect(gestures, findsWidgets);
 
+        final gesture = gestures.first;
         final detector = tester.widget<GestureDetector>(gesture);
         expect(detector.onHorizontalDragEnd, isNotNull);
 

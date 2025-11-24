@@ -835,7 +835,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
 
     return EditDialog(
       title: l10n.editLecture,
-      deleteLabel: l10n.isKorean ? '삭제' : 'Delete',
+      deleteLabel: l10n.delete,
       completeLabel: l10n.complete,
       onDelete: () async {
         final bool? confirm = await showDialog<bool>(
@@ -849,9 +849,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
               await manager.deleteLecture(widget.lecture.id);
             },
             body: Text(
-              l10n.isKorean
-                  ? '이 강의를 삭제하시겠습니까?\n삭제한 강의는 복구할 수 없습니다.'
-                  : 'Are you sure you want to\ndelete this lecture?\nThis action is irreversible.',
+              l10n.deleteLectureWarning,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.black,
