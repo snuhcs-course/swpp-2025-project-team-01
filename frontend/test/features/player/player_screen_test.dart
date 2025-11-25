@@ -13,7 +13,6 @@ import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/player/player_screen.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
-import 'package:re_view/features/player/services/pdf_service.dart';
 
 import 'mocks.mocks.dart';
 

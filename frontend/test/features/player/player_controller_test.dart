@@ -6,7 +6,6 @@ import 'package:mockito/mockito.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 
 import 'package:pdfx/pdfx.dart';
@@ -2317,29 +2316,35 @@ class TestPlayerController extends PlayerController {
 }
 
 class FakePdfService implements PdfService {
+  FakePdfService(this._document);
+
   final PdfDocument _document;
   final List<String> log = [];
   Object? errorToThrow;
 
-  FakePdfService(this._document);
-
   @override
   Future<PdfDocument> openFile(String path) async {
-    if (errorToThrow != null) throw errorToThrow!;
+    if (errorToThrow != null) {
+      throw errorToThrow!;
+    }
     log.add('openFile($path)');
     return _document;
   }
 
   @override
   Future<PdfDocument> openAsset(String name) async {
-    if (errorToThrow != null) throw errorToThrow!;
+    if (errorToThrow != null) {
+      throw errorToThrow!;
+    }
     log.add('openAsset($name)');
     return _document;
   }
 
   @override
   Future<PdfDocument> openData(Uint8List data) async {
-    if (errorToThrow != null) throw errorToThrow!;
+    if (errorToThrow != null) {
+      throw errorToThrow!;
+    }
     log.add('openData');
     return _document;
   }
