@@ -277,15 +277,41 @@ class PdfArea extends StatelessWidget {
         );
 
         if (isVertical) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          // thumbnail 캐시에서 가져온 aspect ratio 사용 (width/height)
-          // 기본값: 16:9 = 1.778
-          final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
-          final pdfHeight = screenWidth / aspectRatio;
-          return SizedBox(
-            width: screenWidth,
-            height: pdfHeight,
-            child: content,
+          // LayoutBuilder와 MediaQuery를 조합하여 회전 중 overflow 방지
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final screenSize = MediaQuery.of(context).size;
+              final availableWidth = constraints.maxWidth;
+              final availableHeight = constraints.maxHeight;
+
+              // thumbnail 캐시에서 가져온 aspect ratio 사용 (width/height)
+              // 기본값: 16:9 = 1.778
+              final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
+
+              // 이상적인 높이 계산 (width 기준)
+              final idealHeight = availableWidth / aspectRatio;
+
+              // 최종 높이 결정 로직
+              double finalHeight;
+
+              if (availableHeight.isFinite && availableHeight > 0) {
+                // constraints가 유한한 경우: 사용 가능한 높이 내에서 제한
+                finalHeight =
+                    idealHeight <= availableHeight ? idealHeight : availableHeight;
+              } else {
+                // constraints가 무한대인 경우: idealHeight 사용하되
+                // 화면 높이를 초과하지 않도록 제한 (회전 중 안전장치)
+                final maxSafeHeight = screenSize.height * 0.6; // 화면의 60%까지만
+                finalHeight =
+                    idealHeight <= maxSafeHeight ? idealHeight : maxSafeHeight;
+              }
+
+              return SizedBox(
+                width: availableWidth,
+                height: finalHeight,
+                child: content,
+              );
+            },
           );
         } else {
           return content;
