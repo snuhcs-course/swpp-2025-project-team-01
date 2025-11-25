@@ -52,11 +52,11 @@ class AppLocalizations {
       isKorean ? '보관된 과목이 없습니다.' : 'There are no archived subjects.';
   String get unarchive => isKorean ? '꺼내기' : 'Unarchive';
   String archiveConfirmText(String title) => isKorean
-      ? "과목 '$title'을(를) 보관하시겠습니까?"
-      : "Will you archive subject '$title'?";
+      ? '과목 "$title"을(를)\n보관하시겠습니까?'
+      : 'Will you archive subject\n"$title"?';
   String unarchiveConfirmText(String title) => isKorean
-      ? "과목 '$title'을(를) 보관함에서 꺼내시겠습니까?"
-      : "Will you unarchive subject '$title'?";
+      ? '과목 "$title"을(를)\n보관함에서 꺼내시겠습니까?'
+      : 'Will you unarchive subject\n"$title"?';
 
   // 설정 화면
   String get displayMode => isKorean ? '디스플레이 모드' : 'Display Mode';
