@@ -13,6 +13,7 @@ import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/features/player/player_screen.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
+import 'package:re_view/features/player/services/pdf_service.dart';
 
 import 'mocks.mocks.dart';
 
@@ -125,6 +126,7 @@ void main() {
       home: PlayerScreen(
         args: args,
         audioService: audio, // 주입 포인트
+        pdfService: useQuietMocks ? MockPdfService() : null,
       ),
       locale: locale ?? const Locale('en', 'US'), // Default to English
       localizationsDelegates: const [
@@ -694,7 +696,11 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(
-          child: PlayerScreen(args: null, audioService: customAudioService),
+          child: PlayerScreen(
+            args: null,
+            audioService: customAudioService,
+            pdfService: MockPdfService(),
+          ),
         ),
       );
       await tester.pump();
@@ -722,6 +728,7 @@ void main() {
           child: PlayerScreen(
             args: null,
             pdfCacheService: customPdfCacheService,
+            pdfService: MockPdfService(),
           ),
         ),
       );
@@ -745,7 +752,36 @@ void main() {
     testWidgets('accepts custom HiveManager', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          child: PlayerScreen(args: null, hiveManager: HiveManager.instance),
+          child: PlayerScreen(
+            args: null,
+            hiveManager: HiveManager.instance,
+            pdfService: MockPdfService(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(PlayerScreen), findsOneWidget);
+
+      // Wait for error handling to complete
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pump();
+      await tester.pump();
+
+      // Clean up
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+    });
+
+    testWidgets('accepts custom PdfService', (tester) async {
+      final customPdfService = MockPdfService();
+
+      await tester.pumpWidget(
+        buildTestApp(
+          child: PlayerScreen(args: null, pdfService: customPdfService),
         ),
       );
       await tester.pump();
@@ -1374,6 +1410,7 @@ void main() {
             args: {'lectureId': 'test_layout'},
             audioService: mockAudioService,
             pdfCacheService: mockPdfCacheService,
+            pdfService: MockPdfService(),
           ),
         ),
       );
@@ -1538,6 +1575,7 @@ void main() {
               args: {'lectureId': 'test_horizontal'},
               audioService: mockAudioService,
               pdfCacheService: mockPdfCacheService,
+              pdfService: MockPdfService(),
             ),
           ),
         );

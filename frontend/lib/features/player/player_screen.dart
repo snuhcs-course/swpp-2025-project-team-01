@@ -11,6 +11,7 @@ import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/features/player/services/pdf_service.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
@@ -18,14 +19,17 @@ class PlayerScreen extends StatefulWidget {
     this.args,
     AudioService? audioService,
     PdfCacheService? pdfCacheService,
+    PdfService? pdfService,
     HiveManager? hiveManager,
   }) : _audioService = audioService,
        _pdfCacheService = pdfCacheService,
+       _pdfService = pdfService,
        _hiveManager = hiveManager;
 
   final Object? args;
   final AudioService? _audioService;
   final PdfCacheService? _pdfCacheService;
+  final PdfService? _pdfService;
   final HiveManager? _hiveManager;
 
   @override
@@ -50,11 +54,13 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 의존성 주입
     final audioService = widget._audioService ?? AudioService();
     final pdfCacheService = widget._pdfCacheService ?? PdfCacheService();
+    final pdfService = widget._pdfService ?? PdfService();
     _hiveManager = widget._hiveManager ?? HiveManager.instance;
 
     _controller = PlayerController(
       audioService: audioService,
       pdfCacheService: pdfCacheService,
+      pdfService: pdfService,
     );
 
     // 프레임이 빌드된 이후에 실행

@@ -27,6 +27,7 @@ void main() {
   late TranscriptData transcriptData;
   late MockAudioService mockAudioService;
   late MockPdfCacheService mockPdfCacheService;
+  late MockPdfService mockPdfService;
   late StreamController<Duration> positionStreamController;
   late StreamController<ja.PlayerState> stateStreamController;
 
@@ -83,6 +84,7 @@ void main() {
 
     mockAudioService = MockAudioService();
     mockPdfCacheService = MockPdfCacheService();
+    mockPdfService = MockPdfService();
 
     // Create stream controllers for mocking
     positionStreamController = StreamController<Duration>.broadcast();
@@ -121,6 +123,7 @@ void main() {
     controller = PlayerController(
       audioService: mockAudioService,
       pdfCacheService: mockPdfCacheService,
+      pdfService: mockPdfService,
     );
 
     transcriptData = TranscriptData(

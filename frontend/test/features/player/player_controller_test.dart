@@ -8,9 +8,10 @@ import 'package:re_view/features/player/models/lecture_data.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
+
 import 'package:pdfx/pdfx.dart';
-import 'package:scroll_to_index/scroll_to_index.dart';
+
+import 'package:re_view/features/player/services/pdf_service.dart';
 import 'mocks.mocks.dart';
 
 void main() {
@@ -18,6 +19,8 @@ void main() {
 
   late MockAudioService mockAudioService;
   late MockPdfCacheService mockPdfCacheService;
+  late PdfService mockPdfService;
+  late MockPdfDocument mockPdfDocument;
   late StreamController<Duration> positionStreamController;
   late StreamController<ja.PlayerState> stateStreamController;
   late Directory tempDir;
@@ -554,6 +557,8 @@ void main() {
   setUp(() {
     mockAudioService = MockAudioService();
     mockPdfCacheService = MockPdfCacheService();
+    mockPdfDocument = MockPdfDocument();
+    mockPdfService = FakePdfService(mockPdfDocument);
 
     // Setup temp directory and file
     tempDir = Directory.systemTemp.createTempSync();
@@ -583,10 +588,6 @@ void main() {
             return null;
           },
         );
-
-    // Reset mocks to clear any previous interactions
-    reset(mockAudioService);
-    reset(mockPdfCacheService);
 
     // Create stream controllers for mocking
     positionStreamController = StreamController<Duration>.broadcast();
@@ -621,6 +622,8 @@ void main() {
       mockAudioService.setSpeed(any),
     ).thenAnswer((_) async => Future.value());
     when(mockAudioService.dispose()).thenAnswer((_) async => Future.value());
+
+    // Default PdfService behavior - handled by FakePdfService
   });
 
   tearDown(() async {
@@ -684,6 +687,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller, isNotNull);
@@ -694,6 +698,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.showControls.value, isFalse);
@@ -719,6 +724,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.showControls.value, isFalse);
@@ -736,6 +742,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isPagesExpanded.value, isFalse);
@@ -753,6 +760,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isSynced.value, isTrue);
@@ -770,6 +778,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isCaptionEnabled.value, isFalse);
@@ -787,6 +796,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.showTranscriptPanel.value, isFalse);
@@ -806,6 +816,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         controller.transcriptData = createTestTranscriptData();
@@ -826,6 +837,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.showControls.value, isFalse);
@@ -845,6 +857,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         expect(controller.showControls.value, isFalse);
@@ -863,6 +876,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         controller.isPagesExpanded.value = true;
@@ -879,6 +893,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isPagesExpanded.value, isFalse);
@@ -900,6 +915,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         expect(controller.isPagesExpanded.value, isFalse);
@@ -920,6 +936,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.isPagesExpanded.value = true;
@@ -941,6 +958,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup audio state listener manually for testing
@@ -965,6 +983,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup audio state listener manually for testing
@@ -989,6 +1008,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup position stream listener to update currentTime
@@ -1020,6 +1040,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup position stream listener to update currentTime
@@ -1062,6 +1083,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup position stream listener to update currentTime
@@ -1094,6 +1116,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup position stream listener to update currentTime
@@ -1124,6 +1147,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup position stream listener to update currentTime
@@ -1156,6 +1180,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup position stream listener to update currentTime
@@ -1188,6 +1213,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       await controller.setPlaybackSpeed(1.5);
@@ -1209,6 +1235,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.currentPage.value, equals(1));
@@ -1223,6 +1250,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.currentPage.value, equals(1));
@@ -1239,6 +1267,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1256,6 +1285,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1269,6 +1299,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.currentSentenceIndex.value = 0;
@@ -1282,6 +1313,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1297,6 +1329,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.pageDifference, isNull);
@@ -1308,6 +1341,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1322,6 +1356,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1335,6 +1370,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.pageCount, equals(0));
@@ -1348,6 +1384,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isFullscreen.value, isFalse);
@@ -1359,6 +1396,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isFullscreen.value, isFalse);
@@ -1379,6 +1417,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isOriginalAudio.value, isFalse);
@@ -1390,6 +1429,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isOriginalAudio.value, isFalse);
@@ -1410,6 +1450,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.saveDoubleTapPosition(100.0);
@@ -1426,6 +1467,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         // Setup position stream listener to update currentTime
@@ -1462,6 +1504,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         // Setup position stream listener to update currentTime
@@ -1498,6 +1541,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Set up some state
@@ -1518,6 +1562,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // First dispose
@@ -1540,6 +1585,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1562,6 +1608,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.ttsTotalDuration = 100.0;
@@ -1584,6 +1631,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       await controller.startPlayback();
@@ -1596,6 +1644,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       await controller.setPlaybackSpeed(1.75);
@@ -1610,6 +1659,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       )..transcriptData = createTestTranscriptData();
 
       controller.isSynced.value = true;
@@ -1630,6 +1680,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       )..transcriptData = createTestTranscriptData();
 
       controller.isSynced.value = false;
@@ -1649,6 +1700,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1667,6 +1719,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1686,6 +1739,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // No transcript data set
@@ -1700,6 +1754,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1727,6 +1782,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         controller.transcriptData = createTestTranscriptData();
@@ -1748,6 +1804,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1766,6 +1823,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.isSynced.value = true;
@@ -1781,6 +1839,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       controller.transcriptData = createTestTranscriptData();
@@ -1802,6 +1861,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         controller.transcriptData = createTestTranscriptData();
@@ -1820,6 +1880,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         controller.currentSentenceIndex.value = 0;
@@ -1838,6 +1899,7 @@ void main() {
         final controller = PlayerController(
           audioService: mockAudioService,
           pdfCacheService: mockPdfCacheService,
+          pdfService: mockPdfService,
         );
 
         controller.transcriptData = createTestTranscriptData();
@@ -1857,6 +1919,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Setup audio service to throw error on seek
@@ -1877,6 +1940,7 @@ void main() {
       final controller = PlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       // Reset mock to default behavior
@@ -1894,11 +1958,89 @@ void main() {
       controller.dispose();
     });
   });
+
+  group('PlayerController - loadPdfDocument', () {
+    test('loadPdfDocument loads from file', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
+      );
+
+      await controller.loadPdfDocument(tempPdfPath, 'lecture1', 1);
+
+      final fakeService = mockPdfService as FakePdfService;
+      expect(fakeService.log, contains('openFile($tempPdfPath)'));
+      expect(fakeService.log, isNot(contains('openAsset')));
+
+      expect(controller.pdfDocument, equals(mockPdfDocument));
+      expect(controller.currentPage.value, equals(1));
+
+      controller.dispose();
+    });
+
+    test('loadPdfDocument loads from asset', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
+      );
+
+      const assetPath = 'assets/lectures/lecture1/slides.pdf';
+      await controller.loadPdfDocument(assetPath, 'lecture1', 1);
+
+      final fakeService = mockPdfService as FakePdfService;
+      expect(fakeService.log, contains('openAsset($assetPath)'));
+      expect(fakeService.log, isNot(contains('openFile')));
+
+      expect(controller.pdfDocument, equals(mockPdfDocument));
+
+      controller.dispose();
+    });
+
+    test('loadPdfDocument handles error', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
+      );
+
+      final fakeService = mockPdfService as FakePdfService;
+      fakeService.errorToThrow = Exception('Load failed');
+
+      expect(
+        () => controller.loadPdfDocument(tempPdfPath, 'lecture1', 1),
+        throwsException,
+      );
+
+      controller.dispose();
+    });
+
+    test('loadPdfDocument uses cached thumbnail if available', () async {
+      final controller = PlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
+      );
+
+      // We can't easily mock ThumbnailCacheManager singleton without more refactoring
+      // But we can verify that loadPdfDocument proceeds even if cache is empty (default)
+
+      await controller.loadPdfDocument(tempPdfPath, 'lecture1', 1);
+
+      // Verify setCachedImage was NOT called (since cache is empty)
+      verifyNever(mockPdfCacheService.setCachedImage(any, any));
+
+      controller.dispose();
+    });
+  });
+
   group('PlayerController - Initialize & Full Coverage', () {
     testWidgets('initialize loads PDF and audio correctly', (tester) async {
       final controller = TestPlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       final transcriptData = createTestTranscriptData();
@@ -1940,6 +2082,7 @@ void main() {
       final controller = TestPlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       expect(controller.isFullscreen.value, isFalse);
@@ -1958,6 +2101,7 @@ void main() {
       final controller = TestPlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       final transcriptData = createTestTranscriptData();
@@ -1995,6 +2139,7 @@ void main() {
       final controller = TestPlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       final transcriptData = createTestTranscriptData();
@@ -2029,6 +2174,7 @@ void main() {
       final controller = TestPlayerController(
         audioService: mockAudioService,
         pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
       );
 
       final transcriptData = createTestTranscriptData();
@@ -2058,6 +2204,68 @@ void main() {
 
       expect(File(tempPdfPath).existsSync(), isTrue);
     });
+
+    testWidgets('scroll listener pauses and resumes auto-scrolling', (
+      tester,
+    ) async {
+      final controller = TestPlayerController(
+        audioService: mockAudioService,
+        pdfCacheService: mockPdfCacheService,
+        pdfService: mockPdfService,
+      );
+
+      final transcriptData = createTestTranscriptData();
+
+      await tester.pumpWidget(MaterialApp(home: Container()));
+      final BuildContext context = tester.element(find.byType(Container));
+
+      await controller.initialize(
+        context,
+        'lecture1',
+        transcriptData,
+        tempPdfPath,
+        'audio.mp3',
+        'original.mp3',
+        false,
+      );
+
+      // Now pump the list view
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ListView.builder(
+              controller: controller.transcriptScrollController,
+              itemCount: 100,
+              itemExtent: 50,
+              itemBuilder: (context, index) => Text('Item $index'),
+            ),
+          ),
+        ),
+      );
+
+      // Initial state
+      expect(controller.isAutoScrolling.value, isTrue);
+
+      // Simulate user scroll
+      final gesture = await tester.startGesture(const Offset(100, 300));
+      await gesture.moveBy(const Offset(0, -100));
+      await tester.pump();
+
+      // Should pause auto-scrolling
+      expect(controller.isAutoScrolling.value, isFalse);
+
+      await gesture.up();
+      await tester.pump();
+
+      // Wait for timer (1000ms)
+      await tester.pump(const Duration(milliseconds: 1100));
+
+      // Should resume auto-scrolling
+      expect(controller.isAutoScrolling.value, isTrue);
+
+      controller.dispose();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
   });
 }
 
@@ -2073,6 +2281,7 @@ class TestPlayerController extends PlayerController {
   TestPlayerController({
     required super.audioService,
     required super.pdfCacheService,
+    required super.pdfService,
   });
 
   final MockPdfDocument mockPdfDocument = MockPdfDocument();
@@ -2104,5 +2313,34 @@ class TestPlayerController extends PlayerController {
 
     // If we don't set pdfController, jumpToPage won't do anything on the controller, but currentPage will update.
     // This is acceptable for these tests.
+  }
+}
+
+class FakePdfService implements PdfService {
+  final PdfDocument _document;
+  final List<String> log = [];
+  Object? errorToThrow;
+
+  FakePdfService(this._document);
+
+  @override
+  Future<PdfDocument> openFile(String path) async {
+    if (errorToThrow != null) throw errorToThrow!;
+    log.add('openFile($path)');
+    return _document;
+  }
+
+  @override
+  Future<PdfDocument> openAsset(String name) async {
+    if (errorToThrow != null) throw errorToThrow!;
+    log.add('openAsset($name)');
+    return _document;
+  }
+
+  @override
+  Future<PdfDocument> openData(Uint8List data) async {
+    if (errorToThrow != null) throw errorToThrow!;
+    log.add('openData');
+    return _document;
   }
 }

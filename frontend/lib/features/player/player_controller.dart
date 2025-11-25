@@ -10,6 +10,7 @@ import 'package:re_view/core/thumbnail_cache_manager.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
+import 'package:re_view/features/player/services/pdf_service.dart';
 
 /// PlayerController: 플레이어의 모든 상태와 로직을 관리
 /// ValueNotifier를 사용하여 각 상태 변경시 필요한 위젯만 rebuild
@@ -17,11 +18,14 @@ class PlayerController extends ChangeNotifier {
   PlayerController({
     required AudioService audioService,
     required PdfCacheService pdfCacheService,
+    required PdfService pdfService,
   }) : _audioService = audioService,
-       _pdfCacheService = pdfCacheService;
+       _pdfCacheService = pdfCacheService,
+       _pdfService = pdfService;
 
   final AudioService _audioService;
   final PdfCacheService _pdfCacheService;
+  final PdfService _pdfService;
 
   // ========== ValueNotifier로 관리되는 상태들 (자주 변경됨) ==========
 
@@ -185,8 +189,8 @@ class PlayerController extends ChangeNotifier {
     // PDF 문서 로드 with error handling
     try {
       pdfDocument = pdfPath.startsWith('assets/')
-          ? await PdfDocument.openAsset(pdfPath)
-          : await PdfDocument.openFile(pdfPath);
+          ? await _pdfService.openAsset(pdfPath)
+          : await _pdfService.openFile(pdfPath);
     } on PlatformException catch (e) {
       debugPrint('❌ Error loading PDF: $e');
       rethrow; // Re-throw to be caught by caller (player_screen's _loadLectureData)
