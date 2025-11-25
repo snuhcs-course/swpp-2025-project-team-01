@@ -447,25 +447,25 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as _i5.Future<void>);
 
   @override
-  _i4.Future<void> archiveSubject(String? id) =>
+  _i5.Future<void> archiveSubject(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#archiveSubject, [id]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<void> unarchiveSubject(String? id) =>
+  _i5.Future<void> unarchiveSubject(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#unarchiveSubject, [id]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<void> updateSubjectOrder(List<String>? newOrder) =>
+  _i5.Future<void> updateSubjectOrder(List<String>? newOrder) =>
       (super.noSuchMethod(
             Invocation.method(#updateSubjectOrder, [newOrder]),
             returnValue: _i5.Future<void>.value(),
