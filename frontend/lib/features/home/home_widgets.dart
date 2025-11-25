@@ -245,8 +245,11 @@ class SubjectPanel extends StatefulWidget {
     required this.onOpenLecture,
     this.onLectureUpdated,
     this.showEdit = false,
+    this.isArchivedSubject = false,
     this.onEditSubject,
     this.onEditLecture,
+    this.onUnarchiveSubject,
+    this.onDeleteSubject,
     this.reorderIndex,
   });
 
@@ -257,8 +260,11 @@ class SubjectPanel extends StatefulWidget {
   final ValueChanged<HiveLecture> onOpenLecture;
   final VoidCallback? onLectureUpdated;
   final bool showEdit;
+  final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
   final VoidCallback? onEditLecture;
+  final VoidCallback? onUnarchiveSubject;
+  final VoidCallback? onDeleteSubject;
   final int? reorderIndex;
 
   @override
@@ -380,9 +386,11 @@ class _SubjectPanelState extends State<SubjectPanel>
             tags: widget.subject.isUncategorized
                 ? []
                 : widget.tags, // 미분류는 태그 숨김
+            id: widget.subject.id,
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
-            favoriteOrDrag: widget.subject.isUncategorized
+            favoriteOrDrag:
+                widget.subject.isUncategorized || widget.subject.isArchived
                 ? null // 미분류는 즐겨찾기 아이콘 숨김
                 : widget.showEdit
                 ? Icons.drag_indicator
@@ -392,7 +400,10 @@ class _SubjectPanelState extends State<SubjectPanel>
                 : widget.onToggleFavorite,
             favoriteIconColor: h.important,
             showEdit: !widget.subject.isUncategorized && widget.showEdit,
+            isArchivedSubject: widget.isArchivedSubject,
             onEditSubject: widget.onEditSubject,
+            onUnarchiveSubject: widget.onUnarchiveSubject,
+            onDeleteSubject: widget.onDeleteSubject,
             reorderIndex: widget.reorderIndex,
           ),
 

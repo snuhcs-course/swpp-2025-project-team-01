@@ -256,6 +256,7 @@ void main() {
             body: SubjectPanelHeader(
               title: 'Biochemistry',
               tags: const <HiveTag>[],
+              id: 'id',
               expanded: false,
               onToggleExpanded: mockHandler.call,
             ),
@@ -279,6 +280,7 @@ void main() {
             body: SubjectPanelHeader(
               title: 'Genetics',
               tags: const <HiveTag>[],
+              id: 'id',
               expanded: false,
               onToggleExpanded: () {},
               onLongPress: mockLongPress.call,
@@ -305,6 +307,7 @@ void main() {
               body: SubjectPanelHeader(
                 title: 'Thermodynamics',
                 tags: const <HiveTag>[],
+                id: 'id',
                 expanded: true,
                 onToggleExpanded: () {},
                 showEdit: true,
@@ -336,6 +339,7 @@ void main() {
               body: SubjectPanelHeader(
                 title: 'Algebra',
                 tags: const <HiveTag>[],
+                id: 'id',
                 expanded: false,
                 onToggleExpanded: () {},
                 favoriteOrDrag: Icons.star,
@@ -368,6 +372,7 @@ void main() {
                     key: const ValueKey('subject-0'),
                     title: 'Calculus',
                     tags: const <HiveTag>[],
+                    id: 'id',
                     expanded: false,
                     onToggleExpanded: () {},
                     favoriteOrDrag: Icons.drag_indicator,
@@ -408,6 +413,7 @@ void main() {
             body: SubjectPanelHeader(
               title: 'Tagged Subject',
               tags: [mockTag1, mockTag2],
+              id: 'id',
               expanded: true,
               onToggleExpanded: () {},
             ),

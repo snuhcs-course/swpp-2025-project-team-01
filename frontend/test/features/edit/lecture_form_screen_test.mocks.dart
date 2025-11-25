@@ -78,6 +78,14 @@ class MockHiveManager extends _i1.Mock implements _i4.HiveManager {
           as Map<String, _i2.HiveSubject>);
 
   @override
+  Map<String, _i2.HiveSubject> get archivedSubjects =>
+      (super.noSuchMethod(
+            Invocation.getter(#archivedSubjects),
+            returnValue: <String, _i2.HiveSubject>{},
+          )
+          as Map<String, _i2.HiveSubject>);
+
+  @override
   Map<String, _i2.HiveTag> get tags =>
       (super.noSuchMethod(
             Invocation.getter(#tags),
@@ -280,6 +288,24 @@ class MockHiveManager extends _i1.Mock implements _i4.HiveManager {
   _i5.Future<void> updateSubjectTags(String? id, List<String>? tagIds) =>
       (super.noSuchMethod(
             Invocation.method(#updateSubjectTags, [id, tagIds]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> archiveSubject(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#archiveSubject, [id]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> unarchiveSubject(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#unarchiveSubject, [id]),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )

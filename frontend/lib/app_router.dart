@@ -1,5 +1,6 @@
 // 모든 라우트 테이블/네비게이션 진입점
 import 'package:flutter/material.dart';
+import 'package:re_view/features/archive/archive_screen.dart';
 
 // 화면들
 import 'package:re_view/features/home/home_screen.dart';
@@ -18,6 +19,7 @@ import 'package:re_view/features/splash/splash_screen.dart';
 /// 앱의 모든 라우트 경로를 정의하는 클래스
 class Routes {
   static const onboarding = '/';
+  static const archive = '/archive';
   static const home = '/home';
   static const search = '/search';
   static const lectureForm = '/lectures/new';
@@ -63,6 +65,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const HelpScreen());
       case Routes.tagsEdit:
         return MaterialPageRoute(builder: (_) => const TagsEditScreen());
+      case Routes.archive:
+        return MaterialPageRoute(builder: (_) => const ArchiveScreen());
       default:
         return MaterialPageRoute(
           builder: (_) =>
