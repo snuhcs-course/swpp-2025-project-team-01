@@ -376,7 +376,7 @@ class BottomControlBar extends StatelessWidget {
               ),
               if (!isTablet)
                 Positioned(
-                  bottom: 4,
+                  bottom: 10,
                   right: 4,
                   child: FullscreenButton(
                     isEnabled: isFullscreen,
