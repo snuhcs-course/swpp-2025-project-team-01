@@ -10,6 +10,7 @@ import 'package:re_view/core/thumbnail_cache_manager.dart';
 import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
+import 'package:re_view/features/player/services/pdf_service.dart';
 
 /// PlayerController: 플레이어의 모든 상태와 로직을 관리
 /// ValueNotifier를 사용하여 각 상태 변경시 필요한 위젯만 rebuild
@@ -17,11 +18,14 @@ class PlayerController extends ChangeNotifier {
   PlayerController({
     required AudioService audioService,
     required PdfCacheService pdfCacheService,
+    required PdfService pdfService,
   }) : _audioService = audioService,
-       _pdfCacheService = pdfCacheService;
+       _pdfCacheService = pdfCacheService,
+       _pdfService = pdfService;
 
   final AudioService _audioService;
   final PdfCacheService _pdfCacheService;
+  final PdfService _pdfService;
 
   // ========== ValueNotifier로 관리되는 상태들 (자주 변경됨) ==========
 
@@ -116,7 +120,8 @@ class PlayerController extends ChangeNotifier {
   double _doubleTapX = 0;
 
   // PDF 로드 전 임시 파일 목록 (캐시 정리용)
-  List<String>? _initialTempFiles;
+  @visibleForTesting
+  List<String>? initialTempFiles;
 
   // ========== 초기화 메서드 ==========
 
@@ -147,7 +152,7 @@ class PlayerController extends ChangeNotifier {
 
     // PDF 문서 로드 (transcript의 첫 슬라이드를 초기 페이지로 설정)
     final initialPage = transcriptData.timestamps[0].slideNumber;
-    await _loadPdfDocument(pdfPath, lectureId, initialPage);
+    await loadPdfDocument(pdfPath, lectureId, initialPage);
 
     isKoreanLanguage.value = isKoreanLec;
     isOriginalAudio.value = isKoreanLec;
@@ -165,7 +170,8 @@ class PlayerController extends ChangeNotifier {
     );
   }
 
-  Future<void> _loadPdfDocument(
+  @visibleForTesting
+  Future<void> loadPdfDocument(
     String pdfPath,
     String lectureId,
     int initialPage,
@@ -174,17 +180,17 @@ class PlayerController extends ChangeNotifier {
     try {
       final tempDir = await getTemporaryDirectory();
       final files = tempDir.listSync();
-      _initialTempFiles = files.map((file) => file.path).toList();
+      initialTempFiles = files.map((file) => file.path).toList();
     } catch (e) {
       debugPrint('Failed to capture initial temp files: $e');
-      _initialTempFiles = [];
+      initialTempFiles = [];
     }
 
     // PDF 문서 로드 with error handling
     try {
       pdfDocument = pdfPath.startsWith('assets/')
-          ? await PdfDocument.openAsset(pdfPath)
-          : await PdfDocument.openFile(pdfPath);
+          ? await _pdfService.openAsset(pdfPath)
+          : await _pdfService.openFile(pdfPath);
     } on PlatformException catch (e) {
       debugPrint('❌ Error loading PDF: $e');
       rethrow; // Re-throw to be caught by caller (player_screen's _loadLectureData)
@@ -619,7 +625,7 @@ class PlayerController extends ChangeNotifier {
 
   /// PDF 로드 중 생성된 임시 파일들을 정리
   Future<void> _cleanupTempPdfFiles() async {
-    if (_initialTempFiles == null) {
+    if (initialTempFiles == null) {
       debugPrint('⚠️ No initial temp files list - skipping cleanup');
       return;
     }
@@ -638,7 +644,7 @@ class PlayerController extends ChangeNotifier {
 
       // 초기 파일 목록에 없는 새로 생성된 파일들만 삭제
       for (final file in currentFiles) {
-        if (!_initialTempFiles!.contains(file.path) && file is File) {
+        if (!initialTempFiles!.contains(file.path) && file is File) {
           try {
             await file.delete();
             deletedCount++;
