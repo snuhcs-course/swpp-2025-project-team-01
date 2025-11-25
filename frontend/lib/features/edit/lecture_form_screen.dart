@@ -98,7 +98,11 @@ class DefaultFlutterBackgroundWrapper implements FlutterBackgroundInterface {
 
   @override
   Future<bool> disableBackgroundExecution() {
-    return FlutterBackground.disableBackgroundExecution();
+    if (FlutterBackground.isBackgroundExecutionEnabled) {
+      return FlutterBackground.disableBackgroundExecution();
+    } else {
+      return Future(false as FutureOr<bool> Function());
+    }
   }
 }
 
@@ -224,12 +228,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   @override
   Widget build(BuildContext context) {
     _l10n = AppLocalizations.of(context);
-    final subjects = _hive.getSubjects();
+    final subjects = _hive.getSubjects().where((s) {
+      return !s.isArchived;
+    }).toList();
 
     return Scaffold(
       // 상단 앱바 - 뒤로가기 버튼과 제목
       appBar: AppBar(
-        title: Text(l10n.isKorean ? '강의 생성' : 'Create Lecture'),
+        title: Text(l10n.addLecture),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -249,39 +255,47 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ========== 과목 선택 섹션 ==========
-                _buildSectionTitle(l10n.isKorean ? '과목 선택' : 'Select Subject'),
+                _buildSectionTitle(l10n.selectSubject),
                 const SizedBox(height: 8),
                 _buildSubjectDropdown(l10n, subjects),
                 const SizedBox(height: 20),
 
                 // ========== 강의 언어 선택 섹션 ==========
-                _buildSectionTitle(l10n.isKorean ? '강의 언어' : 'Spoken Language'),
+                _buildSectionTitle(l10n.spokenLanguage),
                 const SizedBox(height: 8),
                 _buildLanguageDropdown(l10n, subjects),
+                if (_selectedLanguage == 'ko') const SizedBox(height: 8),
+                if (_selectedLanguage == 'ko')
+                  Text(
+                    l10n.noTtsForKorean,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    ),
+                  ),
                 const SizedBox(height: 20),
 
                 // ========== 강의 주차 입력 섹션 ==========
-                _buildSectionTitle(l10n.isKorean ? '강의 주차' : 'Lecture Week'),
+                _buildSectionTitle(l10n.lectureWeek),
                 const SizedBox(height: 8),
                 _buildWeekTextField(),
                 const SizedBox(height: 20),
 
                 // ========== 강의 제목 입력 섹션 ==========
-                _buildSectionTitle(l10n.isKorean ? '강의 제목' : 'Lecture Title'),
+                _buildSectionTitle(l10n.lectureTitle),
                 const SizedBox(height: 8),
                 _buildTitleTextField(),
                 const SizedBox(height: 20),
 
                 // ========== 강의 슬라이드 업로드 섹션 ==========
-                _buildSectionTitle(
-                  l10n.isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)',
-                ),
+                _buildSectionTitle(l10n.lectureSlides),
                 const SizedBox(height: 8),
                 _buildFileUploadButton(
                   icon: Icons.attach_file,
                   label: _slidePdfPath != null
                       ? _getFileName(_slidePdfPath!)
-                      : (l10n.isKorean ? '...' : '...'),
+                      : '...',
                   onTap: _pickSlidePdf,
                 ),
                 const SizedBox(height: 20),
@@ -321,7 +335,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 과목 선택 드롭다운 위젯
   /// 사용자가 강의를 소속시킬 과목을 선택하거나 "선택 안 함"을 선택할 수 있습니다.
-  Widget _buildSubjectDropdown(AppLocalizations l10n, List<dynamic> subjects) {
+  Widget _buildSubjectDropdown(
+    AppLocalizations l10n,
+    List<HiveSubject> subjects,
+  ) {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
@@ -350,25 +367,21 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 size: 28,
                 color: theme.colorScheme.onSurface,
               ),
-              hint: Text(
-                l10n.isKorean ? '선택 안 함' : 'Not Selected',
-                style: theme.textTheme.bodyLarge,
-              ),
+              hint: Text(l10n.notSelected, style: theme.textTheme.bodyLarge),
               dropdownColor: cardColor,
               items: [
                 // "선택 안 함" 옵션
                 DropdownMenuItem<String?>(
                   value: null,
                   child: Text(
-                    l10n.isKorean ? '선택 안 함' : 'Not Selected',
+                    l10n.notSelected,
                     style: theme.textTheme.bodyLarge,
                   ),
                 ),
                 // 기존 과목 리스트 (미분류 제외)
                 ...subjects
                     .where((s) {
-                      final subject = s as HiveSubject;
-                      return !subject.isUncategorized;
+                      return !s.isUncategorized;
                     })
                     .map(
                       (s) => DropdownMenuItem<String?>(
@@ -481,11 +494,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
         return Row(
           children: [
-            Expanded(
-              child: _buildSectionTitle(
-                l10n.isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio',
-              ),
-            ),
+            Expanded(child: _buildSectionTitle(l10n.lectureAudio)),
             // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
             IconButton(
               icon: Icon(Icons.remove_circle_outline),
@@ -574,9 +583,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               // 추가 버튼
               OutlinedButton(
                 onPressed: onTap,
-                child: Text(
-                  AppLocalizations.of(context).isKorean ? '추가' : 'Add',
-                ),
+                child: Text(AppLocalizations.of(context).add),
               ),
             ],
           ),
@@ -596,9 +603,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         // 파일 업로드 버튼
         _buildFileUploadButton(
           icon: Icons.attach_file,
-          label: entry.filePath != null
-              ? _getFileName(entry.filePath!)
-              : (l10n.isKorean ? '...' : '...'),
+          label: entry.filePath != null ? _getFileName(entry.filePath!) : '...',
           onTap: () => _pickAudioFile(index),
         ),
 
@@ -631,7 +636,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        l10n.isKorean ? '페이지 설정' : 'Page Range',
+                        l10n.pageRange,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -701,7 +706,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                         ),
                       )
                     : Text(
-                        l10n.isKorean ? '생성하기' : 'Create',
+                        l10n.create,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: Colors.white,
                         ),
@@ -726,8 +731,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     return _audioFiles.length > 1;
   }
 
-  /// 토스트 메시지 표시
-  void _showToast(String message) {
+  /// 스낵바 메시지 표시
+  void _showSnackBar(String message) {
     if (!mounted) {
       return;
     }
@@ -771,11 +776,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           _slidePdfPath = pdfPath;
           _pdfPageCount = null;
         });
-        _showToast(
-          l10n.isKorean
-              ? 'PDF 페이지 수를 확인할 수 없습니다'
-              : 'Could not determine PDF page count',
-        );
+        _showSnackBar(l10n.couldntDeterminePage);
       }
     }
   }
@@ -793,11 +794,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
       // m4a 파일만 허용
       if (!filePath.toLowerCase().endsWith('.m4a')) {
-        _showToast(
-          l10n.isKorean
-              ? 'm4a 형식의 파일만 업로드 가능합니다'
-              : 'Only m4a files are allowed',
-        );
+        _showSnackBar(l10n.onlyM4aAllowed);
         return;
       }
 
@@ -873,16 +870,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.isKorean ? '경고' : 'Warning'),
-        content: Text(
-          l10n.isKorean
-              ? '업로드된 파일이 있습니다.\n삭제하시겠습니까?'
-              : 'There is an uploaded file.\nDo you want to delete it?',
-        ),
+        title: Text(l10n.warning),
+        content: Text(l10n.deleteWithUploadedFile),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(l10n.isKorean ? '취소' : 'Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -890,7 +883,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               onConfirm();
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: Text(l10n.isKorean ? '삭제' : 'Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -938,27 +931,19 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     // 과목 선택이 없으면 미분류로 처리
     _selectedSubjectId ??= 'uncategorized';
     if (_weekController.text.trim().isEmpty) {
-      _showToast(l10n.isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week');
+      _showSnackBar(l10n.pleaseEnterWeek);
       return;
     }
     if (_titleController.text.trim().isEmpty) {
-      _showToast(
-        l10n.isKorean ? '강의 제목을 입력해주세요' : 'Please enter lecture title',
-      );
+      _showSnackBar(l10n.pleaseEnterLectureTitle);
       return;
     }
     if (_slidePdfPath == null) {
-      _showToast(
-        l10n.isKorean ? '슬라이드 PDF를 업로드해주세요' : 'Please upload slide PDF',
-      );
+      _showSnackBar(l10n.pleaseUploadPdf);
       return;
     }
     if (_audioFiles.isEmpty || _audioFiles[0].filePath == null) {
-      _showToast(
-        l10n.isKorean
-            ? '오디오 파일을 최소 1개 업로드해주세요'
-            : 'Please upload at least one audio file',
-      );
+      _showSnackBar(l10n.pleaseUploadAudio);
       return;
     }
 
@@ -976,11 +961,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final endText = entry.endPageController.text.trim();
 
       if (startText.isEmpty || endText.isEmpty) {
-        _showToast(
-          l10n.isKorean
-              ? '${i + 1}번째 오디오의 페이지 범위를 입력해주세요'
-              : 'Please enter page range for audio ${i + 1}',
-        );
+        _showSnackBar(l10n.pleaseEnterRangeForAudio(i));
         return;
       }
 
@@ -989,47 +970,27 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       final endPage = int.tryParse(endText);
 
       if (startPage == null || endPage == null) {
-        _showToast(
-          l10n.isKorean
-              ? '${i + 1}번째 오디오의 페이지 번호는 숫자로 입력해주세요'
-              : 'Page numbers for audio ${i + 1} must be numbers',
-        );
+        _showSnackBar(l10n.pageNumbersMustBeNumgers(i));
         return;
       }
 
       if (startPage < 1 || endPage < 1) {
-        _showToast(
-          l10n.isKorean
-              ? '${i + 1}번째 오디오의 페이지 번호는 1 이상이어야 합니다'
-              : 'Page numbers for audio ${i + 1} must be at least 1',
-        );
+        _showSnackBar(l10n.pageNumbersMustBeAtLeastOne(i));
         return;
       }
 
       if (startPage > endPage) {
-        _showToast(
-          l10n.isKorean
-              ? '${i + 1}번째 오디오의 시작 페이지가 끝 페이지보다 클 수 없습니다'
-              : 'Start page cannot be greater than end page for audio ${i + 1}',
-        );
+        _showSnackBar(l10n.startMustBeGreaterThanEnd(i));
         return;
       }
 
       if (pdfTotalPages != null) {
         if (startPage > pdfTotalPages) {
-          _showToast(
-            l10n.isKorean
-                ? '${i + 1}번째 오디오의 시작 페이지($startPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
-                : 'Start page ($startPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)',
-          );
+          _showSnackBar(l10n.startExceedsTotal(i, startPage, pdfTotalPages));
           return;
         }
         if (endPage > pdfTotalPages) {
-          _showToast(
-            l10n.isKorean
-                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
-                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)',
-          );
+          _showSnackBar(l10n.endExceedsTotal(i, endPage, pdfTotalPages));
           return;
         }
       } else {
@@ -1037,11 +998,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         if (fallbackTotalPages == null) {
           fallbackTotalPages = endPage;
         } else if (endPage > fallbackTotalPages) {
-          _showToast(
-            l10n.isKorean
-                ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($fallbackTotalPages)를 초과합니다'
-                : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($fallbackTotalPages)',
-          );
+          _showSnackBar(l10n.endExceedsTotal(i, endPage, fallbackTotalPages));
           return;
         }
       }
@@ -1090,9 +1047,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       if (mounted) {
         setState(() => _isCreating = false);
-        _showToast(
-          l10n.isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled',
-        );
+        _showSnackBar(l10n.lectureCreationCancelled);
       }
       // Disable background execution when cancelled
       if (backgroundEnabled && Platform.isAndroid) {
@@ -1178,9 +1133,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
             await File(results[i]![1]).delete();
           }
         }
-        _showToast(
-          l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-        );
+        _showSnackBar(l10n.lectureGenerationFailed);
         return;
       }
 
@@ -1222,9 +1175,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               await File(results[i]![1]).delete();
             }
           }
-          _showToast(
-            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-          );
+          _showSnackBar(l10n.lectureGenerationFailed);
           return;
         }
       } else {
@@ -1241,9 +1192,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           originalAudioPath = permanentAudioPath;
         } catch (e) {
           debugPrint('Failed to copy original audio to permanent storage: $e');
-          _showToast(
-            l10n.isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.',
-          );
+          _showSnackBar(l10n.lectureGenerationFailed);
           return;
         }
         if (langCode == 'en') {
@@ -1336,18 +1285,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       _loadingService.completeLoading(lectureId: generatedLecture.id);
 
       // 7. 성공 메시지
-      _showToast(
-        l10n.isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully',
-      );
+      _showSnackBar(l10n.lectureCreatedSuccessfully);
     } catch (e) {
       // 8. 에러 처리
       _loadingService.hideLoading();
       if (mounted) {
-        _showToast(
-          l10n.isKorean
-              ? '강의 생성 실패: ${e.toString()}'
-              : 'Failed to create lecture: ${e.toString()}',
-        );
+        _showSnackBar(l10n.failedLectureCreation(e));
       }
     } finally {
       // 9. 로딩 종료 및 클라이언트 정리

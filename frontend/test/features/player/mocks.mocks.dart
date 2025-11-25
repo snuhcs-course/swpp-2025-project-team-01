@@ -231,6 +231,14 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as Map<String, _i2.HiveSubject>);
 
   @override
+  Map<String, _i2.HiveSubject> get archivedSubjects =>
+      (super.noSuchMethod(
+            Invocation.getter(#archivedSubjects),
+            returnValue: <String, _i2.HiveSubject>{},
+          )
+          as Map<String, _i2.HiveSubject>);
+
+  @override
   Map<String, _i2.HiveTag> get tags =>
       (super.noSuchMethod(
             Invocation.getter(#tags),
@@ -439,7 +447,25 @@ class MockHiveManager extends _i1.Mock implements _i9.HiveManager {
           as _i5.Future<void>);
 
   @override
-  _i5.Future<void> updateSubjectOrder(List<String>? newOrder) =>
+  _i4.Future<void> archiveSubject(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#archiveSubject, [id]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> unarchiveSubject(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#unarchiveSubject, [id]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> updateSubjectOrder(List<String>? newOrder) =>
       (super.noSuchMethod(
             Invocation.method(#updateSubjectOrder, [newOrder]),
             returnValue: _i5.Future<void>.value(),

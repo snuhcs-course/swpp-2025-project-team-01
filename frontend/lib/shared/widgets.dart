@@ -1,6 +1,7 @@
 // 자주 쓰는 작은 위젯들
 import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -275,6 +276,7 @@ class CollapsedBubbleOverlay extends StatefulWidget {
 class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
   late double _dragX;
   late double _dragY;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -292,7 +294,11 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
 
     return Stack(
       children: [
-        Positioned(
+        AnimatedPositioned(
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
           left: _dragX,
           bottom: _dragY,
           child: SafeArea(
@@ -300,14 +306,16 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onPanStart: (details) {
-                // Prevent tap from triggering during drag
+                setState(() {
+                  _isDragging = true;
+                });
               },
               onPanUpdate: (details) {
                 setState(() {
-                  // Update position during drag
+                  // Update position during drag (allow free movement temporarily)
                   _dragX = (_dragX + details.delta.dx).clamp(
-                    0.0,
-                    screenSize.width - bubbleSize - safeArea.right,
+                    -(bubbleSize * 0.1),
+                    screenSize.width - bubbleSize * 0.9 - safeArea.right,
                   );
                   _dragY = (_dragY - details.delta.dy).clamp(
                     0.0,
@@ -316,6 +324,22 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                 });
               },
               onPanEnd: (details) {
+                // Snap to left or right side with 10% clipping
+                final screenCenter = screenSize.width / 2;
+                final isOnLeftSide = _dragX < screenCenter - bubbleSize / 2;
+
+                setState(() {
+                  _isDragging = false;
+                  if (isOnLeftSide) {
+                    // Snap to left with 10% clipped
+                    _dragX = -(bubbleSize * 0.1);
+                  } else {
+                    // Snap to right with 10% clipped
+                    _dragX =
+                        screenSize.width - bubbleSize * 0.9 - safeArea.right;
+                  }
+                });
+
                 // Save final position when drag ends
                 widget.service.updateBubblePosition(_dragX, _dragY);
               },
@@ -423,8 +447,7 @@ class LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final language = HiveManager.instance.settings.language;
-    final isKorean = language == 'ko';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -454,7 +477,7 @@ class LoadingView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isKorean ? '강의 생성 중…' : 'Creating Lecture…',
+                        l10n.lectureCreating,
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -479,7 +502,7 @@ class LoadingView extends StatelessWidget {
                           vertical: 6,
                         ),
                       ),
-                      child: Text(isKorean ? '취소' : 'Cancel'),
+                      child: Text(l10n.cancel),
                     ),
                   ],
                 ),
@@ -490,16 +513,14 @@ class LoadingView extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: isKorean ? '강의명: ' : 'Lecture: ',
+                        text: l10n.lectureName,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade400,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       TextSpan(
-                        text: title.isEmpty
-                            ? (isKorean ? '제목 없음' : 'Untitled')
-                            : title,
+                        text: title.isEmpty ? (l10n.untitled) : title,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade300,
                         ),
@@ -544,8 +565,7 @@ class CompletedView extends StatelessWidget {
   Widget build(BuildContext widgetContext) {
     final textTheme = Theme.of(context).textTheme;
     final service = LectureLoadingService.instance;
-    final language = HiveManager.instance.settings.language;
-    final isKorean = language == 'ko';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -571,7 +591,7 @@ class CompletedView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isKorean ? '강의 생성 완료!' : 'Lecture Created!',
+                        l10n.lectureCreationComplete,
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -593,9 +613,7 @@ class CompletedView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isKorean
-                      ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
-                      : 'Lecture creation completed.\nCheck out the result.',
+                  l10n.lectureCreationCompleted,
                   style: textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade300,
                   ),
@@ -622,7 +640,7 @@ class CompletedView extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: Text(isKorean ? '강의 바로가기' : 'Go to Lecture'),
+                    label: Text(l10n.goToLecture),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF7FAB0),
                       foregroundColor: Colors.black87,
@@ -879,14 +897,18 @@ class EditDialog extends StatelessWidget {
     required this.onComplete,
     required this.deleteLabel,
     required this.completeLabel,
+    this.onArchive,
+    this.archiveLabel,
   });
 
   final String title;
   final Widget content;
   final VoidCallback onDelete;
   final VoidCallback onComplete;
+  final VoidCallback? onArchive;
   final String deleteLabel;
   final String completeLabel;
+  final String? archiveLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -909,40 +931,99 @@ class EditDialog extends StatelessWidget {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
-        Row(
-          children: [
-            // 삭제 버튼 (왼쪽)
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+        if (archiveLabel != null)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  // 삭제 버튼 (왼쪽)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      label: Text(deleteLabel),
+                    ),
                   ),
-                ),
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline, size: 20),
-                label: Text(deleteLabel),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // 완료 버튼 (오른쪽)
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                  const SizedBox(width: 12),
+                  // 완료 버튼 (오른쪽)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      onPressed: onArchive,
+                      icon: const Icon(Icons.archive, size: 20),
+                      label: Text(archiveLabel!),
+                    ),
                   ),
-                ),
-                onPressed: onComplete,
-                child: Text(completeLabel),
+                ],
               ),
-            ),
-          ],
-        ),
+              // 보관 버튼
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onComplete,
+                  child: Text(completeLabel),
+                ),
+              ),
+            ],
+          ),
+        if (archiveLabel == null)
+          Row(
+            children: [
+              // 삭제 버튼 (왼쪽)
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  label: Text(deleteLabel),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // 완료 버튼 (오른쪽)
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onComplete,
+                  child: Text(completeLabel),
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -1077,6 +1158,7 @@ class SubjectPanelHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.tags,
+    required this.id,
     required this.expanded,
     required this.onToggleExpanded,
     this.panelRadius = 22.0,
@@ -1088,12 +1170,16 @@ class SubjectPanelHeader extends StatelessWidget {
     this.onLongPress,
     this.titleEndPadding = 0,
     this.showEdit = false,
+    this.isArchivedSubject = false,
     this.onEditSubject,
+    this.onUnarchiveSubject,
+    this.onDeleteSubject,
     this.reorderIndex,
   });
 
   final String title;
   final List<HiveTag> tags;
+  final String id;
   final bool expanded;
   final VoidCallback onToggleExpanded;
   final double panelRadius;
@@ -1105,7 +1191,10 @@ class SubjectPanelHeader extends StatelessWidget {
   final VoidCallback? onLongPress;
   final double titleEndPadding;
   final bool showEdit;
+  final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
+  final VoidCallback? onUnarchiveSubject;
+  final VoidCallback? onDeleteSubject;
   final int? reorderIndex;
 
   @override
@@ -1202,6 +1291,17 @@ class SubjectPanelHeader extends StatelessWidget {
                     onPressed: () async => onEditSubject?.call(),
                   ),
                 ),
+                // 보관함에 있는 과목일 경우
+                if (isArchivedSubject)
+                  IconButton(
+                    icon: Icon(Icons.delete, size: 20, color: iconColor),
+                    onPressed: () async => onDeleteSubject?.call(),
+                  ),
+                if (isArchivedSubject)
+                  IconButton(
+                    icon: Icon(Icons.reply, size: 20, color: iconColor),
+                    onPressed: () async => onUnarchiveSubject?.call(),
+                  ),
                 // 펼침/접기 버튼
                 IconButton(
                   icon: Icon(

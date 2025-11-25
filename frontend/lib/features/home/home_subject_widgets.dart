@@ -130,9 +130,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
                   controller: _titleController,
                   decoration: InputDecoration(
                     labelText: l10n.subjectName,
-                    hintText: l10n.isKorean
-                        ? '예) 소프트웨어 개발의 원리와 실습'
-                        : 'ex) Software Development Principles and Practice',
+                    hintText: l10n.subjectNameHint,
                   ),
                   autofocus: true,
                 ),
@@ -200,7 +198,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.isKorean ? '태그 추가' : 'Add Tag',
+                          l10n.addTag,
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(
                                 color: Theme.of(
@@ -267,7 +265,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
                                   vertical: 14,
                                 ),
                               ),
-                              child: Text(l10n.isKorean ? '적용' : 'Apply'),
+                              child: Text(l10n.apply),
                             ),
                           ],
                         ),
@@ -396,6 +394,42 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
     );
   }
 
+  Future<bool?> showArchiveConfirmationDialog(HiveSubject subject) {
+    final l10n = AppLocalizations.of(context);
+
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => DeleteWarningDialog(
+        warningText: l10n.isKorean ? '보관' : 'Archive',
+        yesText: l10n.yes,
+        noText: l10n.no,
+        onConfirm: () async {
+          final manager = HiveManager.instance;
+          await manager.archiveSubject(subject.id);
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            // nothing to do here
+          });
+        },
+        body: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+              height: 1.5,
+            ),
+            children: [TextSpan(text: l10n.archiveConfirmText(subject.title))],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -404,6 +438,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
       title: l10n.editingSubject,
       deleteLabel: l10n.delete,
       completeLabel: l10n.complete,
+      archiveLabel: l10n.isKorean ? '보관' : 'Archive',
       onDelete: () async {
         final result = await showDeleteConfirmationDialog(widget.subject);
         if (result == true && context.mounted) {
@@ -424,6 +459,12 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
         );
         Navigator.pop(context, true);
       },
+      onArchive: () async {
+        final result = await showArchiveConfirmationDialog(widget.subject);
+        if (result == true && context.mounted) {
+          Navigator.pop(context, true);
+        }
+      },
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,9 +478,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
           TextField(
             controller: _nameController,
             decoration: InputDecoration(
-              hintText: l10n.isKorean
-                  ? '예) 소프트웨어 개발의 원리와 실습'
-                  : 'ex) Software Development Principles and Practice',
+              hintText: l10n.subjectNameHint,
               border: OutlineInputBorder(),
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),

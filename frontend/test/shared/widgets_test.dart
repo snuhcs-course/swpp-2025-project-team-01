@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 import 'package:re_view/shared/widgets.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 
 import 'widgets_test.mocks.dart';
 
@@ -254,6 +256,7 @@ void main() {
             body: SubjectPanelHeader(
               title: 'Biochemistry',
               tags: const <HiveTag>[],
+              id: 'id',
               expanded: false,
               onToggleExpanded: mockHandler.call,
             ),
@@ -277,6 +280,7 @@ void main() {
             body: SubjectPanelHeader(
               title: 'Genetics',
               tags: const <HiveTag>[],
+              id: 'id',
               expanded: false,
               onToggleExpanded: () {},
               onLongPress: mockLongPress.call,
@@ -303,6 +307,7 @@ void main() {
               body: SubjectPanelHeader(
                 title: 'Thermodynamics',
                 tags: const <HiveTag>[],
+                id: 'id',
                 expanded: true,
                 onToggleExpanded: () {},
                 showEdit: true,
@@ -334,6 +339,7 @@ void main() {
               body: SubjectPanelHeader(
                 title: 'Algebra',
                 tags: const <HiveTag>[],
+                id: 'id',
                 expanded: false,
                 onToggleExpanded: () {},
                 favoriteOrDrag: Icons.star,
@@ -366,6 +372,7 @@ void main() {
                     key: const ValueKey('subject-0'),
                     title: 'Calculus',
                     tags: const <HiveTag>[],
+                    id: 'id',
                     expanded: false,
                     onToggleExpanded: () {},
                     favoriteOrDrag: Icons.drag_indicator,
@@ -406,6 +413,7 @@ void main() {
             body: SubjectPanelHeader(
               title: 'Tagged Subject',
               tags: [mockTag1, mockTag2],
+              id: 'id',
               expanded: true,
               onToggleExpanded: () {},
             ),
@@ -507,28 +515,65 @@ void main() {
       verify(mockService.expandFromBubble()).called(1);
     });
 
-    testWidgets(
-      'drag updates visual position and calls updateBubblePosition on pan end',
-      (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(body: CollapsedBubbleOverlay(service: mockService)),
-          ),
-        );
+    testWidgets('drag left snaps to left side with 10% clipping', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: CollapsedBubbleOverlay(service: mockService)),
+        ),
+      );
 
-        final gestureFinder = find.byType(GestureDetector);
-        expect(gestureFinder, findsOneWidget);
+      final gestureFinder = find.byType(GestureDetector);
+      expect(gestureFinder, findsOneWidget);
 
-        await tester.drag(gestureFinder, const Offset(40, -20));
-        await tester.pumpAndSettle();
+      // Drag to the right (but not enough to reach right side)
+      await tester.drag(gestureFinder, const Offset(40, -20));
+      await tester.pumpAndSettle();
 
-        verify(mockService.updateBubblePosition(any, any)).called(1);
+      verify(mockService.updateBubblePosition(any, any)).called(1);
 
-        final positioned = tester.widget<Positioned>(find.byType(Positioned));
-        expect(positioned.left, greaterThan(0.0));
-        expect(positioned.bottom, greaterThan(0.0));
-      },
-    );
+      // After drag ends, bubble should snap to left side
+      // Initial position (32, 48) + drag (40, -20) = (72, 68)
+      // Screen center is 400, so 72 < 356 (400 - bubbleSize/2)
+      // Therefore it snaps to the left side with 10% clipping
+      final positioned = tester.widget<AnimatedPositioned>(
+        find.byType(AnimatedPositioned),
+      );
+      const bubbleSize = 88.0;
+      expect(positioned.left, equals(-(bubbleSize * 0.1)));
+      expect(positioned.bottom, greaterThan(0.0));
+    });
+
+    testWidgets('drag right snaps to right side with 10% clipping', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: CollapsedBubbleOverlay(service: mockService)),
+        ),
+      );
+
+      final gestureFinder = find.byType(GestureDetector);
+      expect(gestureFinder, findsOneWidget);
+
+      // Drag far to the right to reach right side
+      await tester.drag(gestureFinder, const Offset(500, -20));
+      await tester.pumpAndSettle();
+
+      verify(mockService.updateBubblePosition(any, any)).called(1);
+
+      // After drag ends, bubble should snap to right side
+      // Screen width is 800, bubbleSize is 88
+      // Right position: 800 - 88 * 0.9 - 0 (safeArea.right) = 720.8
+      final positioned = tester.widget<AnimatedPositioned>(
+        find.byType(AnimatedPositioned),
+      );
+      const bubbleSize = 88.0;
+      const screenWidth = 800.0; // Default test screen width
+      expect(positioned.left, equals(screenWidth - bubbleSize * 0.9));
+      expect(positioned.bottom, greaterThan(0.0));
+    });
   });
 
   group('ExpandedLoadingOverlay and inner views', () {
@@ -551,6 +596,13 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) {
@@ -572,6 +624,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               key: rootKey,
@@ -646,6 +705,13 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -714,7 +780,7 @@ void main() {
         expect(find.byKey(const ValueKey('loading')), findsNothing);
         expect(find.byKey(const ValueKey('error')), findsNothing);
 
-        final english = find.text('Lecture Created!');
+        final english = find.text('Lecture created!');
         final korean = find.text('강의 생성 완료!');
         final hasHeader =
             english.evaluate().isNotEmpty || korean.evaluate().isNotEmpty;
@@ -753,14 +819,12 @@ void main() {
       'horizontal swipe to the left collapses overlay to bubble (alignRight=false)',
       (tester) async {
         await pumpOverlay(tester);
+        await tester.pumpAndSettle();
 
-        final gesture = find
-            .descendant(
-              of: find.byType(ExpandedLoadingOverlay),
-              matching: find.byType(GestureDetector),
-            )
-            .first;
+        final gestures = find.byType(GestureDetector);
+        expect(gestures, findsWidgets);
 
+        final gesture = gestures.first;
         final detector = tester.widget<GestureDetector>(gesture);
         expect(detector.onHorizontalDragEnd, isNotNull);
 
@@ -778,14 +842,12 @@ void main() {
       'horizontal swipe to the right collapses overlay to bubble (alignRight=true)',
       (tester) async {
         await pumpOverlay(tester);
+        await tester.pumpAndSettle();
 
-        final gesture = find
-            .descendant(
-              of: find.byType(ExpandedLoadingOverlay),
-              matching: find.byType(GestureDetector),
-            )
-            .first;
+        final gestures = find.byType(GestureDetector);
+        expect(gestures, findsWidgets);
 
+        final gesture = gestures.first;
         final detector = tester.widget<GestureDetector>(gesture);
         expect(detector.onHorizontalDragEnd, isNotNull);
 
