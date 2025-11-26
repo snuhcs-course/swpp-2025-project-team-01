@@ -303,7 +303,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
         ActionChip(
           label: Text(
             '+',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontSize: 18),
           ),
           onPressed: _addNewTag,
           backgroundColor: Theme.of(context).colorScheme.surface,
