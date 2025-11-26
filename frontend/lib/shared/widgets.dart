@@ -1306,8 +1306,8 @@ class SubjectPanelHeader extends StatelessWidget {
                 IconButton(
                   icon: Icon(
                     expanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.keyboard_arrow_up,
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: iconColor,
                   ),
                   onPressed: onToggleExpanded,
