@@ -236,6 +236,7 @@ def create_pipeline() -> LecturePipeline:
         use_context_similarity = True,
         context_weight = 0.047,
         context_update_rate = 0.24,
+        min_sentence_length = 2,
 
         # Translation settings
         translation_model = "tencent/Hunyuan-MT-7B-fp8",
