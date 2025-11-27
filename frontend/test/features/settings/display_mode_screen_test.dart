@@ -176,27 +176,26 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Tapping updates UI radio state (verifies setState)',
-      (WidgetTester tester) async {
-        // [Given] - 'system'에서 시작
-        await tester.pumpWidget(
-          createTestableWidget(DisplayModeScreen(hiveManager: mockHiveManager)),
-        );
-        await tester.pumpAndSettle();
-        expect(getCurrentThemeMode(tester), 'system');
+    testWidgets('Tapping updates UI radio state (verifies setState)', (
+      WidgetTester tester,
+    ) async {
+      // [Given] - 'system'에서 시작
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: mockHiveManager)),
+      );
+      await tester.pumpAndSettle();
+      expect(getCurrentThemeMode(tester), 'system');
 
-        // updateTheme 호출 후 테마 변경 시뮬레이션
-        when(mockSettings.theme).thenReturn('light');
+      // updateTheme 호출 후 테마 변경 시뮬레이션
+      when(mockSettings.theme).thenReturn('light');
 
-        // [When]
-        await tester.tap(find.byType(Image).at(0));
-        await tester.pumpAndSettle();
+      // [When]
+      await tester.tap(find.byType(Image).at(0));
+      await tester.pumpAndSettle();
 
-        // [Then]
-        expect(getCurrentThemeMode(tester), 'light');
-      },
-    );
+      // [Then]
+      expect(getCurrentThemeMode(tester), 'light');
+    });
   });
 
   group('3. Preview Images Verification', () {
@@ -229,10 +228,10 @@ void main() {
       // [Then]
       // 1. Wrap 위젯이 존재해야 함
       expect(find.byType(Wrap), findsOneWidget);
-      
+
       // 2. Expanded 위젯은 더 이상 사용되지 않아야 함
       expect(find.byType(Expanded), findsNothing);
-      
+
       // 3. 아이템들은 SizedBox로 너비가 지정되어야 함
       expect(find.byType(SizedBox), findsWidgets);
     });
