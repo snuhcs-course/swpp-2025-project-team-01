@@ -36,16 +36,17 @@ class SlideMatchingProcessor:
         batch_size: int = 4,
         use_image_batching: bool = True,
         image_batch_size: int = 4,
-        jump_penalty: float = 0.2,
-        backward_weight: float = 2.0,
+        jump_penalty: float = 1.5,
+        backward_weight: float = 1.85,
         use_exponential_scaling: bool = True,
-        exponential_scale: float = 2.8,
+        exponential_scale: float = 2.785,
         use_confidence_boost: bool = True,
-        confidence_threshold: float = 0.925,
-        confidence_weight: float = 2.25,
+        confidence_threshold: float = 0.913,
+        confidence_weight: float = 2.18,
         use_context_similarity: bool = True,
-        context_weight: float = 0.05,
-        context_update_rate: float = 0.25
+        context_weight: float = 0.04,
+        context_update_rate: float = 0.24,
+        min_sentence_length: int = 2
     ):
         """
         Initialize slide matching processor.
@@ -66,6 +67,7 @@ class SlideMatchingProcessor:
             use_context_similarity: Enable context-aware scoring via EMA
             context_weight: Weight for context similarity contribution
             context_update_rate: Update rate for EMA
+            min_sentence_length: Minimum sentence length (words) to use similarity score
         """
         self.model_name = model_name
         self.device = device
@@ -82,6 +84,7 @@ class SlideMatchingProcessor:
         self.use_context_similarity = use_context_similarity
         self.context_weight = context_weight
         self.context_update_rate = context_update_rate
+        self.min_sentence_length = min_sentence_length
         self.model = None
 
         print(f"Initializing Slide Matching Processor")
@@ -272,11 +275,19 @@ class SlideMatchingProcessor:
         backtrack = torch.zeros((num_queries, num_pages), device = self.device, dtype = torch.long)
 
         # Initialize first query
-        dp[0, :] = scores[0, :]
+        # Check if first sentence meets minimum length (count words)
+        first_word_count = len(queries[0].split())
+        first_sentence_long_enough = first_word_count >= self.min_sentence_length
+
+        if first_sentence_long_enough:
+            dp[0, :] = scores[0, :]
+        else:
+            # For short sentences, assign zero score (only jump penalty will apply)
+            dp[0, :] = 0.0
 
         # Initialize context scores (EMA of similarity scores per slide)
         context_scores = torch.zeros(num_pages, device = self.device, dtype = torch.float32)
-        if self.use_context_similarity:
+        if self.use_context_similarity and first_sentence_long_enough:
             context_scores = self.context_update_rate * (scores[0, :] - context_scores)
 
         # Precompute jump penalty matrix (num_pages x num_pages)
@@ -296,11 +307,19 @@ class SlideMatchingProcessor:
 
         # Fill DP table
         for i in range(1, num_queries):
-            current_score = scores[i, :].unsqueeze(0) # [1, num_pages]
+            # Check if current sentence meets minimum length (count words)
+            word_count = len(queries[i].split())
+            sentence_long_enough = word_count >= self.min_sentence_length
 
-            if self.use_context_similarity:
-                current_score += self.context_weight * context_scores.unsqueeze(0)
-            
+            if sentence_long_enough:
+                current_score = scores[i, :].unsqueeze(0) # [1, num_pages]
+
+                if self.use_context_similarity:
+                    current_score += self.context_weight * context_scores.unsqueeze(0)
+            else:
+                # For short sentences, use zero score (only jump penalty applies)
+                current_score = torch.zeros(1, num_pages, device = self.device, dtype = torch.float32)
+
             # Vectorized DP transition
             prev_dp = dp[i - 1, :].unsqueeze(1) # [num_pages, 1]
             current_score_grid = current_score.expand(num_pages, num_pages) # [num_pages, num_pages]
@@ -311,8 +330,8 @@ class SlideMatchingProcessor:
             # Find best previous page k for each current page j
             dp[i, :], backtrack[i, :] = torch.max(scores_with_penalty, dim = 0)
 
-            # Update context scores
-            if self.use_context_similarity:
+            # Update context scores (skip if sentence is too short)
+            if self.use_context_similarity and sentence_long_enough:
                 context_scores += self.context_update_rate * (scores[i, :] - context_scores)
 
         # Backtrack to find optimal path
@@ -419,7 +438,8 @@ if __name__ == "__main__":
         confidence_weight = 2.25,
         use_context_similarity = True,
         context_weight = 0.05,
-        context_update_rate = 0.25
+        context_update_rate = 0.25,
+        min_sentence_length = 3
     )
 
     # Example: match a transcript to slides
