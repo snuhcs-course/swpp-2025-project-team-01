@@ -66,24 +66,24 @@ class LecturePipeline:
         # ASR settings
         asr_model: str = "turbo",
         asr_chunk_seconds: int = 300,
-        asr_batch_size: int = 4,
+        asr_batch_size: int = 3,
 
         # Slide matching settings
         matching_model: str = 'nvidia/llama-nemoretriever-colembed-3b-v1',
         matching_batch_size: int = 4,
         use_image_batching: bool = False, # for stability
         image_batch_size: int = 4,
-        jump_penalty: float = 0.2,
-        backward_weight: float = 2.0,
+        jump_penalty: float = 1.5,
+        backward_weight: float = 1.85,
         use_exponential_scaling: bool = True,
-        exponential_scale: float = 2.8,
+        exponential_scale: float = 2.785,
         use_confidence_boost: bool = True,
-        confidence_threshold: float = 0.925,
-        confidence_weight: float = 2.25,
+        confidence_threshold: float = 0.913,
+        confidence_weight: float = 2.18,
         use_context_similarity: bool = True,
-        context_weight: float = 0.05,
-        context_update_rate: float = 0.25,
-        min_sentence_length: int = 0,
+        context_weight: float = 0.04,
+        context_update_rate: float = 0.24,
+        min_sentence_length: int = 2,
 
         # Translation settings
         translation_model: str = "tencent/Hunyuan-MT-7B-fp8",
