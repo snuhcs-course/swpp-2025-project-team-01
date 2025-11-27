@@ -14,6 +14,8 @@ import threading
 
 from transformers import AutoModel
 
+from .cuda_lock import get_cuda_init_lock
+
 # Global lock for slide matching model initialization
 # Protects CUDA initialization during model loading when multiple pipelines start simultaneously
 _matching_init_lock = threading.Lock()
@@ -97,27 +99,28 @@ class SlideMatchingProcessor:
 
     def load_model(self):
         """Load multimodal model into memory."""
-        # Use global lock only during model initialization
-        # This prevents CUDA initialization conflicts when multiple pipelines load models simultaneously
-        with _matching_init_lock:
-            if self.model is not None:
-                print("Model already loaded")
-                return
+        # Use global CUDA lock first to prevent concurrent model initialization across all processors
+        # Then use model-specific lock for thread safety within the same model type
+        with get_cuda_init_lock():
+            with _matching_init_lock:
+                if self.model is not None:
+                    print("Model already loaded")
+                    return
 
-            print('Loading NeMo Retriever model...')
+                print('Loading NeMo Retriever model...')
 
-            if torch.cuda.is_available():
-                torch.cuda.reset_peak_memory_stats()
+                if torch.cuda.is_available():
+                    torch.cuda.reset_peak_memory_stats()
 
-            self.model = AutoModel.from_pretrained(
-                self.model_name,
-                device_map = self.device,
-                torch_dtype = torch.bfloat16,
-                trust_remote_code = True,
-                attn_implementation = "flash_attention_2",
-            ).eval()
+                self.model = AutoModel.from_pretrained(
+                    self.model_name,
+                    device_map = self.device,
+                    torch_dtype = torch.bfloat16,
+                    trust_remote_code = True,
+                    attn_implementation = "flash_attention_2",
+                ).eval()
 
-            print("Model loaded successfully!")
+                print("Model loaded successfully!")
 
     def unload_model(self):
         """Unload model to free memory."""

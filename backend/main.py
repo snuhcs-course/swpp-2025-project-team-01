@@ -188,9 +188,13 @@ async def lifespan(app: FastAPI):
     while not pipeline_queue.empty():
         try:
             pipeline = await asyncio.wait_for(pipeline_queue.get(), timeout=1.0)
-            await asyncio.to_thread(pipeline.asr.unload_model)
-            await asyncio.to_thread(pipeline.matcher.unload_model)
-            await asyncio.to_thread(pipeline.tts.unload_model)
+            # Only unload if components exist
+            if hasattr(pipeline, 'asr') and pipeline.asr is not None:
+                await asyncio.to_thread(pipeline.asr.unload_model)
+            if hasattr(pipeline, 'matcher') and pipeline.matcher is not None:
+                await asyncio.to_thread(pipeline.matcher.unload_model)
+            if hasattr(pipeline, 'tts') and pipeline.tts is not None:
+                await asyncio.to_thread(pipeline.tts.unload_model)
             print('   ✅ Pipeline worker cleaned up')
         except asyncio.TimeoutError:
             break
