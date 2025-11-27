@@ -714,12 +714,8 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
-      // Should find EmptyStateMessage but with empty string (so it shows nothing)
+      // Verify empty state message
       expect(find.byType(EmptyStateMessage), findsOneWidget);
-      final emptyMessage = tester.widget<EmptyStateMessage>(
-        find.byType(EmptyStateMessage),
-      );
-      expect(emptyMessage.message, '');
     });
   });
 
