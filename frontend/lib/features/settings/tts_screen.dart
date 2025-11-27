@@ -53,7 +53,9 @@ class _TtsScreenState extends State<TtsScreen> {
   Future<void> _saveGender(String value) async {
     await _hiveManager.updateTts(gender: value);
     setState(() => _gender = value);
-    final filePath = value == '남성' ? 'assets/audios/sample_male.opus' : 'assets/audios/sample_female.opus';
+    final filePath = value == '남성'
+        ? 'assets/audios/sample_male.opus'
+        : 'assets/audios/sample_female.opus';
     _playPreviewTTS(filePath);
   }
 

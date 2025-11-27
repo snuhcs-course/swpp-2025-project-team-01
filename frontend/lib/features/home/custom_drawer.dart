@@ -10,17 +10,12 @@ class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
 
   static const ShapeBorder drawerShape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.horizontal(
-      right: Radius.circular(16),
-    ),
+    borderRadius: BorderRadius.horizontal(right: Radius.circular(16)),
   );
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      shape: drawerShape,
-      child: _DrawerContent()
-    );
+    return Drawer(shape: drawerShape, child: _DrawerContent());
   }
 
   /// 모션 줄이기 모드용 다이얼로그 표시
