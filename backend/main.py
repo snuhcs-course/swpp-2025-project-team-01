@@ -227,14 +227,14 @@ def create_pipeline() -> LecturePipeline:
 
         # Matching settings
         jump_penalty = 1.5,
-        backward_weight = 2.0,
+        backward_weight = 1.85,
         use_exponential_scaling = True,
-        exponential_scale = 2.79,
+        exponential_scale = 2.785,
         use_confidence_boost = True,
-        confidence_threshold = 0.9,
-        confidence_weight = 2.13,
+        confidence_threshold = 0.913,
+        confidence_weight = 2.18,
         use_context_similarity = True,
-        context_weight = 0.047,
+        context_weight = 0.04,
         context_update_rate = 0.24,
         min_sentence_length = 2,
 
