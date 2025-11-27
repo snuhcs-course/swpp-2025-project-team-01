@@ -100,42 +100,44 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.displayMode)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(padding),
-          child: Center(
-            // 최대 너비를 제한하여 이미지가 너무 길어지는 것 방지 (태블릿 조정)
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1000),
-              child: RadioGroup<String>(
-                groupValue: _mode,
-                onChanged: (v) => _changeMode(v!),
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: spacing,
-                  runSpacing: 24.0,
-                  children: [
-                    _buildDisplayOption(
-                      label: l10n.lightMode,
-                      value: 'light',
-                      assetPath: 'assets/images/light_mode.png',
-                      width: itemWidth,
-                    ),
-                    _buildDisplayOption(
-                      label: l10n.darkMode,
-                      value: 'dark',
-                      assetPath: 'assets/images/dark_mode.png',
-                      width: itemWidth,
-                    ),
-                    _buildDisplayOption(
-                      label: l10n.systemSettings,
-                      value: 'system',
-                      assetPath: _isSystemDarkMode()
-                          ? 'assets/images/dark_mode.png'
-                          : 'assets/images/light_mode.png',
-                      width: itemWidth,
-                    ),
-                  ],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(padding),
+            child: Center(
+              // 최대 너비를 제한하여 이미지가 너무 길어지는 것 방지 (태블릿 조정)
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: RadioGroup<String>(
+                  groupValue: _mode,
+                  onChanged: (v) => _changeMode(v!),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: spacing,
+                    runSpacing: 24.0,
+                    children: [
+                      _buildDisplayOption(
+                        label: l10n.lightMode,
+                        value: 'light',
+                        assetPath: 'assets/images/light_mode.png',
+                        width: itemWidth,
+                      ),
+                      _buildDisplayOption(
+                        label: l10n.darkMode,
+                        value: 'dark',
+                        assetPath: 'assets/images/dark_mode.png',
+                        width: itemWidth,
+                      ),
+                      _buildDisplayOption(
+                        label: l10n.systemSettings,
+                        value: 'system',
+                        assetPath: _isSystemDarkMode()
+                            ? 'assets/images/dark_mode.png'
+                            : 'assets/images/light_mode.png',
+                        width: itemWidth,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
