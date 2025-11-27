@@ -376,7 +376,7 @@ class BottomControlBar extends StatelessWidget {
               ),
               if (!isTablet)
                 Positioned(
-                  bottom: 4,
+                  bottom: 10,
                   right: 4,
                   child: FullscreenButton(
                     isEnabled: isFullscreen,
@@ -400,16 +400,19 @@ class BottomControlBar extends StatelessWidget {
               children: [
                 // 중앙
                 Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CaptionButton(
-                        isEnabled: isCaptionEnabled,
-                        onPressed: onCaptionToggle,
-                      ),
-                      const SizedBox(width: 24),
-                      TranscriptButton(onPressed: onTranscriptToggle),
-                    ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CaptionButton(
+                          isEnabled: isCaptionEnabled,
+                          onPressed: onCaptionToggle,
+                        ),
+                        const SizedBox(width: 24),
+                        TranscriptButton(onPressed: onTranscriptToggle),
+                      ],
+                    ),
                   ),
                 ),
                 // 우측: 전체화면 버튼
@@ -562,27 +565,30 @@ class CenterPlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SkipButton(
-          isForward: false,
-          onPressed: onSkipBackward,
-          isVertical: isVertical,
-        ),
-        SizedBox(width: isVertical ? 56 : 80),
-        PlayPauseButton(
-          isPlaying: isPlaying,
-          onPressed: onPlayPause,
-          isVertical: isVertical,
-        ),
-        SizedBox(width: isVertical ? 56 : 80),
-        SkipButton(
-          isForward: true,
-          onPressed: onSkipForward,
-          isVertical: isVertical,
-        ),
-      ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SkipButton(
+            isForward: false,
+            onPressed: onSkipBackward,
+            isVertical: isVertical,
+          ),
+          SizedBox(width: isVertical ? 56 : 80),
+          PlayPauseButton(
+            isPlaying: isPlaying,
+            onPressed: onPlayPause,
+            isVertical: isVertical,
+          ),
+          SizedBox(width: isVertical ? 56 : 80),
+          SkipButton(
+            isForward: true,
+            onPressed: onSkipForward,
+            isVertical: isVertical,
+          ),
+        ],
+      ),
     );
   }
 }

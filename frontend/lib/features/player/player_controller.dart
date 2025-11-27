@@ -44,6 +44,7 @@ class PlayerController extends ChangeNotifier {
 
   /// 재생 위치 및 페이지
   final ValueNotifier<double> currentTime = ValueNotifier(0.0);
+  final ValueNotifier<double> actualAudioDuration = ValueNotifier(0.0);
   final ValueNotifier<int> currentPage = ValueNotifier(1);
   final ValueNotifier<int?> currentSentenceIndex = ValueNotifier(null);
 
@@ -93,7 +94,7 @@ class PlayerController extends ChangeNotifier {
       return '';
     }
     final sentence = transcriptData!.timestamps[currentSentenceIndex.value!];
-    if (isKoreanLecture == isOriginalAudio.value) {
+    if (isKoreanLanguage.value) {
       return sentence.textKor;
     }
     return sentence.textEng;
@@ -107,6 +108,7 @@ class PlayerController extends ChangeNotifier {
   Timer? _scrollTimer;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<dynamic>? _stateSubscription;
+  StreamSubscription<Duration?>? _durationSubscription;
 
   // 오디오 경로 저장
   String? _originalAudioPath;
@@ -233,6 +235,15 @@ class PlayerController extends ChangeNotifier {
     // 재생 상태 변경 리스너
     _stateSubscription = _audioService.stateStream.listen((state) {
       isPlaying.value = state.playing;
+    });
+
+    // 오디오 길이 변경 리스너 (오디오 파일이 바뀔 때마다 실행)
+    _durationSubscription = _audioService.durationStream.listen((duration) {
+      if (duration != null) {
+        // 실제 오디오 길이에서 150ms 여유를 두어 끝부분 에러 방지
+        final durationInSeconds = duration.inMilliseconds / 1000.0;
+        actualAudioDuration.value = durationInSeconds + 0.15;
+      }
     });
   }
 
@@ -362,6 +373,14 @@ class PlayerController extends ChangeNotifier {
     if (details.delta.dy < -5 && !isPagesExpanded.value) {
       isPagesExpanded.value = true;
     }
+  }
+
+  void handleOverlaySwipeUp() {
+    // 오버레이가 켜져있을 때 위로 스와이프하면
+    // 1. 오버레이 닫기
+    // 2. 페이지 리스트 열기
+    showControls.value = false;
+    isPagesExpanded.value = true;
   }
 
   // ========== 재생 제어 메서드 ==========
@@ -691,6 +710,7 @@ class PlayerController extends ChangeNotifier {
     _scrollTimer?.cancel();
     _positionSubscription?.cancel();
     _stateSubscription?.cancel();
+    _durationSubscription?.cancel();
 
     _audioService.dispose();
     pdfController?.dispose();

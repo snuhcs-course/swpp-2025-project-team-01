@@ -281,8 +281,6 @@ class _PlayerScreenState extends State<PlayerScreen>
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final highContrast = _hiveManager.settings.accessibilityHighContrast;
-
     final playerContent = Container(
       color: Colors.black,
       child: SafeArea(
@@ -321,20 +319,6 @@ class _PlayerScreenState extends State<PlayerScreen>
       ),
     );
 
-    return Scaffold(
-      body: highContrast
-          ? ColorFiltered(
-              colorFilter: const ColorFilter.matrix(<double>[
-                // 대비 증가 (색상 반전 없음)
-                // contrast = 1.8, offset = 128 * (1 - 1.8) = -102.4
-                1.8, 0, 0, 0, -102.4, // Red 채널
-                0, 1.8, 0, 0, -102.4, // Green 채널
-                0, 0, 1.8, 0, -102.4, // Blue 채널
-                0, 0, 0, 1, 0, // Alpha 채널 (투명도 유지)
-              ]),
-              child: playerContent,
-            )
-          : playerContent,
-    );
+    return Scaffold(body: playerContent);
   }
 }
