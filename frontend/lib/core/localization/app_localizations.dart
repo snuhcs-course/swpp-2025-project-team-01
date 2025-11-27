@@ -43,6 +43,9 @@ class AppLocalizations {
   String get addLecture => isKorean ? '강의 생성' : 'Create Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get editTags => isKorean ? '태그 수정' : 'Edit Tags';
+  String get noLectures => isKorean
+      ? '(+) 버튼을 눌러서 과목이나 강의를 추가해 보세요.'
+      : 'Tap (+) button to add subjects or lectures.';
   String get noFavoriteSubjects =>
       isKorean ? '즐겨찾기된 과목이 없습니다.' : 'There are no favorite subjects.';
   String get noSubjectsWithSelectedTags => isKorean

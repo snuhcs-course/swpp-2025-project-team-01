@@ -250,17 +250,23 @@ class _HomeScreenState extends State<HomeScreen>
                     label: l10n.filter,
                     active: showTagFilter,
                     onTap: () => setState(() {
-                      showTagFilter = !showTagFilter;
-                      // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
-                      if (!showTagFilter) {
-                        selectedTagIds.clear();
+                      if (!editModeEnabled) {
+                        showTagFilter = !showTagFilter;
+                        // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
+                        if (!showTagFilter) {
+                          selectedTagIds.clear();
+                        }
                       }
                     }),
                   ),
                   const SizedBox(width: 6),
                   FavoritePill(
                     active: favoritesOnly,
-                    onTap: () => setState(() => favoritesOnly = !favoritesOnly),
+                    onTap: () => setState(() {
+                      if (!editModeEnabled) {
+                        favoritesOnly = !favoritesOnly;
+                      }
+                    }),
                   ),
                   const Spacer(),
                   EditPill(
@@ -314,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ? l10n.noFavoriteSubjects
                       : selectedTagIds.isNotEmpty
                       ? l10n.noSubjectsWithSelectedTags
-                      : '',
+                      : l10n.noLectures,
                 ),
               ),
             )
