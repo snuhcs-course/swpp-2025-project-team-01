@@ -97,6 +97,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/audios/sample_female.opus
+    - assets/audios/sample_male.opus
     - assets/images/app_icon.png
     - assets/images/logo.png
     - assets/images/loading_background.png

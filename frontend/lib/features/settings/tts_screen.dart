@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart' as ja;
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 
@@ -26,6 +27,7 @@ class TtsScreen extends StatefulWidget {
 
 class _TtsScreenState extends State<TtsScreen> {
   late final HiveManager _hiveManager;
+  final _player = ja.AudioPlayer();
 
   // TTS 설정 상태
   String _gender = '여성'; // 기본값은 여성
@@ -51,22 +53,14 @@ class _TtsScreenState extends State<TtsScreen> {
   Future<void> _saveGender(String value) async {
     await _hiveManager.updateTts(gender: value);
     setState(() => _gender = value);
-    _playPreviewTTS();
+    final filePath = value == '남성' ? 'assets/audios/sample_male.opus' : 'assets/audios/sample_female.opus';
+    _playPreviewTTS(filePath);
   }
 
   /// 예시 TTS 음성 재생
-  ///
-  /// 현재 설정된 성별과 속도로 "Hello, World!" 음성을 재생합니다.
-  /// TODO: 실제 TTS 엔진 연동 필요
-  void _playPreviewTTS() {
-    // TODO: TTS 엔진 연동
-    // 예시 코드:
-    // final ttsEngine = TTSEngine.instance;
-    // ttsEngine.speak(
-    //   text: "Hello, World!",
-    //   gender: _gender,
-    //   speed: _speedToRate(_speed),
-    // );
+  Future<void> _playPreviewTTS(String filePath) async {
+    await _player.setAsset(filePath);
+    _player.play();
   }
 
   @override
