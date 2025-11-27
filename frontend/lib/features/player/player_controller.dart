@@ -203,7 +203,9 @@ class PlayerController extends ChangeNotifier {
 
     if (cachedThumbnail != null) {
       _pdfCacheService.setCachedImage(1, cachedThumbnail.image.bytes);
-      pdfAspectRatio = cachedThumbnail.aspectRatio;
+      pdfAspectRatio = cachedThumbnail.aspectRatio < 1
+          ? 1 / cachedThumbnail.aspectRatio
+          : cachedThumbnail.aspectRatio;
       debugPrint(
         '✅ First page pre-loaded from thumbnail cache for $lectureId (aspect ratio: $pdfAspectRatio)',
       );
