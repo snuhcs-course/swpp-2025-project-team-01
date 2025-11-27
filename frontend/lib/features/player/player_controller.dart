@@ -90,7 +90,7 @@ class PlayerController extends ChangeNotifier {
       return '';
     }
     final sentence = transcriptData!.timestamps[currentSentenceIndex.value!];
-    if (isKoreanLecture == isOriginalAudio.value) {
+    if (isKoreanLanguage.value) {
       return sentence.textKor;
     }
     return sentence.textEng;

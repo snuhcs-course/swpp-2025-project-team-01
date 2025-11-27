@@ -794,68 +794,77 @@ class CaptionOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        controller.currentSentenceIndex,
+        controller.isKoreanLanguage,
+        controller.showControls,
+      ]),
+      builder: (context, _) {
+        final captionText = controller.captionText;
+
+        if (captionText.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return _CaptionContent(
+          captionText: captionText,
+          showControls: controller.showControls.value,
+        );
+      },
+    );
+  }
+}
+
+class _CaptionContent extends StatelessWidget {
+  const _CaptionContent({
+    required this.captionText,
+    required this.showControls,
+  });
+
+  final String captionText;
+  final bool showControls;
+
+  @override
+  Widget build(BuildContext context) {
     final hiveManager = HiveManager.instance;
     final emphasizeCaptions =
         hiveManager.settings.accessibilityEmphasizeCaptions;
 
-    return ValueListenableBuilder<int?>(
-      valueListenable: controller.currentSentenceIndex,
-      builder: (context, _, __) {
-        return ValueListenableBuilder<bool>(
-          valueListenable: controller.isKoreanLanguage,
-          builder: (context, __, ___) {
-            final captionText = controller.captionText;
-
-            if (captionText.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            return ValueListenableBuilder<bool>(
-              valueListenable: controller.showControls,
-              builder: (context, showControls, _) {
-                return Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: showControls ? 80 : 20,
-                  child: Center(
-                    child: HighContrastContainer(
-                      enabled: HiveManager
-                          .instance
-                          .settings
-                          .accessibilityHighContrast,
-                      child: Container(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.8,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          captionText,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: emphasizeCaptions ? 24 : 18,
-                            fontWeight: emphasizeCaptions
-                                ? FontWeight.bold
-                                : FontWeight.w500,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: showControls ? 80 : 20,
+      child: Center(
+        child: HighContrastContainer(
+          enabled: HiveManager.instance.settings.accessibilityHighContrast,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.8,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              captionText,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: emphasizeCaptions ? 24 : 18,
+                fontWeight: emphasizeCaptions
+                    ? FontWeight.bold
+                    : FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
