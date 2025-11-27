@@ -179,10 +179,7 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10.5),
-                  child: Image.asset(
-                    assetPath,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.asset(assetPath, fit: BoxFit.cover),
                 ),
               ),
             ),
@@ -205,10 +202,11 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
                   label,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? selectedColor : null,
-                      ),
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected ? selectedColor : null,
+                  ),
                 ),
               ),
               const SizedBox(width: 4),
