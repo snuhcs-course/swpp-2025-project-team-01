@@ -14,8 +14,7 @@ import 'package:re_view/data/hive_manager.dart';
 ///
 /// UI 구조:
 /// - 상단: 앱바 (제목: "Display Mode")
-/// - 본문: 라디오 버튼 3개 (각 모드 선택)
-/// - 하단: 미니 프리뷰 박스 3개 (각 모드의 시각적 미리보기)
+/// - 본문: 프리뷰 이미지와 라디오 버튼 3개 (각 모드 선택)
 ///
 /// HiveManager를 통해 설정을 저장 및 관리합니다.
 class DisplayModeScreen extends StatefulWidget {
@@ -32,7 +31,7 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
   late final HiveManager _hive;
   String _mode = 'system';
 
-  static const double _lightPreviewAspectRatio = 704 / 1494;
+  static const double _lightPreviewAspectRatio = 1080 / 1212;
 
   @override
   void initState() {
@@ -77,100 +76,154 @@ class _DisplayModeScreenState extends State<DisplayModeScreen> {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth > 600;
+
+    // 레이아웃 계산 변수
+    final double padding = 16.0;
+    final double spacing = 18.0; // 아이템 간 가로 간격
+
+    // 최대 너비 제한
+    final double contentWidth = screenWidth > 1000 ? 1000 : screenWidth;
+    final double availableWidth = contentWidth - (padding * 2);
+
+    // 모바일에서 최대 폭 제한
+    double calculatedMobileWidth = (availableWidth - spacing) / 2;
+    if (calculatedMobileWidth > 160.0) {
+      calculatedMobileWidth = 160.0;
+    }
+
+    final double itemWidth = isTablet
+        ? (availableWidth - (spacing * 2)) / 3
+        : calculatedMobileWidth;
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.displayMode)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
-
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // 디스플레이 모드 선택 라디오 버튼
-              _rowOption(l10n.lightMode, 'light'),
-              _rowOption(l10n.darkMode, 'dark'),
-              _rowOption(l10n.systemSettings, 'system'),
-
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-
-              // 미니 프리뷰: 각 모드의 시각적 표현
-              Row(
-                children: [
-                  _previewBox(
-                    label: l10n.lightMode,
-                    assetPath: 'assets/images/light_mode.png',
-                  ),
-                  const SizedBox(width: 8),
-                  _previewBox(
-                    label: l10n.darkMode,
-                    assetPath: 'assets/images/dark_mode.png',
-                  ),
-                  const SizedBox(width: 8),
-                  _previewBox(
-                    label: l10n.systemSettings,
-                    assetPath: _isSystemDarkMode()
-                        ? 'assets/images/dark_mode.png'
-                        : 'assets/images/light_mode.png',
-                  ),
-                ],
+          padding: EdgeInsets.all(padding),
+          child: Center(
+            // 최대 너비를 제한하여 이미지가 너무 길어지는 것 방지 (태블릿 조정)
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: RadioGroup<String>(
+                groupValue: _mode,
+                onChanged: (v) => _changeMode(v!),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: spacing,
+                  runSpacing: 24.0,
+                  children: [
+                    _buildDisplayOption(
+                      label: l10n.lightMode,
+                      value: 'light',
+                      assetPath: 'assets/images/light_mode.png',
+                      width: itemWidth,
+                    ),
+                    _buildDisplayOption(
+                      label: l10n.darkMode,
+                      value: 'dark',
+                      assetPath: 'assets/images/dark_mode.png',
+                      width: itemWidth,
+                    ),
+                    _buildDisplayOption(
+                      label: l10n.systemSettings,
+                      value: 'system',
+                      assetPath: _isSystemDarkMode()
+                          ? 'assets/images/dark_mode.png'
+                          : 'assets/images/light_mode.png',
+                      width: itemWidth,
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// 라디오 버튼 옵션 행 위젯
-  ///
-  /// 각 디스플레이 모드 선택 옵션을 표시합니다.
-  ///
-  /// [label]: 표시할 레이블 텍스트
-  /// [value]: 이 옵션의 값 ('light', 'dark', 'system')
-  Widget _rowOption(String label, String value) {
-    return ListTile(
-      leading: RadioGroup<String>(
-        groupValue: _mode,
-        onChanged: (v) => _changeMode(v!),
-        child: Column(children: <Widget>[Radio<String>(value: value)]),
-      ),
-      title: Text(label),
-      onTap: () => _changeMode(value),
-    );
-  }
+  /// 프리뷰 이미지와 라디오 버튼을 하나로 묶은 위젯
+  Widget _buildDisplayOption({
+    required String label,
+    required String value,
+    required String assetPath,
+    required double width,
+  }) {
+    final isSelected = _mode == value;
+    final isAppInDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-  /// 미니 프리뷰 박스 위젯
-  ///
-  /// 각 디스플레이 모드의 시각적 미리보기 이미지를 보여줍니다.
-  ///
-  /// [label]: 프리뷰 박스 하단에 표시할 레이블
-  /// [assetPath]: 표시할 이미지 파일 경로
-  Widget _previewBox({required String label, required String assetPath}) {
-    return Expanded(
+    final Color selectedColor = isAppInDarkMode
+        ? Colors.lightBlueAccent
+        : Theme.of(context).primaryColor;
+
+    return SizedBox(
+      width: width,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AspectRatio(
-            aspectRatio: _lightPreviewAspectRatio,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(assetPath, fit: BoxFit.cover),
+          // 프리뷰 이미지
+          GestureDetector(
+            onTap: () => _changeMode(value),
+            child: AspectRatio(
+              aspectRatio: _lightPreviewAspectRatio,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? selectedColor : Colors.black12,
+                    width: isSelected ? 2.0 : 1.0,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10.5),
+                  child: Image.asset(
+                    assetPath,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall,
+
+          // 라디오 버튼 + 텍스트 정렬
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Radio<String>(
+                value: value,
+                activeColor: selectedColor,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? selectedColor : null,
+                      ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // 텍스트를 중앙에 두기 위한 여백
+              IgnorePointer(
+                child: Opacity(
+                  opacity: 0.0,
+                  child: Radio<String>(
+                    value: '',
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
