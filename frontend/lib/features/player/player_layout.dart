@@ -347,6 +347,12 @@ class VideoControlsOverlay extends StatelessWidget {
     return Positioned.fill(
       child: GestureDetector(
         onTap: controller.toggleControls,
+        onVerticalDragEnd: (details) {
+          // 가로 모드에서 위로 스와이프 감지 (음수 속도)
+          if (!isVertical && (details.primaryVelocity ?? 0) < -300) {
+            controller.handleOverlaySwipeUp();
+          }
+        },
         child: Container(
           color: const Color(0x4D1D1D1D),
           child: Stack(
@@ -842,10 +848,7 @@ class _CaptionContent extends StatelessWidget {
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.8,
             ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(4),

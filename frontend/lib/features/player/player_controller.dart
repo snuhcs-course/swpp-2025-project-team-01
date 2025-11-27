@@ -369,6 +369,14 @@ class PlayerController extends ChangeNotifier {
     }
   }
 
+  void handleOverlaySwipeUp() {
+    // 오버레이가 켜져있을 때 위로 스와이프하면
+    // 1. 오버레이 닫기
+    // 2. 페이지 리스트 열기
+    showControls.value = false;
+    isPagesExpanded.value = true;
+  }
+
   // ========== 재생 제어 메서드 ==========
 
   /// 초기 재생 시작 (OrientationBuilder가 안정화된 후 호출)
