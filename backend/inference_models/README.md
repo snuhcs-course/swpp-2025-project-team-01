@@ -4,7 +4,10 @@ An integrated AI pipeline that reconstructs lectures from audio recordings and P
 
 ## Features
 
-- **Automatic Speech Recognition**: Transcribe lecture audio (English/Korean) using OpenAI Whisper with segment-level timestamps
+- **Automatic Speech Recognition**: Transcribe lecture audio with language-optimized models
+  - English: NVIDIA Parakeet TDT 0.6B v2 (higher accuracy)
+  - Korean: OpenAI Whisper Turbo (multilingual support)
+  - Segment-level timestamps with punctuation-based splitting
 - **Intelligent Slide Matching**: Align transcript to PDF slides using multimodal vision-text embeddings
 - **Bidirectional Translation**: Translate transcripts (English↔Korean) using Tencent Hunyuan-MT-7B with vLLM
 - **Text-to-Speech Synthesis**: Generate reconstructed audio with precise slide timing using Kokoro TTS (English lectures only)
@@ -43,7 +46,8 @@ conda activate swpp-ai
 
 The setup script installs:
 - PyTorch 2.8.0 with CUDA 12.9
-- Transformers, Whisper (ASR)
+- NVIDIA NeMo toolkit with ASR support (for Parakeet)
+- OpenAI Whisper (multilingual ASR)
 - vLLM 0.10.2 (for translation inference)
 - Kokoro TTS
 - Flash Attention 2 (optional, GPU required)
@@ -136,23 +140,44 @@ Each processing stage can be used independently:
 
 #### ASR Only
 
+**Recommended: Use language-specific factory method**
 ```python
 from asr_processor import ASRProcessor
 
-asr = ASRProcessor(device='cuda')
+# Automatically selects optimal model for language
+asr = ASRProcessor.create_for_language('en', device='cuda')  # Parakeet for English
+# OR
+asr = ASRProcessor.create_for_language('ko', device='cuda')  # Whisper for Korean
+
 asr.load_model()
 
-# Transcribe English lecture
+# Transcribe lecture
 result = asr.transcribe(
     audio_path='lecture_recording.mp3',
     language='en',        # 'en' for English, 'ko' for Korean
     chunk_seconds=300,    # Auto-split long files (default: 300)
-    batch_size=4,         # Batch processing for memory efficiency (default: 4)
+    batch_size=4,         # Batch processing (Whisper only, default: 4)
     output_path='transcript.txt'
 )
 
 print(result['transcript'])
 asr.unload_model()
+```
+
+**Advanced: Manual model selection**
+```python
+# Explicitly specify model type
+asr_parakeet = ASRProcessor(
+    model_name='nvidia/parakeet-tdt-0.6b-v2',
+    model_type='parakeet',
+    device='cuda'
+)
+
+asr_whisper = ASRProcessor(
+    model_name='turbo',
+    model_type='whisper',
+    device='cuda'
+)
 ```
 
 #### Slide Matching Only
@@ -275,11 +300,14 @@ tts.unload_model()
 The system consists of four independent processors orchestrated by `LecturePipeline`:
 
 ### 1. ASR Stage (Speech → Text)
-- **Model**: OpenAI Whisper (turbo by default)
+- **Models**:
+  - English: NVIDIA Parakeet TDT 0.6B v2 via NeMo (higher accuracy for English)
+  - Korean: OpenAI Whisper Turbo (multilingual support)
+  - Automatic language-based model selection
 - **Features**:
   - Supports English and Korean transcription
   - Automatic audio chunking for long files (>5 minutes)
-  - Batch processing to optimize GPU memory
+  - Separate model locks for parallel English/Korean processing
   - Segment-level timestamp extraction (punctuation-based split)
   - Special handling for Korean sentence endings (니다, 요)
 - **Output**: Full transcript text + segment timestamps with original audio timing
@@ -378,11 +406,17 @@ This feature is primarily used by the FastAPI backend to support user-initiated 
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `asr_model` | `turbo` | Whisper model name (turbo, large-v3, etc.) |
+| `asr_model` | `turbo` | ASR model name (not used when ASR auto-selects by language) |
 | `asr_chunk_seconds` | `300` | Chunk duration for long audio (seconds) |
-| `asr_batch_size` | `4` | Batch size (adjust based on VRAM) |
+| `asr_batch_size` | `4` | Batch size for Whisper (Parakeet processes sequentially) |
 
-**Note**: The `language` parameter is passed per request to the `pipeline.run()` or `asr.transcribe()` method, not during initialization.
+**Important Notes**:
+- The `language` parameter is passed per request to `pipeline.run()` or `asr.transcribe()`, not during initialization
+- **LecturePipeline automatically selects the optimal ASR model** based on language:
+  - English (`en`) → NVIDIA Parakeet TDT 0.6B v2 (higher accuracy)
+  - Korean (`ko`) → OpenAI Whisper Turbo (multilingual support)
+- The `asr_model` parameter in LecturePipeline is ignored when using automatic language-based model selection
+- For manual ASR processor usage, use `ASRProcessor.create_for_language('en'|'ko')` for automatic model selection, or specify `model_name` and `model_type` explicitly
 
 ### Slide Matching Parameters
 

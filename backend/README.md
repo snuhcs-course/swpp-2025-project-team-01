@@ -24,7 +24,9 @@ Backend API for lecture synchronization using AI inference pipeline.
    This will:
    - Create a conda environment named `swpp-backend` (or your custom name)
    - Install Python 3.12, PyTorch with CUDA 12.9
-   - Install Whisper (ASR), Kokoro TTS
+   - Install NVIDIA NeMo for Parakeet ASR (English)
+   - Install OpenAI Whisper (multilingual ASR)
+   - Install Kokoro TTS
    - Install vLLM for translation inference
    - Install transformers and ML libraries
    - Install FastAPI and backend dependencies
@@ -62,10 +64,11 @@ backend/
 └── inference_models/        # AI inference pipeline package
     ├── __init__.py
     ├── lecture_pipeline.py  # Main pipeline orchestration
-    ├── asr_processor.py     # Speech-to-text (ASR)
+    ├── asr_processor.py     # Speech-to-text (Parakeet/Whisper)
     ├── slide_matching_processor.py  # Slide matching
-    ├── translation_processor.py  # English-to-Korean translation
+    ├── translation_processor.py  # Bidirectional translation (en↔ko)
     ├── tts_processor.py     # Text-to-speech (TTS)
+    ├── cuda_lock.py         # Global CUDA initialization lock
     └── README.md
 ```
 
@@ -358,6 +361,11 @@ The `timestamps.json` file in the downloaded ZIP contains an array of timestamp 
 
 ### Performance Optimizations
 
+- **Language-Optimized ASR Models**:
+  - English lectures use NVIDIA Parakeet TDT 0.6B v2 for higher accuracy
+  - Korean lectures use OpenAI Whisper Turbo for multilingual support
+  - Separate model locks enable parallel processing of English and Korean jobs
+- **CUDA Initialization Lock**: Global lock prevents concurrent model loading across all processors, avoiding PyTorch meta tensor errors when multiple pipeline workers start simultaneously
 - **Image Batching**: Slide images are processed in batches (default: 4 images per batch) for faster embedding computation. Can be disabled if shared memory issues occur.
 - **FP8 Quantization**: Translation model uses FP8 quantization (`tencent/Hunyuan-MT-7B-fp8`) for reduced memory footprint while maintaining translation quality.
 - **Punctuation-based Segmentation**: ASR outputs are segmented by punctuation for both English and Korean, with special handling for Korean sentence endings (니다, 요).
