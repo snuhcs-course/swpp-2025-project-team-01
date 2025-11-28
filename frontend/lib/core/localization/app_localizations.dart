@@ -60,6 +60,8 @@ class AppLocalizations {
   String unarchiveConfirmText(String title) => isKorean
       ? '과목 "$title"을(를)\n보관함에서 꺼내시겠습니까?'
       : 'Will you unarchive subject\n"$title"?';
+  String get notSupportedInEdit =>
+      isKorean ? '수정 모드에서 지원하지 않는 기능입니다.' : 'Disabled in edit mode.';
 
   // 설정 화면
   String get displayMode => isKorean ? '디스플레이 모드' : 'Display Mode';

@@ -68,6 +68,12 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   /// Player로 이동하고 돌아올 때 orientation 재설정
   Future<void> _navigateToPlayer(String lectureId) async {
     // PlayerScreen 활성화 중에는 HomeScreen의 orientation 관찰 중단
@@ -250,7 +256,9 @@ class _HomeScreenState extends State<HomeScreen>
                     label: l10n.filter,
                     active: showTagFilter,
                     onTap: () => setState(() {
-                      if (!editModeEnabled) {
+                      if (editModeEnabled) {
+                        _showSnackBar(l10n.notSupportedInEdit);
+                      } else {
                         showTagFilter = !showTagFilter;
                         // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
                         if (!showTagFilter) {
@@ -263,7 +271,9 @@ class _HomeScreenState extends State<HomeScreen>
                   FavoritePill(
                     active: favoritesOnly,
                     onTap: () => setState(() {
-                      if (!editModeEnabled) {
+                      if (editModeEnabled) {
+                        _showSnackBar(l10n.notSupportedInEdit);
+                      } else {
                         favoritesOnly = !favoritesOnly;
                       }
                     }),
