@@ -258,6 +258,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                 labelText: l10n.tagName,
                 hintText: l10n.newTag,
                 border: const OutlineInputBorder(),
+                
               ),
               enableIMEPersonalizedLearning: false,
             ),
@@ -370,7 +371,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     // 입력창 초기화 (한글 입력 문제 방지를 위해 프레임 이후 실행)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _nameC.clear();
+        _nameC.text = _tags[_tags.length - 1].name;
       }
     });
   }
