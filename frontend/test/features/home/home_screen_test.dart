@@ -1124,6 +1124,35 @@ void main() {
       // Verify dialog is closed
       expect(find.byType(CreateSubjectDialog), findsNothing);
     });
+
+    testWidgets('Rejects duplicate subject name', (tester) async {
+      updateTestData((data) {
+        data.tags['t1'] = makeTag(id: 't1', name: 'Tag1');
+        data.subjects['s1'] = makeSubject(id: 's1', title: 'Subject1');
+      });
+
+      await tester.pumpWidget(
+        buildDialogTestApp(
+          () => CreateSubjectDialog(allTags: HiveManager.instance.getTags()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Enter a duplicate title
+      await tester.enterText(find.byType(TextField).first, 'Subject1');
+      await tester.pump();
+
+      // Tap the add button
+      await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+      await tester.pumpAndSettle();
+
+      // Verify snackbar notification
+      expect(find.byType(SnackBar), findsOneWidget);
+    });
   });
 
   group('SubjectEditDialog', () {

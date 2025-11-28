@@ -169,6 +169,9 @@ class AppLocalizations {
       isKorean ? '태그 선택 (선택사항)' : 'Select Tags (Optional)';
   String get pleaseEnterSubjectName =>
       isKorean ? '과목명을 입력해주세요' : 'Please enter subject name';
+  String get subjectNameExists => isKorean
+      ? '같은 이름의 과목이 이미 존재합니다.'
+      : 'A subject with this name already exists.';
 
   // 태그
   String get tag => isKorean ? '태그' : 'Tag';

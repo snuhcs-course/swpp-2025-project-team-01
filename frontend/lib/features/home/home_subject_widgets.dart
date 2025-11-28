@@ -302,6 +302,18 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
               );
               return;
             }
+            final isDuplicate = HiveManager.instance
+                .getSubjects()
+                .map((s) => s.title)
+                .contains(text);
+            if (isDuplicate) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(AppLocalizations.of(context).subjectNameExists),
+                ),
+              );
+              return;
+            }
             Navigator.pop(context, {
               'action': 'create',
               'title': text,
