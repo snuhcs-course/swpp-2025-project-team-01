@@ -264,25 +264,27 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
+                if (_tags.isNotEmpty)
+                  ...[
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 231, 76, 60),
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        onPressed: _deleteSelectedTag,
+                        label: Text(l10n.deleteTag),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 Expanded(
                   child: FilledButton(
                     onPressed: _applyNameChange,
                     child: Text(l10n.nameApply),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // 삭제 버튼을 버튼 행에 통합
-                if (_tags.isNotEmpty)
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 231, 76, 60),
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: _deleteSelectedTag,
-                      label: Text(l10n.deleteTag),
-                    ),
-                  ),
               ],
             ),
           ],
