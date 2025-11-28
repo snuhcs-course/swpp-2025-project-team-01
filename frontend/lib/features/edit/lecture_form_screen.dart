@@ -1208,9 +1208,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       duration = tsList.last['tts_end_time'] as int;
 
       // 5. 강의 구조체 생성
+      final hasSubject = _hive.subjects.values.contains(
+        _hive.getSubject(subjectId),
+      );
+      final finalSubjectId = hasSubject ? subjectId : 'uncategorized';
       final generatedLecture = HiveLecture(
         id: lectureId,
-        subjectId: subjectId,
+        subjectId: finalSubjectId,
         weekLabel: weekText,
         title: titleText,
         duration: duration,
@@ -1267,18 +1271,13 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       // 7. 과목에 강의 추가
-      if (_selectedSubjectId != null) {
-        final subject = _hive.getSubject(_selectedSubjectId!);
-        if (subject != null) {
-          final updatedLectureIds = [
-            ...subject.lectureIds,
-            generatedLecture.id,
-          ];
-          await _hive.updateSubject(
-            _selectedSubjectId!,
-            lectureIds: updatedLectureIds,
-          );
-        }
+      final subject = _hive.getSubject(finalSubjectId);
+      if (subject != null) {
+        final updatedLectureIds = [...subject.lectureIds, generatedLecture.id];
+        await _hive.updateSubject(
+          finalSubjectId,
+          lectureIds: updatedLectureIds,
+        );
       }
 
       // 강의 생성 완료 - lectureId 전달
