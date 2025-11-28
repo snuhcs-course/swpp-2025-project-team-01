@@ -160,7 +160,6 @@ class AppLocalizations {
   String get deleteSubjectWarning3 =>
       isKorean ? '됩니다.\n\n삭제하시겠습니까?' : '\n\nDo you want to delete?';
   String get editTags2 => isKorean ? '태그 수정' : 'Edit Tags';
-  String get editComplete => isKorean ? '수정 완료' : 'Complete';
   String get addSubject => isKorean ? '과목 추가' : 'Add Subject';
   String get subjectName => isKorean ? '과목명' : 'Subject Name';
   String get subjectNameHint => isKorean
@@ -182,7 +181,6 @@ class AppLocalizations {
   String get colorTheme => isKorean ? '색상 테마' : 'Color Theme';
   String get tagName => isKorean ? '이름' : 'Name';
   String get apply => isKorean ? '적용' : 'Apply';
-  String get nameApply => isKorean ? '이름 적용' : 'Apply Name';
   String get newTag => isKorean ? '새 태그' : 'New Tag';
   String get addTag => isKorean ? '태그 추가' : 'Add Tag';
   String get deleteTag => isKorean ? '태그 삭제' : 'Delete Tag';
@@ -374,6 +372,13 @@ class AppLocalizations {
       : 'Please check your network settings and try again later.';
 
   String get cancelling => isKorean ? '강의 생성을 취소하는 중..' : 'Cancelling..';
+
+  // 기타
+  String get languageCode => isKorean ? 'KOR' : 'ENG';
+  String get male => isKorean ? '남성' : 'Male';
+  String get female => isKorean ? '여성' : 'Female';
+  String get archiveAction => isKorean ? '보관' : 'Archive';
+  String get unknown => isKorean ? '알 수 없음' : 'Unknown';
 }
 
 class _AppLocalizationsDelegate

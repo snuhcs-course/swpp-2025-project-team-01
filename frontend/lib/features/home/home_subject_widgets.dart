@@ -413,7 +413,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
       context: context,
       barrierColor: Colors.black87,
       builder: (_) => DeleteWarningDialog(
-        warningText: l10n.isKorean ? '보관' : 'Archive',
+        warningText: l10n.archiveAction,
         yesText: l10n.yes,
         noText: l10n.no,
         onConfirm: () async {
@@ -450,7 +450,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
       title: l10n.editingSubject,
       deleteLabel: l10n.delete,
       completeLabel: l10n.complete,
-      archiveLabel: l10n.isKorean ? '보관' : 'Archive',
+      archiveLabel: l10n.archiveAction,
       onDelete: () async {
         final result = await showDeleteConfirmationDialog(widget.subject);
         if (result == true && context.mounted) {

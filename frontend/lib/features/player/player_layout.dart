@@ -614,6 +614,7 @@ class TranslationButton extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return ValueListenableBuilder<bool>(
       valueListenable: controller.isKoreanLanguage,
@@ -643,7 +644,7 @@ class TranslationButton extends StatelessWidget {
                   : null,
             ),
             child: Text(
-              isKorean ? 'KOR' : 'ENG',
+              l10n.languageCode,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

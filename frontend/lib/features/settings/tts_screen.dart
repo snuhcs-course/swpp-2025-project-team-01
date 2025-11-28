@@ -83,7 +83,7 @@ class _TtsScreenState extends State<TtsScreen> {
           children: [
             _buildSectionTitle(l10n.ttsVoiceGender),
             const SizedBox(height: 12),
-            _buildGenderButtons(l10n.isKorean),
+            _buildGenderButtons(l10n),
           ],
         ),
       ),
@@ -100,25 +100,15 @@ class _TtsScreenState extends State<TtsScreen> {
     return Text(title, style: textStyle);
   }
 
-  Widget _buildGenderButtons(bool isKorean) {
+  Widget _buildGenderButtons(AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
-          child: _genderButton(
-            context,
-            isKorean ? '남성' : 'Male',
-            _gender == '남성',
-            true,
-          ),
+          child: _genderButton(context, l10n.male, _gender == '남성', true),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _genderButton(
-            context,
-            isKorean ? '여성' : 'Female',
-            _gender == '여성',
-            true,
-          ),
+          child: _genderButton(context, l10n.female, _gender == '여성', true),
         ),
       ],
     );
