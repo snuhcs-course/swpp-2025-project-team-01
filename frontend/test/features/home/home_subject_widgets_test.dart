@@ -18,7 +18,7 @@ void main() {
   late HiveSubject subject;
   late List<HiveTag> allTags;
 
-  Widget _buildTestApp() {
+  Widget buildTestApp() {
     return MaterialApp(
       locale: const Locale('en'), // so archive label is "Archive"
       localizationsDelegates: const [
@@ -76,7 +76,7 @@ void main() {
         mockHiveManager.deleteSubject(any),
       ).thenAnswer((_) async {}); // if async, or thenReturn(null) if sync
 
-      await tester.pumpWidget(_buildTestApp());
+      await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
       // 1. Open SubjectEditDialog
@@ -110,7 +110,7 @@ void main() {
       (tester) async {
         when(mockHiveManager.deleteSubject(any)).thenAnswer((_) async {});
 
-        await tester.pumpWidget(_buildTestApp());
+        await tester.pumpWidget(buildTestApp());
         await tester.pump();
 
         await tester.tap(find.text('Open Dialog'));
@@ -141,7 +141,7 @@ void main() {
     ) async {
       when(mockHiveManager.archiveSubject(any)).thenAnswer((_) async {});
 
-      await tester.pumpWidget(_buildTestApp());
+      await tester.pumpWidget(buildTestApp());
       await tester.pump();
 
       // 1. Open dialog
@@ -180,7 +180,7 @@ void main() {
       (tester) async {
         when(mockHiveManager.archiveSubject(any)).thenAnswer((_) async {});
 
-        await tester.pumpWidget(_buildTestApp());
+        await tester.pumpWidget(buildTestApp());
         await tester.pump();
 
         await tester.tap(find.text('Open Dialog'));
