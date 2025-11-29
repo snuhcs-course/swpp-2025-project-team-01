@@ -32,6 +32,9 @@ class LectureLoadingService extends ChangeNotifier {
   Timer? _messageTimer;
   int _currentMessageIndex = 0;
   final Random _random = Random();
+  String? _currentRoute; // 현재 라우트 추적
+  Timer? _completionTimer; // 15초 자동 숨김 타이머
+  bool _hasVisitedHome = false; // 홈 화면 방문 여부 (앱 실행 중에만 유지)
 
   /// 현재 언어 설정에 따른 AppLocalizations 인스턴스 가져오기
   AppLocalizations get _l10n {
@@ -134,6 +137,7 @@ class LectureLoadingService extends ChangeNotifier {
     _errorTitle = '';
     _errorMessage = '';
     _isCompleted = false;
+    _hasVisitedHome = false; // 새 로딩 시작 시 리셋
 
     // 주기적으로 메시지 변경 (3-5초마다)
     _startMessageTimer();
@@ -209,6 +213,10 @@ class LectureLoadingService extends ChangeNotifier {
     _message = _l10n.lectureCreationComplete;
     _lectureId = lectureId;
     _isCompleted = true;
+
+    // 항상 15초 타이머 시작 (어디서 완료되든)
+    _startCompletionTimer();
+
     notifyListeners();
     _saveState();
   }
@@ -216,6 +224,7 @@ class LectureLoadingService extends ChangeNotifier {
   /// 로딩 숨김 (즉시)
   void hideLoading() {
     _messageTimer?.cancel();
+    _completionTimer?.cancel(); // 완료 타이머도 취소
     _isLoading = false;
     _progress = 0.0;
     _message = '';
@@ -229,6 +238,8 @@ class LectureLoadingService extends ChangeNotifier {
     _errorTitle = '';
     _errorMessage = '';
     _isCompleted = false;
+    _currentRoute = null; // 라우트 정보 초기화
+    _hasVisitedHome = false; // 홈 방문 플래그 리셋
     notifyListeners();
     _clearState();
   }
@@ -251,6 +262,7 @@ class LectureLoadingService extends ChangeNotifier {
   /// 강의 생성 취소
   Future<void> cancelLoading({http.Client? fakeClient}) async {
     _messageTimer?.cancel();
+    _completionTimer?.cancel(); // 완료 타이머도 취소
     _isCancelled = true;
     _message = _l10n.cancelling;
     notifyListeners();
@@ -283,12 +295,19 @@ class LectureLoadingService extends ChangeNotifier {
   }
 
   /// 로딩 바를 축소하여 버블 상태로 전환
-  void collapseToBubble({required bool alignRight}) {
+  void collapseToBubble({required bool alignRight, bool snapToCorner = false}) {
     if (!_isLoading) {
       return;
     }
     _isCollapsed = true;
     _bubbleOnRight = alignRight;
+
+    // 모서리에 붙이기 옵션이 활성화된 경우 기본 모서리 위치로 이동
+    if (snapToCorner) {
+      _bubbleX = 24.0;
+      _bubbleY = 24.0;
+    }
+
     notifyListeners();
     _saveState();
   }
@@ -317,6 +336,53 @@ class LectureLoadingService extends ChangeNotifier {
     _saveState();
   }
 
+  /// NavigatorObserver가 호출하는 메서드
+  void onRouteChanged(String? routeName) {
+    // 로딩 중이 아니면 아무 작업도 하지 않음
+    if (!_isLoading) {
+      return;
+    }
+
+    _currentRoute = routeName;
+    debugPrint('‼️ $routeName');
+
+    // 홈 화면 방문 체크
+    if (routeName == '/home') {
+      _hasVisitedHome = true;
+    }
+
+    // 조건 1: 완료 상태이고 홈 화면에서 벗어남 → 즉시 숨김 (타이머 취소)
+    if (_isCompleted && routeName != '/home') {
+      _completionTimer?.cancel();
+      hideLoading();
+      return;
+    }
+
+    // 조건 2: 완료되지 않은 상태이고 로딩 중이며 홈 화면에서 벗어남 → bubble로 축소
+    // (단, 홈 화면을 최소 한 번 방문한 경우에만)
+    if (!_isCompleted &&
+        routeName != '/home' &&
+        !_isCollapsed &&
+        _hasVisitedHome) {
+      collapseToBubble(alignRight: true, snapToCorner: true);
+    }
+
+    _saveState();
+    notifyListeners();
+  }
+
+  /// 15초 후 자동 숨김 타이머 시작
+  void _startCompletionTimer() {
+    _completionTimer?.cancel(); // 기존 타이머 취소
+
+    // 어디서 완료되든 항상 15초 타이머 시작
+    _completionTimer = Timer(const Duration(seconds: 15), () {
+      if (_isLoading && _isCompleted) {
+        hideLoading();
+      }
+    });
+  }
+
   // SharedPreferences keys
   static const _keyIsLoading = 'lecture_loading_is_loading';
   static const _keyProgress = 'lecture_loading_progress';
@@ -327,6 +393,7 @@ class LectureLoadingService extends ChangeNotifier {
   static const _keyBubbleX = 'lecture_loading_bubble_x';
   static const _keyBubbleY = 'lecture_loading_bubble_y';
   static const _keyIsCompleted = 'lecture_loading_is_completed';
+  static const _keyCurrentRoute = 'lecture_loading_current_route';
 
   /// 상태를 SharedPreferences에 저장
   Future<void> _saveState() async {
@@ -341,6 +408,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setDouble(_keyBubbleX, _bubbleX);
       await prefs.setDouble(_keyBubbleY, _bubbleY);
       await prefs.setBool(_keyIsCompleted, _isCompleted);
+      await prefs.setString(_keyCurrentRoute, _currentRoute ?? '');
     } catch (e) {
       debugPrint('Failed to save loading state: $e');
     }
@@ -359,6 +427,12 @@ class LectureLoadingService extends ChangeNotifier {
       _bubbleX = prefs.getDouble(_keyBubbleX) ?? 24.0;
       _bubbleY = prefs.getDouble(_keyBubbleY) ?? 24.0;
       _isCompleted = prefs.getBool(_keyIsCompleted) ?? false;
+      _currentRoute = prefs.getString(_keyCurrentRoute);
+
+      // 완료 상태로 복원되면 타이머 재시작 (어디서든)
+      if (_isLoading && _isCompleted) {
+        _startCompletionTimer();
+      }
 
       // 복원 후 UI 업데이트
       if (_isLoading) {
@@ -382,6 +456,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyBubbleX);
       await prefs.remove(_keyBubbleY);
       await prefs.remove(_keyIsCompleted);
+      await prefs.remove(_keyCurrentRoute);
     } catch (e) {
       debugPrint('Failed to clear loading state: $e');
     }
