@@ -102,20 +102,78 @@ class HorizontalPlayerLayout extends StatelessWidget {
 
                           if (isPagesExpanded)
                             Positioned(
-                              top: 12,
-                              right: 16,
+                              top: 0,
+                              left: 0,
+                              right: 0,
                               // isSynced, currentPage, currentSentenceIndex를 함께 감시하여 즉시 업데이트
                               child: ListenableBuilder(
                                 listenable: Listenable.merge([
                                   controller.isSynced,
                                   controller.currentPage,
                                   controller.currentSentenceIndex,
+                                  controller.isOriginalAudio,
                                 ]),
                                 builder: (context, _) {
-                                  return SyncButton(
-                                    isSynced: controller.isSynced.value,
-                                    onPressed: controller.toggleSync,
-                                    pageDifference: controller.pageDifference,
+                                  return Container(
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Color(0x88000000),
+                                          Color(0x00000000),
+                                        ],
+                                        stops: [0.0, 1.0],
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      12,
+                                      16,
+                                      24,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        AudioSourceButton(
+                                          isOriginalAudio:
+                                              controller.isOriginalAudio.value,
+                                          onPressed:
+                                              controller.isKoreanLecture == true
+                                              ? () {
+                                                  final l10n =
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      );
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        l10n.ttsNotSupportedForKorean,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              : controller.toggleAudioSource,
+                                          isVertical: false,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SpeedButton(
+                                          onSpeedChanged:
+                                              controller.setPlaybackSpeed,
+                                          isVertical: false,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SyncButton(
+                                          isSynced: controller.isSynced.value,
+                                          onPressed: controller.toggleSync,
+                                          pageDifference:
+                                              controller.pageDifference,
+                                          isVertical: false,
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),
