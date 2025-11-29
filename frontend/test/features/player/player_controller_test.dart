@@ -22,6 +22,7 @@ void main() {
   late MockPdfDocument mockPdfDocument;
   late StreamController<Duration> positionStreamController;
   late StreamController<ja.PlayerState> stateStreamController;
+  late StreamController<Duration?> durationStreamController;
   late Directory tempDir;
   late String tempPdfPath;
 
@@ -591,6 +592,7 @@ void main() {
     // Create stream controllers for mocking
     positionStreamController = StreamController<Duration>.broadcast();
     stateStreamController = StreamController<ja.PlayerState>.broadcast();
+    durationStreamController = StreamController<Duration?>.broadcast();
 
     // Setup default mock behaviors
     when(
@@ -599,6 +601,9 @@ void main() {
     when(
       mockAudioService.stateStream,
     ).thenAnswer((_) => stateStreamController.stream);
+    when(
+      mockAudioService.durationStream,
+    ).thenAnswer((_) => durationStreamController.stream);
     when(
       mockAudioService.loadAudio(any),
     ).thenAnswer((_) async => Future.value());
@@ -628,6 +633,7 @@ void main() {
   tearDown(() async {
     await positionStreamController.close();
     await stateStreamController.close();
+    await durationStreamController.close();
     try {
       tempDir.deleteSync(recursive: true);
     } catch (_) {}
