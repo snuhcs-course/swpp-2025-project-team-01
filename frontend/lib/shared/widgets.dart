@@ -359,6 +359,14 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.black.withValues(alpha: 0.6),
+                        border: widget.service.hasError
+                            ? Border.all(color: Color(0xFFFF6B6B), width: 6.0)
+                            : widget.service.isCompleted
+                            ? Border.all(
+                                color: const Color(0xFF4CAF50),
+                                width: 6.0,
+                              )
+                            : null,
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x33000000),
@@ -368,18 +376,19 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                         ],
                       ),
                     ),
-                    SizedBox(
-                      width: bubbleSize,
-                      height: bubbleSize,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 6,
-                        backgroundColor: Colors.white24,
-                        valueColor: const AlwaysStoppedAnimation(
-                          Color(0xFFF7FAB0),
+                    if (!widget.service.hasError && !widget.service.isCompleted)
+                      SizedBox(
+                        width: bubbleSize,
+                        height: bubbleSize,
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 6,
+                          backgroundColor: Colors.white24,
+                          valueColor: const AlwaysStoppedAnimation(
+                            Color(0xFFF7FAB0),
+                          ),
                         ),
                       ),
-                    ),
                     ClipOval(
                       child: Container(
                         width: bubbleSize - 18,

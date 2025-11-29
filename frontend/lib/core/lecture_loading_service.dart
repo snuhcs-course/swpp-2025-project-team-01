@@ -394,6 +394,9 @@ class LectureLoadingService extends ChangeNotifier {
   static const _keyBubbleY = 'lecture_loading_bubble_y';
   static const _keyIsCompleted = 'lecture_loading_is_completed';
   static const _keyCurrentRoute = 'lecture_loading_current_route';
+  static const _keyHasError = 'lecture_loading_has_error';
+  static const _keyErrorTitle = 'lecture_loading_error_title';
+  static const _keyErrorMessage = 'lecture_loading_error_message';
 
   /// 상태를 SharedPreferences에 저장
   Future<void> _saveState() async {
@@ -409,6 +412,9 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setDouble(_keyBubbleY, _bubbleY);
       await prefs.setBool(_keyIsCompleted, _isCompleted);
       await prefs.setString(_keyCurrentRoute, _currentRoute ?? '');
+      await prefs.setBool(_keyHasError, _hasError);
+      await prefs.setString(_keyErrorTitle, _errorTitle);
+      await prefs.setString(_keyErrorMessage, _errorMessage);
     } catch (e) {
       debugPrint('Failed to save loading state: $e');
     }
@@ -428,6 +434,9 @@ class LectureLoadingService extends ChangeNotifier {
       _bubbleY = prefs.getDouble(_keyBubbleY) ?? 24.0;
       _isCompleted = prefs.getBool(_keyIsCompleted) ?? false;
       _currentRoute = prefs.getString(_keyCurrentRoute);
+      _hasError = prefs.getBool(_keyHasError) ?? false;
+      _errorTitle = prefs.getString(_keyErrorTitle) ?? '';
+      _errorMessage = prefs.getString(_keyErrorMessage) ?? '';
 
       // 완료 상태로 복원되면 타이머 재시작 (어디서든)
       if (_isLoading && _isCompleted) {
@@ -457,6 +466,9 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyBubbleY);
       await prefs.remove(_keyIsCompleted);
       await prefs.remove(_keyCurrentRoute);
+      await prefs.remove(_keyHasError);
+      await prefs.remove(_keyErrorTitle);
+      await prefs.remove(_keyErrorMessage);
     } catch (e) {
       debugPrint('Failed to clear loading state: $e');
     }
