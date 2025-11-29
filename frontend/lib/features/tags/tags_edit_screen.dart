@@ -260,7 +260,6 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                     labelText: l10n.tagName,
                     hintText: l10n.newTag,
                     border: const OutlineInputBorder(),
-
                   ),
                   enableIMEPersonalizedLearning: false,
                   enabled: _tags.isNotEmpty,
@@ -271,7 +270,12 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
                     Expanded(
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 231, 76, 60),
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            231,
+                            76,
+                            60,
+                          ),
                           foregroundColor: Colors.white,
                         ),
                         icon: const Icon(Icons.delete_outline, size: 20),

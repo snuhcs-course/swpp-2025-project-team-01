@@ -693,8 +693,14 @@ class MockLectureLoadingService extends _i1.Mock
           as _i5.Future<void>);
 
   @override
-  void collapseToBubble({required bool? alignRight}) => super.noSuchMethod(
-    Invocation.method(#collapseToBubble, [], {#alignRight: alignRight}),
+  void collapseToBubble({
+    required bool? alignRight,
+    bool? snapToCorner = false,
+  }) => super.noSuchMethod(
+    Invocation.method(#collapseToBubble, [], {
+      #alignRight: alignRight,
+      #snapToCorner: snapToCorner,
+    }),
     returnValueForMissingStub: null,
   );
 
@@ -707,6 +713,12 @@ class MockLectureLoadingService extends _i1.Mock
   @override
   void updateBubblePosition(double? x, double? y) => super.noSuchMethod(
     Invocation.method(#updateBubblePosition, [x, y]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onRouteChanged(String? routeName) => super.noSuchMethod(
+    Invocation.method(#onRouteChanged, [routeName]),
     returnValueForMissingStub: null,
   );
 
