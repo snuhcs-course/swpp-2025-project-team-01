@@ -1041,6 +1041,7 @@ class DeleteWarningDialog extends StatelessWidget {
     required this.yesText,
     required this.noText,
     required this.warningText,
+    this.hiveManager,
   });
 
   final Widget body;
@@ -1048,6 +1049,7 @@ class DeleteWarningDialog extends StatelessWidget {
   final String yesText;
   final String noText;
   final String warningText;
+  final HiveManager? hiveManager;
 
   @override
   Widget build(BuildContext context) {

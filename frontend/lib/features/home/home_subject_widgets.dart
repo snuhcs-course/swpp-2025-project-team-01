@@ -334,11 +334,13 @@ class SubjectEditDialog extends StatefulWidget {
     required this.subject,
     required this.initialTagIds,
     required this.allTags,
+    this.hiveManager,
   });
 
   final HiveSubject subject;
   final List<String> initialTagIds;
   final List<HiveTag> allTags;
+  final HiveManager? hiveManager;
 
   @override
   State<SubjectEditDialog> createState() => _SubjectEditDialogState();
@@ -347,6 +349,7 @@ class SubjectEditDialog extends StatefulWidget {
 class _SubjectEditDialogState extends State<SubjectEditDialog> {
   late TextEditingController _nameController;
   late Set<String> _selectedTagIds;
+  late final HiveManager _manager = widget.hiveManager ?? HiveManager.instance;
 
   @override
   void initState() {
@@ -378,8 +381,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
         yesText: l10n.yes,
         noText: l10n.no,
         onConfirm: () {
-          final manager = HiveManager.instance;
-          manager.deleteSubject(widget.subject.id);
+          _manager.deleteSubject(widget.subject.id);
         },
         body: RichText(
           textAlign: TextAlign.center,
@@ -417,8 +419,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
         yesText: l10n.yes,
         noText: l10n.no,
         onConfirm: () async {
-          final manager = HiveManager.instance;
-          await manager.archiveSubject(subject.id);
+          await _manager.archiveSubject(subject.id);
           if (!mounted) {
             return;
           }
@@ -463,8 +464,7 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
           _showSnackBar(l10n.pleaseEnterSubjectName);
           return;
         }
-        final manager = HiveManager.instance;
-        manager.updateSubject(
+        _manager.updateSubject(
           widget.subject.id,
           title: newTitle,
           tagIds: _selectedTagIds.toList(),
