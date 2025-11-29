@@ -176,9 +176,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   final _weekController = TextEditingController();
   final _titleController = TextEditingController();
 
-  // 오디오 파일 리스트 스크롤 컨트롤러
-  final _scrollController = ScrollController();
-
   // 선택된 과목 ID (null = 선택 안 함)
   String? _selectedSubjectId;
 
@@ -196,15 +193,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 오디오 파일 엔트리 리스트 (최소 1개 시작)
   final List<AudioFileEntry> _audioFiles = [AudioFileEntry()];
 
-  // 다중 오디오 파일 모드 활성화 여부 (2개 이상일 때 true)
-  bool _isMultipleAudioMode = false;
-
   @override
   void dispose() {
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
     _titleController.dispose();
-    _scrollController.dispose();
 
     // 모든 오디오 파일 엔트리 dispose
     for (final entry in _audioFiles) {
@@ -324,7 +317,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           title,
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontSize: 18),
+          ).textTheme.titleMedium?.copyWith(fontSize: 20),
         );
       },
     );
@@ -513,18 +506,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
   /// 오디오 파일 리스트 (다중 모드일 때 스크롤 가능)
   Widget _buildAudioFilesList() {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: _isMultipleAudioMode ? 300 : double.infinity,
-      ),
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          children: List.generate(_audioFiles.length, (index) {
-            return _buildAudioFileEntry(index);
-          }),
-        ),
-      ),
+    return Column(
+      children: List.generate(_audioFiles.length, (index) {
+        return _buildAudioFileEntry(index);
+      }),
     );
   }
 
@@ -544,7 +529,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(12),
@@ -560,7 +545,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 child: Icon(
                   Icons.attach_file,
                   color: theme.colorScheme.onSurfaceVariant,
-                  size: 24,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 12),
@@ -580,6 +565,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               // 추가 버튼
               OutlinedButton(
                 onPressed: onTap,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: Text(AppLocalizations.of(context).add),
               ),
             ],
@@ -670,7 +663,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           controller: controller,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          ),
         );
       },
     );
@@ -818,18 +815,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
     setState(() {
       _audioFiles.add(newEntry);
-      _isMultipleAudioMode = true;
-    });
-
-    // 스크롤을 맨 아래로 이동 (새로 추가된 파일이 보이도록)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
     });
   }
 
@@ -849,9 +834,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         setState(() {
           lastEntry.dispose();
           _audioFiles.removeLast();
-          if (_audioFiles.length == 1) {
-            _isMultipleAudioMode = false;
-          }
         });
       });
     } else {
@@ -859,9 +841,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       setState(() {
         lastEntry.dispose();
         _audioFiles.removeLast();
-        if (_audioFiles.length == 1) {
-          _isMultipleAudioMode = false;
-        }
       });
     }
   }
