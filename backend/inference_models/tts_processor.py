@@ -14,6 +14,8 @@ import threading
 from typing import Any, Callable
 from pathlib import Path
 
+from .cuda_lock import get_cuda_init_lock
+
 # Global lock for TTS pipeline initialization
 # Protects pipeline loading when multiple pipelines start simultaneously
 _tts_init_lock = threading.Lock()
@@ -59,15 +61,17 @@ class TTSProcessor:
 
     def load_model(self):
         """Load TTS pipeline."""
-        # Use global lock only during pipeline initialization
-        with _tts_init_lock:
-            if self.pipeline is not None:
-                print("Pipeline already loaded")
-                return
+        # Use global CUDA lock first to prevent concurrent model initialization across all processors
+        # Then use TTS-specific lock for thread safety within the same model type
+        with get_cuda_init_lock():
+            with _tts_init_lock:
+                if self.pipeline is not None:
+                    print("Pipeline already loaded")
+                    return
 
-            print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
-            self.pipeline = KPipeline(lang_code = self.lang_code)
-            print("TTS pipeline loaded successfully")
+                print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
+                self.pipeline = KPipeline(lang_code = self.lang_code)
+                print("TTS pipeline loaded successfully")
 
     def unload_model(self):
         """Unload pipeline to free memory."""

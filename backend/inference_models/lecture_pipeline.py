@@ -144,10 +144,11 @@ class LecturePipeline:
         print("Initializing Lecture Reconstruction Pipeline")
         print("="*60)
 
-        self.asr = ASRProcessor(
-            model_name = asr_model,
-            device = device
-        )
+        # Note: ASR processor is NOT initialized here to support language-specific model selection
+        # It will be created lazily in run() based on the language parameter
+        self.asr = None
+        self.asr_language = None  # Track current ASR language for worker reuse
+        self.asr_model = asr_model
         self.asr_chunk_seconds = asr_chunk_seconds
         self.asr_batch_size = asr_batch_size
 
@@ -291,6 +292,34 @@ class LecturePipeline:
 
         # Check cancellation before starting ASR
         check_cancellation()
+
+        # Initialize ASR processor based on language (lazy loading + language change handling)
+        # Note: ASR model is unloaded after each request to free GPU memory,
+        # but the ASR processor object (with model_type info) is kept for reuse.
+        # We need to recreate the processor if the language changes.
+
+        needs_new_processor = False
+
+        if self.asr is None:
+            # First request: Create ASR processor
+            needs_new_processor = True
+            reason = "initial creation"
+        elif self.asr_language != language:
+            # Language changed: Need different model type (Parakeet vs Whisper)
+            needs_new_processor = True
+            reason = f"language changed from '{self.asr_language}' to '{language}'"
+
+        if needs_new_processor:
+            print(f"Creating ASR processor for language '{language}' ({reason})")
+            if self.asr is not None:
+                # Clean up old processor if it exists
+                self.asr.unload_model()
+            self.asr = ASRProcessor.create_for_language(language, device=self.device)
+            self.asr_language = language
+            print(f"ASR processor created: {self.asr.model_type} model")
+        else:
+            # Same language: Reuse existing processor (model will be reloaded in transcribe)
+            print(f"Reusing ASR processor for language '{language}' ({self.asr.model_type} model)")
 
         if progress_callback:
             progress_callback("processing_asr", 10.0, "Starting ASR processing...")
