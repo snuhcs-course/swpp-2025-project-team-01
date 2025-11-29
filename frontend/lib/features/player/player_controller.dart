@@ -647,6 +647,21 @@ class PlayerController extends ChangeNotifier {
     return false;
   }
 
+  /// 특정 슬라이드 번호가 transcript에 존재하는지 확인
+  bool hasTranscriptForSlide(int slideNumber) {
+    if (transcriptData == null) {
+      return false;
+    }
+
+    for (final sentence in transcriptData!.timestamps) {
+      if (sentence.slideNumber == slideNumber) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // ========== Cleanup ==========
 
   /// PDF 로드 중 생성된 임시 파일들을 정리

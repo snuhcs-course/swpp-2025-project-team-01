@@ -625,6 +625,7 @@ class PagesListWidget extends StatelessWidget {
           getCachedOrRenderPage:
               controller.pdfCacheService.getCachedOrRenderPage,
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
+          hasTranscriptForSlide: controller.hasTranscriptForSlide,
           onPageTap: (pageNumber) async {
             controller.jumpToPage(pageNumber);
             // 캐시되지 않은 페이지라면 즉시 캐싱 시작
