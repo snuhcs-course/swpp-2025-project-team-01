@@ -629,7 +629,13 @@ class TopControlBar extends StatelessWidget {
           const Spacer(),
           AudioSourceButton(
             isOriginalAudio: isOriginalAudio,
-            onPressed: isKoreanLecture ? () {} : onAudioToggle,
+            onPressed: isKoreanLecture
+                ? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('한국어 강의는 TTS가 지원되지 않습니다.')),
+                    );
+                  }
+                : onAudioToggle,
             isVertical: isVertical,
           ),
           const SizedBox(width: 8),
