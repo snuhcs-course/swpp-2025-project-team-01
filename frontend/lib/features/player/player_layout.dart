@@ -627,19 +627,25 @@ class PagesListWidget extends StatelessWidget {
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
           hasTranscriptForSlide: controller.hasTranscriptForSlide,
           onPageTap: (pageNumber) async {
+            // sync가 켜져있고 transcript가 없으면 스낵바만 표시하고 이동 안함
+            if (controller.isSynced.value &&
+                !controller.hasTranscriptForSlide(pageNumber)) {
+              if (context.mounted) {
+                final l10n = AppLocalizations.of(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.noTranscriptForSlide)),
+                );
+              }
+              return;
+            }
+
             controller.jumpToPage(pageNumber);
             // 캐시되지 않은 페이지라면 즉시 캐싱 시작
             if (controller.pdfCacheService.getCachedImageDirect(pageNumber) ==
                 null) {
               controller.pdfCacheService.getCachedOrRenderPage(pageNumber);
             }
-            final success = await controller.seekToSlide(pageNumber);
-            if (!success && context.mounted) {
-              final l10n = AppLocalizations.of(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.noTranscriptForSlide)),
-              );
-            }
+            await controller.seekToSlide(pageNumber);
           },
         );
 
