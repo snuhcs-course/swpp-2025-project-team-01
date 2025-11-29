@@ -276,6 +276,8 @@ class AppLocalizations {
       ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
       : 'Lecture creation completed.\nCheck out the result.';
   String get goToLecture => isKorean ? '강의 바로가기' : 'Go to Lecture';
+  String get isGenerating =>
+      isKorean ? '강의 생성이 진행 중입니다.' : 'Lecture generation is in progress.';
 
   // 검색 화면
   String get searchLecture => isKorean ? '강의 검색' : 'Search Lectures';

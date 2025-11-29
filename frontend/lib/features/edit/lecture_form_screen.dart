@@ -199,9 +199,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 다중 오디오 파일 모드 활성화 여부 (2개 이상일 때 true)
   bool _isMultipleAudioMode = false;
 
-  // 강의 생성 중 여부 (로딩 상태)
-  bool _isCreating = false;
-
   @override
   void dispose() {
     // 메모리 누수 방지를 위한 컨트롤러 해제
@@ -693,8 +690,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               width: double.infinity,
               height: 54,
               child: FilledButton(
-                onPressed: _isCreating ? null : _createLecture,
-                child: _isCreating
+                onPressed: () => {
+                  LectureLoadingService.instance.isLoading
+                      ? _showSnackBar(l10n.isGenerating)
+                      : _createLecture(),
+                },
+                child: LectureLoadingService.instance.isLoading
                     ? SizedBox(
                         width: 20,
                         height: 20,
@@ -1005,7 +1006,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     }
 
     // 2. 로딩 시작
-    setState(() => _isCreating = true);
     final titleText = _titleController.text.trim();
     final langCode = _selectedLanguage;
 
@@ -1046,7 +1046,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         clients[i]?.close();
       }
       if (mounted) {
-        setState(() => _isCreating = false);
         _showSnackBar(l10n.lectureCreationCancelled);
       }
       // Disable background execution when cancelled
@@ -1304,10 +1303,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         } catch (e) {
           debugPrint('Failed to disable background execution: $e');
         }
-      }
-
-      if (mounted) {
-        setState(() => _isCreating = false);
       }
     }
   }
