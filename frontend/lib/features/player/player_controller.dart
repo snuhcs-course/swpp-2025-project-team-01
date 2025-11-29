@@ -369,9 +369,13 @@ class PlayerController extends ChangeNotifier {
   }
 
   void handleVerticalDrag(DragUpdateDetails details) {
-    // 가로 모드에서만 위로 스와이프 감지
+    // 가로 모드에서 위로 스와이프 감지 (열기)
     if (details.delta.dy < -5 && !isPagesExpanded.value) {
       isPagesExpanded.value = true;
+    }
+    // 가로 모드에서 아래로 스와이프 감지 (닫기)
+    else if (details.delta.dy > 5 && isPagesExpanded.value) {
+      isPagesExpanded.value = false;
     }
   }
 
