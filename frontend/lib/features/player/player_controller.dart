@@ -604,15 +604,15 @@ class PlayerController extends ChangeNotifier {
     });
   }
 
-  Future<void> seekToSlide(int slideNumber) async {
+  Future<bool> seekToSlide(int slideNumber) async {
     if (transcriptData == null) {
-      return;
+      return false;
     }
 
     // sync가 꺼져있으면 슬라이드만 이동
     if (!isSynced.value) {
       jumpToPage(slideNumber);
-      return;
+      return true;
     }
 
     // sync가 켜져있으면 해당 슬라이드 번호가 처음 나오는 transcript 찾아서 이동
@@ -639,9 +639,12 @@ class PlayerController extends ChangeNotifier {
           _isForcedMove = false;
         });
 
-        return;
+        return true;
       }
     }
+
+    // 해당 슬라이드에 대응하는 transcript를 찾지 못함
+    return false;
   }
 
   // ========== Cleanup ==========

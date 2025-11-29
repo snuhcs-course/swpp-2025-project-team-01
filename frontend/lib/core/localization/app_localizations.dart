@@ -324,6 +324,9 @@ class AppLocalizations {
   String get ttsNotSupportedForKorean => isKorean
       ? '한국어 강의는 TTS가 지원되지 않습니다.'
       : 'TTS audio is not supported for Korean lectures.';
+  String get noTranscriptForSlide => isKorean
+      ? '해당 슬라이드에 대응하는 강의 대본이 없습니다.'
+      : 'There is no transcript that corresponds to this slide.';
 
   // 플레이어 에러 메시지
   String get lectureIdMissing =>

@@ -625,14 +625,20 @@ class PagesListWidget extends StatelessWidget {
           getCachedOrRenderPage:
               controller.pdfCacheService.getCachedOrRenderPage,
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
-          onPageTap: (pageNumber) {
+          onPageTap: (pageNumber) async {
             controller.jumpToPage(pageNumber);
             // 캐시되지 않은 페이지라면 즉시 캐싱 시작
             if (controller.pdfCacheService.getCachedImageDirect(pageNumber) ==
                 null) {
               controller.pdfCacheService.getCachedOrRenderPage(pageNumber);
             }
-            controller.seekToSlide(pageNumber);
+            final success = await controller.seekToSlide(pageNumber);
+            if (!success && context.mounted) {
+              final l10n = AppLocalizations.of(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.noTranscriptForSlide)),
+              );
+            }
           },
         );
 
