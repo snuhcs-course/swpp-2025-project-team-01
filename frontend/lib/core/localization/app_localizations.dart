@@ -321,6 +321,9 @@ class AppLocalizations {
       isKorean ? '$pages 페이지 빠름' : '$pages pages ahead';
   String pagesBehind(int pages) =>
       isKorean ? '$pages 페이지 느림' : '$pages pages behind';
+  String get ttsNotSupportedForKorean => isKorean
+      ? '한국어 강의는 TTS가 지원되지 않습니다.'
+      : 'TTS audio is not supported for Korean lectures.';
 
   // 플레이어 에러 메시지
   String get lectureIdMissing =>
