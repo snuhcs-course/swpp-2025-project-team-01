@@ -193,11 +193,60 @@ class LectureLoadingBar extends StatelessWidget {
           );
         }
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 280),
-          switchInCurve: Curves.easeOutBack,
-          switchOutCurve: Curves.easeInCubic,
-          child: child,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder:
+                  (Widget? currentChild, List<Widget> previousChildren) {
+                    // Collapse 상태로 전환 시, 이전 위젯(ExpandedOverlay)이 상태를 잃고
+                    // 초기 모습(카드)으로 깜빡이는 것을 방지하기 위해 previousChildren을 즉시 제거
+                    if (service.isCollapsed) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [if (currentChild != null) currentChild],
+                      );
+                    }
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                // If collapsed, no transition animation needed (instant cut)
+                if (service.isCollapsed) {
+                  return child;
+                }
+
+                Alignment alignment = Alignment.center;
+
+                // Expanding: Grow from the side center where the bubble was
+                final screenSize = MediaQuery.of(context).size;
+                final y =
+                    (((screenSize.height - service.bubbleY - 50) /
+                            screenSize.height) *
+                        2) -
+                    1;
+                if (service.bubbleX > screenSize.width / 2) {
+                  alignment = Alignment(1.0, y);
+                } else {
+                  alignment = Alignment(-1.0, y);
+                }
+
+                return ScaleTransition(
+                  scale: animation,
+                  alignment: alignment,
+                  child: child,
+                );
+              },
+              child: child,
+            );
+          },
         );
       },
     );
@@ -205,7 +254,7 @@ class LectureLoadingBar extends StatelessWidget {
 }
 
 /// 둥근모서리 + 그림자 카드 컨테이너
-class ExpandedLoadingOverlay extends StatelessWidget {
+class ExpandedLoadingOverlay extends StatefulWidget {
   const ExpandedLoadingOverlay({
     super.key,
     required this.service,
@@ -216,46 +265,242 @@ class ExpandedLoadingOverlay extends StatelessWidget {
   final BuildContext context;
 
   @override
+  State<ExpandedLoadingOverlay> createState() => _ExpandedLoadingOverlayState();
+}
+
+class _ExpandedLoadingOverlayState extends State<ExpandedLoadingOverlay>
+    with SingleTickerProviderStateMixin {
+  Offset _dragOffset = Offset.zero;
+  late AnimationController _snapController;
+  late Animation<Offset> _snapAnimation;
+  final GlobalKey _contentKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _snapController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    // Initialize with dummy animation to prevent LateInitializationError
+    // when _snapController.reset() is called in onPanStart
+    _snapAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: Offset.zero,
+    ).animate(_snapController);
+
+    _snapController.addListener(() {
+      setState(() {
+        _dragOffset = _snapAnimation.value;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _snapController.dispose();
+    super.dispose();
+  }
+
+  void _snapToCorner(Offset currentPosition, bool isRightSide) {
+    final screenWidth = MediaQuery.of(widget.context).size.width;
+    final screenHeight = MediaQuery.of(widget.context).size.height;
+    final safeArea = MediaQuery.of(widget.context).padding;
+    const bubbleSize = 88.0;
+
+    final renderBox =
+        _contentKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) {
+      return;
+    }
+
+    // Calculate original center (position before drag)
+    // Current Visual Center = Original Center + Drag Offset
+    // So Original Center = Current Visual Center - Drag Offset
+    final originalCenterGlobal = currentPosition - _dragOffset;
+
+    // X: Snap to Left or Right edge (with 10% clip)
+    final targetX = isRightSide
+        ? screenWidth - bubbleSize * 0.9 - safeArea.right
+        : -(bubbleSize * 0.1);
+
+    // Y: Keep current vertical position, but clamp to screen bounds
+    // We need to match CollapsedBubbleOverlay's positioning logic exactly to avoid jumps.
+    // CollapsedBubbleOverlay uses:
+    //   bottom: _dragY
+    //   child: SafeArea(top: false, child: ...)
+    // So VisualBottom = _dragY + safeArea.bottom
+    // And _dragY is clamped to [0, screenHeight - bubbleSize - safeArea.top]
+
+    double targetCenterY = currentPosition.dy;
+
+    // Calculate Min/Max CenterY based on CollapsedBubbleOverlay's _dragY limits
+
+    // Max _dragY = screenHeight - bubbleSize - safeArea.top (Top of screen)
+    // VisualBottom = Max_dragY + safeArea.bottom
+    // Min CenterY = ScreenHeight - VisualBottom - bubbleSize/2
+    final minCenterY =
+        screenHeight -
+        (screenHeight - bubbleSize - safeArea.top + safeArea.bottom) -
+        bubbleSize / 2;
+    // Simplified: minCenterY = bubbleSize/2 + safeArea.top - safeArea.bottom;
+
+    // Min _dragY = 0 (Bottom of screen, above safe area)
+    // VisualBottom = 0 + safeArea.bottom
+    // Max CenterY = ScreenHeight - VisualBottom - bubbleSize/2
+    // Add 16px margin to match the padding in ExpandedLoadingOverlay
+    final maxCenterY = screenHeight - safeArea.bottom - bubbleSize / 2 - 16;
+
+    targetCenterY = targetCenterY.clamp(minCenterY, maxCenterY);
+
+    // Convert Target Center Y to "Distance from Bottom" (which corresponds to _dragY)
+    // _dragY = VisualBottom - safeArea.bottom
+    // VisualBottom = ScreenHeight - targetCenterY - bubbleSize/2
+    final targetYFromBottom =
+        screenHeight - targetCenterY - bubbleSize / 2 - safeArea.bottom;
+
+    // Target Center Global (Re-calculated from clamped Y)
+    final targetCenterGlobal = Offset(targetX + bubbleSize / 2, targetCenterY);
+
+    // We need _dragOffset to be: TargetCenterGlobal - OriginalCenterGlobal
+    final targetDragOffset = targetCenterGlobal - originalCenterGlobal;
+
+    _snapAnimation = Tween<Offset>(begin: _dragOffset, end: targetDragOffset)
+        .animate(
+          CurvedAnimation(parent: _snapController, curve: Curves.easeOutBack),
+        );
+
+    _snapController.forward().then((_) {
+      // Animation Complete -> Collapse
+      widget.service.collapseToBubble(
+        alignRight: isRightSide,
+        touchPosition: targetCenterGlobal, // Visual center
+        targetBubbleX: targetX,
+        targetBubbleY: screenHeight - targetCenterY - bubbleSize / 2,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext widgetContext) {
-    final isCompleted = service.isCompleted;
-    final hasError = service.hasError;
+    final isCompleted = widget.service.isCompleted;
+    final hasError = widget.service.hasError;
+    final progress = widget.service.progress.clamp(0.0, 1.0);
+
+    // Calculate drag metrics
+    final dragDistance = _dragOffset.distance;
+
+    // Card opacity: 1.0 -> 0.0 as distance goes 0 -> 150
+    final cardOpacity = (1.0 - (dragDistance / 150.0)).clamp(0.0, 1.0);
+
+    // Bubble opacity: 0.0 -> 1.0 as distance goes 50 -> 200
+    final bubbleOpacity = ((dragDistance - 50.0) / 150.0).clamp(0.0, 1.0);
+
+    // Scale card down slightly
+    final cardScale = (1.0 - (dragDistance / 400.0)).clamp(0.4, 1.0);
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: SafeArea(
         top: false,
-        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragEnd: (details) {
-            final velocity = details.velocity.pixelsPerSecond.dx;
-            if (velocity.abs() < 200) {
-              return;
-            }
-            service.collapseToBubble(alignRight: velocity > 0);
-          },
-          child: RoundedCard(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: hasError
-                  ? ErrorView(
-                      key: const ValueKey('error'),
-                      errorTitle: service.errorTitle,
-                      errorMessage: service.errorMessage,
-                    )
-                  : isCompleted
-                  ? CompletedView(
-                      key: const ValueKey('completed'),
-                      context: context,
-                    )
-                  : LoadingView(
-                      key: const ValueKey('loading'),
-                      title: service.lectureTitle,
-                      message: service.message,
-                      progress: service.progress.clamp(0.0, 1.0),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanStart: (details) {
+              setState(() {
+                _dragOffset = Offset.zero;
+                _snapController.stop(); // Stop any ongoing snap animation
+                _snapController.reset();
+              });
+            },
+            onPanUpdate: (details) {
+              setState(() {
+                _dragOffset += details.delta;
+              });
+            },
+            onPanEnd: (details) {
+              final velocity = details.velocity.pixelsPerSecond;
+              final distance = _dragOffset.distance;
+
+              // Thresholds for collapsing
+              final isFling = velocity.distance > 800;
+              final isFarDrag = distance > 150;
+
+              if (isFling || isFarDrag) {
+                // Determine direction
+                final renderBox =
+                    _contentKey.currentContext?.findRenderObject()
+                        as RenderBox?;
+                final currentVisualCenter = renderBox != null
+                    ? renderBox.localToGlobal(
+                        renderBox.size.center(Offset.zero),
+                      )
+                    : Offset.zero;
+                final isRight =
+                    currentVisualCenter.dx >
+                    (MediaQuery.of(context).size.width / 2);
+
+                _snapToCorner(currentVisualCenter, isRight);
+              } else {
+                // Snap back
+                setState(() {
+                  _dragOffset = Offset.zero;
+                });
+              }
+            },
+            child: Transform.translate(
+              offset: _dragOffset,
+              child: Stack(
+                key: _contentKey,
+                alignment: Alignment.center,
+                children: [
+                  // The Card (fades out)
+                  Opacity(
+                    opacity: cardOpacity,
+                    child: Transform.scale(
+                      scale: cardScale,
+                      child: RoundedCard(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: hasError
+                              ? ErrorView(
+                                  key: const ValueKey('error'),
+                                  errorTitle: widget.service.errorTitle,
+                                  errorMessage: widget.service.errorMessage,
+                                )
+                              : isCompleted
+                              ? CompletedView(
+                                  key: const ValueKey('completed'),
+                                  context: widget.context,
+                                )
+                              : LoadingView(
+                                  key: const ValueKey('loading'),
+                                  title: widget.service.lectureTitle,
+                                  message: widget.service.message,
+                                  progress: progress,
+                                ),
+                        ),
+                      ),
                     ),
+                  ),
+
+                  // The Bubble (fades in)
+                  if (bubbleOpacity > 0)
+                    Opacity(
+                      opacity: bubbleOpacity,
+                      child: _BubbleVisual(
+                        size: 88,
+                        hasError: hasError,
+                        isCompleted: isCompleted,
+                        progress: progress,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -283,6 +528,17 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
     super.initState();
     _dragX = widget.service.bubbleX;
     _dragY = widget.service.bubbleY;
+  }
+
+  @override
+  void didUpdateWidget(CollapsedBubbleOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the service's bubble position changes externally (e.g. via snap animation),
+    // and we are not currently dragging, update our local state to match.
+    if (!_isDragging) {
+      _dragX = widget.service.bubbleX;
+      _dragY = widget.service.bubbleY;
+    }
   }
 
   @override
@@ -347,69 +603,88 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                 // Tap to expand
                 widget.service.expandFromBubble();
               },
-              child: SizedBox(
-                width: bubbleSize,
-                height: bubbleSize,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: bubbleSize,
-                      height: bubbleSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black.withValues(alpha: 0.6),
-                        border: widget.service.hasError
-                            ? Border.all(color: Color(0xFFFF6B6B), width: 6.0)
-                            : widget.service.isCompleted
-                            ? Border.all(
-                                color: const Color(0xFF4CAF50),
-                                width: 6.0,
-                              )
-                            : null,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x33000000),
-                            blurRadius: 12,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!widget.service.hasError && !widget.service.isCompleted)
-                      SizedBox(
-                        width: bubbleSize,
-                        height: bubbleSize,
-                        child: CircularProgressIndicator(
-                          value: progress,
-                          strokeWidth: 6,
-                          backgroundColor: Colors.white24,
-                          valueColor: const AlwaysStoppedAnimation(
-                            Color(0xFFF7FAB0),
-                          ),
-                        ),
-                      ),
-                    ClipOval(
-                      child: Container(
-                        width: bubbleSize - 18,
-                        height: bubbleSize - 18,
-                        color: Colors.black.withValues(alpha: 0.2),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Image.asset(
-                            'assets/images/loading_character.png',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: _BubbleVisual(
+                size: bubbleSize,
+                hasError: widget.service.hasError,
+                isCompleted: widget.service.isCompleted,
+                progress: progress,
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BubbleVisual extends StatelessWidget {
+  const _BubbleVisual({
+    required this.size,
+    required this.hasError,
+    required this.isCompleted,
+    required this.progress,
+  });
+
+  final double size;
+  final bool hasError;
+  final bool isCompleted;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.6),
+              border: hasError
+                  ? Border.all(color: const Color(0xFFFF6B6B), width: 6.0)
+                  : isCompleted
+                  ? Border.all(color: const Color(0xFF4CAF50), width: 6.0)
+                  : null,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+          ),
+          if (!hasError && !isCompleted)
+            SizedBox(
+              width: size,
+              height: size,
+              child: CircularProgressIndicator(
+                value: progress,
+                strokeWidth: 6,
+                backgroundColor: Colors.white24,
+                valueColor: const AlwaysStoppedAnimation(Color(0xFFF7FAB0)),
+              ),
+            ),
+          ClipOval(
+            child: Container(
+              width: size - 18,
+              height: size - 18,
+              color: Colors.black.withValues(alpha: 0.2),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Image.asset(
+                  'assets/images/loading_character.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

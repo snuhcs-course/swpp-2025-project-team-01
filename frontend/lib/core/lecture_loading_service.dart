@@ -294,16 +294,35 @@ class LectureLoadingService extends ChangeNotifier {
     Future.delayed(const Duration(seconds: 1), hideLoading);
   }
 
+  Offset? _collapseOrigin; // 축소 애니메이션의 기준점 (터치 위치)
+
+  /// 축소 애니메이션의 기준점
+  Offset? get collapseOrigin => _collapseOrigin;
+
   /// 로딩 바를 축소하여 버블 상태로 전환
-  void collapseToBubble({required bool alignRight, bool snapToCorner = false}) {
+  void collapseToBubble({
+    required bool alignRight,
+    bool snapToCorner = false,
+    Offset? touchPosition,
+    double? targetBubbleX,
+    double? targetBubbleY,
+  }) {
     if (!_isLoading) {
       return;
     }
     _isCollapsed = true;
     _bubbleOnRight = alignRight;
+    _collapseOrigin = touchPosition;
 
-    // 모서리에 붙이기 옵션이 활성화된 경우 기본 모서리 위치로 이동
-    if (snapToCorner) {
+    if (targetBubbleX != null) {
+      _bubbleX = targetBubbleX;
+    }
+    if (targetBubbleY != null) {
+      _bubbleY = targetBubbleY;
+    }
+
+    // 모서리에 붙이기 옵션이 활성화된 경우 (그리고 타겟이 지정되지 않은 경우) 기본 모서리 위치로 이동
+    if (snapToCorner && targetBubbleX == null && targetBubbleY == null) {
       _bubbleX = 24.0;
       _bubbleY = 24.0;
     }

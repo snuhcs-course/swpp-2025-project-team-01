@@ -696,10 +696,16 @@ class MockLectureLoadingService extends _i1.Mock
   void collapseToBubble({
     required bool? alignRight,
     bool? snapToCorner = false,
+    _i7.Offset? touchPosition,
+    double? targetBubbleX,
+    double? targetBubbleY,
   }) => super.noSuchMethod(
     Invocation.method(#collapseToBubble, [], {
       #alignRight: alignRight,
       #snapToCorner: snapToCorner,
+      #touchPosition: touchPosition,
+      #targetBubbleX: targetBubbleX,
+      #targetBubbleY: targetBubbleY,
     }),
     returnValueForMissingStub: null,
   );
