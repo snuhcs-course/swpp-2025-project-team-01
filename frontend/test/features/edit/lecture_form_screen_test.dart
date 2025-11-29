@@ -672,32 +672,33 @@ void main() {
       expect(find.text('Remove'), findsNothing);
     });
 
-    testWidgets('Remove button shown only when file exists and multiple fields', (
-      tester,
-    ) async {
-      when(
-        mockFilePicker.pickFiles(
-          type: FileType.custom,
-          allowedExtensions: ['m4a', 'm4b'],
-          allowMultiple: false,
-        ),
-      ).thenAnswer(
-        (_) async => FilePickerResult([
-          PlatformFile(name: 'test.m4a', path: audioPath, size: 100),
-        ]),
-      );
+    testWidgets(
+      'Remove button shown only when file exists and multiple fields',
+      (tester) async {
+        when(
+          mockFilePicker.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: ['m4a', 'm4b'],
+            allowMultiple: false,
+          ),
+        ).thenAnswer(
+          (_) async => FilePickerResult([
+            PlatformFile(name: 'test.m4a', path: audioPath, size: 100),
+          ]),
+        );
 
-      await pumpScreen(tester);
+        await pumpScreen(tester);
 
-      final addButtons = find.widgetWithText(OutlinedButton, 'Add');
-      await tester.ensureVisible(addButtons.last);
-      await tester.pumpAndSettle();
-      await tester.tap(addButtons.last);
-      await tester.pumpAndSettle();
+        final addButtons = find.widgetWithText(OutlinedButton, 'Add');
+        await tester.ensureVisible(addButtons.last);
+        await tester.pumpAndSettle();
+        await tester.tap(addButtons.last);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Page Range'), findsNWidgets(2));
-      expect(find.text('Remove'), findsOneWidget);
-    });
+        expect(find.text('Page Range'), findsNWidgets(2));
+        expect(find.text('Remove'), findsOneWidget);
+      },
+    );
 
     testWidgets('Can remove audio entry immediately without confirmation', (
       tester,
@@ -1660,7 +1661,7 @@ void main() {
 
         await tester.enterText(find.byType(TextField).at(2), '1');
         await tester.enterText(find.byType(TextField).at(3), '5');
-        
+
         addButtons = find.widgetWithText(OutlinedButton, 'Add');
         await tester.ensureVisible(addButtons.last);
         await tester.pumpAndSettle();
