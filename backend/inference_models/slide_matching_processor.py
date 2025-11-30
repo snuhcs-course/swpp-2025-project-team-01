@@ -16,14 +16,10 @@ from transformers import AutoModel
 
 from .cuda_lock import get_cuda_init_lock
 
-# Global lock for slide matching model initialization
-# Protects CUDA initialization during model loading when multiple pipelines start simultaneously
-_matching_init_lock = threading.Lock()
-
-# Global lock for slide matching model inference
-# Protects inference operations when multiple pipelines run simultaneously
-# This prevents CUDA errors when the same model runs concurrent inference
-_matching_inference_lock = threading.Lock()
+# Global lock for slide matching model (unified lock for both init and inference)
+# NeMo Retriever model can deadlock when init and inference happen concurrently
+# Using RLock to allow nested acquisition within the same thread
+_matching_lock = threading.RLock()
 
 
 class SlideMatchingProcessor:
@@ -102,7 +98,7 @@ class SlideMatchingProcessor:
         # Use global CUDA lock first to prevent concurrent model initialization across all processors
         # Then use model-specific lock for thread safety within the same model type
         with get_cuda_init_lock():
-            with _matching_init_lock:
+            with _matching_lock:
                 if self.model is not None:
                     print("Model already loaded")
                     return
@@ -183,46 +179,41 @@ class SlideMatchingProcessor:
         Returns:
             Tuple of (query_embeddings, image_embeddings)
         """
-        # Load model BEFORE acquiring inference lock to avoid deadlock
-        # This ensures init_lock and inference_lock are never held simultaneously
-        if self.model is None:
-            self.load_model()
+        # Note: This method is called within match_transcript_to_slides which holds the lock
+        # The lock is already acquired by the caller to protect the model
+        print('Computing embeddings...')
 
-        # Use inference lock to prevent concurrent inference on the same model
-        with _matching_inference_lock:
-            print('Computing embeddings...')
+        print('Processing text queries...')
+        with torch.no_grad():
+            query_embeddings = self.model.forward_queries(
+                queries,
+                batch_size = self.batch_size
+            )
 
-            print('Processing text queries...')
-            with torch.no_grad():
-                query_embeddings = self.model.forward_queries(
-                    queries,
-                    batch_size = self.batch_size
-                )
+        print('Processing page images...')
+        if self.use_image_batching:
+            # Process images in batches for faster processing
+            image_embeddings = []
+            num_images = len(images)
+            for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
+                batch = images[i:i + self.image_batch_size]
+                with torch.no_grad():
+                    emb = self.model.forward_passages(batch, batch_size = len(batch))
+                    image_embeddings.append(emb)
+            image_embeddings = torch.cat(image_embeddings, dim = 0)
+        else:
+            # Process images one by one to avoid shared memory errors
+            image_embeddings = []
+            for image in tqdm(images, desc = 'Processing images'):
+                with torch.no_grad():
+                    emb = self.model.forward_passages([image], batch_size = 1)
+                    image_embeddings.append(emb)
+            image_embeddings = torch.cat(image_embeddings, dim = 0)
 
-            print('Processing page images...')
-            if self.use_image_batching:
-                # Process images in batches for faster processing
-                image_embeddings = []
-                num_images = len(images)
-                for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
-                    batch = images[i:i + self.image_batch_size]
-                    with torch.no_grad():
-                        emb = self.model.forward_passages(batch, batch_size = len(batch))
-                        image_embeddings.append(emb)
-                image_embeddings = torch.cat(image_embeddings, dim = 0)
-            else:
-                # Process images one by one to avoid shared memory errors
-                image_embeddings = []
-                for image in tqdm(images, desc = 'Processing images'):
-                    with torch.no_grad():
-                        emb = self.model.forward_passages([image], batch_size = 1)
-                        image_embeddings.append(emb)
-                image_embeddings = torch.cat(image_embeddings, dim = 0)
+        print(f'Query embeddings shape: {query_embeddings.shape}')
+        print(f'Image embeddings shape: {image_embeddings.shape}')
 
-            print(f'Query embeddings shape: {query_embeddings.shape}')
-            print(f'Image embeddings shape: {image_embeddings.shape}')
-
-            return query_embeddings, image_embeddings
+        return query_embeddings, image_embeddings
 
     def match_with_dp(
         self,
@@ -241,6 +232,8 @@ class SlideMatchingProcessor:
         Returns:
             List of matching results
         """
+        # Note: This method is called within match_transcript_to_slides which holds the lock
+        # The lock is already acquired by the caller to protect the model
         print('Finding best matches with DP and jump penalty')
 
         with torch.no_grad():
@@ -379,41 +372,44 @@ class SlideMatchingProcessor:
         Returns:
             List of matching results with page numbers
         """
-        # Load model BEFORE acquiring inference lock to avoid deadlock
-        # This ensures init_lock and inference_lock are never held simultaneously
-        if self.model is None:
-            self.load_model()
+        # Use unified lock to prevent concurrent model loading/inference
+        # This ensures the same model is never loaded twice simultaneously on GPU
+        # Lock must be held from model loading through all model operations
+        with _matching_lock:
+            # Load model inside lock to prevent concurrent loading
+            if self.model is None:
+                self.load_model()
 
-        print("="*60)
-        print("Slide Matching")
-        print("="*60)
+            print("="*60)
+            print("Slide Matching")
+            print("="*60)
 
-        if progress_callback:
-            progress_callback(0.0, "Extracting PDF pages...")
+            if progress_callback:
+                progress_callback(0.0, "Extracting PDF pages...")
 
-        # Extract PDF pages
-        page_images = self.extract_pdf_pages(pdf_path)
+            # Extract PDF pages (must be inside lock to prevent concurrent model loading)
+            page_images = self.extract_pdf_pages(pdf_path)
 
-        # Prepare queries
-        if sentences is None:
-            # Use full transcript as single query
-            queries = [transcript]
-        else:
-            queries = sentences
+            # Prepare queries
+            if sentences is None:
+                # Use full transcript as single query
+                queries = [transcript]
+            else:
+                queries = sentences
 
-        print(f"Matching {len(queries)} queries to {len(page_images)} slides")
+            print(f"Matching {len(queries)} queries to {len(page_images)} slides")
 
-        if progress_callback:
-            progress_callback(30.0, "Computing embeddings...")
+            if progress_callback:
+                progress_callback(30.0, "Computing embeddings...")
 
-        # Compute embeddings
-        query_embeddings, image_embeddings = self.compute_embeddings(queries, page_images)
+            # Compute embeddings (model inference)
+            query_embeddings, image_embeddings = self.compute_embeddings(queries, page_images)
 
-        if progress_callback:
-            progress_callback(70.0, "Matching slides...")
+            if progress_callback:
+                progress_callback(70.0, "Matching slides...")
 
-        # Match with DP
-        results = self.match_with_dp(query_embeddings, image_embeddings, queries)
+            # Match with DP (model inference for get_scores)
+            results = self.match_with_dp(query_embeddings, image_embeddings, queries)
 
         print(f"\nMatching complete: {len(results)} results")
 
