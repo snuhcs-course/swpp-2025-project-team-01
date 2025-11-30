@@ -371,9 +371,13 @@ class PlayerController extends ChangeNotifier {
   }
 
   void handleVerticalDrag(DragUpdateDetails details) {
-    // 가로 모드에서만 위로 스와이프 감지
+    // 가로 모드에서 위로 스와이프 감지 (열기)
     if (details.delta.dy < -5 && !isPagesExpanded.value) {
       isPagesExpanded.value = true;
+    }
+    // 가로 모드에서 아래로 스와이프 감지 (닫기)
+    else if (details.delta.dy > 5 && isPagesExpanded.value) {
+      isPagesExpanded.value = false;
     }
   }
 
@@ -602,15 +606,15 @@ class PlayerController extends ChangeNotifier {
     });
   }
 
-  Future<void> seekToSlide(int slideNumber) async {
+  Future<bool> seekToSlide(int slideNumber) async {
     if (transcriptData == null) {
-      return;
+      return false;
     }
 
     // sync가 꺼져있으면 슬라이드만 이동
     if (!isSynced.value) {
       jumpToPage(slideNumber);
-      return;
+      return true;
     }
 
     // sync가 켜져있으면 해당 슬라이드 번호가 처음 나오는 transcript 찾아서 이동
@@ -637,9 +641,27 @@ class PlayerController extends ChangeNotifier {
           _isForcedMove = false;
         });
 
-        return;
+        return true;
       }
     }
+
+    // 해당 슬라이드에 대응하는 transcript를 찾지 못함
+    return false;
+  }
+
+  /// 특정 슬라이드 번호가 transcript에 존재하는지 확인
+  bool hasTranscriptForSlide(int slideNumber) {
+    if (transcriptData == null) {
+      return false;
+    }
+
+    for (final sentence in transcriptData!.timestamps) {
+      if (sentence.slideNumber == slideNumber) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // ========== Cleanup ==========

@@ -60,6 +60,14 @@ class MockAudioService extends _i1.Mock implements _i4.AudioService {
   }
 
   @override
+  _i5.Stream<Duration?> get durationStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#durationStream),
+            returnValue: _i5.Stream<Duration?>.empty(),
+          )
+          as _i5.Stream<Duration?>);
+
+  @override
   _i5.Stream<Duration> get positionStream =>
       (super.noSuchMethod(
             Invocation.getter(#positionStream),
