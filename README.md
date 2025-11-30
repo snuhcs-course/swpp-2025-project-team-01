@@ -6,7 +6,7 @@ Re:View takes in raw lecture recordings and lecture slides to refine them into s
 
 ## Demo Video
 
-Watch our demo video: [Re:View Demo]()
+Watch our demo video: [Re:View Demo](https://drive.google.com/file/d/1v_HhJvBgFzFW6RDtBHF_TbSev2FyTqzf/view?usp=share_link)
 
 ## How to Run the Demo
 
@@ -55,24 +55,23 @@ Follow these steps to reproduce the demo video:
 2. Tap the '+' button to the upper right of the home screen, where add menu options drop down
 3. Tap '과목 추가', add a subject whose name already exists, and check that it isn't added
 4. Tap the top right 'X' or outside of the dialog, and tap the '수정' button besides the '+' button
-5. Tap the top left '필터' and the star button in order, and check that they don't work and the appropriate snackbars appear
+5. Tap the top left '필터' button in order, and check that it doesn't work and the appropriate snackbar ('수정 모드에서 지원하지 않는 기능입니다.') appears
 6. Tap the pencil button in the '환영합니다!' subject header
-7. Tap the '보관' button, and check that '환영합니다!' subject isn't shown in home screen
-8. Tap the top left menu button, and tap '보관함'
-9. Tap the unarchive button of the '환영합니다!' subject header (between trash bin button and toggle button), tap the '예' button, navigate back to home screen, and check that '환영합니다!' subject appears in home screen
-10. Tap the top left menu button again, and tap '태그 수정'
-11. Delete all tags using the '삭제' button, and check that text box and buttons don't work when there isn't any tag
-12. Create two tags with no name editing, and check the second one's name editing starts with '새 태그(1)'
-13. Navigate back to home screen, and tap the top right '+' button again
-14. Tap '강의 생성', upload any PDF file (tap the '추가' button), and check that the text of right button changes from '추가' to '변경'
-15. Upload any audio file, and check that the next audio file slot is formed automatically and the red '제거' button is formed in the uploaded slot (to the left of the '변경' button, the text of the '추가' button in the uploaded slot changes to '변경')
-16. Upload one more audio file, and check that the first (at the top) audio file can be removed
-17. Fill the other elements, and generate the lecture normally
-18. Slide up the lecture generating loading bar, and check that the collapsed loading bar is sticky to the left/right edge of the screen
-19. Navigate back to home screen, and tap the pre-generated Korean lecture
-20. In the player, tap the 'Rec' button, and check that the scackbar '한국어 강의는 TTS 음성이 제공되지 않습니다.' appears and the lecture is continuously played with recorded audio (not TTS)
-21. Slide up the screen, tap the un-matched lecture slide, and check that it isn't conducted to move to that slide
-22. Slide down the screen, and check that the PDF navigator disappears
+7. Tap the '삭제' button, check that delete warning dialog appears, and tap the '아니요' button not to delete it
+8. Tap the '보관' button, and check that '환영합니다!' subject isn't shown in home screen
+9. Tap the top left menu button, and tap '보관함'
+10. Tap the unarchive button of the '환영합니다!' subject header (between trash bin button and toggle button), tap the '예' button, navigate back to home screen (tap the top left arrow button), and check that '환영합니다!' subject appears in home screen
+11. Tap the top right '+' button in home screen again
+12. Tap '강의 생성', fill out the week/title of the lecture, upload any PDF file (tap the '추가' button), and check that the text of right button changes from '추가' to '변경'
+13. Upload any audio file, and check that the next audio file slot is formed automatically and the red '제거' button is formed in the uploaded slot (to the left of the '변경' button, the text of the '추가' button in the uploaded slot changes to '변경')
+14. Upload one more audio file, and check that the first (at the top) audio file can be removed
+15. Tap the '생성하기' button to generate the lecture
+16. Slide up the lecture generating loading bar, and check that the collapsed loading bar is sticky to the left/right edge of the screen
+17. Tap the pre-generated Korean lecture in home screen
+18. Slide up the screen, tap the un-matched lecture slide (shadowed), and check that it isn't conducted to move to that slide with the snackbar message '해당 슬라이드에 대응하는 강의 대본이 없습니다.'
+19. Tap the 'Rec' button, and check that the scackbar '한국어 강의는 TTS 음성이 제공되지 않습니다.' appears and the lecture is continuously played with recorded audio (not TTS)
+20. Slide down the screen, and check that the PDF navigator disappears
+21. Tap the screen, tap the top left back button, and tap the collapsed loading bar to check that it expands well
 
 ## What Our Demo Demonstrates
 
@@ -97,7 +96,7 @@ Follow these steps to reproduce the demo video:
 
 #### 6. Enhanced usability of player UI
 - **Information for not supporting Korean TTS**: When user tap the 'Rec' button in Korean lecture, the snackbar message ('한국어 강의는 TTS 음성이 제공되지 않습니다.') appears and there's no change in playing audio.
-- **More usable PDF navigator**: User can slide up the screen to open PDF navigator even in playbar state. Addedly, user can close PDF navigator by sliding down the screen. Moreover, when user tap the unmatched slide in PDF navigator, it is unresponsive to touch, and nothing happens. (Originally, there was an animation that briefly navigated to the slide and then returned)
+- **More usable PDF navigator**: User can slide up the screen to open PDF navigator even in playbar state. Addedly, user can close PDF navigator by sliding down the screen. Moreover, when user tap the unmatched slide (shadow-processed) in PDF navigator, it is unresponsive to touch, and nothing happens. (Originally, there was an animation that briefly navigated to the slide and then returned)
 
 #### 7. Subject archiving
 - **Archiving**: User can archive subjects in edit subject info dialog. If archived, the subject lose all tags/favorite state, and disappears in home screen.
