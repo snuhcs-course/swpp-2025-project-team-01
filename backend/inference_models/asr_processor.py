@@ -16,9 +16,9 @@ from pathlib import Path
 
 from .cuda_lock import get_cuda_init_lock
 
-# Whisper model locks (separate for parallel processing)
-_whisper_init_lock = threading.Lock()
-_whisper_inference_lock = threading.Lock()
+# Whisper model lock (unified lock for both init and inference for consistency and safety)
+# Using RLock to allow nested acquisition within the same thread (transcribe -> load_model)
+_whisper_lock = threading.RLock()
 
 # Parakeet model lock (unified lock for both init and inference due to model instability)
 # This ensures Parakeet init and inference never happen simultaneously
@@ -235,22 +235,20 @@ class ASRProcessor:
         self.device = device
         self.model = None
 
-        # Assign model-specific locks
+        # Assign model-specific locks (all models use unified lock for consistency)
         if self.model_type == "parakeet":
             # Parakeet uses unified lock for both init and inference
-            self.init_lock = _parakeet_lock
-            self.inference_lock = _parakeet_lock
+            self.lock = _parakeet_lock
         else:  # whisper
-            # Whisper uses separate locks for parallel processing
-            self.init_lock = _whisper_init_lock
-            self.inference_lock = _whisper_inference_lock
+            # Whisper uses unified lock for both init and inference
+            self.lock = _whisper_lock
 
     def load_model(self):
         """Load ASR model into memory."""
         # Use global CUDA lock first to prevent concurrent model initialization across all processors
         # Then use model-specific lock for thread safety within the same model type
         with get_cuda_init_lock():
-            with self.init_lock:
+            with self.lock:
                 if self.model is not None:
                     print(f"[{self.model_type.upper()}] Model already loaded")
                     return
@@ -414,7 +412,7 @@ class ASRProcessor:
         chunk_files = []
 
         try:
-            # STEP 1 & 2: Prepare audio chunks (unified preprocessing)
+            # STEP 1 & 2: Prepare audio chunks (no lock needed - file I/O only)
             chunk_files, temp_dir, sample_rate, total_duration = self._prepare_audio_chunks(
                 input_file,
                 chunk_seconds,
@@ -430,62 +428,65 @@ class ASRProcessor:
                 torch.cuda.synchronize()
             gc.collect()
 
-            # STEP 3: Process chunks sequentially
-            transcripts = []
-            all_segment_timestamps = []
-            chunk_offset = 0.0
-            chunk_duration_seconds = chunk_seconds  # Expected chunk duration
+            # STEP 3: Process chunks sequentially under lock
+            # Lock protects the model from being loaded/used concurrently
+            with self.lock:
+                transcripts = []
+                all_segment_timestamps = []
+                chunk_offset = 0.0
+                chunk_duration_seconds = chunk_seconds  # Expected chunk duration
 
-            for idx, chunk_file in enumerate(chunk_files, 1):
-                print(f"[PARAKEET] Processing chunk {idx}/{len(chunk_files)}...")
+                for idx, chunk_file in enumerate(chunk_files, 1):
+                    print(f"[PARAKEET] Processing chunk {idx}/{len(chunk_files)}...")
 
-                # Transcribe chunk
-                output = self.model.transcribe([chunk_file], timestamps=True)
+                    # Transcribe chunk
+                    output = self.model.transcribe([chunk_file], timestamps=True)
 
-                if not output or len(output) == 0:
-                    print(f"[PARAKEET] Warning: Chunk {idx} returned empty output, skipping")
-                    continue
+                    if not output or len(output) == 0:
+                        print(f"[PARAKEET] Warning: Chunk {idx} returned empty output, skipping")
+                        continue
 
-                transcript_obj = output[0]
-                transcript = transcript_obj.text
-                transcripts.append(transcript)
-                print(f"[PARAKEET] Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
+                    # Process results
+                    transcript_obj = output[0]
+                    transcript = transcript_obj.text
+                    transcripts.append(transcript)
+                    print(f"[PARAKEET] Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
 
-                # Extract segment timestamps and adjust with chunk offset
-                if hasattr(transcript_obj, 'timestamp') and transcript_obj.timestamp:
-                    segments = transcript_obj.timestamp.get('segment', [])
-                    for seg in segments:
-                        all_segment_timestamps.append({
-                            'text': seg['segment'].strip(),
-                            'start': seg['start'] + chunk_offset,
-                            'end': seg['end'] + chunk_offset
-                        })
+                    # Extract segment timestamps and adjust with chunk offset
+                    if hasattr(transcript_obj, 'timestamp') and transcript_obj.timestamp:
+                        segments = transcript_obj.timestamp.get('segment', [])
+                        for seg in segments:
+                            all_segment_timestamps.append({
+                                'text': seg['segment'].strip(),
+                                'start': seg['start'] + chunk_offset,
+                                'end': seg['end'] + chunk_offset
+                            })
 
-                # Update chunk offset for next chunk
-                # Last chunk might be shorter than chunk_duration_seconds
-                if idx < len(chunk_files):
-                    chunk_offset += chunk_duration_seconds
-                else:
-                    # For last chunk, calculate remaining duration
-                    chunk_offset += (total_duration - (idx - 1) * chunk_duration_seconds)
+                    # Update chunk offset for next chunk
+                    # Last chunk might be shorter than chunk_duration_seconds
+                    if idx < len(chunk_files):
+                        chunk_offset += chunk_duration_seconds
+                    else:
+                        # For last chunk, calculate remaining duration
+                        chunk_offset += (total_duration - (idx - 1) * chunk_duration_seconds)
 
-                # Report progress
-                if progress_callback:
-                    chunk_progress = 20.0 + (idx / len(chunk_files)) * 70.0
-                    progress_callback(chunk_progress, f"Processed chunk {idx}/{len(chunk_files)}")
+                    # Report progress
+                    if progress_callback:
+                        chunk_progress = 20.0 + (idx / len(chunk_files)) * 70.0
+                        progress_callback(chunk_progress, f"Processed chunk {idx}/{len(chunk_files)}")
 
-                # Clear GPU memory after each chunk
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                    torch.cuda.synchronize()
-                gc.collect()
+                    # Clear GPU memory after each chunk
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                        torch.cuda.synchronize()
+                    gc.collect()
 
             # Show GPU memory usage
             if torch.cuda.is_available():
                 allocated = torch.cuda.memory_allocated() / 1024**3
                 print(f"[PARAKEET] GPU memory usage: {allocated:.2f} GB")
 
-            # STEP 4: Merge results
+            # STEP 4: Merge results (no lock needed - pure data processing)
             full_transcript = ' '.join(filter(None, transcripts))
 
             if progress_callback:
@@ -498,7 +499,7 @@ class ASRProcessor:
             print(f"[PARAKEET] Transcription error: {e}")
             raise RuntimeError(f"Parakeet transcription failed: {str(e)}") from e
         finally:
-            # Clean up chunk files
+            # Clean up chunk files (no lock needed - file I/O only)
             for chunk_file in chunk_files:
                 try:
                     if os.path.exists(chunk_file):
@@ -543,7 +544,7 @@ class ASRProcessor:
         chunk_files = []
 
         try:
-            # STEP 1 & 2: Prepare audio chunks (unified preprocessing)
+            # STEP 1 & 2: Prepare audio chunks (no lock needed - file I/O only)
             chunk_files, temp_dir, sample_rate, total_duration = self._prepare_audio_chunks(
                 input_file,
                 chunk_seconds,
@@ -559,58 +560,61 @@ class ASRProcessor:
                 torch.cuda.synchronize()
             gc.collect()
 
-            # STEP 3: Process chunks sequentially with Whisper
-            transcripts = []
-            all_segment_timestamps = []
-            chunk_offset = 0.0
-            chunk_duration_seconds = chunk_seconds
+            # STEP 3: Process chunks sequentially under lock
+            # Lock protects the model from being loaded/used concurrently
+            with self.lock:
+                transcripts = []
+                all_segment_timestamps = []
+                chunk_offset = 0.0
+                chunk_duration_seconds = chunk_seconds
 
-            for idx, chunk_file in enumerate(chunk_files, 1):
-                print(f"[WHISPER] Processing chunk {idx}/{len(chunk_files)}...")
+                for idx, chunk_file in enumerate(chunk_files, 1):
+                    print(f"[WHISPER] Processing chunk {idx}/{len(chunk_files)}...")
 
-                with torch.no_grad():
-                    # Transcribe with word-level timestamps
-                    result = self.model.transcribe(
-                        chunk_file,
-                        language=language,
-                        word_timestamps=True
-                    )
+                    with torch.no_grad():
+                        # Transcribe with word-level timestamps
+                        result = self.model.transcribe(
+                            chunk_file,
+                            language=language,
+                            word_timestamps=True
+                        )
 
-                transcript = result['text']
-                transcripts.append(transcript)
-                print(f"[WHISPER] Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
+                    # Process results
+                    transcript = result['text']
+                    transcripts.append(transcript)
+                    print(f"[WHISPER] Chunk {idx}/{len(chunk_files)}: {len(transcript)} characters")
 
-                # Extract and merge segments by punctuation
-                if 'segments' in result:
-                    # Merge segments into sentence-level segments
-                    sentence_segments = _merge_segments_by_punctuation(result['segments'], language=language)
+                    # Extract and merge segments by punctuation
+                    if 'segments' in result:
+                        # Merge segments into sentence-level segments
+                        sentence_segments = _merge_segments_by_punctuation(result['segments'], language=language)
 
-                    # Add chunk offset to timestamps
-                    for segment in sentence_segments:
-                        all_segment_timestamps.append({
-                            'text': segment['text'],
-                            'start': segment['start'] + chunk_offset,
-                            'end': segment['end'] + chunk_offset
-                        })
+                        # Add chunk offset to timestamps
+                        for segment in sentence_segments:
+                            all_segment_timestamps.append({
+                                'text': segment['text'],
+                                'start': segment['start'] + chunk_offset,
+                                'end': segment['end'] + chunk_offset
+                            })
 
-                # Update chunk offset for next chunk
-                if idx < len(chunk_files):
-                    chunk_offset += chunk_duration_seconds
-                else:
-                    # For last chunk, calculate remaining duration
-                    chunk_offset += (total_duration - (idx - 1) * chunk_duration_seconds)
+                    # Update chunk offset for next chunk
+                    if idx < len(chunk_files):
+                        chunk_offset += chunk_duration_seconds
+                    else:
+                        # For last chunk, calculate remaining duration
+                        chunk_offset += (total_duration - (idx - 1) * chunk_duration_seconds)
 
-                # Report progress per chunk
-                if progress_callback:
-                    chunk_progress = 20.0 + (idx / len(chunk_files)) * 70.0
-                    progress_callback(chunk_progress, f"Processed chunk {idx}/{len(chunk_files)}")
+                    # Report progress per chunk
+                    if progress_callback:
+                        chunk_progress = 20.0 + (idx / len(chunk_files)) * 70.0
+                        progress_callback(chunk_progress, f"Processed chunk {idx}/{len(chunk_files)}")
 
             # Show GPU memory usage
             if torch.cuda.is_available():
                 allocated = torch.cuda.memory_allocated() / 1024**3
                 print(f"[WHISPER] GPU memory usage: {allocated:.2f} GB")
 
-            # STEP 4: Merge results
+            # STEP 4: Merge results (no lock needed - pure data processing)
             full_transcript = ' '.join(filter(None, transcripts))
 
             if progress_callback:
@@ -624,7 +628,7 @@ class ASRProcessor:
             raise RuntimeError(f"Whisper transcription failed: {str(e)}") from e
 
         finally:
-            # Clean up chunk files
+            # Clean up chunk files (no lock needed - file I/O only)
             for chunk_file in chunk_files:
                 try:
                     if os.path.exists(chunk_file):
@@ -671,12 +675,13 @@ class ASRProcessor:
                 f"Use Whisper model for other languages."
             )
 
-        # Use model-specific inference lock to prevent concurrent inference AND model loading
-        # This prevents race conditions where multiple requests try to load the model simultaneously
-        with self.inference_lock:
+        # Use model-specific lock to protect model loading and inference
+        # This prevents the same model from being loaded twice on GPU
+        with self.lock:
             # Load model inside lock to prevent concurrent loading
             if self.model is None:
                 self.load_model()
+
             print("="*60)
             print(f"[{self.model_type.upper()}] ASR Transcription (language: {language})")
             print("="*60)
@@ -687,6 +692,7 @@ class ASRProcessor:
             segment_timestamps = []
 
             # Choose transcription method based on model type
+            # Note: each method will re-acquire the same lock (RLock allows this)
             if self.model_type == "parakeet":
                 # Parakeet: Chunked transcription (unified preprocessing)
                 print(f"[PARAKEET] Using chunked transcription (chunk_seconds={chunk_seconds})")
@@ -706,36 +712,36 @@ class ASRProcessor:
                     progress_callback=progress_callback
                 )
 
-            if progress_callback:
-                progress_callback(100.0, "Finalizing transcription...")
+        if progress_callback:
+            progress_callback(100.0, "Finalizing transcription...")
 
-            print()
-            print("="*60)
-            print("Transcription Result:")
-            print("="*60)
-            print(transcript)
+        print()
+        print("="*60)
+        print("Transcription Result:")
+        print("="*60)
+        print(transcript)
 
-            if torch.cuda.is_available():
-                max_memory = torch.cuda.max_memory_allocated() / 1024**3
-                print(f"\nMax GPU memory usage: {max_memory:.2f} GB")
+        if torch.cuda.is_available():
+            max_memory = torch.cuda.max_memory_allocated() / 1024**3
+            print(f"\nMax GPU memory usage: {max_memory:.2f} GB")
 
-            # Save to file if requested
-            if output_path:
-                Path(output_path).parent.mkdir(parents = True, exist_ok = True)
-                with open(output_path, "w", encoding = "utf-8") as f:
-                    f.write(transcript)
-                print(f"\nTranscript saved to: {output_path}")
+        # Save to file if requested (no lock needed - file I/O only)
+        if output_path:
+            Path(output_path).parent.mkdir(parents = True, exist_ok = True)
+            with open(output_path, "w", encoding = "utf-8") as f:
+                f.write(transcript)
+            print(f"\nTranscript saved to: {output_path}")
 
-            result = {
-                "transcript": transcript,
-                "audio_path": audio_path,
-                "length": len(transcript),
-                "segment_timestamps": segment_timestamps  # Sentence-level timestamps (punctuation-based with lowercase check)
-            }
+        result = {
+            "transcript": transcript,
+            "audio_path": audio_path,
+            "length": len(transcript),
+            "segment_timestamps": segment_timestamps  # Sentence-level timestamps (punctuation-based with lowercase check)
+        }
 
-            print(f"\n✓ Extracted {len(segment_timestamps)} sentence-level timestamps")
+        print(f"\n✓ Extracted {len(segment_timestamps)} sentence-level timestamps")
 
-            return result
+        return result
 
 
 if __name__ == "__main__":
