@@ -307,7 +307,8 @@ The system consists of four independent processors orchestrated by `LecturePipel
 - **Features**:
   - Supports English and Korean transcription
   - Automatic audio chunking for long files (>5 minutes)
-  - Separate model locks for parallel English/Korean processing
+  - Model-specific unified locks (RLock) prevent duplicate model loading on GPU
+  - Independent locks per model enable parallel English/Korean processing
   - Segment-level timestamp extraction (punctuation-based split)
   - Special handling for Korean sentence endings (니다, 요)
 - **Output**: Full transcript text + segment timestamps with original audio timing

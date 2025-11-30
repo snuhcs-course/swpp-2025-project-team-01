@@ -364,7 +364,12 @@ The `timestamps.json` file in the downloaded ZIP contains an array of timestamp 
 - **Language-Optimized ASR Models**:
   - English lectures use NVIDIA Parakeet TDT 0.6B v2 for higher accuracy
   - Korean lectures use OpenAI Whisper Turbo for multilingual support
-  - Separate model locks enable parallel processing of English and Korean jobs
+  - Independent model-specific locks enable parallel processing of English and Korean jobs
+- **Thread-Safe Model Management**:
+  - Each processor (ASR, Slide Matching, Translation, TTS) uses unified RLock for both model loading and inference
+  - Prevents concurrent GPU allocation of the same model (avoids duplicate model loading)
+  - RLock allows nested lock acquisition within the same thread for safe model operations
+  - Different models can still run in parallel (e.g., Parakeet and Whisper simultaneously)
 - **CUDA Initialization Lock**: Global lock prevents concurrent model loading across all processors, avoiding PyTorch meta tensor errors when multiple pipeline workers start simultaneously
 - **Image Batching**: Slide images are processed in batches (default: 4 images per batch) for faster embedding computation. Can be disabled if shared memory issues occur.
 - **FP8 Quantization**: Translation model uses FP8 quantization (`tencent/Hunyuan-MT-7B-fp8`) for reduced memory footprint while maintaining translation quality.
