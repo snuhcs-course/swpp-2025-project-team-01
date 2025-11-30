@@ -16,14 +16,10 @@ from .cuda_lock import get_cuda_init_lock
 # This prevents the WARNING about overriding VLLM_WORKER_MULTIPROC_METHOD
 os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
 
-# Global lock for vLLM model initialization
-# Protects vLLM initialization which can fail if multiple instances start simultaneously
-_vllm_init_lock = threading.Lock()
-
-# Global lock for translation model inference
-# Protects inference operations when multiple pipelines run simultaneously
-# This prevents vLLM errors when the same model runs concurrent inference
-_translation_inference_lock = threading.Lock()
+# Global lock for translation model (unified lock for both init and inference)
+# vLLM can have issues when init and inference happen concurrently
+# Using RLock to allow nested acquisition within the same thread
+_translation_lock = threading.RLock()
 
 
 class TranslationProcessor:
@@ -64,9 +60,9 @@ class TranslationProcessor:
     def load_model(self):
         """Load translation model into memory."""
         # Use global CUDA lock first to prevent concurrent model initialization across all processors
-        # Then use vLLM-specific lock for additional protection
+        # Then use model-specific lock for thread safety within the same model type
         with get_cuda_init_lock():
-            with _vllm_init_lock:
+            with _translation_lock:
                 if self.model is not None:
                     print("Model already loaded")
                     return
@@ -155,13 +151,13 @@ class TranslationProcessor:
         Returns:
             List of translations (in target language)
         """
-        # Load model BEFORE acquiring inference lock to avoid deadlock
-        # This ensures init_lock and inference_lock are never held simultaneously
-        if self.model is None:
-            self.load_model()
+        # Use unified lock to prevent concurrent model loading/inference
+        # This ensures the same model is never loaded twice simultaneously on GPU
+        with _translation_lock:
+            # Load model inside lock to prevent concurrent loading
+            if self.model is None:
+                self.load_model()
 
-        # Use inference lock to prevent concurrent inference on the same model
-        with _translation_inference_lock:
             print(f"Translating {len(texts)} sentences ({source_lang} → {target_lang})...")
 
             if progress_callback:
@@ -235,9 +231,6 @@ class TranslationProcessor:
             - For ko→en: 'text' → 'text_kor', translation → 'text_eng'
             (The original 'text' field is removed)
         """
-        if self.model is None:
-            self.load_model()
-
         print("="*60)
         print("Translation Processing")
         print("="*60)
@@ -246,6 +239,7 @@ class TranslationProcessor:
         source_texts = [result['text'] for result in matching_results]
 
         # Translate all texts
+        # Note: translate_batch will acquire lock and handle model loading/inference
         translations = self.translate_batch(
             texts = source_texts,
             source_lang = source_lang,
