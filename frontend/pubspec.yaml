@@ -97,6 +97,8 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/audios/sample_female.opus
+    - assets/audios/sample_male.opus
     - assets/images/app_icon.png
     - assets/images/logo.png
     - assets/images/loading_background.png
@@ -137,12 +139,18 @@ flutter:
           weight: 800
 
 flutter_native_splash:
-  color: "#EFEFEF"        # 라이트 배경
-  color_dark: "#1D1D1D"   # 다크 배경(원하면 다른 값)
-  image: assets/images/logo.png  # 중앙 로고 (512px 이상 권장, 투명 PNG)
+  color: "#1D1D1D"
+  color_dark: "#1D1D1D"
+  image: assets/images/logo_native_splash.png
+  image_dark: assets/images/logo_native_splash.png
+  image_ios: assets/images/logo_native_splash_ios.png
   android_12:
-    image: assets/images/logo.png  # 사각 마스킹에 맞춘 로고(여백 충분)
-    icon_background_color: "#EFEFEF"
+    image: assets/images/logo_native_splash.png
+    image_dark: assets/images/logo_native_splash.png
+    branding: assets/images/logo_native_splash_branding.png
+    branding_dark: assets/images/logo_native_splash_branding.png
+    color: "#1D1D1D"
+    color_dark: "#1D1D1D"
 
 flutter_launcher_icons:
   android: true

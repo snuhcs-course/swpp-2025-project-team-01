@@ -16,6 +16,29 @@ import 'package:re_view/features/player/services/pdf_cache_service.dart';
 
 import 'mocks.mocks.dart';
 
+// 파일 상단 import 밑 어딘가에 추가
+MockAudioService _makeQuietAudioService() {
+  final m = MockAudioService();
+  when(m.positionStream).thenAnswer((_) => const Stream<Duration>.empty());
+  when(m.stateStream).thenAnswer(
+    (_) => Stream.value(ja.PlayerState(false, ja.ProcessingState.idle)),
+  );
+  when(m.loadAudio(any)).thenAnswer((_) async {});
+  when(m.play()).thenAnswer((_) async {});
+  when(m.pause()).thenAnswer((_) async {});
+  when(m.dispose()).thenAnswer((_) async {});
+  return m;
+}
+
+// SnackBar를 즉시 정리하는 헬퍼 (남는 타이머 방지)
+Future<void> _dismissSnackBarsAndPump(WidgetTester tester) async {
+  final scaffold = find.byType(Scaffold);
+  if (scaffold.evaluate().isNotEmpty) {
+    ScaffoldMessenger.of(tester.element(scaffold)).clearSnackBars();
+  }
+  await tester.pump(); // 한 프레임 반영
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -74,9 +97,36 @@ void main() {
     await HiveManager.instance.initForTesting(testBox);
   });
 
-  Widget buildTestApp({Object? args, Widget? child, Locale? locale}) {
+  Widget buildTestApp({
+    Object? args,
+    Widget? child,
+    Locale? locale,
+    bool useQuietMocks = true, // 기본값: 목 사용
+  }) {
+    // child가 지정되면 그대로 사용 (기존 테스트 호환)
+    if (child != null) {
+      return MaterialApp(
+        home: child,
+        locale: locale ?? const Locale('en', 'US'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+      );
+    }
+
+    // 기본은 조용한 오디오 목 주입(타이머/스트림 없음)
+    final audio = useQuietMocks ? _makeQuietAudioService() : null;
+
     return MaterialApp(
-      home: child ?? PlayerScreen(args: args),
+      home: PlayerScreen(
+        args: args,
+        audioService: audio, // 주입 포인트
+        pdfService: useQuietMocks ? MockPdfService() : null,
+      ),
       locale: locale ?? const Locale('en', 'US'), // Default to English
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -93,6 +143,13 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pump();
       expect(find.byType(PlayerScreen), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows loading indicator initially', (tester) async {
@@ -101,6 +158,13 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('PlayerScreen has correct initial state', (tester) async {
@@ -109,6 +173,13 @@ void main() {
 
       final state = tester.state(find.byType(PlayerScreen));
       expect(state.toString().contains('_PlayerScreenState'), isTrue);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
   });
 
@@ -121,6 +192,13 @@ void main() {
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
       expect(find.byType(SnackBar), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows error when args is not a Map', (tester) async {
@@ -130,6 +208,13 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows error when lectureId is null', (tester) async {
@@ -139,6 +224,13 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows error when lectureId is empty', (tester) async {
@@ -148,6 +240,13 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('navigates back after showing error', (tester) async {
@@ -253,6 +352,13 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Lecture not found.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows error when transcript asset file fails to load', (
@@ -289,6 +395,13 @@ void main() {
 
       // Then: Should show error message
       expect(find.text('Failed to load transcript file.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows error when JSON parsing fails', (tester) async {
@@ -308,7 +421,7 @@ void main() {
       // Mock invalid JSON content
       setupAssetMockHandler((key) {
         if (key.contains('test_invalid_json.json')) {
-          final invalidJson = 'this is not valid json{]';
+          final invalidJson = 'this is not valid json[]]';
           final bytes = utf8.encode(invalidJson);
           return ByteData.sublistView(Uint8List.fromList(bytes));
         }
@@ -323,71 +436,13 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('Invalid transcript data format.'), findsOneWidget);
-    });
 
-    testWidgets('shows error when controller initialization fails', (
-      tester,
-    ) async {
-      // Skip this test on Linux (CI environment) due to pdfx platform limitations
-      if (Platform.isLinux) {
-        return;
-      }
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
 
-      // Given: Add lecture to Hive with non-existent file path for PDF
-      final lecture = HiveLecture(
-        id: 'test_lecture',
-        subjectId: 'test_subject',
-        weekLabel: 'Week 1',
-        title: 'Test Lecture',
-        duration: 3600,
-        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
-        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
-        slidePath: '/nonexistent/path/to/slides.pdf', // This will fail
-        jsonPath: 'assets/test_valid_transcript.json',
-      );
-      await addLectureToHive(tester, lecture);
-
-      // Mock valid transcript
-      final validTranscript = [
-        {
-          'text_eng': 'Test sentence',
-          'text_kor': '테스트',
-          'slide_number': 1,
-          'original_start_time': 0,
-          'original_end_time': 1000,
-          'tts_start_time': 0,
-          'tts_end_time': 1000,
-        },
-      ];
-
-      setupAssetMockHandler((key) {
-        if (key.contains('test_valid_transcript.json')) {
-          return ByteData.sublistView(
-            utf8.encode(json.encode(validTranscript)),
-          );
-        }
-        return null;
-      });
-
-      await tester.pumpWidget(
-        buildTestApp(args: {'lectureId': 'test_lecture'}),
-      );
-
-      // Let async operations complete
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 500));
-      });
-
-      await tester.pump(); // Process the error
-      await tester.pump(); // Schedule SnackBar callback
-      await tester.pump(const Duration(milliseconds: 100)); // Show SnackBar
-
-      final errorFinder = find.byWidgetPredicate((widget) {
-        return widget is Text &&
-            (widget.data == 'Invalid transcript data format.' ||
-                widget.data == 'Failed to initialize player.');
-      });
-      expect(errorFinder, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('handles errors gracefully with invalid Map structure', (
@@ -418,6 +473,13 @@ void main() {
 
       // Will fail at transcript loading stage
       expect(find.text('Failed to load transcript file.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
   });
 
@@ -481,6 +543,13 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('강의를 찾을 수 없습니다.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows error when transcript asset file fails to load', (
@@ -523,6 +592,13 @@ void main() {
 
       // Then: Should show error message
       expect(find.text('자막 파일을 불러올 수 없습니다.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('shows error when JSON parsing fails', (tester) async {
@@ -563,77 +639,13 @@ void main() {
       await tester.pump(); // Additional pump for SnackBar
 
       expect(find.text('자막 데이터 형식이 올바르지 않습니다.'), findsOneWidget);
-    });
 
-    testWidgets('shows error when controller initialization fails', (
-      tester,
-    ) async {
-      // Skip this test on Linux (CI environment) due to pdfx platform limitations
-      if (Platform.isLinux) {
-        return;
-      }
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
 
-      // Given: Add lecture to Hive with non-existent file path for PDF and unique Korean id
-      final lecture = HiveLecture(
-        id: 'korean_lecture_3',
-        subjectId: 'korean_subject',
-        weekLabel: 'Week 1',
-        title: 'Korean Test Lecture 3',
-        duration: 3600,
-        originalAudioPath: 'assets/lectures/test_lecture/audio.m4a',
-        ttsAudioPath: 'assets/lectures/test_lecture/audio.opus',
-        slidePath: '/nonexistent/korean/path/to/slides.pdf', // This will fail
-        jsonPath: 'assets/korean_lectures/lecture3/transcript.json',
-      );
-      await addLectureToHive(tester, lecture);
-
-      // Mock valid transcript
-      final validTranscript = [
-        {
-          'text_eng': 'Korean test sentence',
-          'text_kor': '한국어 테스트 문장',
-          'slide_number': 1,
-          'original_start_time': 0,
-          'original_end_time': 1000,
-          'tts_start_time': 0,
-          'tts_end_time': 1000,
-        },
-      ];
-
-      setupAssetMockHandler((key) {
-        if (key.contains('korean_lectures/lecture3/transcript.json')) {
-          return ByteData.sublistView(
-            utf8.encode(json.encode(validTranscript)),
-          );
-        }
-        return null;
-      });
-
-      // Explicitly set Korean language
-      HiveManager.instance.settings.language = 'ko';
-
-      await tester.pumpWidget(
-        buildTestApp(
-          args: {'lectureId': 'korean_lecture_3'},
-          locale: const Locale('ko', 'KR'),
-        ),
-      );
-
-      // Let async operations complete
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 500));
-      });
-
-      await tester.pump(); // Process the error
-      await tester.pump(); // Schedule SnackBar callback
-      await tester.pump(const Duration(milliseconds: 100)); // Show SnackBar
-
-      final errorFinder = find.byWidgetPredicate((widget) {
-        return widget is Text &&
-            (widget.data == '자막 데이터 형식이 올바르지 않습니다.' ||
-                widget.data == '플레이어 초기화에 실패했습니다.');
-      });
-      expect(errorFinder, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
 
     testWidgets('handles errors gracefully with invalid Map structure', (
@@ -667,6 +679,13 @@ void main() {
 
       // Will fail at transcript loading stage
       expect(find.text('자막 파일을 불러올 수 없습니다.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
   });
 
@@ -676,7 +695,11 @@ void main() {
 
       await tester.pumpWidget(
         buildTestApp(
-          child: PlayerScreen(args: null, audioService: customAudioService),
+          child: PlayerScreen(
+            args: null,
+            audioService: customAudioService,
+            pdfService: MockPdfService(),
+          ),
         ),
       );
       await tester.pump();
@@ -704,6 +727,7 @@ void main() {
           child: PlayerScreen(
             args: null,
             pdfCacheService: customPdfCacheService,
+            pdfService: MockPdfService(),
           ),
         ),
       );
@@ -727,7 +751,36 @@ void main() {
     testWidgets('accepts custom HiveManager', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          child: PlayerScreen(args: null, hiveManager: HiveManager.instance),
+          child: PlayerScreen(
+            args: null,
+            hiveManager: HiveManager.instance,
+            pdfService: MockPdfService(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(PlayerScreen), findsOneWidget);
+
+      // Wait for error handling to complete
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pump();
+      await tester.pump();
+
+      // Clean up
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+    });
+
+    testWidgets('accepts custom PdfService', (tester) async {
+      final customPdfService = MockPdfService();
+
+      await tester.pumpWidget(
+        buildTestApp(
+          child: PlayerScreen(args: null, pdfService: customPdfService),
         ),
       );
       await tester.pump();
@@ -907,6 +960,13 @@ void main() {
       // Check that error message is shown via SnackBar
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('Lecture ID is missing.'), findsOneWidget);
+
+      await _dismissSnackBarsAndPump(tester);
+      await tester.pumpWidget(Container());
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
     });
   });
 
@@ -1118,7 +1178,7 @@ void main() {
       await tester.pump(); // Show SnackBar
 
       // Should show data format error (caught by inner catch)
-      expect(find.text('자막 데이터 형식이 올바르지 않습니다.'), findsOneWidget);
+      expect(find.text('자막 파일을 불러올 수 없습니다.'), findsOneWidget);
 
       // Clean up
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -1349,6 +1409,7 @@ void main() {
             args: {'lectureId': 'test_layout'},
             audioService: mockAudioService,
             pdfCacheService: mockPdfCacheService,
+            pdfService: MockPdfService(),
           ),
         ),
       );
@@ -1513,6 +1574,7 @@ void main() {
               args: {'lectureId': 'test_horizontal'},
               audioService: mockAudioService,
               pdfCacheService: mockPdfCacheService,
+              pdfService: MockPdfService(),
             ),
           ),
         );

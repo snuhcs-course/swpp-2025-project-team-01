@@ -245,9 +245,13 @@ class SubjectPanel extends StatefulWidget {
     required this.onOpenLecture,
     this.onLectureUpdated,
     this.showEdit = false,
+    this.isArchivedSubject = false,
     this.onEditSubject,
     this.onEditLecture,
+    this.onUnarchiveSubject,
+    this.onDeleteSubject,
     this.reorderIndex,
+    this.hiveManager,
   });
 
   final HiveSubject subject;
@@ -257,9 +261,13 @@ class SubjectPanel extends StatefulWidget {
   final ValueChanged<HiveLecture> onOpenLecture;
   final VoidCallback? onLectureUpdated;
   final bool showEdit;
+  final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
   final VoidCallback? onEditLecture;
+  final VoidCallback? onUnarchiveSubject;
+  final VoidCallback? onDeleteSubject;
   final int? reorderIndex;
+  final HiveManager? hiveManager;
 
   @override
   State<SubjectPanel> createState() => _SubjectPanelState();
@@ -271,16 +279,16 @@ class _SubjectPanelState extends State<SubjectPanel>
   late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
+  late final HiveManager _manager = widget.hiveManager ?? HiveManager.instance;
 
   @override
   void initState() {
     super.initState();
     // 저장된 상태 로드
-    expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
+    expanded = _manager.getSubjectExpandedState(widget.subject.id);
     _lectures = List.of(widget.lectures);
 
-    final reduceMotion =
-        HiveManager.instance.settings.accessibilityReduceMotion;
+    final reduceMotion = _manager.settings.accessibilityReduceMotion;
     final Duration duration = reduceMotion
         ? Duration.zero
         : const Duration(milliseconds: 300);
@@ -314,24 +322,19 @@ class _SubjectPanelState extends State<SubjectPanel>
       _lectures.insert(newIndex, item);
     });
     // persist the new order
-    await HiveManager.instance.reorderLecture(
-      widget.subject.id,
-      oldIndex,
-      newIndex,
-    );
+    await _manager.reorderLecture(widget.subject.id, oldIndex, newIndex);
     widget.onLectureUpdated?.call();
   }
 
   void _toggleExpanded() {
-    final bool reduceMotion =
-        HiveManager.instance.settings.accessibilityReduceMotion;
+    final bool reduceMotion = _manager.settings.accessibilityReduceMotion;
 
     setState(() {
       expanded = !expanded;
     });
 
     // Hive에 상태 저장
-    HiveManager.instance.setSubjectExpandedState(widget.subject.id, expanded);
+    _manager.setSubjectExpandedState(widget.subject.id, expanded);
 
     if (reduceMotion) {
       // 모션 줄이기가 활성화되면 즉시 전환
@@ -380,9 +383,11 @@ class _SubjectPanelState extends State<SubjectPanel>
             tags: widget.subject.isUncategorized
                 ? []
                 : widget.tags, // 미분류는 태그 숨김
+            id: widget.subject.id,
             expanded: expanded,
             onToggleExpanded: _toggleExpanded,
-            favoriteOrDrag: widget.subject.isUncategorized
+            favoriteOrDrag:
+                widget.subject.isUncategorized || widget.subject.isArchived
                 ? null // 미분류는 즐겨찾기 아이콘 숨김
                 : widget.showEdit
                 ? Icons.drag_indicator
@@ -392,7 +397,10 @@ class _SubjectPanelState extends State<SubjectPanel>
                 : widget.onToggleFavorite,
             favoriteIconColor: h.important,
             showEdit: !widget.subject.isUncategorized && widget.showEdit,
+            isArchivedSubject: widget.isArchivedSubject,
             onEditSubject: widget.onEditSubject,
+            onUnarchiveSubject: widget.onUnarchiveSubject,
+            onDeleteSubject: widget.onDeleteSubject,
             reorderIndex: widget.reorderIndex,
           ),
 
@@ -646,6 +654,7 @@ class _LectureCardState extends State<LectureCard> {
               ),
               const SizedBox(height: 10),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -790,190 +799,201 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     return '$minutes:${secs.toString().padLeft(2, '0')}';
   }
 
+  String _formatDate(DateTime? dateTime, AppLocalizations l10n) {
+    if (dateTime == null) {
+      return l10n.unknown;
+    }
+
+    // 절대 날짜 포맷만 표시
+    final year = dateTime.year;
+    final month = dateTime.month;
+    final day = dateTime.day;
+
+    return l10n.isKorean
+        ? '$year년 $month월 $day일'
+        : '${_monthName(month)} $day, $year';
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final manager = HiveManager.instance;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
 
     // 모든 과목 가져오기 (미분류 포함)
     final allSubjects = manager.getSubjects().toList();
 
-    return AlertDialog(
-      backgroundColor: theme.dialogTheme.backgroundColor,
-      titlePadding: EdgeInsets.zero,
-      title: DialogHeaderTitle(title: l10n.lectureDetails),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.7 - keyboardHeight,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 과목 선택 드롭다운
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSubjectId,
-                decoration: InputDecoration(
-                  labelText: l10n.isKorean ? '과목' : 'Subject',
-                  border: const OutlineInputBorder(),
-                ),
-                items: allSubjects.map((subject) {
-                  return DropdownMenuItem<String>(
-                    value: subject.id,
-                    child: Text(
-                      subject.isUncategorized
-                          ? l10n.uncategorized
-                          : subject.title,
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedSubjectId = newValue;
-                    });
-                  }
-                },
+    return EditDialog(
+      title: l10n.editLecture,
+      deleteLabel: l10n.delete,
+      completeLabel: l10n.complete,
+      onDelete: () async {
+        final bool? confirm = await showDialog<bool>(
+          context: context,
+          barrierColor: Colors.black87,
+          builder: (context) => DeleteWarningDialog(
+            warningText: l10n.warning,
+            yesText: l10n.yes,
+            noText: l10n.no,
+            onConfirm: () async {
+              await manager.deleteLecture(widget.lecture.id);
+            },
+            body: Text(
+              l10n.deleteLectureWarning,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                height: 1.5,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _weekController,
-                decoration: InputDecoration(
-                  labelText: l10n.week,
-                  border: const OutlineInputBorder(),
+            ),
+          ),
+        );
+
+        if (confirm == true && context.mounted) {
+          Navigator.pop(context, true);
+        }
+      },
+      onComplete: () async {
+        final weekText = _weekController.text.trim();
+        final titleText = _titleController.text.trim();
+
+        if (weekText.isNotEmpty && titleText.isNotEmpty) {
+          await manager.updateLectureMetadata(
+            widget.lecture.id,
+            weekLabel: weekText,
+            title: titleText,
+          );
+        }
+
+        // 과목이 변경되었으면 이동
+        if (_selectedSubjectId != widget.lecture.subjectId) {
+          await manager.moveLectureToSubject(
+            widget.lecture.id,
+            _selectedSubjectId,
+          );
+        }
+
+        if (context.mounted) {
+          Navigator.pop(context, true);
+        }
+      },
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 과목 선택 드롭다운
+          DropdownButtonFormField<String>(
+            initialValue: _selectedSubjectId,
+            decoration: InputDecoration(
+              labelText: l10n.subject,
+              border: const OutlineInputBorder(),
+            ),
+            items: allSubjects.map((subject) {
+              return DropdownMenuItem<String>(
+                value: subject.id,
+                child: Text(
+                  subject.isUncategorized ? l10n.uncategorized : subject.title,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: l10n.lectureTitle,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // 강의 시간 정보
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _selectedSubjectId = newValue;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _weekController,
+            decoration: InputDecoration(
+              labelText: l10n.week,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _titleController,
+            decoration: InputDecoration(
+              labelText: l10n.lectureTitle,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // 강의 시간 정보
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          l10n.lectureLength,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ],
-                    ),
-                    Text(
-                      _formatDuration(widget.lecture.duration),
-                      style: theme.textTheme.bodyLarge,
-                    ),
+                    const Icon(Icons.access_time, size: 20),
+                    const SizedBox(width: 8),
+                    Text(l10n.lectureLength, style: theme.textTheme.titleSmall),
                   ],
                 ),
-              ),
-            ],
+                Text(
+                  _formatDuration(widget.lecture.duration),
+                  style: theme.textTheme.bodyLarge,
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          // 생성일 정보
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 20),
+                    const SizedBox(width: 8),
+                    Text(l10n.createdAt, style: theme.textTheme.titleSmall),
+                  ],
+                ),
+                Expanded(
+                  child: Text(
+                    _formatDate(widget.lecture.createdAt, l10n),
+                    style: theme.textTheme.bodyMedium,
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      actions: [
-        // 하단 버튼: 삭제 / 완료
-        Row(
-          children: [
-            // 삭제 버튼 (왼쪽)
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: () async {
-                  final bool? confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(l10n.deleteLecture),
-                      content: Text(
-                        l10n.isKorean
-                            ? '이 강의를 삭제하시겠습니까? 삭제한 강의는 복구할 수 없습니다.'
-                            : 'Are you sure you want to delete this lecture? This action is irreversible.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(l10n.cancel),
-                        ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.red,
-                          ),
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(l10n.isKorean ? '삭제' : 'Delete'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm == true && context.mounted) {
-                    await manager.deleteLecture(widget.lecture.id);
-                    if (context.mounted) {
-                      Navigator.pop(context, true);
-                    }
-                  }
-                },
-                icon: const Icon(Icons.delete_outline, size: 20),
-                label: Text(l10n.isKorean ? '삭제' : 'Delete'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // 완료 버튼 (오른쪽)
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: () async {
-                  final weekText = _weekController.text.trim();
-                  final titleText = _titleController.text.trim();
-
-                  if (weekText.isNotEmpty && titleText.isNotEmpty) {
-                    await manager.updateLectureMetadata(
-                      widget.lecture.id,
-                      weekLabel: weekText,
-                      title: titleText,
-                    );
-                  }
-
-                  // 과목이 변경되었으면 이동
-                  if (_selectedSubjectId != widget.lecture.subjectId) {
-                    await manager.moveLectureToSubject(
-                      widget.lecture.id,
-                      _selectedSubjectId,
-                    );
-                  }
-
-                  if (context.mounted) {
-                    Navigator.pop(context, true);
-                  }
-                },
-                child: Text(l10n.complete),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

@@ -3,8 +3,10 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'dart:async' as _i7;
 import 'dart:ui' as _i6;
 
+import 'package:http/http.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i4;
 import 'package:re_view/core/lecture_loading_service.dart' as _i5;
@@ -243,6 +245,12 @@ class MockLectureLoadingService extends _i1.Mock
   );
 
   @override
+  void addJobId(String? jobId) => super.noSuchMethod(
+    Invocation.method(#addJobId, [jobId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   double getProgress() =>
       (super.noSuchMethod(Invocation.method(#getProgress, []), returnValue: 0.0)
           as double);
@@ -285,14 +293,29 @@ class MockLectureLoadingService extends _i1.Mock
       );
 
   @override
-  void cancelLoading() => super.noSuchMethod(
-    Invocation.method(#cancelLoading, []),
-    returnValueForMissingStub: null,
-  );
+  _i7.Future<void> cancelLoading({_i8.Client? fakeClient}) =>
+      (super.noSuchMethod(
+            Invocation.method(#cancelLoading, [], {#fakeClient: fakeClient}),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
 
   @override
-  void collapseToBubble({required bool? alignRight}) => super.noSuchMethod(
-    Invocation.method(#collapseToBubble, [], {#alignRight: alignRight}),
+  void collapseToBubble({
+    required bool? alignRight,
+    bool? snapToCorner = false,
+    _i6.Offset? touchPosition,
+    double? targetBubbleX,
+    double? targetBubbleY,
+  }) => super.noSuchMethod(
+    Invocation.method(#collapseToBubble, [], {
+      #alignRight: alignRight,
+      #snapToCorner: snapToCorner,
+      #touchPosition: touchPosition,
+      #targetBubbleX: targetBubbleX,
+      #targetBubbleY: targetBubbleY,
+    }),
     returnValueForMissingStub: null,
   );
 
@@ -305,6 +328,12 @@ class MockLectureLoadingService extends _i1.Mock
   @override
   void updateBubblePosition(double? x, double? y) => super.noSuchMethod(
     Invocation.method(#updateBubblePosition, [x, y]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onRouteChanged(String? routeName) => super.noSuchMethod(
+    Invocation.method(#onRouteChanged, [routeName]),
     returnValueForMissingStub: null,
   );
 

@@ -9,6 +9,7 @@ import 'package:mockito/mockito.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/features/edit/fetch_lecture.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
@@ -28,6 +29,10 @@ class FakeStreamingClient extends http.BaseClient {
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
   group('Split PDF', () {
     const inputFilePath =
@@ -177,7 +182,7 @@ void main() {
     });
 
     test('Handles cancellation during SSE stream', () async {
-      final controller = StreamController<List<int>>();
+      final controller = StreamController<List<int>>.broadcast();
       final fakeClient = FakeStreamingClient((req) async {
         return http.StreamedResponse(
           controller.stream,
@@ -222,8 +227,9 @@ void main() {
           'data: {"job_id":"cancel123","progress":10.0,"message":"Starting","status":"running"}\n\n',
         ),
       );
+      service.addJobId('cancel123');
       await Future.delayed(Duration(milliseconds: 50));
-      service.cancelLoading();
+      service.cancelLoading(fakeClient: fakeClient);
       await Future.delayed(Duration(milliseconds: 50));
       await controller.close();
 

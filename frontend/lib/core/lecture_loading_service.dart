@@ -1,9 +1,15 @@
 // 렉처 생성 로딩 상태를 전역으로 관리하는 서비스
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
+
+const String _serverAddress = '147.46.78.61';
+const String _port = '8001';
 
 /// 렉처 생성 로딩 상태 관리 싱글톤 서비스
 class LectureLoadingService extends ChangeNotifier {
@@ -23,39 +29,22 @@ class LectureLoadingService extends ChangeNotifier {
   final HiveManager _hiveManager;
   // coverage:ignore-end
 
-  // 유저 친화적인 메시지 목록 (한국어)
-  static const List<String> _friendlyMessagesKo = [
-    '열심히 강의를 받아적는 중..',
-    '강의 내용을 정리하고 있어요',
-    '음성 파일을 듣고 있어요',
-    '슬라이드와 음성을 매칭하는 중..',
-    '강의 노트를 작성하고 있어요',
-    '중요한 부분을 체크하고 있어요',
-    '강의를 분석하고 있어요',
-    '거의 다 됐어요!',
-  ];
-
-  // 유저 친화적인 메시지 목록 (영어)
-  static const List<String> _friendlyMessagesEn = [
-    'Taking notes from the lecture..',
-    'Organizing lecture content',
-    'Listening to the audio file',
-    'Matching slides with audio..',
-    'Writing lecture notes',
-    'Highlighting key points',
-    'Analyzing the lecture',
-    'Almost done!',
-  ];
-
   Timer? _messageTimer;
   int _currentMessageIndex = 0;
   final Random _random = Random();
+  String? _currentRoute; // 현재 라우트 추적
+  Timer? _completionTimer; // 15초 자동 숨김 타이머
+  bool _hasVisitedHome = false; // 홈 화면 방문 여부 (앱 실행 중에만 유지)
+
+  /// 현재 언어 설정에 따른 AppLocalizations 인스턴스 가져오기
+  AppLocalizations get _l10n {
+    final language = _hiveManager.settings.language;
+    final locale = Locale(language);
+    return AppLocalizations(locale);
+  }
 
   /// 현재 언어 설정에 따른 메시지 목록 가져오기
-  List<String> get _friendlyMessages {
-    final language = _hiveManager.settings.language;
-    return language == 'ko' ? _friendlyMessagesKo : _friendlyMessagesEn;
-  }
+  List<String> get _friendlyMessages => _l10n.friendlyMessages;
 
   bool _isLoading = false;
   List<double> _progressLists = <double>[];
@@ -73,6 +62,8 @@ class LectureLoadingService extends ChangeNotifier {
   String _errorTitle = ''; // 에러 제목
   String _errorMessage = ''; // 에러 상세 메시지
   bool _isCompleted = false; // 완료 뷰 표시 여부
+
+  final Set<String> _jobIds = <String>{};
 
   /// 현재 로딩 중인지 여부
   bool get isLoading => _isLoading;
@@ -146,6 +137,7 @@ class LectureLoadingService extends ChangeNotifier {
     _errorTitle = '';
     _errorMessage = '';
     _isCompleted = false;
+    _hasVisitedHome = false; // 새 로딩 시작 시 리셋
 
     // 주기적으로 메시지 변경 (3-5초마다)
     _startMessageTimer();
@@ -182,6 +174,10 @@ class LectureLoadingService extends ChangeNotifier {
     });
   }
 
+  void addJobId(String jobId) {
+    _jobIds.add(jobId);
+  }
+
   /// 현재 진행도
   double getProgress() {
     return _progress;
@@ -214,10 +210,13 @@ class LectureLoadingService extends ChangeNotifier {
 
     _messageTimer?.cancel();
     _progress = 1.0;
-    final language = _hiveManager.settings.language;
-    _message = language == 'ko' ? '강의 생성 완료!' : 'Lecture created!';
+    _message = _l10n.lectureCreationComplete;
     _lectureId = lectureId;
     _isCompleted = true;
+
+    // 항상 15초 타이머 시작 (어디서 완료되든)
+    _startCompletionTimer();
+
     notifyListeners();
     _saveState();
   }
@@ -225,6 +224,7 @@ class LectureLoadingService extends ChangeNotifier {
   /// 로딩 숨김 (즉시)
   void hideLoading() {
     _messageTimer?.cancel();
+    _completionTimer?.cancel(); // 완료 타이머도 취소
     _isLoading = false;
     _progress = 0.0;
     _message = '';
@@ -238,6 +238,8 @@ class LectureLoadingService extends ChangeNotifier {
     _errorTitle = '';
     _errorMessage = '';
     _isCompleted = false;
+    _currentRoute = null; // 라우트 정보 초기화
+    _hasVisitedHome = false; // 홈 방문 플래그 리셋
     notifyListeners();
     _clearState();
   }
@@ -246,45 +248,85 @@ class LectureLoadingService extends ChangeNotifier {
   void setError({String? errorTitle, String? errorMessage}) {
     _messageTimer?.cancel();
     _hasError = true;
-    final language = _hiveManager.settings.language;
 
     // 에러 제목 설정
-    _errorTitle =
-        errorTitle ?? (language == 'ko' ? '오류가 발생했습니다' : 'An error occurred');
+    _errorTitle = errorTitle ?? _l10n.errorOccurred;
 
     // 에러 메시지 설정
-    _errorMessage =
-        errorMessage ??
-        (language == 'ko'
-            ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'
-            : 'Please check your network settings and try again later.');
+    _errorMessage = errorMessage ?? _l10n.errorDefaultMessage;
 
     notifyListeners();
     _saveState();
   }
 
   /// 강의 생성 취소
-  void cancelLoading() {
+  Future<void> cancelLoading({http.Client? fakeClient}) async {
     _messageTimer?.cancel();
+    _completionTimer?.cancel(); // 완료 타이머도 취소
     _isCancelled = true;
-    final language = _hiveManager.settings.language;
-    _message = language == 'ko' ? '강의 생성을 취소하는 중..' : 'Cancelling..';
+    _message = _l10n.cancelling;
     notifyListeners();
-
     // 취소 콜백 실행
     _onCancel?.call();
+
+    for (String jobId in _jobIds) {
+      final endpoint = Uri.parse(
+        'http://$_serverAddress:$_port/api/synchronize/cancel/$jobId',
+      );
+      final client = fakeClient ?? http.Client();
+      final req = http.MultipartRequest('POST', endpoint);
+      req.fields['job_id'] = jobId;
+      try {
+        final response = await client.post(endpoint);
+        if (response.statusCode == 200 || response.statusCode == 400) {
+          // Good
+        } else {
+          throw HttpException('Connection Error triggered');
+        }
+      } catch (_) {
+        // Retry once
+        await client.post(endpoint);
+      }
+    }
+    _jobIds.clear();
 
     // 1초 후 숨김
     Future.delayed(const Duration(seconds: 1), hideLoading);
   }
 
+  Offset? _collapseOrigin; // 축소 애니메이션의 기준점 (터치 위치)
+
+  /// 축소 애니메이션의 기준점
+  Offset? get collapseOrigin => _collapseOrigin;
+
   /// 로딩 바를 축소하여 버블 상태로 전환
-  void collapseToBubble({required bool alignRight}) {
+  void collapseToBubble({
+    required bool alignRight,
+    bool snapToCorner = false,
+    Offset? touchPosition,
+    double? targetBubbleX,
+    double? targetBubbleY,
+  }) {
     if (!_isLoading) {
       return;
     }
     _isCollapsed = true;
     _bubbleOnRight = alignRight;
+    _collapseOrigin = touchPosition;
+
+    if (targetBubbleX != null) {
+      _bubbleX = targetBubbleX;
+    }
+    if (targetBubbleY != null) {
+      _bubbleY = targetBubbleY;
+    }
+
+    // 모서리에 붙이기 옵션이 활성화된 경우 (그리고 타겟이 지정되지 않은 경우) 기본 모서리 위치로 이동
+    if (snapToCorner && targetBubbleX == null && targetBubbleY == null) {
+      _bubbleX = 24.0;
+      _bubbleY = 24.0;
+    }
+
     notifyListeners();
     _saveState();
   }
@@ -313,6 +355,53 @@ class LectureLoadingService extends ChangeNotifier {
     _saveState();
   }
 
+  /// NavigatorObserver가 호출하는 메서드
+  void onRouteChanged(String? routeName) {
+    // 로딩 중이 아니면 아무 작업도 하지 않음
+    if (!_isLoading) {
+      return;
+    }
+
+    _currentRoute = routeName;
+    debugPrint('‼️ $routeName');
+
+    // 홈 화면 방문 체크
+    if (routeName == '/home') {
+      _hasVisitedHome = true;
+    }
+
+    // 조건 1: 완료 상태이고 홈 화면에서 벗어남 → 즉시 숨김 (타이머 취소)
+    if (_isCompleted && routeName != '/home') {
+      _completionTimer?.cancel();
+      hideLoading();
+      return;
+    }
+
+    // 조건 2: 완료되지 않은 상태이고 로딩 중이며 홈 화면에서 벗어남 → bubble로 축소
+    // (단, 홈 화면을 최소 한 번 방문한 경우에만)
+    if (!_isCompleted &&
+        routeName != '/home' &&
+        !_isCollapsed &&
+        _hasVisitedHome) {
+      collapseToBubble(alignRight: true, snapToCorner: true);
+    }
+
+    _saveState();
+    notifyListeners();
+  }
+
+  /// 15초 후 자동 숨김 타이머 시작
+  void _startCompletionTimer() {
+    _completionTimer?.cancel(); // 기존 타이머 취소
+
+    // 어디서 완료되든 항상 15초 타이머 시작
+    _completionTimer = Timer(const Duration(seconds: 15), () {
+      if (_isLoading && _isCompleted) {
+        hideLoading();
+      }
+    });
+  }
+
   // SharedPreferences keys
   static const _keyIsLoading = 'lecture_loading_is_loading';
   static const _keyProgress = 'lecture_loading_progress';
@@ -323,6 +412,10 @@ class LectureLoadingService extends ChangeNotifier {
   static const _keyBubbleX = 'lecture_loading_bubble_x';
   static const _keyBubbleY = 'lecture_loading_bubble_y';
   static const _keyIsCompleted = 'lecture_loading_is_completed';
+  static const _keyCurrentRoute = 'lecture_loading_current_route';
+  static const _keyHasError = 'lecture_loading_has_error';
+  static const _keyErrorTitle = 'lecture_loading_error_title';
+  static const _keyErrorMessage = 'lecture_loading_error_message';
 
   /// 상태를 SharedPreferences에 저장
   Future<void> _saveState() async {
@@ -337,6 +430,10 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setDouble(_keyBubbleX, _bubbleX);
       await prefs.setDouble(_keyBubbleY, _bubbleY);
       await prefs.setBool(_keyIsCompleted, _isCompleted);
+      await prefs.setString(_keyCurrentRoute, _currentRoute ?? '');
+      await prefs.setBool(_keyHasError, _hasError);
+      await prefs.setString(_keyErrorTitle, _errorTitle);
+      await prefs.setString(_keyErrorMessage, _errorMessage);
     } catch (e) {
       debugPrint('Failed to save loading state: $e');
     }
@@ -355,6 +452,15 @@ class LectureLoadingService extends ChangeNotifier {
       _bubbleX = prefs.getDouble(_keyBubbleX) ?? 24.0;
       _bubbleY = prefs.getDouble(_keyBubbleY) ?? 24.0;
       _isCompleted = prefs.getBool(_keyIsCompleted) ?? false;
+      _currentRoute = prefs.getString(_keyCurrentRoute);
+      _hasError = prefs.getBool(_keyHasError) ?? false;
+      _errorTitle = prefs.getString(_keyErrorTitle) ?? '';
+      _errorMessage = prefs.getString(_keyErrorMessage) ?? '';
+
+      // 완료 상태로 복원되면 타이머 재시작 (어디서든)
+      if (_isLoading && _isCompleted) {
+        _startCompletionTimer();
+      }
 
       // 복원 후 UI 업데이트
       if (_isLoading) {
@@ -378,6 +484,10 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyBubbleX);
       await prefs.remove(_keyBubbleY);
       await prefs.remove(_keyIsCompleted);
+      await prefs.remove(_keyCurrentRoute);
+      await prefs.remove(_keyHasError);
+      await prefs.remove(_keyErrorTitle);
+      await prefs.remove(_keyErrorMessage);
     } catch (e) {
       debugPrint('Failed to clear loading state: $e');
     }

@@ -251,38 +251,47 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
             const SizedBox(height: 12),
             _buildTagChips(),
             const SizedBox(height: 16),
-            TextField(
-              controller: _nameC,
-              decoration: InputDecoration(
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                labelText: l10n.tagName,
-                hintText: l10n.newTag,
-                border: const OutlineInputBorder(),
-              ),
-              enableIMEPersonalizedLearning: false,
-            ),
-            const SizedBox(height: 12),
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _applyNameChange,
-                    child: Text(l10n.nameApply),
+                TextField(
+                  controller: _nameC,
+                  decoration: InputDecoration(
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    labelText: l10n.tagName,
+                    hintText: l10n.newTag,
+                    border: const OutlineInputBorder(),
                   ),
+                  enableIMEPersonalizedLearning: false,
+                  enabled: _tags.isNotEmpty,
                 ),
-                const SizedBox(width: 8),
-                // 삭제 버튼을 버튼 행에 통합
-                if (_tags.isNotEmpty)
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 231, 76, 60),
-                        foregroundColor: Colors.white,
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            231,
+                            76,
+                            60,
+                          ),
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        onPressed: _tags.isNotEmpty ? _deleteSelectedTag : null,
+                        label: Text(l10n.delete),
                       ),
-                      onPressed: _deleteSelectedTag,
-                      label: Text(l10n.deleteTag),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _tags.isNotEmpty ? _applyNameChange : null,
+                        child: Text(l10n.complete),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -293,27 +302,26 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 태그 칩 그리드 빌드
   Widget _buildTagChips() {
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light, // 다크모드 자동 조정 방지
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          // 기존 태그 칩들
-          for (int i = 0; i < _tags.length; i++) _buildTagChip(i),
-          // 새 태그 추가 버튼
-          ActionChip(
-            label: const Text('+', style: TextStyle(color: Colors.black)),
-            onPressed: _addNewTag,
-            elevation: 2,
-            backgroundColor: Colors.white,
-            side: BorderSide.none,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        // 기존 태그 칩들
+        for (int i = 0; i < _tags.length; i++) _buildTagChip(i),
+        // 새 태그 추가 버튼
+        ActionChip(
+          label: Text(
+            '+',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontSize: 18),
           ),
-        ],
-      ),
+          onPressed: _addNewTag,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          elevation: Theme.of(context).chipTheme.elevation ?? 2,
+          side: Theme.of(context).chipTheme.side,
+        ),
+      ],
     );
   }
 
@@ -368,7 +376,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     // 입력창 초기화 (한글 입력 문제 방지를 위해 프레임 이후 실행)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _nameC.clear();
+        _nameC.text = _tags[_selected].name;
       }
     });
   }
@@ -440,6 +448,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       _assignColors();
 
       if (_tags.isEmpty) {
+        _selected = -1;
         return;
       }
 
@@ -475,124 +484,47 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     String tagName,
     List<HiveSubject> usingSubjects,
   ) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    // 과목 이름들을 TextSpan으로 변환
+    final subjectSpans = <TextSpan>[];
+    for (int i = 0; i < usingSubjects.length; i++) {
+      subjectSpans.add(
+        TextSpan(
+          text: usingSubjects[i].title,
+          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+        ),
+      );
+      if (i < usingSubjects.length - 1) {
+        subjectSpans.add(const TextSpan(text: '\n'));
+      }
+    }
+
     return showDialog<bool>(
       context: context,
       barrierColor: Colors.black87,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDialogHeader(),
-              _buildDialogBody(tagName, usingSubjects),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 다이얼로그 헤더 빌드
-  Widget _buildDialogHeader() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: const BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Center(
-        child: Text(
-          l10n.warning,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 다이얼로그 본문 빌드
-  Widget _buildDialogBody(String tagName, List<HiveSubject> usingSubjects) {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: const BoxDecoration(
-        color: Color(0xFFE8E8E8),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            l10n.tagDeleteWarning(
-              tagName,
-              usingSubjects.map((s) => s.title).toList(),
-            ),
-            textAlign: TextAlign.center,
+      builder: (_) => DeleteWarningDialog(
+        warningText: l10n.warning,
+        yesText: l10n.yes,
+        noText: l10n.no,
+        onConfirm: () {},
+        body: RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
             style: const TextStyle(
               color: Colors.black,
               fontSize: 18,
               height: 1.5,
             ),
-          ),
-          const SizedBox(height: 24),
-          Row(
             children: [
-              Expanded(child: _buildConfirmButton()),
-              const SizedBox(width: 12),
-              Expanded(child: _buildCancelButton()),
+              TextSpan(text: l10n.tagDeleteWarning1),
+              TextSpan(text: tagName),
+              TextSpan(text: l10n.tagDeleteWarning2),
+              ...subjectSpans,
+              TextSpan(text: l10n.tagDeleteWarning3),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 다이얼로그 확인 버튼
-  Widget _buildConfirmButton() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFF5A5A5A),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextButton(
-        onPressed: () => Navigator.pop(context, true),
-        child: Text(
-          l10n.yes,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 다이얼로그 취소 버튼
-  Widget _buildCancelButton() {
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFFC0C0C0),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextButton(
-        onPressed: () => Navigator.pop(context, false),
-        child: Text(
-          l10n.no,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
           ),
         ),
       ),

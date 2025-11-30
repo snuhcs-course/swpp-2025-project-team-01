@@ -1,6 +1,7 @@
 // 자주 쓰는 작은 위젯들
 import 'package:flutter/material.dart';
 import 'package:re_view/core/lecture_loading_service.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/color_scheme.dart';
 import 'package:re_view/data/hive_models.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -192,11 +193,60 @@ class LectureLoadingBar extends StatelessWidget {
           );
         }
 
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 280),
-          switchInCurve: Curves.easeOutBack,
-          switchOutCurve: Curves.easeInCubic,
-          child: child,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder:
+                  (Widget? currentChild, List<Widget> previousChildren) {
+                    // Collapse 상태로 전환 시, 이전 위젯(ExpandedOverlay)이 상태를 잃고
+                    // 초기 모습(카드)으로 깜빡이는 것을 방지하기 위해 previousChildren을 즉시 제거
+                    if (service.isCollapsed) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [if (currentChild != null) currentChild],
+                      );
+                    }
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
+                    );
+                  },
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                // If collapsed, no transition animation needed (instant cut)
+                if (service.isCollapsed) {
+                  return child;
+                }
+
+                Alignment alignment = Alignment.center;
+
+                // Expanding: Grow from the side center where the bubble was
+                final screenSize = MediaQuery.of(context).size;
+                final y =
+                    (((screenSize.height - service.bubbleY - 50) /
+                            screenSize.height) *
+                        2) -
+                    1;
+                if (service.bubbleX > screenSize.width / 2) {
+                  alignment = Alignment(1.0, y);
+                } else {
+                  alignment = Alignment(-1.0, y);
+                }
+
+                return ScaleTransition(
+                  scale: animation,
+                  alignment: alignment,
+                  child: child,
+                );
+              },
+              child: child,
+            );
+          },
         );
       },
     );
@@ -204,7 +254,7 @@ class LectureLoadingBar extends StatelessWidget {
 }
 
 /// 둥근모서리 + 그림자 카드 컨테이너
-class ExpandedLoadingOverlay extends StatelessWidget {
+class ExpandedLoadingOverlay extends StatefulWidget {
   const ExpandedLoadingOverlay({
     super.key,
     required this.service,
@@ -215,46 +265,230 @@ class ExpandedLoadingOverlay extends StatelessWidget {
   final BuildContext context;
 
   @override
+  State<ExpandedLoadingOverlay> createState() => _ExpandedLoadingOverlayState();
+}
+
+class _ExpandedLoadingOverlayState extends State<ExpandedLoadingOverlay>
+    with SingleTickerProviderStateMixin {
+  Offset _dragOffset = Offset.zero;
+  late AnimationController _snapController;
+  late Animation<Offset> _snapAnimation;
+  final GlobalKey _contentKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _snapController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    // Initialize with dummy animation to prevent LateInitializationError
+    // when _snapController.reset() is called in onPanStart
+    _snapAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: Offset.zero,
+    ).animate(_snapController);
+
+    _snapController.addListener(() {
+      setState(() {
+        _dragOffset = _snapAnimation.value;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _snapController.dispose();
+    super.dispose();
+  }
+
+  void _snapToCorner(Offset currentPosition, bool isRightSide) {
+    final screenWidth = MediaQuery.of(widget.context).size.width;
+    final screenHeight = MediaQuery.of(widget.context).size.height;
+    final safeArea = MediaQuery.of(widget.context).padding;
+    const bubbleSize = 88.0;
+
+    final renderBox =
+        _contentKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) {
+      return;
+    }
+
+    // Calculate original center (position before drag)
+    // Current Visual Center = Original Center + Drag Offset
+    // So Original Center = Current Visual Center - Drag Offset
+    final originalCenterGlobal = currentPosition - _dragOffset;
+
+    // X: Snap to Left or Right edge (with 10% clip)
+    final targetX = isRightSide
+        ? screenWidth - bubbleSize * 0.9 - safeArea.right
+        : -(bubbleSize * 0.1);
+
+    // Y: Keep current vertical position, but clamp to screen bounds
+    // We need to match CollapsedBubbleOverlay's positioning logic exactly to avoid jumps.
+    // CollapsedBubbleOverlay uses:
+    //   bottom: _dragY
+    //   child: SafeArea(top: false, child: ...)
+    // So VisualBottom = _dragY + safeArea.bottom
+    // And _dragY is clamped to [0, screenHeight - bubbleSize - safeArea.top]
+
+    double targetCenterY = currentPosition.dy;
+
+    // Calculate Min/Max CenterY based on CollapsedBubbleOverlay's _dragY limits
+
+    // Max _dragY = screenHeight - bubbleSize - safeArea.top (Top of screen)
+    // VisualBottom = Max_dragY + safeArea.bottom
+    // Min CenterY = ScreenHeight - VisualBottom - bubbleSize/2
+    final minCenterY =
+        screenHeight -
+        (screenHeight - bubbleSize - safeArea.top + safeArea.bottom) -
+        bubbleSize / 2;
+
+    final maxCenterY = screenHeight - safeArea.bottom - bubbleSize / 2 - 16;
+
+    targetCenterY = targetCenterY.clamp(minCenterY, maxCenterY);
+
+    final targetY = screenHeight - targetCenterY - bubbleSize / 2;
+
+    final targetCenterGlobal = Offset(targetX + bubbleSize / 2, targetCenterY);
+    final targetDragOffset = targetCenterGlobal - originalCenterGlobal;
+
+    _snapAnimation = Tween<Offset>(begin: _dragOffset, end: targetDragOffset)
+        .animate(
+          CurvedAnimation(parent: _snapController, curve: Curves.easeOutBack),
+        );
+
+    _snapController.forward().then((_) {
+      // Animation Complete -> Collapse
+      widget.service.collapseToBubble(
+        alignRight: isRightSide,
+        touchPosition: targetCenterGlobal, // Visual center
+        targetBubbleX: targetX,
+        targetBubbleY: targetY,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext widgetContext) {
-    final isCompleted = service.isCompleted;
-    final hasError = service.hasError;
+    final isCompleted = widget.service.isCompleted;
+    final hasError = widget.service.hasError;
+    final progress = widget.service.progress.clamp(0.0, 1.0);
+
+    // Calculate drag metrics
+    final dragDistance = _dragOffset.distance;
+
+    // Card opacity: 1.0 -> 0.0 as distance goes 0 -> 150
+    final cardOpacity = (1.0 - (dragDistance / 150.0)).clamp(0.0, 1.0);
+
+    // Bubble opacity: 0.0 -> 1.0 as distance goes 50 -> 200
+    final bubbleOpacity = ((dragDistance - 50.0) / 150.0).clamp(0.0, 1.0);
+
+    // Scale card down slightly
+    final cardScale = (1.0 - (dragDistance / 400.0)).clamp(0.4, 1.0);
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: SafeArea(
         top: false,
-        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragEnd: (details) {
-            final velocity = details.velocity.pixelsPerSecond.dx;
-            if (velocity.abs() < 200) {
-              return;
-            }
-            service.collapseToBubble(alignRight: velocity > 0);
-          },
-          child: RoundedCard(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: hasError
-                  ? ErrorView(
-                      key: const ValueKey('error'),
-                      errorTitle: service.errorTitle,
-                      errorMessage: service.errorMessage,
-                    )
-                  : isCompleted
-                  ? CompletedView(
-                      key: const ValueKey('completed'),
-                      context: context,
-                    )
-                  : LoadingView(
-                      key: const ValueKey('loading'),
-                      title: service.lectureTitle,
-                      message: service.message,
-                      progress: service.progress.clamp(0.0, 1.0),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanStart: (details) {
+              setState(() {
+                _dragOffset = Offset.zero;
+                _snapController.stop(); // Stop any ongoing snap animation
+                _snapController.reset();
+              });
+            },
+            onPanUpdate: (details) {
+              setState(() {
+                _dragOffset += details.delta;
+              });
+            },
+            onPanEnd: (details) {
+              final velocity = details.velocity.pixelsPerSecond;
+              final distance = _dragOffset.distance;
+
+              // Thresholds for collapsing
+              final isFling = velocity.distance > 800;
+              final isFarDrag = distance > 150;
+
+              if (isFling || isFarDrag) {
+                // Determine direction
+                final renderBox =
+                    _contentKey.currentContext?.findRenderObject()
+                        as RenderBox?;
+                final currentVisualCenter = renderBox != null
+                    ? renderBox.localToGlobal(
+                        renderBox.size.center(Offset.zero),
+                      )
+                    : Offset.zero;
+                final isRight =
+                    currentVisualCenter.dx >
+                    (MediaQuery.of(context).size.width / 2);
+
+                _snapToCorner(currentVisualCenter, isRight);
+              } else {
+                // Snap back
+                setState(() {
+                  _dragOffset = Offset.zero;
+                });
+              }
+            },
+            child: Transform.translate(
+              offset: _dragOffset,
+              child: Stack(
+                key: _contentKey,
+                alignment: Alignment.center,
+                children: [
+                  // The Card (fades out)
+                  Opacity(
+                    opacity: cardOpacity,
+                    child: Transform.scale(
+                      scale: cardScale,
+                      child: RoundedCard(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: hasError
+                              ? ErrorView(
+                                  key: const ValueKey('error'),
+                                  errorTitle: widget.service.errorTitle,
+                                  errorMessage: widget.service.errorMessage,
+                                )
+                              : isCompleted
+                              ? CompletedView(
+                                  key: const ValueKey('completed'),
+                                  context: widget.context,
+                                )
+                              : LoadingView(
+                                  key: const ValueKey('loading'),
+                                  title: widget.service.lectureTitle,
+                                  message: widget.service.message,
+                                  progress: progress,
+                                ),
+                        ),
+                      ),
                     ),
+                  ),
+
+                  // The Bubble (fades in)
+                  if (bubbleOpacity > 0)
+                    Opacity(
+                      opacity: bubbleOpacity,
+                      child: _BubbleVisual(
+                        size: 88,
+                        hasError: hasError,
+                        isCompleted: isCompleted,
+                        progress: progress,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -275,12 +509,24 @@ class CollapsedBubbleOverlay extends StatefulWidget {
 class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
   late double _dragX;
   late double _dragY;
+  bool _isDragging = false;
 
   @override
   void initState() {
     super.initState();
     _dragX = widget.service.bubbleX;
     _dragY = widget.service.bubbleY;
+  }
+
+  @override
+  void didUpdateWidget(CollapsedBubbleOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the service's bubble position changes externally (e.g. via snap animation),
+    // and we are not currently dragging, update our local state to match.
+    if (!_isDragging) {
+      _dragX = widget.service.bubbleX;
+      _dragY = widget.service.bubbleY;
+    }
   }
 
   @override
@@ -292,7 +538,11 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
 
     return Stack(
       children: [
-        Positioned(
+        AnimatedPositioned(
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
           left: _dragX,
           bottom: _dragY,
           child: SafeArea(
@@ -300,14 +550,16 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onPanStart: (details) {
-                // Prevent tap from triggering during drag
+                setState(() {
+                  _isDragging = true;
+                });
               },
               onPanUpdate: (details) {
                 setState(() {
-                  // Update position during drag
+                  // Update position during drag (allow free movement temporarily)
                   _dragX = (_dragX + details.delta.dx).clamp(
-                    0.0,
-                    screenSize.width - bubbleSize - safeArea.right,
+                    -(bubbleSize * 0.1),
+                    screenSize.width - bubbleSize * 0.9 - safeArea.right,
                   );
                   _dragY = (_dragY - details.delta.dy).clamp(
                     0.0,
@@ -316,6 +568,22 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                 });
               },
               onPanEnd: (details) {
+                // Snap to left or right side with 10% clipping
+                final screenCenter = screenSize.width / 2;
+                final isOnLeftSide = _dragX < screenCenter - bubbleSize / 2;
+
+                setState(() {
+                  _isDragging = false;
+                  if (isOnLeftSide) {
+                    // Snap to left with 10% clipped
+                    _dragX = -(bubbleSize * 0.1);
+                  } else {
+                    // Snap to right with 10% clipped
+                    _dragX =
+                        screenSize.width - bubbleSize * 0.9 - safeArea.right;
+                  }
+                });
+
                 // Save final position when drag ends
                 widget.service.updateBubblePosition(_dragX, _dragY);
               },
@@ -323,60 +591,88 @@ class _CollapsedBubbleOverlayState extends State<CollapsedBubbleOverlay> {
                 // Tap to expand
                 widget.service.expandFromBubble();
               },
-              child: SizedBox(
-                width: bubbleSize,
-                height: bubbleSize,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: bubbleSize,
-                      height: bubbleSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black.withValues(alpha: 0.6),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x33000000),
-                            blurRadius: 12,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: bubbleSize,
-                      height: bubbleSize,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 6,
-                        backgroundColor: Colors.white24,
-                        valueColor: const AlwaysStoppedAnimation(
-                          Color(0xFFF7FAB0),
-                        ),
-                      ),
-                    ),
-                    ClipOval(
-                      child: Container(
-                        width: bubbleSize - 18,
-                        height: bubbleSize - 18,
-                        color: Colors.black.withValues(alpha: 0.2),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Image.asset(
-                            'assets/images/loading_character.png',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: _BubbleVisual(
+                size: bubbleSize,
+                hasError: widget.service.hasError,
+                isCompleted: widget.service.isCompleted,
+                progress: progress,
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BubbleVisual extends StatelessWidget {
+  const _BubbleVisual({
+    required this.size,
+    required this.hasError,
+    required this.isCompleted,
+    required this.progress,
+  });
+
+  final double size;
+  final bool hasError;
+  final bool isCompleted;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.6),
+              border: hasError
+                  ? Border.all(color: const Color(0xFFFF6B6B), width: 6.0)
+                  : isCompleted
+                  ? Border.all(color: const Color(0xFF4CAF50), width: 6.0)
+                  : null,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33000000),
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+          ),
+          if (!hasError && !isCompleted)
+            SizedBox(
+              width: size,
+              height: size,
+              child: CircularProgressIndicator(
+                value: progress,
+                strokeWidth: 6,
+                backgroundColor: Colors.white24,
+                valueColor: const AlwaysStoppedAnimation(Color(0xFFF7FAB0)),
+              ),
+            ),
+          ClipOval(
+            child: Container(
+              width: size - 18,
+              height: size - 18,
+              color: Colors.black.withValues(alpha: 0.2),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Image.asset(
+                  'assets/images/loading_character.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -423,8 +719,7 @@ class LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final language = HiveManager.instance.settings.language;
-    final isKorean = language == 'ko';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -454,7 +749,7 @@ class LoadingView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isKorean ? '강의 생성 중…' : 'Creating Lecture…',
+                        l10n.lectureCreating,
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -479,7 +774,7 @@ class LoadingView extends StatelessWidget {
                           vertical: 6,
                         ),
                       ),
-                      child: Text(isKorean ? '취소' : 'Cancel'),
+                      child: Text(l10n.cancel),
                     ),
                   ],
                 ),
@@ -490,16 +785,14 @@ class LoadingView extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: isKorean ? '강의명: ' : 'Lecture: ',
+                        text: l10n.lectureName,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade400,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       TextSpan(
-                        text: title.isEmpty
-                            ? (isKorean ? '제목 없음' : 'Untitled')
-                            : title,
+                        text: title.isEmpty ? (l10n.untitled) : title,
                         style: textTheme.labelMedium?.copyWith(
                           color: Colors.grey.shade300,
                         ),
@@ -544,8 +837,7 @@ class CompletedView extends StatelessWidget {
   Widget build(BuildContext widgetContext) {
     final textTheme = Theme.of(context).textTheme;
     final service = LectureLoadingService.instance;
-    final language = HiveManager.instance.settings.language;
-    final isKorean = language == 'ko';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -571,7 +863,7 @@ class CompletedView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isKorean ? '강의 생성 완료!' : 'Lecture Created!',
+                        l10n.lectureCreationComplete,
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFFF7FAB0),
@@ -593,9 +885,7 @@ class CompletedView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isKorean
-                      ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
-                      : 'Lecture creation completed.\nCheck out the result.',
+                  l10n.lectureCreationCompleted,
                   style: textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade300,
                   ),
@@ -622,7 +912,7 @@ class CompletedView extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: Text(isKorean ? '강의 바로가기' : 'Go to Lecture'),
+                    label: Text(l10n.goToLecture),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF7FAB0),
                       foregroundColor: Colors.black87,
@@ -866,6 +1156,274 @@ class DialogHeaderTitle extends StatelessWidget {
   }
 }
 
+/// 수정 다이얼로그 공통 위젯
+///
+/// DialogHeaderTitle, 스크롤 가능한 content, 삭제/완료 버튼을 포함하는 표준 수정 다이얼로그입니다.
+/// 내부 콘텐츠는 [content] 파라미터로 커스터마이즈.
+class EditDialog extends StatelessWidget {
+  const EditDialog({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.onDelete,
+    required this.onComplete,
+    required this.deleteLabel,
+    required this.completeLabel,
+    this.onArchive,
+    this.archiveLabel,
+  });
+
+  final String title;
+  final Widget content;
+  final VoidCallback onDelete;
+  final VoidCallback onComplete;
+  final VoidCallback? onArchive;
+  final String deleteLabel;
+  final String completeLabel;
+  final String? archiveLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      backgroundColor: theme.dialogTheme.backgroundColor,
+      titlePadding: EdgeInsets.zero,
+      title: DialogHeaderTitle(title: title),
+      content: SizedBox(
+        width: 400,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.7 - keyboardHeight,
+          ),
+          child: SingleChildScrollView(child: content),
+        ),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      actions: [
+        if (archiveLabel != null)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  // 삭제 버튼 (왼쪽)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      label: Text(deleteLabel),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // 완료 버튼 (오른쪽)
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      onPressed: onArchive,
+                      icon: const Icon(Icons.archive, size: 20),
+                      label: Text(archiveLabel!),
+                    ),
+                  ),
+                ],
+              ),
+              // 보관 버튼
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onComplete,
+                  child: Text(completeLabel),
+                ),
+              ),
+            ],
+          ),
+        if (archiveLabel == null)
+          Row(
+            children: [
+              // 삭제 버튼 (왼쪽)
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  label: Text(deleteLabel),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // 완료 버튼 (오른쪽)
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onPressed: onComplete,
+                  child: Text(completeLabel),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+/// 삭제 경고 다이얼로그 위젯
+///
+/// 검은색 헤더와 회색 본문을 가진 표준 경고 다이얼로그입니다.
+/// 내부 텍스트는 [body] 파라미터로 커스터마이즈.
+class DeleteWarningDialog extends StatelessWidget {
+  const DeleteWarningDialog({
+    super.key,
+    required this.body,
+    required this.onConfirm,
+    required this.yesText,
+    required this.noText,
+    required this.warningText,
+    this.hiveManager,
+  });
+
+  final Widget body;
+  final VoidCallback onConfirm;
+  final String yesText;
+  final String noText;
+  final String warningText;
+  final HiveManager? hiveManager;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: const BoxDecoration(
+                color: Color(0xFF1D1D1D),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Center(
+                child: Text(
+                  warningText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            // Body
+            Container(
+              padding: const EdgeInsets.fromLTRB(32, 32, 32, 20),
+              decoration: const BoxDecoration(
+                color: Color(0xFFE8E8E8),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  body,
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      // "예" 버튼
+                      Expanded(
+                        child: Container(
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5A5A5A),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pop(context, true);
+                              onConfirm();
+                            },
+                            child: Text(
+                              yesText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // "아니오" 버튼
+                      Expanded(
+                        child: Container(
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC0C0C0),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text(
+                              noText,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// 과목 패널 헤더 위젯 (홈 화면 & 과목 수정 화면 공통)
 ///
 /// 검은 배경의 헤더로 과목 제목, 태그, 펼침/접기 버튼을 표시합니다.
@@ -874,6 +1432,7 @@ class SubjectPanelHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.tags,
+    required this.id,
     required this.expanded,
     required this.onToggleExpanded,
     this.panelRadius = 22.0,
@@ -885,12 +1444,16 @@ class SubjectPanelHeader extends StatelessWidget {
     this.onLongPress,
     this.titleEndPadding = 0,
     this.showEdit = false,
+    this.isArchivedSubject = false,
     this.onEditSubject,
+    this.onUnarchiveSubject,
+    this.onDeleteSubject,
     this.reorderIndex,
   });
 
   final String title;
   final List<HiveTag> tags;
+  final String id;
   final bool expanded;
   final VoidCallback onToggleExpanded;
   final double panelRadius;
@@ -902,7 +1465,10 @@ class SubjectPanelHeader extends StatelessWidget {
   final VoidCallback? onLongPress;
   final double titleEndPadding;
   final bool showEdit;
+  final bool isArchivedSubject;
   final VoidCallback? onEditSubject;
+  final VoidCallback? onUnarchiveSubject;
+  final VoidCallback? onDeleteSubject;
   final int? reorderIndex;
 
   @override
@@ -951,7 +1517,7 @@ class SubjectPanelHeader extends StatelessWidget {
                       ? (reorderIndex != null
                             ? Padding(
                                 padding: const EdgeInsets.only(left: 10),
-                                child: ReorderableDelayedDragStartListener(
+                                child: ReorderableDragStartListener(
                                   index: reorderIndex!, // ← required
                                   child: Icon(
                                     Icons.drag_indicator,
@@ -999,12 +1565,23 @@ class SubjectPanelHeader extends StatelessWidget {
                     onPressed: () async => onEditSubject?.call(),
                   ),
                 ),
+                // 보관함에 있는 과목일 경우
+                if (isArchivedSubject)
+                  IconButton(
+                    icon: Icon(Icons.delete, size: 20, color: iconColor),
+                    onPressed: () async => onDeleteSubject?.call(),
+                  ),
+                if (isArchivedSubject)
+                  IconButton(
+                    icon: Icon(Icons.reply, size: 20, color: iconColor),
+                    onPressed: () async => onUnarchiveSubject?.call(),
+                  ),
                 // 펼침/접기 버튼
                 IconButton(
                   icon: Icon(
                     expanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.keyboard_arrow_up,
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: iconColor,
                   ),
                   onPressed: onToggleExpanded,

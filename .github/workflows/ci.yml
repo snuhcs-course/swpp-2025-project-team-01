@@ -53,52 +53,8 @@ jobs:
       run: flutter pub get
     
     # Add necessary script executions accordingly.
-    - name: Run core unit tests
-      run: flutter test test/core/
-    
-    - name: Run data model unit tests
-      run: flutter test test/data/
-    
-    - name: Run edit unit tests
-      run: flutter test test/features/edit/
-
-    - name: Run player unit tests
-      run: flutter test test/features/player/
-
-    - name: Run search unit tests
-      run: flutter test test/features/search/search_screen_test.dart
-
-    - name: Run home unit tests
-      run: flutter test test/features/home/
-
-    - name: Run settings unit tests
-      run: flutter test test/features/settings/
-
-    - name: Run tags unit tests
-      run: flutter test test/features/tags/
-
-  frontend-integration-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.35.4'
-        channel: 'stable'
-        cache: true
-    
-    - name: Get dependencies
-      run: flutter pub get
-
-    # Add necessary script executions accordingly.
-    #- name: Run integration tests
-    #  run: flutter test integration_test
+    - name: Run unit tests
+      run: flutter test
 
   # Linter for Dart: warnings are treated as errors
   dart-linter-test:

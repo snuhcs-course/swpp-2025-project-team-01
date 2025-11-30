@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart' as ja;
 import 'package:re_view/data/hive_manager.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 
@@ -26,9 +27,10 @@ class TtsScreen extends StatefulWidget {
 
 class _TtsScreenState extends State<TtsScreen> {
   late final HiveManager _hiveManager;
+  final _player = ja.AudioPlayer();
 
   // TTS 설정 상태
-  String _gender = '여성'; // 음성 성별
+  String _gender = '여성'; // 기본값은 여성
 
   @override
   void initState() {
@@ -40,59 +42,37 @@ class _TtsScreenState extends State<TtsScreen> {
   /// HiveManager에서 저장된 TTS 설정 불러오기
   Future<void> _loadSettings() async {
     if (mounted) {
-      final savedGender = _hiveManager.settings.ttsGender;
-      // 현재는 여성 음성만 지원되므로 저장된 값이 남성이면 여성으로 교체한다.
-      if (savedGender == '남성') {
-        await _hiveManager.updateTts(gender: '여성');
-      }
-      if (mounted) {
-        setState(() {
-          final updatedGender = _hiveManager.settings.ttsGender;
-          _gender = updatedGender == '남성' ? '여성' : updatedGender;
-        });
-      }
+      setState(() {
+        final ttsGender = _hiveManager.settings.ttsGender;
+        _gender = ttsGender == '남성' ? '여성' : ttsGender;
+      });
     }
   }
 
   /// 음성 성별 저장 및 예시 음성 재생
   Future<void> _saveGender(String value) async {
-    if (value == '남성' || value == 'Male') {
-      return;
-    }
     await _hiveManager.updateTts(gender: value);
     setState(() => _gender = value);
-    _playPreviewTTS();
+    final filePath = value == '남성'
+        ? 'assets/audios/sample_male.opus'
+        : 'assets/audios/sample_female.opus';
+    _playPreviewTTS(filePath);
   }
 
   /// 예시 TTS 음성 재생
-  ///
-  /// 현재 설정된 성별과 속도로 "Hello, World!" 음성을 재생합니다.
-  /// TODO: 실제 TTS 엔진 연동 필요
-  void _playPreviewTTS() {
-    // TODO: TTS 엔진 연동
-    // 예시 코드:
-    // final ttsEngine = TTSEngine.instance;
-    // ttsEngine.speak(
-    //   text: "Hello, World!",
-    //   gender: _gender,
-    //   speed: _speedToRate(_speed),
-    // );
+  Future<void> _playPreviewTTS(String filePath) async {
+    await _player.setAsset(filePath);
+    _player.play();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isKorean = AppLocalizations.of(context).isKorean;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TTS'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(title: Text(l10n.tts)),
       backgroundColor: isDark
           ? theme.scaffoldBackgroundColor
           : const Color(0xFFF5F5F5),
@@ -101,20 +81,9 @@ class _TtsScreenState extends State<TtsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle(isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender'),
+            _buildSectionTitle(l10n.ttsVoiceGender),
             const SizedBox(height: 12),
-            _buildGenderButtons(isKorean),
-            const SizedBox(height: 8),
-            Text(
-              isKorean
-                  ? '현재 여성 TTS 음성만 지원됩니다.'
-                  : 'Only female TTS voices are currently supported.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
-            ),
+            _buildGenderButtons(l10n),
           ],
         ),
       ),
@@ -131,25 +100,15 @@ class _TtsScreenState extends State<TtsScreen> {
     return Text(title, style: textStyle);
   }
 
-  Widget _buildGenderButtons(bool isKorean) {
+  Widget _buildGenderButtons(AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
-          child: _genderButton(
-            context,
-            isKorean ? '남성' : 'Male',
-            _gender == '남성',
-            false,
-          ),
+          child: _genderButton(context, l10n.male, _gender == '남성', true),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _genderButton(
-            context,
-            isKorean ? '여성' : 'Female',
-            _gender == '여성',
-            true,
-          ),
+          child: _genderButton(context, l10n.female, _gender == '여성', true),
         ),
       ],
     );

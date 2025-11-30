@@ -4,19 +4,20 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
-import 'dart:typed_data' as _i12;
+import 'dart:typed_data' as _i13;
 import 'dart:ui' as _i7;
 
-import 'package:file_picker/src/file_picker.dart' as _i10;
-import 'package:file_picker/src/file_picker_result.dart' as _i11;
+import 'package:file_picker/src/file_picker.dart' as _i11;
+import 'package:file_picker/src/file_picker_result.dart' as _i12;
 import 'package:hive_flutter/hive_flutter.dart' as _i6;
+import 'package:http/http.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
 import 'package:re_view/core/lecture_loading_service.dart' as _i8;
 import 'package:re_view/data/hive_manager.dart' as _i4;
 import 'package:re_view/data/hive_models.dart' as _i2;
-import 'package:uuid/data.dart' as _i14;
-import 'package:uuid/uuid.dart' as _i13;
+import 'package:uuid/data.dart' as _i15;
+import 'package:uuid/uuid.dart' as _i14;
 import 'package:uuid/uuid_value.dart' as _i3;
 
 // ignore_for_file: type=lint
@@ -72,6 +73,14 @@ class MockHiveManager extends _i1.Mock implements _i4.HiveManager {
   Map<String, _i2.HiveSubject> get subjects =>
       (super.noSuchMethod(
             Invocation.getter(#subjects),
+            returnValue: <String, _i2.HiveSubject>{},
+          )
+          as Map<String, _i2.HiveSubject>);
+
+  @override
+  Map<String, _i2.HiveSubject> get archivedSubjects =>
+      (super.noSuchMethod(
+            Invocation.getter(#archivedSubjects),
             returnValue: <String, _i2.HiveSubject>{},
           )
           as Map<String, _i2.HiveSubject>);
@@ -279,6 +288,24 @@ class MockHiveManager extends _i1.Mock implements _i4.HiveManager {
   _i5.Future<void> updateSubjectTags(String? id, List<String>? tagIds) =>
       (super.noSuchMethod(
             Invocation.method(#updateSubjectTags, [id, tagIds]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> archiveSubject(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#archiveSubject, [id]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> unarchiveSubject(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#unarchiveSubject, [id]),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )
@@ -609,6 +636,12 @@ class MockLectureLoadingService extends _i1.Mock
   );
 
   @override
+  void addJobId(String? jobId) => super.noSuchMethod(
+    Invocation.method(#addJobId, [jobId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   double getProgress() =>
       (super.noSuchMethod(Invocation.method(#getProgress, []), returnValue: 0.0)
           as double);
@@ -651,14 +684,29 @@ class MockLectureLoadingService extends _i1.Mock
       );
 
   @override
-  void cancelLoading() => super.noSuchMethod(
-    Invocation.method(#cancelLoading, []),
-    returnValueForMissingStub: null,
-  );
+  _i5.Future<void> cancelLoading({_i10.Client? fakeClient}) =>
+      (super.noSuchMethod(
+            Invocation.method(#cancelLoading, [], {#fakeClient: fakeClient}),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
-  void collapseToBubble({required bool? alignRight}) => super.noSuchMethod(
-    Invocation.method(#collapseToBubble, [], {#alignRight: alignRight}),
+  void collapseToBubble({
+    required bool? alignRight,
+    bool? snapToCorner = false,
+    _i7.Offset? touchPosition,
+    double? targetBubbleX,
+    double? targetBubbleY,
+  }) => super.noSuchMethod(
+    Invocation.method(#collapseToBubble, [], {
+      #alignRight: alignRight,
+      #snapToCorner: snapToCorner,
+      #touchPosition: touchPosition,
+      #targetBubbleX: targetBubbleX,
+      #targetBubbleY: targetBubbleY,
+    }),
     returnValueForMissingStub: null,
   );
 
@@ -671,6 +719,12 @@ class MockLectureLoadingService extends _i1.Mock
   @override
   void updateBubblePosition(double? x, double? y) => super.noSuchMethod(
     Invocation.method(#updateBubblePosition, [x, y]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onRouteChanged(String? routeName) => super.noSuchMethod(
+    Invocation.method(#onRouteChanged, [routeName]),
     returnValueForMissingStub: null,
   );
 
@@ -702,18 +756,18 @@ class MockLectureLoadingService extends _i1.Mock
 /// A class which mocks [FilePicker].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockFilePicker extends _i1.Mock implements _i10.FilePicker {
+class MockFilePicker extends _i1.Mock implements _i11.FilePicker {
   MockFilePicker() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i5.Future<_i11.FilePickerResult?> pickFiles({
+  _i5.Future<_i12.FilePickerResult?> pickFiles({
     String? dialogTitle,
     String? initialDirectory,
-    _i10.FileType? type = _i10.FileType.any,
+    _i11.FileType? type = _i11.FileType.any,
     List<String>? allowedExtensions,
-    dynamic Function(_i10.FilePickerStatus)? onFileLoading,
+    dynamic Function(_i11.FilePickerStatus)? onFileLoading,
     bool? allowCompression = true,
     int? compressionQuality = 30,
     bool? allowMultiple = false,
@@ -737,9 +791,9 @@ class MockFilePicker extends _i1.Mock implements _i10.FilePicker {
               #lockParentWindow: lockParentWindow,
               #readSequential: readSequential,
             }),
-            returnValue: _i5.Future<_i11.FilePickerResult?>.value(),
+            returnValue: _i5.Future<_i12.FilePickerResult?>.value(),
           )
-          as _i5.Future<_i11.FilePickerResult?>);
+          as _i5.Future<_i12.FilePickerResult?>);
 
   @override
   _i5.Future<bool?> clearTemporaryFiles() =>
@@ -770,9 +824,9 @@ class MockFilePicker extends _i1.Mock implements _i10.FilePicker {
     String? dialogTitle,
     String? fileName,
     String? initialDirectory,
-    _i10.FileType? type = _i10.FileType.any,
+    _i11.FileType? type = _i11.FileType.any,
     List<String>? allowedExtensions,
-    _i12.Uint8List? bytes,
+    _i13.Uint8List? bytes,
     bool? lockParentWindow = false,
   }) =>
       (super.noSuchMethod(
@@ -793,13 +847,13 @@ class MockFilePicker extends _i1.Mock implements _i10.FilePicker {
 /// A class which mocks [Uuid].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockUuid extends _i1.Mock implements _i13.Uuid {
+class MockUuid extends _i1.Mock implements _i14.Uuid {
   MockUuid() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  String v1({Map<String, dynamic>? options, _i14.V1Options? config}) =>
+  String v1({Map<String, dynamic>? options, _i15.V1Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v1, [], {#options: options, #config: config}),
             returnValue: _i9.dummyValue<String>(
@@ -813,7 +867,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   List<int> v1buffer(
     List<int>? buffer, {
     Map<String, dynamic>? options,
-    _i14.V1Options? config,
+    _i15.V1Options? config,
     int? offset = 0,
   }) =>
       (super.noSuchMethod(
@@ -829,7 +883,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   @override
   _i3.UuidValue v1obj({
     Map<String, dynamic>? options,
-    _i14.V1Options? config,
+    _i15.V1Options? config,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#v1obj, [], {#options: options, #config: config}),
@@ -844,7 +898,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as _i3.UuidValue);
 
   @override
-  String v4({Map<String, dynamic>? options, _i14.V4Options? config}) =>
+  String v4({Map<String, dynamic>? options, _i15.V4Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v4, [], {#options: options, #config: config}),
             returnValue: _i9.dummyValue<String>(
@@ -858,7 +912,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   List<int> v4buffer(
     List<int>? buffer, {
     Map<String, dynamic>? options,
-    _i14.V4Options? config,
+    _i15.V4Options? config,
     int? offset = 0,
   }) =>
       (super.noSuchMethod(
@@ -874,7 +928,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   @override
   _i3.UuidValue v4obj({
     Map<String, dynamic>? options,
-    _i14.V4Options? config,
+    _i15.V4Options? config,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#v4obj, [], {#options: options, #config: config}),
@@ -893,7 +947,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
     String? namespace,
     String? name, {
     Map<String, dynamic>? options,
-    _i14.V5Options? config,
+    _i15.V5Options? config,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -918,7 +972,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
     String? name,
     List<int>? buffer, {
     Map<String, dynamic>? options,
-    _i14.V5Options? config,
+    _i15.V5Options? config,
     int? offset = 0,
   }) =>
       (super.noSuchMethod(
@@ -936,7 +990,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
     String? namespace,
     String? name, {
     Map<String, dynamic>? options,
-    _i14.V5Options? config,
+    _i15.V5Options? config,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -956,7 +1010,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as _i3.UuidValue);
 
   @override
-  String v6({_i14.V6Options? config}) =>
+  String v6({_i15.V6Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v6, [], {#config: config}),
             returnValue: _i9.dummyValue<String>(
@@ -969,7 +1023,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   @override
   List<int> v6buffer(
     List<int>? buffer, {
-    _i14.V6Options? config,
+    _i15.V6Options? config,
     int? offset = 0,
   }) =>
       (super.noSuchMethod(
@@ -983,7 +1037,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as List<int>);
 
   @override
-  _i3.UuidValue v6obj({_i14.V6Options? config}) =>
+  _i3.UuidValue v6obj({_i15.V6Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v6obj, [], {#config: config}),
             returnValue: _FakeUuidValue_2(
@@ -994,7 +1048,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as _i3.UuidValue);
 
   @override
-  String v7({_i14.V7Options? config}) =>
+  String v7({_i15.V7Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v7, [], {#config: config}),
             returnValue: _i9.dummyValue<String>(
@@ -1007,7 +1061,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   @override
   List<int> v7buffer(
     List<int>? buffer, {
-    _i14.V7Options? config,
+    _i15.V7Options? config,
     int? offset = 0,
   }) =>
       (super.noSuchMethod(
@@ -1021,7 +1075,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as List<int>);
 
   @override
-  _i3.UuidValue v7obj({_i14.V7Options? config}) =>
+  _i3.UuidValue v7obj({_i15.V7Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v7obj, [], {#config: config}),
             returnValue: _FakeUuidValue_2(
@@ -1032,7 +1086,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as _i3.UuidValue);
 
   @override
-  String v8({_i14.V8Options? config}) =>
+  String v8({_i15.V8Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v8, [], {#config: config}),
             returnValue: _i9.dummyValue<String>(
@@ -1045,7 +1099,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   @override
   List<int> v8buffer(
     List<int>? buffer, {
-    _i14.V8Options? config,
+    _i15.V8Options? config,
     int? offset = 0,
   }) =>
       (super.noSuchMethod(
@@ -1059,7 +1113,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as List<int>);
 
   @override
-  _i3.UuidValue v8obj({_i14.V8Options? config}) =>
+  _i3.UuidValue v8obj({_i15.V8Options? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v8obj, [], {#config: config}),
             returnValue: _FakeUuidValue_2(
@@ -1070,7 +1124,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as _i3.UuidValue);
 
   @override
-  String v8g({_i14.V8GenericOptions? config}) =>
+  String v8g({_i15.V8GenericOptions? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v8g, [], {#config: config}),
             returnValue: _i9.dummyValue<String>(
@@ -1083,7 +1137,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
   @override
   List<int> v8gbuffer(
     List<int>? buffer, {
-    _i14.V8GenericOptions? config,
+    _i15.V8GenericOptions? config,
     int? offset = 0,
   }) =>
       (super.noSuchMethod(
@@ -1097,7 +1151,7 @@ class MockUuid extends _i1.Mock implements _i13.Uuid {
           as List<int>);
 
   @override
-  _i3.UuidValue v8gobj({_i14.V8GenericOptions? config}) =>
+  _i3.UuidValue v8gobj({_i15.V8GenericOptions? config}) =>
       (super.noSuchMethod(
             Invocation.method(#v8gobj, [], {#config: config}),
             returnValue: _FakeUuidValue_2(

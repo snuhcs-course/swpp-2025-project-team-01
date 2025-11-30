@@ -27,13 +27,13 @@ void main() {
 
   group('help_screen.dart: Widget Test', () {
     group('1. UI Initial State Verification', () {
-      testWidgets('AppBar title should display "Help"', (tester) async {
+      testWidgets('AppBar title should display "도움말"', (tester) async {
         await pumpHelpScreen(tester);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppBar), findsOneWidget);
         expect(
-          find.descendant(of: find.byType(AppBar), matching: find.text('Help')),
+          find.descendant(of: find.byType(AppBar), matching: find.text('도움말')),
           findsOneWidget,
         );
       });

@@ -68,6 +68,12 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   /// Player로 이동하고 돌아올 때 orientation 재설정
   Future<void> _navigateToPlayer(String lectureId) async {
     // PlayerScreen 활성화 중에는 HomeScreen의 orientation 관찰 중단
@@ -108,12 +114,15 @@ class _HomeScreenState extends State<HomeScreen>
 
       // categorizedSubjects 내에서 재정렬
       final item = categorizedSubjects.removeAt(oldIndex);
+
+      // newIndex 범위 체크
       if (newIndex < 0) {
         newIndex = 0;
       }
       if (newIndex > categorizedSubjects.length) {
         newIndex = categorizedSubjects.length;
       }
+
       categorizedSubjects.insert(newIndex, item);
 
       // _editingSubjects 재구성 (일반 과목 + 미분류)
@@ -127,9 +136,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _showSubjectEditDialog(HiveSubject subject) async {
-    final result = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
       builder: (context) => SubjectEditDialog(
         subject: subject,
         initialTagIds: subject.tagIds,
@@ -137,9 +145,13 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
 
-    if (!mounted || result == null) {
-      _refreshSubjects(_manager.getSubjects());
+    if (!mounted) {
       return;
+    }
+
+    // 수정 모드에서 과목 목록을 항상 새로고침하여 태그 변경사항 반영
+    if (editModeEnabled) {
+      _refreshSubjects(_manager.getSubjects());
     }
   }
 
@@ -190,6 +202,8 @@ class _HomeScreenState extends State<HomeScreen>
           // 미분류 과목은 강의가 있을 때만 표시
           if (subject.isUncategorized) {
             return subject.lectureIds.isNotEmpty;
+          } else if (subject.isArchived) {
+            return false;
           }
           return true;
         })
@@ -242,17 +256,27 @@ class _HomeScreenState extends State<HomeScreen>
                     label: l10n.filter,
                     active: showTagFilter,
                     onTap: () => setState(() {
-                      showTagFilter = !showTagFilter;
-                      // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
-                      if (!showTagFilter) {
-                        selectedTagIds.clear();
+                      if (editModeEnabled) {
+                        _showSnackBar(l10n.notSupportedInEdit);
+                      } else {
+                        showTagFilter = !showTagFilter;
+                        // 필터 버튼을 비활성화할 때 모든 태그 선택 해제
+                        if (!showTagFilter) {
+                          selectedTagIds.clear();
+                        }
                       }
                     }),
                   ),
                   const SizedBox(width: 6),
                   FavoritePill(
                     active: favoritesOnly,
-                    onTap: () => setState(() => favoritesOnly = !favoritesOnly),
+                    onTap: () => setState(() {
+                      if (editModeEnabled) {
+                        _showSnackBar(l10n.notSupportedInEdit);
+                      } else {
+                        favoritesOnly = !favoritesOnly;
+                      }
+                    }),
                   ),
                   const Spacer(),
                   EditPill(
@@ -306,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ? l10n.noFavoriteSubjects
                       : selectedTagIds.isNotEmpty
                       ? l10n.noSubjectsWithSelectedTags
-                      : '',
+                      : l10n.noLectures,
                 ),
               ),
             )
@@ -347,9 +371,13 @@ class _HomeScreenState extends State<HomeScreen>
                                   onReorder: _onReorderSubject,
                                   buildDraggableFeedback:
                                       (context, constraints, child) => Material(
-                                        elevation: 6,
+                                        elevation: 0,
+                                        color: Colors.transparent,
                                         borderRadius: BorderRadius.circular(16),
-                                        child: child,
+                                        child: Opacity(
+                                          opacity: 0.8,
+                                          child: child,
+                                        ),
                                       ),
                                   children: [
                                     for (

@@ -19,28 +19,31 @@ class AppDataAdapter extends TypeAdapter<AppData> {
     return AppData(
       settings: fields[0] as AppSettings?,
       subjects: (fields[1] as Map?)?.cast<String, HiveSubject>(),
-      tags: (fields[2] as Map?)?.cast<String, HiveTag>(),
-      lectures: (fields[4] as Map?)?.cast<String, HiveLecture>(),
-      uiState: fields[3] as UiState?,
-      subjectOrder: (fields[5] as List?)?.cast<String>(),
+      archivedSubjects: (fields[2] as Map?)?.cast<String, HiveSubject>(),
+      tags: (fields[3] as Map?)?.cast<String, HiveTag>(),
+      lectures: (fields[5] as Map?)?.cast<String, HiveLecture>(),
+      uiState: fields[4] as UiState?,
+      subjectOrder: (fields[6] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, AppData obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.settings)
       ..writeByte(1)
       ..write(obj.subjects)
       ..writeByte(2)
-      ..write(obj.tags)
+      ..write(obj.archivedSubjects)
       ..writeByte(3)
-      ..write(obj.uiState)
+      ..write(obj.tags)
       ..writeByte(4)
-      ..write(obj.lectures)
+      ..write(obj.uiState)
       ..writeByte(5)
+      ..write(obj.lectures)
+      ..writeByte(6)
       ..write(obj.subjectOrder);
   }
 
@@ -160,14 +163,15 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       favorite: fields[2] as bool,
       tagIds: (fields[3] as List?)?.cast<String>(),
       lectureIds: (fields[4] as List?)?.cast<String>(),
-      isUncategorized: fields[5] as bool,
+      isArchived: fields[5] as bool,
+      isUncategorized: fields[6] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveSubject obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -179,6 +183,8 @@ class HiveSubjectAdapter extends TypeAdapter<HiveSubject> {
       ..writeByte(4)
       ..write(obj.lectureIds)
       ..writeByte(5)
+      ..write(obj.isArchived)
+      ..writeByte(6)
       ..write(obj.isUncategorized);
   }
 

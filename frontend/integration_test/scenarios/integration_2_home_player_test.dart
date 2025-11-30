@@ -173,12 +173,6 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     debugPrint('⚠️ Could not ensure lecture visible: $e');
   }
 
-  // DEBUG: Take screenshot before tapping lecture
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_2_before_tap',
-  );
-
   // Step 2: Tap on the lecture to navigate to player
   // LectureCard has a thumbnail at the top - tap on that for reliable interaction
 
@@ -257,22 +251,11 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     debugPrint(
       '⚠️ Warning: Navigation may not have occurred after 3 tap attempts',
     );
-    // DEBUG: Take screenshot if navigation failed
-    await IntegrationTestHelpers.takeScreenshot(
-      tester,
-      'integration_2_navigation_failed',
-    );
   }
 
   // Give extra time for navigation animation
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle(const Duration(seconds: 5));
-
-  // DEBUG: Take screenshot after navigation
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_2_after_navigation',
-  );
 
   // Wait for player to load (PlayerScreen shows CircularProgressIndicator initially)
   // Poll for PlayerLayout to appear, with timeout
@@ -290,24 +273,6 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
       debugPrint('pumpAndSettle timeout during polling, continuing...');
     }
 
-    // DEBUG: Take screenshots during player loading
-    if (i == 5) {
-      await IntegrationTestHelpers.takeScreenshot(
-        tester,
-        'integration_2_loading_2.5s',
-      );
-    } else if (i == 10) {
-      await IntegrationTestHelpers.takeScreenshot(
-        tester,
-        'integration_2_loading_5s',
-      );
-    } else if (i == 20) {
-      await IntegrationTestHelpers.takeScreenshot(
-        tester,
-        'integration_2_loading_10s',
-      );
-    }
-
     final verticalLayout = find.byType(VerticalPlayerLayout);
     final horizontalLayout = find.byType(HorizontalPlayerLayout);
 
@@ -322,12 +287,6 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   // Additional settle after finding the layout
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
-
-  // DEBUG: Take screenshot before player verification
-  await IntegrationTestHelpers.takeScreenshot(
-    tester,
-    'integration_2_before_verification',
-  );
 
   // Verify navigation to player screen by checking for unique player widgets
   // Must find either VerticalPlayerLayout or HorizontalPlayerLayout
@@ -351,14 +310,6 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   final hasPlayerLayout =
       verticalLayout.evaluate().isNotEmpty ||
       horizontalLayout.evaluate().isNotEmpty;
-
-  // DEBUG: If player not loaded, take failure screenshot
-  if (!hasPlayerLayout) {
-    await IntegrationTestHelpers.takeScreenshot(
-      tester,
-      'integration_2_player_not_found',
-    );
-  }
 
   expect(
     hasPlayerLayout,

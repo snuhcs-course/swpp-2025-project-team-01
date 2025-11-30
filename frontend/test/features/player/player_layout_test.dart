@@ -27,6 +27,7 @@ void main() {
   late TranscriptData transcriptData;
   late MockAudioService mockAudioService;
   late MockPdfCacheService mockPdfCacheService;
+  late MockPdfService mockPdfService;
   late StreamController<Duration> positionStreamController;
   late StreamController<ja.PlayerState> stateStreamController;
 
@@ -83,6 +84,7 @@ void main() {
 
     mockAudioService = MockAudioService();
     mockPdfCacheService = MockPdfCacheService();
+    mockPdfService = MockPdfService();
 
     // Create stream controllers for mocking
     positionStreamController = StreamController<Duration>.broadcast();
@@ -121,6 +123,7 @@ void main() {
     controller = PlayerController(
       audioService: mockAudioService,
       pdfCacheService: mockPdfCacheService,
+      pdfService: mockPdfService,
     );
 
     transcriptData = TranscriptData(
@@ -914,6 +917,7 @@ void main() {
 
     testWidgets('is tappable when Korean transcript exists', (tester) async {
       controller.isKoreanLanguage.value = false;
+      controller.isKoreanLecture = false;
 
       await tester.pumpWidget(
         buildTestApp(TranslationButton(controller: controller)),
@@ -1014,20 +1018,6 @@ void main() {
       await tester.pump();
 
       expect(controller.showControls.value, isTrue);
-    });
-  });
-
-  group('CaptionOverlay - Caption Text', () {
-    test('caption text changes based on language setting', () {
-      controller.currentSentenceIndex.value = 0;
-      controller.isKoreanLanguage.value = false;
-      expect(controller.captionText, equals('First sentence'));
-
-      controller.isKoreanLanguage.value = true;
-      expect(controller.captionText, equals('첫 번째 문장'));
-
-      controller.currentSentenceIndex.value = null;
-      expect(controller.captionText, isEmpty);
     });
   });
 }

@@ -376,7 +376,7 @@ class BottomControlBar extends StatelessWidget {
               ),
               if (!isTablet)
                 Positioned(
-                  bottom: 4,
+                  bottom: 10,
                   right: 4,
                   child: FullscreenButton(
                     isEnabled: isFullscreen,
@@ -400,16 +400,19 @@ class BottomControlBar extends StatelessWidget {
               children: [
                 // 중앙
                 Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CaptionButton(
-                        isEnabled: isCaptionEnabled,
-                        onPressed: onCaptionToggle,
-                      ),
-                      const SizedBox(width: 24),
-                      TranscriptButton(onPressed: onTranscriptToggle),
-                    ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CaptionButton(
+                          isEnabled: isCaptionEnabled,
+                          onPressed: onCaptionToggle,
+                        ),
+                        const SizedBox(width: 24),
+                        TranscriptButton(onPressed: onTranscriptToggle),
+                      ],
+                    ),
                   ),
                 ),
                 // 우측: 전체화면 버튼
@@ -562,27 +565,30 @@ class CenterPlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SkipButton(
-          isForward: false,
-          onPressed: onSkipBackward,
-          isVertical: isVertical,
-        ),
-        SizedBox(width: isVertical ? 56 : 80),
-        PlayPauseButton(
-          isPlaying: isPlaying,
-          onPressed: onPlayPause,
-          isVertical: isVertical,
-        ),
-        SizedBox(width: isVertical ? 56 : 80),
-        SkipButton(
-          isForward: true,
-          onPressed: onSkipForward,
-          isVertical: isVertical,
-        ),
-      ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SkipButton(
+            isForward: false,
+            onPressed: onSkipBackward,
+            isVertical: isVertical,
+          ),
+          SizedBox(width: isVertical ? 56 : 80),
+          PlayPauseButton(
+            isPlaying: isPlaying,
+            onPressed: onPlayPause,
+            isVertical: isVertical,
+          ),
+          SizedBox(width: isVertical ? 56 : 80),
+          SkipButton(
+            isForward: true,
+            onPressed: onSkipForward,
+            isVertical: isVertical,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -623,7 +629,14 @@ class TopControlBar extends StatelessWidget {
           const Spacer(),
           AudioSourceButton(
             isOriginalAudio: isOriginalAudio,
-            onPressed: isKoreanLecture ? () {} : onAudioToggle,
+            onPressed: isKoreanLecture
+                ? () {
+                    final l10n = AppLocalizations.of(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.ttsNotSupportedForKorean)),
+                    );
+                  }
+                : onAudioToggle,
             isVertical: isVertical,
           ),
           const SizedBox(width: 8),
@@ -653,6 +666,7 @@ class PdfSlidesList extends StatefulWidget {
     required this.onPageTap,
     this.getCachedImage,
     this.onScroll,
+    this.hasTranscriptForSlide,
   });
 
   final int pageCount;
@@ -663,6 +677,8 @@ class PdfSlidesList extends StatefulWidget {
   final Uint8List? Function(int pageNumber)? getCachedImage; // 캐시된 이미지 직접 조회
   final void Function(int pageNumber) onPageTap;
   final void Function(int visibleEndPage)? onScroll; // 스크롤 시 보이는 마지막 페이지 전달
+  final bool Function(int pageNumber)?
+  hasTranscriptForSlide; // 슬라이드에 transcript가 있는지 확인
 
   @override
   State<PdfSlidesList> createState() => _PdfSlidesListState();
@@ -791,6 +807,10 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
         // 캐시된 이미지가 있는지 먼저 확인
         final cachedImage = widget.getCachedImage?.call(pageNumber);
 
+        // transcript가 없는지 확인
+        final hasTranscript =
+            widget.hasTranscriptForSlide?.call(pageNumber) ?? true;
+
         return GestureDetector(
           onTap: () => widget.onPageTap(pageNumber),
           child: Container(
@@ -803,83 +823,108 @@ class _PdfSlidesListState extends State<PdfSlidesList> {
               ),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: cachedImage != null
-                ? _SlideThumbnailImage(bytes: cachedImage)
-                : FutureBuilder<Uint8List>(
-                    // Future를 캐시하여 매번 새로운 Future가 생성되지 않도록 함
-                    future: _futureCache.putIfAbsent(
-                      pageNumber,
-                      () => widget.getCachedOrRenderPage(pageNumber),
-                    ),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done &&
-                          snapshot.hasData) {
-                        return _SlideThumbnailImage(bytes: snapshot.data!);
-                      }
-
-                      // 에러 표시
-                      if (snapshot.hasError) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                color: Colors.red,
-                                size: widget.itemWidth > 160 ? 32 : 24,
-                              ),
-                              SizedBox(height: widget.itemWidth > 160 ? 8 : 4),
-                              Text(
-                                'Error',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: widget.itemWidth > 160 ? 12 : 10,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                'Page $pageNumber',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: widget.itemWidth > 160 ? 10 : 8,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      // 로딩 중
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Slide',
-                              style: TextStyle(
-                                color: Colors.grey[isCurrentPage ? 500 : 400],
-                                fontSize: widget.itemWidth > 160 ? 12 : 10,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            SizedBox(height: widget.itemWidth > 160 ? 4 : 2),
-                            Text(
-                              '$pageNumber',
-                              style: TextStyle(
-                                color: isCurrentPage
-                                    ? Colors.blue
-                                    : Colors.grey[widget.itemWidth > 160
-                                          ? 800
-                                          : 700],
-                                fontSize: widget.itemWidth > 160 ? 32 : 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // 슬라이드 이미지
+                cachedImage != null
+                    ? _SlideThumbnailImage(bytes: cachedImage)
+                    : FutureBuilder<Uint8List>(
+                        // Future를 캐시하여 매번 새로운 Future가 생성되지 않도록 함
+                        future: _futureCache.putIfAbsent(
+                          pageNumber,
+                          () => widget.getCachedOrRenderPage(pageNumber),
                         ),
-                      );
-                    },
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                                  ConnectionState.done &&
+                              snapshot.hasData) {
+                            return _SlideThumbnailImage(bytes: snapshot.data!);
+                          }
+
+                          // 에러 표시
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    color: Colors.red,
+                                    size: widget.itemWidth > 160 ? 32 : 24,
+                                  ),
+                                  SizedBox(
+                                    height: widget.itemWidth > 160 ? 8 : 4,
+                                  ),
+                                  Text(
+                                    'Error',
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontSize: widget.itemWidth > 160
+                                          ? 12
+                                          : 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Page $pageNumber',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: widget.itemWidth > 160 ? 10 : 8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          // 로딩 중
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Slide',
+                                  style: TextStyle(
+                                    color:
+                                        Colors.grey[isCurrentPage ? 500 : 400],
+                                    fontSize: widget.itemWidth > 160 ? 12 : 10,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: widget.itemWidth > 160 ? 4 : 2,
+                                ),
+                                Text(
+                                  '$pageNumber',
+                                  style: TextStyle(
+                                    color: isCurrentPage
+                                        ? Colors.blue
+                                        : Colors.grey[widget.itemWidth > 160
+                                              ? 800
+                                              : 700],
+                                    fontSize: widget.itemWidth > 160 ? 32 : 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                // transcript가 없는 슬라이드에 오버레이 추가
+                if (!hasTranscript)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0x80000000), // 반투명 검정 (50% 불투명도)
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
                   ),
+              ],
+            ),
           ),
         );
       },

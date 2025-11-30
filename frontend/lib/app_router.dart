@@ -1,11 +1,11 @@
 // 모든 라우트 테이블/네비게이션 진입점
 import 'package:flutter/material.dart';
+import 'package:re_view/features/archive/archive_screen.dart';
 
 // 화면들
 import 'package:re_view/features/home/home_screen.dart';
 import 'package:re_view/features/search/search_screen.dart';
 import 'package:re_view/features/edit/lecture_form_screen.dart';
-import 'package:re_view/features/edit/subject_tag_screen.dart';
 import 'package:re_view/features/player/player_screen.dart';
 import 'package:re_view/features/settings/display_mode_screen.dart';
 import 'package:re_view/features/settings/accessibility_mode.dart';
@@ -19,6 +19,7 @@ import 'package:re_view/features/splash/splash_screen.dart';
 /// 앱의 모든 라우트 경로를 정의하는 클래스
 class Routes {
   static const onboarding = '/';
+  static const archive = '/archive';
   static const home = '/home';
   static const search = '/search';
   static const lectureForm = '/lectures/new';
@@ -39,35 +40,73 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings s) {
     switch (s.name) {
       case Routes.onboarding:
-        return MaterialPageRoute(builder: (_) => const SplashScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const SplashScreen(),
+        );
       case Routes.home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const HomeScreen(),
+        );
       case Routes.search:
-        return MaterialPageRoute(builder: (_) => const SearchScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const SearchScreen(),
+        );
       case Routes.lectureForm:
-        return MaterialPageRoute(builder: (_) => const LectureFormScreen());
-      case Routes.subjectTag:
-        return MaterialPageRoute(builder: (_) => const SubjectTagScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const LectureFormScreen(),
+        );
       case Routes.player:
         return MaterialPageRoute(
+          settings: s,
           builder: (_) => PlayerScreen(args: s.arguments),
         );
       case Routes.settings:
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const SettingsScreen(),
+        );
       case Routes.settingsDisplay:
-        return MaterialPageRoute(builder: (_) => const DisplayModeScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const DisplayModeScreen(),
+        );
       case Routes.settingsTts:
-        return MaterialPageRoute(builder: (_) => const TtsScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const TtsScreen(),
+        );
       case Routes.settingsAccessibility:
-        return MaterialPageRoute(builder: (_) => const AccessibilityScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const AccessibilityScreen(),
+        );
       case Routes.settingsLanguage:
-        return MaterialPageRoute(builder: (_) => const LanguageScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const LanguageScreen(),
+        );
       case Routes.settingsHelp:
-        return MaterialPageRoute(builder: (_) => const HelpScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const HelpScreen(),
+        );
       case Routes.tagsEdit:
-        return MaterialPageRoute(builder: (_) => const TagsEditScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const TagsEditScreen(),
+        );
+      case Routes.archive:
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const ArchiveScreen(),
+        );
       default:
         return MaterialPageRoute(
+          settings: s,
           builder: (_) =>
               const Scaffold(body: Center(child: Text('Not Found'))),
         );

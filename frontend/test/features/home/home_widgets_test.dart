@@ -103,8 +103,12 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (testDirectory.existsSync()) {
-      testDirectory.deleteSync(recursive: true);
+    try {
+      if (testDirectory.existsSync()) {
+        testDirectory.deleteSync(recursive: true);
+      }
+    } catch (e) {
+      // Ignore Windows file lock issues
     }
   });
 
@@ -463,8 +467,8 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_up), findsNothing);
     });
 
     testWidgets('toggles expansion with reduce motion enabled', (
@@ -488,16 +492,16 @@ void main() {
       await tester.pump();
 
       // Initially collapsed - should show up arrow
-      expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
       expect(HiveManager.instance.getSubjectExpandedState(subject.id), isFalse);
 
       // Tap the header to expand
-      await tester.tap(find.byIcon(Icons.keyboard_arrow_up));
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
       await tester.pump();
 
       // Should now be expanded
       expect(HiveManager.instance.getSubjectExpandedState(subject.id), isTrue);
-      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
     });
   });
 

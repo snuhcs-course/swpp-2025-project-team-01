@@ -7,6 +7,7 @@ import 'package:re_view/core/device_orientation_helper.dart';
 import 'package:re_view/features/player/player_widgets.dart';
 import 'package:re_view/features/player/player_controller.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/features/player/widgets/high_contrast_container.dart';
 
 // ========== Layout Widgets ==========
 
@@ -101,20 +102,78 @@ class HorizontalPlayerLayout extends StatelessWidget {
 
                           if (isPagesExpanded)
                             Positioned(
-                              top: 12,
-                              right: 16,
+                              top: 0,
+                              left: 0,
+                              right: 0,
                               // isSynced, currentPage, currentSentenceIndex를 함께 감시하여 즉시 업데이트
                               child: ListenableBuilder(
                                 listenable: Listenable.merge([
                                   controller.isSynced,
                                   controller.currentPage,
                                   controller.currentSentenceIndex,
+                                  controller.isOriginalAudio,
                                 ]),
                                 builder: (context, _) {
-                                  return SyncButton(
-                                    isSynced: controller.isSynced.value,
-                                    onPressed: controller.toggleSync,
-                                    pageDifference: controller.pageDifference,
+                                  return Container(
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Color(0x88000000),
+                                          Color(0x00000000),
+                                        ],
+                                        stops: [0.0, 1.0],
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      12,
+                                      16,
+                                      24,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        AudioSourceButton(
+                                          isOriginalAudio:
+                                              controller.isOriginalAudio.value,
+                                          onPressed:
+                                              controller.isKoreanLecture == true
+                                              ? () {
+                                                  final l10n =
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      );
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        l10n.ttsNotSupportedForKorean,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              : controller.toggleAudioSource,
+                                          isVertical: false,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SpeedButton(
+                                          onSpeedChanged:
+                                              controller.setPlaybackSpeed,
+                                          isVertical: false,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SyncButton(
+                                          isSynced: controller.isSynced.value,
+                                          onPressed: controller.toggleSync,
+                                          pageDifference:
+                                              controller.pageDifference,
+                                          isVertical: false,
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),
@@ -172,13 +231,17 @@ class PdfArea extends StatelessWidget {
               ValueListenableBuilder<bool>(
                 valueListenable: controller.isSynced,
                 builder: (context, isSynced, _) {
-                  return PdfView(
-                    key: controller.pdfViewKey,
-                    controller: controller.pdfController!,
-                    onPageChanged: controller.onPdfPageChanged,
-                    physics: !isSynced
-                        ? const AlwaysScrollableScrollPhysics()
-                        : const NeverScrollableScrollPhysics(),
+                  return HighContrastContainer(
+                    enabled:
+                        HiveManager.instance.settings.accessibilityHighContrast,
+                    child: PdfView(
+                      key: controller.pdfViewKey,
+                      controller: controller.pdfController!,
+                      onPageChanged: controller.onPdfPageChanged,
+                      physics: !isSynced
+                          ? const AlwaysScrollableScrollPhysics()
+                          : const NeverScrollableScrollPhysics(),
+                    ),
                   );
                 },
               )
@@ -277,15 +340,43 @@ class PdfArea extends StatelessWidget {
         );
 
         if (isVertical) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          // thumbnail 캐시에서 가져온 aspect ratio 사용 (width/height)
-          // 기본값: 16:9 = 1.778
-          final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
-          final pdfHeight = screenWidth / aspectRatio;
-          return SizedBox(
-            width: screenWidth,
-            height: pdfHeight,
-            child: content,
+          // LayoutBuilder와 MediaQuery를 조합하여 회전 중 overflow 방지
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final screenSize = MediaQuery.of(context).size;
+              final availableWidth = constraints.maxWidth;
+              final availableHeight = constraints.maxHeight;
+
+              // thumbnail 캐시에서 가져온 aspect ratio 사용 (width/height)
+              // 기본값: 16:9 = 1.778
+              final aspectRatio = controller.pdfAspectRatio ?? (16 / 9);
+
+              // 이상적인 높이 계산 (width 기준)
+              final idealHeight = availableWidth / aspectRatio;
+
+              // 최종 높이 결정 로직
+              double finalHeight;
+
+              if (availableHeight.isFinite && availableHeight > 0) {
+                // constraints가 유한한 경우: 사용 가능한 높이 내에서 제한
+                finalHeight = idealHeight <= availableHeight
+                    ? idealHeight
+                    : availableHeight;
+              } else {
+                // constraints가 무한대인 경우: idealHeight 사용하되
+                // 화면 높이를 초과하지 않도록 제한 (회전 중 안전장치)
+                final maxSafeHeight = screenSize.height * 0.6; // 화면의 60%까지만
+                finalHeight = idealHeight <= maxSafeHeight
+                    ? idealHeight
+                    : maxSafeHeight;
+              }
+
+              return SizedBox(
+                width: availableWidth,
+                height: finalHeight,
+                child: content,
+              );
+            },
           );
         } else {
           return content;
@@ -314,6 +405,12 @@ class VideoControlsOverlay extends StatelessWidget {
     return Positioned.fill(
       child: GestureDetector(
         onTap: controller.toggleControls,
+        onVerticalDragEnd: (details) {
+          // 가로 모드에서 위로 스와이프 감지 (음수 속도)
+          if (!isVertical && (details.primaryVelocity ?? 0) < -300) {
+            controller.handleOverlaySwipeUp();
+          }
+        },
         child: Container(
           color: const Color(0x4D1D1D1D),
           child: Stack(
@@ -374,14 +471,13 @@ class VideoControlsOverlay extends StatelessWidget {
                     controller.isCaptionEnabled,
                     controller.showTranscriptPanel,
                     controller.isFullscreen,
+                    controller.actualAudioDuration,
                   ]),
                   builder: (context, _) {
                     return BottomControlBar(
                       isVertical: isVertical,
                       currentTime: controller.currentTime.value,
-                      totalTime: controller.isOriginalAudio.value
-                          ? controller.originalTotalDuration
-                          : controller.ttsTotalDuration,
+                      totalTime: controller.actualAudioDuration.value,
                       onTimeChanged: (seconds) {
                         // 슬라이더 움직일 때 즉시 PDF 페이지 업데이트
                         controller.seek(seconds);
@@ -426,19 +522,22 @@ class VerticalToggleBar extends StatelessWidget {
 
     return GestureDetector(
       onTap: onToggle,
-      child: Container(
-        width: double.infinity,
-        height: 40,
-        color: isDark
-            ? colorScheme.surfaceContainerHighest
-            : const Color(0xFFF5F5F5),
-        child: Center(
-          child: Icon(
-            isPagesExpanded
-                ? Icons.keyboard_arrow_up
-                : Icons.keyboard_arrow_down,
-            color: isDark ? colorScheme.onSurfaceVariant : Colors.grey[700],
-            size: 28,
+      child: HighContrastContainer(
+        enabled: HiveManager.instance.settings.accessibilityHighContrast,
+        child: Container(
+          width: double.infinity,
+          height: 40,
+          color: isDark
+              ? colorScheme.surfaceContainerHighest
+              : const Color(0xFFF5F5F5),
+          child: Center(
+            child: Icon(
+              isPagesExpanded
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+              color: isDark ? colorScheme.onSurfaceVariant : Colors.grey[700],
+              size: 28,
+            ),
           ),
         ),
       ),
@@ -475,14 +574,17 @@ class HorizontalToggleBar extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: onToggle,
-            child: Container(
-              height: 40,
-              color: Colors.transparent,
-              child: const Center(
-                child: Icon(
-                  Icons.keyboard_arrow_down,
-                  color: Colors.white,
-                  size: 28,
+            child: HighContrastContainer(
+              enabled: HiveManager.instance.settings.accessibilityHighContrast,
+              child: Container(
+                height: 40,
+                color: Colors.transparent,
+                child: const Center(
+                  child: Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
             ),
@@ -523,29 +625,48 @@ class PagesListWidget extends StatelessWidget {
           getCachedOrRenderPage:
               controller.pdfCacheService.getCachedOrRenderPage,
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
-          onPageTap: (pageNumber) {
+          hasTranscriptForSlide: controller.hasTranscriptForSlide,
+          onPageTap: (pageNumber) async {
+            // sync가 켜져있고 transcript가 없으면 스낵바만 표시하고 이동 안함
+            if (controller.isSynced.value &&
+                !controller.hasTranscriptForSlide(pageNumber)) {
+              if (context.mounted) {
+                final l10n = AppLocalizations.of(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.noTranscriptForSlide)),
+                );
+              }
+              return;
+            }
+
             controller.jumpToPage(pageNumber);
             // 캐시되지 않은 페이지라면 즉시 캐싱 시작
             if (controller.pdfCacheService.getCachedImageDirect(pageNumber) ==
                 null) {
               controller.pdfCacheService.getCachedOrRenderPage(pageNumber);
             }
-            controller.seekToSlide(pageNumber);
+            await controller.seekToSlide(pageNumber);
           },
         );
 
         if (isVertical) {
           final theme = Theme.of(context);
           final isDark = theme.brightness == Brightness.dark;
-          return Container(
-            height: 150,
-            color: isDark
-                ? theme.colorScheme.surfaceContainerHighest
-                : const Color(0xFFEEEEEE),
-            child: slidesList,
+          return HighContrastContainer(
+            enabled: HiveManager.instance.settings.accessibilityHighContrast,
+            child: Container(
+              height: 150,
+              color: isDark
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : const Color(0xFFEEEEEE),
+              child: slidesList,
+            ),
           );
         } else {
-          return slidesList;
+          return HighContrastContainer(
+            enabled: HiveManager.instance.settings.accessibilityHighContrast,
+            child: slidesList,
+          );
         }
       },
     );
@@ -577,9 +698,7 @@ class TranslationButton extends StatelessWidget {
             : (isDark ? colorScheme.onSecondaryContainer : Colors.white);
 
         return InkWell(
-          onTap: (controller.isKoreanLecture ?? true)
-              ? () {}
-              : controller.toggleTranscriptLanguage,
+          onTap: controller.toggleTranscriptLanguage,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -628,12 +747,15 @@ class TranscriptArea extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     if (controller.transcriptData == null) {
-      return Container(
-        width: double.infinity,
-        color: isDark ? colorScheme.surface : const Color(0xFFFAFAFA),
-        child: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+      return HighContrastContainer(
+        enabled: HiveManager.instance.settings.accessibilityHighContrast,
+        child: Container(
+          width: double.infinity,
+          color: isDark ? colorScheme.surface : const Color(0xFFFAFAFA),
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+            ),
           ),
         ),
       );
@@ -641,96 +763,100 @@ class TranscriptArea extends StatelessWidget {
 
     final l10n = AppLocalizations.of(context);
 
-    return Container(
-      width: double.infinity,
-      color: isDark ? colorScheme.surface : const Color(0xFFFAFAFA),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                l10n.transcript,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? colorScheme.onSurface : Colors.grey[800],
-                ),
-              ),
-              const SizedBox(width: 8),
-              TranslationButton(controller: controller),
-              if (!isVertical) ...[
-                const Spacer(),
-                IconButton(
-                  onPressed: controller.toggleTranscriptPanel,
-                  icon: Icon(
-                    Icons.close,
-                    color: isDark ? colorScheme.onSurface : Colors.grey[700],
-                    size: 24,
+    return HighContrastContainer(
+      enabled: HiveManager.instance.settings.accessibilityHighContrast,
+      child: Container(
+        width: double.infinity,
+        color: isDark ? colorScheme.surface : const Color(0xFFFAFAFA),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  l10n.transcript,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? colorScheme.onSurface : Colors.grey[800],
                   ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 20,
                 ),
+                const SizedBox(width: 8),
+                TranslationButton(controller: controller),
+                if (!isVertical) ...[
+                  const Spacer(),
+                  IconButton(
+                    onPressed: controller.toggleTranscriptPanel,
+                    icon: Icon(
+                      Icons.close,
+                      color: isDark ? colorScheme.onSurface : Colors.grey[700],
+                      size: 24,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    splashRadius: 20,
+                  ),
+                ],
               ],
-            ],
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ValueListenableBuilder<int?>(
-              valueListenable: controller.currentSentenceIndex,
-              builder: (context, currentSentenceIndex, _) {
-                return ValueListenableBuilder<bool>(
-                  valueListenable: controller.isKoreanLanguage,
-                  builder: (context, isKorean, _) {
-                    return ListView.builder(
-                      controller: controller.transcriptScrollController,
-                      itemCount: controller.transcriptData!.timestamps.length,
-                      itemBuilder: (context, index) {
-                        final sentence =
-                            controller.transcriptData!.timestamps[index];
-                        final isCurrentSentence = currentSentenceIndex == index;
-                        final displayText = isKorean
-                            ? sentence.textKor
-                            : sentence.textEng;
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ValueListenableBuilder<int?>(
+                valueListenable: controller.currentSentenceIndex,
+                builder: (context, currentSentenceIndex, _) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: controller.isKoreanLanguage,
+                    builder: (context, isKorean, _) {
+                      return ListView.builder(
+                        controller: controller.transcriptScrollController,
+                        itemCount: controller.transcriptData!.timestamps.length,
+                        itemBuilder: (context, index) {
+                          final sentence =
+                              controller.transcriptData!.timestamps[index];
+                          final isCurrentSentence =
+                              currentSentenceIndex == index;
+                          final displayText = isKorean
+                              ? sentence.textKor
+                              : sentence.textEng;
 
-                        return AutoScrollTag(
-                          key: ValueKey(index),
-                          controller: controller.transcriptScrollController!,
-                          index: index,
-                          child: GestureDetector(
-                            onTap: () => controller.seekToSentence(index),
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                displayText,
-                                style: TextStyle(
-                                  fontSize: isCurrentSentence ? 18 : 14,
-                                  fontWeight: isCurrentSentence
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: isCurrentSentence
-                                      ? (isDark
-                                            ? colorScheme.primary
-                                            : Colors.black)
-                                      : (isDark
-                                            ? colorScheme.onSurfaceVariant
-                                            : Colors.grey[600]),
-                                  height: 1.6,
+                          return AutoScrollTag(
+                            key: ValueKey(index),
+                            controller: controller.transcriptScrollController!,
+                            index: index,
+                            child: GestureDetector(
+                              onTap: () => controller.seekToSentence(index),
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  displayText,
+                                  style: TextStyle(
+                                    fontSize: isCurrentSentence ? 18 : 14,
+                                    fontWeight: isCurrentSentence
+                                        ? FontWeight.w700
+                                        : FontWeight.w400,
+                                    color: isCurrentSentence
+                                        ? (isDark
+                                              ? colorScheme.primary
+                                              : Colors.black)
+                                        : (isDark
+                                              ? colorScheme.onSurfaceVariant
+                                              : Colors.grey[600]),
+                                    height: 1.6,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -745,62 +871,74 @@ class CaptionOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        controller.currentSentenceIndex,
+        controller.isKoreanLanguage,
+        controller.showControls,
+      ]),
+      builder: (context, _) {
+        final captionText = controller.captionText;
+
+        if (captionText.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return _CaptionContent(
+          captionText: captionText,
+          showControls: controller.showControls.value,
+        );
+      },
+    );
+  }
+}
+
+class _CaptionContent extends StatelessWidget {
+  const _CaptionContent({
+    required this.captionText,
+    required this.showControls,
+  });
+
+  final String captionText;
+  final bool showControls;
+
+  @override
+  Widget build(BuildContext context) {
     final hiveManager = HiveManager.instance;
     final emphasizeCaptions =
         hiveManager.settings.accessibilityEmphasizeCaptions;
 
-    return ValueListenableBuilder<int?>(
-      valueListenable: controller.currentSentenceIndex,
-      builder: (context, _, __) {
-        return ValueListenableBuilder<bool>(
-          valueListenable: controller.isKoreanLanguage,
-          builder: (context, __, ___) {
-            final captionText = controller.captionText;
-
-            if (captionText.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
-            return ValueListenableBuilder<bool>(
-              valueListenable: controller.showControls,
-              builder: (context, showControls, _) {
-                return Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: showControls ? 80 : 20,
-                  child: Center(
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.8,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        captionText,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: emphasizeCaptions ? 24 : 18,
-                          fontWeight: emphasizeCaptions
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: showControls ? 80 : 20,
+      child: Center(
+        child: HighContrastContainer(
+          enabled: HiveManager.instance.settings.accessibilityHighContrast,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.8,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              captionText,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: emphasizeCaptions ? 24 : 18,
+                fontWeight: emphasizeCaptions
+                    ? FontWeight.bold
+                    : FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/data/hive_manager.dart';
 
 /// 언어 설정 화면 (Figma 2-4-4. Language)
@@ -60,12 +61,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentLang = _manager.settings.language;
 
     return Scaffold(
       // 상단 앱바 (한영 모두 표시)
-      appBar: AppBar(title: const Text('언어 / Language')),
+      appBar: AppBar(title: Text(l10n.language)),
       backgroundColor: isDark ? null : const Color(0xFFF5F5F5),
 
       // 언어 선택 라디오 버튼 목록
@@ -82,10 +84,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 children: <Widget>[
                   RadioListTile<String>(
                     value: 'ko',
-                    title: const Text(
-                      '한국어 / Korean',
-                      style: TextStyle(fontSize: 18),
-                    ),
+                    title: const Text('한국어', style: TextStyle(fontSize: 18)),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 8,

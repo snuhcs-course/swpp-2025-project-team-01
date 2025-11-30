@@ -136,8 +136,11 @@ class HiveManager extends ChangeNotifier {
       subjects['uncategorized'] = existing.copyWith(isUncategorized: true);
     }
 
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    final langCode = locale.languageCode;
+
     _appData = AppData(
-      settings: AppSettings(),
+      settings: AppSettings(language: langCode),
       subjects: subjects,
       tags: tags,
       lectures: lectures,
@@ -235,6 +238,7 @@ class HiveManager extends ChangeNotifier {
 
   AppSettings get settings => _appData?.settings ?? AppSettings();
   Map<String, HiveSubject> get subjects => _appData?.subjects ?? {};
+  Map<String, HiveSubject> get archivedSubjects => _appData?.subjects ?? {};
   Map<String, HiveTag> get tags => _appData?.tags ?? {};
   UiState get uiState => _appData?.uiState ?? UiState();
   Map<String, HiveLecture> get lectures => _appData?.lectures ?? {};
@@ -403,6 +407,33 @@ class HiveManager extends ChangeNotifier {
 
   Future<void> updateSubjectTags(String id, List<String> tagIds) async {
     await updateSubject(id, tagIds: tagIds);
+  }
+
+  Future<void> archiveSubject(String id) async {
+    final subject = subjects[id];
+    if (subject != null) {
+      final archivedSubject = subject.copyWith(
+        isArchived: true,
+        favorite: false,
+        tagIds: [],
+      );
+      subjects.remove(id);
+      archivedSubjects[id] = archivedSubject;
+      subjectOrder.remove(id);
+      await _save();
+    }
+  }
+
+  Future<void> unarchiveSubject(String id) async {
+    final subject = subjects[id];
+    if (subject != null) {
+      final unarchivedSubject = subject.copyWith(isArchived: false);
+      archivedSubjects.remove(id);
+      subjects[id] = unarchivedSubject;
+      subjectOrder.remove(id);
+      subjectOrder.insert(0, id);
+      await _save();
+    }
   }
 
   /// 과목 순서 업데이트

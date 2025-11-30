@@ -9,9 +9,13 @@ import 'package:re_view/core/localization/app_localizations.dart';
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
 
+  static const ShapeBorder drawerShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.horizontal(right: Radius.circular(16)),
+  );
+
   @override
   Widget build(BuildContext context) {
-    return Drawer(child: _DrawerContent());
+    return Drawer(shape: drawerShape, child: _DrawerContent());
   }
 
   /// 모션 줄이기 모드용 다이얼로그 표시
@@ -24,6 +28,7 @@ class CustomDrawer extends StatelessWidget {
         child: Material(
           color: Theme.of(context).canvasColor,
           elevation: 16,
+          shape: drawerShape,
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.75,
             height: double.infinity,
@@ -68,6 +73,14 @@ class _DrawerContent extends StatelessWidget {
           onTap: () {
             Navigator.pop(context);
             Navigator.pushNamed(context, Routes.tagsEdit);
+          },
+        ),
+        const Divider(),
+        ListTile(
+          title: Text(l10n.archive),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, Routes.archive);
           },
         ),
         const Divider(),

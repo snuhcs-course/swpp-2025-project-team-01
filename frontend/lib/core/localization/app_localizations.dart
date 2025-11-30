@@ -26,8 +26,10 @@ class AppLocalizations {
   String get cancel => isKorean ? '취소' : 'Cancel';
   String get save => isKorean ? '저장' : 'Save';
   String get delete => isKorean ? '삭제' : 'Delete';
+  String get remove => isKorean ? '제거' : 'Remove';
   String get edit => isKorean ? '수정' : 'Edit';
   String get add => isKorean ? '추가' : 'Add';
+  String get change => isKorean ? '변경' : 'Change';
   String get search => isKorean ? '검색' : 'Search';
   String get settings => isKorean ? '설정' : 'Settings';
   String get yes => isKorean ? '예' : 'Yes';
@@ -39,22 +41,39 @@ class AppLocalizations {
   String get menu => isKorean ? '메뉴' : 'Menu';
   String get filter => isKorean ? '필터' : 'Filter';
   String get editMode => isKorean ? '수정' : 'Edit';
+  String get archive => isKorean ? '보관함' : 'Archive';
   String get addLecture => isKorean ? '강의 생성' : 'Create Lecture';
   String get editSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
   String get editTags => isKorean ? '태그 수정' : 'Edit Tags';
+  String get noLectures => isKorean
+      ? '(+) 버튼을 눌러서 과목이나 강의를 추가해 보세요.'
+      : 'Tap (+) button to add subjects or lectures.';
   String get noFavoriteSubjects =>
       isKorean ? '즐겨찾기된 과목이 없습니다.' : 'There are no favorite subjects.';
   String get noSubjectsWithSelectedTags => isKorean
       ? '필터와 일치하는 태그를 가진 과목이 없습니다.'
       : 'No subjects match the selected tags.';
+  String get noArchivedSubjects =>
+      isKorean ? '보관된 과목이 없습니다.' : 'There are no archived subjects.';
+  String get unarchive => isKorean ? '꺼내기' : 'Unarchive';
+  String archiveConfirmText(String title) => isKorean
+      ? '과목 "$title"을(를)\n보관하시겠습니까?'
+      : 'Will you archive subject\n"$title"?';
+  String unarchiveConfirmText(String title) => isKorean
+      ? '과목 "$title"을(를)\n보관함에서 꺼내시겠습니까?'
+      : 'Will you unarchive subject\n"$title"?';
+  String get notSupportedInEdit =>
+      isKorean ? '수정 모드에서 지원하지 않는 기능입니다.' : 'Disabled in edit mode.';
 
   // 설정 화면
   String get displayMode => isKorean ? '디스플레이 모드' : 'Display Mode';
   String get accessibility => isKorean ? '접근성' : 'Accessibility';
-  String get language => isKorean ? '언어' : 'Language';
+  String get tts => isKorean ? 'TTS 설정' : 'TTS Configurations';
+  String get language => isKorean ? '언어 / Language' : 'Language / 언어';
   String get lightMode => isKorean ? '라이트 모드' : 'Light Mode';
   String get darkMode => isKorean ? '다크 모드' : 'Dark Mode';
   String get systemSettings => isKorean ? '시스템 설정' : 'System Settings';
+  String get help => isKorean ? '도움말' : 'Help';
 
   // FAQ
   String get howToFindLecture =>
@@ -127,27 +146,35 @@ class AppLocalizations {
       ? '설정은 재생 화면에 즉시 적용됩니다.'
       : 'Settings are applied immediately to the player.';
 
+  // TTS 설정
+  String get ttsVoiceGender => isKorean ? 'TTS 음성 성별' : 'TTS Voice Gender';
+
   // 과목
   String get subject => isKorean ? '과목' : 'Subject';
   String get subjects => isKorean ? '과목' : 'Subjects';
   String get uncategorized => isKorean ? '미분류' : 'Uncategorized';
-  String get editingSubjects => isKorean ? '과목 수정' : 'Edit Subjects';
+  String get editingSubject => isKorean ? '과목 정보 수정' : 'Edit Subject Info';
   String get deleteSubject => isKorean ? '과목 삭제' : 'Delete Subject';
-  String get deleteSubjectWarning => isKorean
-      ? '과목 삭제 시\n해당 과목의 강의들까지 전부\n삭제됩니다.\n\n삭제하시겠습니까?'
-      : 'Deleting a subject will also\ndelete all its lectures.\n\nDo you want to delete?';
+  String get deleteSubjectWarning1 =>
+      isKorean ? '과목 삭제 시 해당 과목의\n' : 'Deleting a subject will also\n';
+  String get deleteSubjectWarning2 =>
+      isKorean ? '강의들까지 전부 삭제' : 'delete all its lectures.';
+  String get deleteSubjectWarning3 =>
+      isKorean ? '됩니다.\n\n삭제하시겠습니까?' : '\n\nDo you want to delete?';
   String get editTags2 => isKorean ? '태그 수정' : 'Edit Tags';
-  String get editComplete => isKorean ? '수정 완료' : 'Complete';
   String get addSubject => isKorean ? '과목 추가' : 'Add Subject';
   String get subjectName => isKorean ? '과목명' : 'Subject Name';
   String get subjectNameHint => isKorean
-      ? '예) 소프트웨어 개발의 원리와 실제'
-      : 'e.g.) Principles of Software Development';
+      ? '예) 소프트웨어 개발의 원리와 실습'
+      : 'e.g.) Software Development Principles and Practices';
   String get selectTags => isKorean ? '태그 선택' : 'Select Tags';
   String get selectTagsOptional =>
       isKorean ? '태그 선택 (선택사항)' : 'Select Tags (Optional)';
   String get pleaseEnterSubjectName =>
       isKorean ? '과목명을 입력해주세요' : 'Please enter subject name';
+  String get subjectNameExists => isKorean
+      ? '같은 이름의 과목이 이미 존재합니다.'
+      : 'A subject with this name already exists.';
 
   // 태그
   String get tag => isKorean ? '태그' : 'Tag';
@@ -156,8 +183,8 @@ class AppLocalizations {
   String get colorTheme => isKorean ? '색상 테마' : 'Color Theme';
   String get tagName => isKorean ? '이름' : 'Name';
   String get apply => isKorean ? '적용' : 'Apply';
-  String get nameApply => isKorean ? '이름 적용' : 'Apply Name';
   String get newTag => isKorean ? '새 태그' : 'New Tag';
+  String get addTag => isKorean ? '태그 추가' : 'Add Tag';
   String get deleteTag => isKorean ? '태그 삭제' : 'Delete Tag';
   String get maxTagsReached =>
       isKorean ? '태그는 최대 15개까지 생성할 수 있습니다.' : 'You can create up to 15 tags.';
@@ -166,19 +193,91 @@ class AppLocalizations {
   String get duplicateTagName => isKorean
       ? '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.'
       : 'This name is already in use. Please enter a different name.';
-  String tagDeleteWarning(String tagName, List<String> subjectTitles) =>
-      isKorean
-      ? '태그 "$tagName"는\n다음 과목에서 사용 중입니다:\n\n${subjectTitles.join('\n')}\n\n삭제하시겠습니까?'
-      : 'Tag "$tagName" is used in the following subjects:\n\n${subjectTitles.join('\n')}\n\nDo you want to delete it?';
+  String get tagDeleteWarning1 => isKorean ? '태그 "' : 'Tag "';
+  String get tagDeleteWarning2 => isKorean
+      ? '"은(는)\n다음 과목에서 사용 중입니다:\n\n'
+      : '"\n is used in the following subjects:\n\n';
+  String get tagDeleteWarning3 =>
+      isKorean ? '\n\n삭제하시겠습니까?' : '\n\nDo you want to delete it?';
 
   // 강의
   String get lecture => isKorean ? '강의' : 'Lecture';
   String get lectures => isKorean ? '강의' : 'Lectures';
-  String get lectureDetails => isKorean ? '강의 상세정보' : 'Lecture Details';
+  String get editLecture => isKorean ? '강의 정보 수정' : 'Edit Lecture Info';
   String get week => isKorean ? '주차' : 'Week';
+  String get lectureWeek => isKorean ? '강의 주차' : 'Lecture Week';
   String get lectureTitle => isKorean ? '강의 제목' : 'Lecture Title';
   String get lectureLength => isKorean ? '강의 길이' : 'Lecture Length';
+  String get createdAt => isKorean ? '생성일' : 'Created';
   String get deleteLecture => isKorean ? '강의 삭제' : 'Delete Lecture';
+  String get deleteLectureWarning => isKorean
+      ? '이 강의를 삭제하시겠습니까?\n삭제한 강의는 복구할 수 없습니다.'
+      : 'Are you sure you want to\ndelete this lecture?\nThis action is irreversible.';
+  String get noTtsForKorean => isKorean
+      ? '한국어 강의는 TTS 음성이 제공되지 않습니다.'
+      : 'TTS audio will not be provided for Korean lectures.';
+
+  // 강의 생성
+  String get selectSubject => isKorean ? '과목 선택' : 'Select Subject';
+  String get spokenLanguage => isKorean ? '강의 언어' : 'Spoken Language';
+  String get lectureSlides =>
+      isKorean ? '강의 슬라이드 (.pdf)' : 'Lecture Slides (.pdf)';
+  String get notSelected => isKorean ? '선택 안 함' : 'Not Selected';
+  String get lectureAudio => isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio';
+  String get pageRange => isKorean ? '페이지 설정' : 'Page Range';
+  String get create => isKorean ? '생성하기' : 'Create';
+  String get lectureCreating => isKorean ? '강의 생성 중…' : 'Creating Lecture…';
+  String get lectureName => isKorean ? '강의명: ' : 'Lecture: ';
+  String get untitled => isKorean ? '제목 없음' : 'Untitled';
+  String get pleaseEnterWeek =>
+      isKorean ? '강의 주차를 입력해주세요' : 'Please enter lecture week';
+  String get pleaseEnterLectureTitle =>
+      isKorean ? '강의 제목을 입력해주세요' : 'Please enter lecture title';
+  String get pleaseUploadPdf =>
+      isKorean ? '슬라이드 PDF를 업로드해주세요' : 'Please upload slide PDF';
+  String get pleaseUploadAudio => isKorean
+      ? '오디오 파일을 최소 1개 업로드해주세요'
+      : 'Please upload at least one audio file';
+  String get couldntDeterminePage =>
+      isKorean ? 'PDF 페이지 수를 확인할 수 없습니다' : 'Could not determine PDF page count';
+  String get onlyM4aAllowed =>
+      isKorean ? 'm4a 형식의 파일만 업로드 가능합니다' : 'Only m4a files are allowed';
+  String get deleteWithUploadedFile => isKorean
+      ? '업로드된 파일이 있습니다.\n삭제하시겠습니까?'
+      : 'There is an uploaded file.\nDo you want to delete it?';
+  String pleaseEnterRangeForAudio(int i) => isKorean
+      ? '${i + 1}번째 오디오의 페이지 범위를 입력해주세요'
+      : 'Please enter page range for audio ${i + 1}';
+  String pageNumbersMustBeNumgers(int i) => isKorean
+      ? '${i + 1}번째 오디오의 페이지 번호는 숫자로 입력해주세요'
+      : 'Page numbers for audio ${i + 1} must be numbers';
+  String pageNumbersMustBeAtLeastOne(int i) => isKorean
+      ? '${i + 1}번째 오디오의 페이지 번호는 1 이상이어야 합니다'
+      : 'Page numbers for audio ${i + 1} must be at least 1';
+  String startMustBeGreaterThanEnd(int i) => isKorean
+      ? '${i + 1}번째 오디오의 시작 페이지가 끝 페이지보다 클 수 없습니다'
+      : 'Start page cannot be greater than end page for audio ${i + 1}';
+  String startExceedsTotal(int i, int startPage, int pdfTotalPages) => isKorean
+      ? '${i + 1}번째 오디오의 시작 페이지($startPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
+      : 'Start page ($startPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)';
+  String endExceedsTotal(int i, int endPage, int pdfTotalPages) => isKorean
+      ? '${i + 1}번째 오디오의 끝 페이지($endPage)가 PDF 전체 페이지($pdfTotalPages)를 초과합니다'
+      : 'End page ($endPage) for audio ${i + 1} exceeds total PDF pages ($pdfTotalPages)';
+  String get lectureCreationCancelled =>
+      isKorean ? '강의 생성이 취소되었습니다' : 'Lecture creation cancelled';
+  String get lectureGenerationFailed =>
+      isKorean ? '강의 생성에 실패했습니다.' : 'Lecture generation failed.';
+  String failedLectureCreation(Object e) => isKorean
+      ? '강의 생성 실패: ${e.toString()}'
+      : 'Failed to create lecture: ${e.toString()}';
+  String get lectureCreatedSuccessfully =>
+      isKorean ? '강의가 생성되었습니다' : 'Lecture created successfully';
+  String get lectureCreationCompleted => isKorean
+      ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
+      : 'Lecture creation completed.\nCheck out the result.';
+  String get goToLecture => isKorean ? '강의 바로가기' : 'Go to Lecture';
+  String get isGenerating =>
+      isKorean ? '강의 생성이 진행 중입니다.' : 'Lecture generation is in progress.';
 
   // 검색 화면
   String get searchLecture => isKorean ? '강의 검색' : 'Search Lectures';
@@ -229,6 +328,12 @@ class AppLocalizations {
       isKorean ? '$pages 페이지 빠름' : '$pages pages ahead';
   String pagesBehind(int pages) =>
       isKorean ? '$pages 페이지 느림' : '$pages pages behind';
+  String get ttsNotSupportedForKorean => isKorean
+      ? '한국어 강의는 TTS가 지원되지 않습니다.'
+      : 'TTS audio is not supported for Korean lectures.';
+  String get noTranscriptForSlide => isKorean
+      ? '해당 슬라이드에 대응하는 강의 대본이 없습니다.'
+      : 'There is no transcript that corresponds to this slide.';
 
   // 플레이어 에러 메시지
   String get lectureIdMissing =>
@@ -243,6 +348,47 @@ class AppLocalizations {
       isKorean ? '플레이어 초기화에 실패했습니다.' : 'Failed to initialize player.';
   String get unknownError =>
       isKorean ? '알 수 없는 오류가 발생했습니다.' : 'An unknown error occurred.';
+
+  // 강의 로딩 메시지
+  List<String> get friendlyMessages => isKorean
+      ? [
+          '열심히 강의를 받아적는 중..',
+          '강의 내용을 정리하고 있어요',
+          '음성 파일을 듣고 있어요',
+          '슬라이드와 음성을 매칭하는 중..',
+          '강의 노트를 작성하고 있어요',
+          '중요한 부분을 체크하고 있어요',
+          '강의를 분석하고 있어요',
+          '거의 다 됐어요!',
+        ]
+      : [
+          'Taking notes from the lecture..',
+          'Organizing lecture content',
+          'Listening to the audio file',
+          'Matching slides with audio..',
+          'Writing lecture notes',
+          'Highlighting key points',
+          'Analyzing the lecture',
+          'Almost done!',
+        ];
+
+  String get lectureCreationComplete =>
+      isKorean ? '강의 생성 완료!' : 'Lecture created!';
+
+  String get errorOccurred => isKorean ? '오류가 발생했습니다' : 'An error occurred';
+
+  String get errorDefaultMessage => isKorean
+      ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'
+      : 'Please check your network settings and try again later.';
+
+  String get cancelling => isKorean ? '강의 생성을 취소하는 중..' : 'Cancelling..';
+
+  // 기타
+  String get languageCode => isKorean ? 'KOR' : 'ENG';
+  String get male => isKorean ? '남성' : 'Male';
+  String get female => isKorean ? '여성' : 'Female';
+  String get archiveAction => isKorean ? '보관' : 'Archive';
+  String get unknown => isKorean ? '알 수 없음' : 'Unknown';
 }
 
 class _AppLocalizationsDelegate

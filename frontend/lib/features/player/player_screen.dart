@@ -11,6 +11,7 @@ import 'package:re_view/features/player/models/lecture_data.dart';
 import 'package:re_view/features/player/services/audio_service.dart';
 import 'package:re_view/features/player/services/pdf_cache_service.dart';
 import 'package:re_view/data/hive_manager.dart';
+import 'package:re_view/features/player/services/pdf_service.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({
@@ -18,14 +19,17 @@ class PlayerScreen extends StatefulWidget {
     this.args,
     AudioService? audioService,
     PdfCacheService? pdfCacheService,
+    PdfService? pdfService,
     HiveManager? hiveManager,
   }) : _audioService = audioService,
        _pdfCacheService = pdfCacheService,
+       _pdfService = pdfService,
        _hiveManager = hiveManager;
 
   final Object? args;
   final AudioService? _audioService;
   final PdfCacheService? _pdfCacheService;
+  final PdfService? _pdfService;
   final HiveManager? _hiveManager;
 
   @override
@@ -50,11 +54,13 @@ class _PlayerScreenState extends State<PlayerScreen>
     // 의존성 주입
     final audioService = widget._audioService ?? AudioService();
     final pdfCacheService = widget._pdfCacheService ?? PdfCacheService();
+    final pdfService = widget._pdfService ?? PdfService();
     _hiveManager = widget._hiveManager ?? HiveManager.instance;
 
     _controller = PlayerController(
       audioService: audioService,
       pdfCacheService: pdfCacheService,
+      pdfService: pdfService,
     );
 
     // 프레임이 빌드된 이후에 실행
@@ -275,8 +281,6 @@ class _PlayerScreenState extends State<PlayerScreen>
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final highContrast = _hiveManager.settings.accessibilityHighContrast;
-
     final playerContent = Container(
       color: Colors.black,
       child: SafeArea(
@@ -315,20 +319,6 @@ class _PlayerScreenState extends State<PlayerScreen>
       ),
     );
 
-    return Scaffold(
-      body: highContrast
-          ? ColorFiltered(
-              colorFilter: const ColorFilter.matrix(<double>[
-                // 대비 증가 (색상 반전 없음)
-                // contrast = 1.8, offset = 128 * (1 - 1.8) = -102.4
-                1.8, 0, 0, 0, -102.4, // Red 채널
-                0, 1.8, 0, 0, -102.4, // Green 채널
-                0, 0, 1.8, 0, -102.4, // Blue 채널
-                0, 0, 0, 1, 0, // Alpha 채널 (투명도 유지)
-              ]),
-              child: playerContent,
-            )
-          : playerContent,
-    );
+    return Scaffold(body: playerContent);
   }
 }

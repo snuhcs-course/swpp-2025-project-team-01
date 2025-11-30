@@ -8,6 +8,8 @@ import 'dart:io' show Platform, Directory, File;
 
 import 'package:path_provider/path_provider.dart';
 import 'package:re_view/app_router.dart';
+import 'package:re_view/core/lecture_loading_navigator_observer.dart';
+import 'package:re_view/core/lecture_loading_service.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/theme/app_theme.dart';
 import 'package:re_view/data/hive_manager.dart';
@@ -77,12 +79,17 @@ class ReViewApp extends StatefulWidget {
 
 class _ReViewAppState extends State<ReViewApp> {
   late final HiveManager _manager = HiveManager.instance;
+  late final LectureLoadingNavigatorObserver _loadingObserver;
 
   @override
   void initState() {
     super.initState();
     // HiveManager 변경 리스너 등록 (테마, 언어, 접근성 모두 통합)
     _manager.addListener(_onDataChanged);
+    // NavigatorObserver 초기화
+    _loadingObserver = LectureLoadingNavigatorObserver(
+      LectureLoadingService.instance,
+    );
   }
 
   @override
@@ -141,6 +148,7 @@ class _ReViewAppState extends State<ReViewApp> {
     // 모션 줄이기가 활성화되면 페이지 전환 애니메이션 제거
     return MaterialApp(
       navigatorKey: navigatorKey,
+      navigatorObservers: [_loadingObserver],
       title: 'Re:View',
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
