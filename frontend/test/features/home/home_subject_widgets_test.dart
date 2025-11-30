@@ -255,9 +255,7 @@ void main() {
       when(mockHiveManager.getTags()).thenReturn(<HiveTag>[]);
       when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
 
-      final settings = AppSettings(
-        tagColorTheme: 'default',
-      );
+      final settings = AppSettings(tagColorTheme: 'default');
       when(mockHiveManager.settings).thenReturn(settings);
 
       await tester.pumpWidget(buildCreateDialogTestApp());
@@ -432,9 +430,7 @@ void main() {
 
       final dialogCtx = tester.element(find.byType(SubjectEditDialog));
       final l10n = AppLocalizations.of(dialogCtx);
-      final archiveLabel = l10n.isKorean
-          ? '보관'
-          : 'Archive';
+      final archiveLabel = l10n.isKorean ? '보관' : 'Archive';
 
       // 2. Tap "Archive" in the edit dialog
       await tester.tap(find.text(archiveLabel));
