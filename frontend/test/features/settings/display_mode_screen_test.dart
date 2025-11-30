@@ -41,14 +41,10 @@ void main() {
     );
   }
 
-  String? getRadioGroupValue(WidgetTester tester, String labelText) {
-    final listTile = find.ancestor(
-      of: find.text(labelText),
-      matching: find.byType(ListTile),
-    );
-    final radioGroup = tester.widget<RadioGroup<String>>(
-      find.descendant(of: listTile, matching: find.byType(RadioGroup<String>)),
-    );
+  String? getCurrentThemeMode(WidgetTester tester) {
+    final radioGroupFinder = find.byType(RadioGroup<String>);
+    // RadioGroup 위젯을 찾아 현재 groupValue를 반환
+    final radioGroup = tester.widget<RadioGroup<String>>(radioGroupFinder);
     return radioGroup.groupValue;
   }
 
@@ -66,7 +62,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // [Then]
-      expect(getRadioGroupValue(tester, '시스템 설정'), 'system');
+      expect(getCurrentThemeMode(tester), 'system');
     });
 
     testWidgets('Verify "Light Mode" is selected when theme is "light"', (
@@ -82,7 +78,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // [Then]
-      expect(getRadioGroupValue(tester, '라이트 모드'), 'light');
+      expect(getCurrentThemeMode(tester), 'light');
     });
 
     testWidgets('Verify "Dark Mode" is selected when theme is "dark"', (
@@ -98,7 +94,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // [Then]
-      expect(getRadioGroupValue(tester, '다크 모드'), 'dark');
+      expect(getCurrentThemeMode(tester), 'dark');
     });
 
     testWidgets('Verify all localized texts are displayed correctly', (
@@ -115,9 +111,9 @@ void main() {
 
       // [Then]
       expect(find.text('디스플레이 모드'), findsOneWidget);
-      expect(find.text('라이트 모드'), findsNWidgets(2));
-      expect(find.text('다크 모드'), findsNWidgets(2));
-      expect(find.text('시스템 설정'), findsNWidgets(2));
+      expect(find.text('라이트 모드'), findsOneWidget);
+      expect(find.text('다크 모드'), findsOneWidget);
+      expect(find.text('시스템 설정'), findsOneWidget);
     });
   });
 
@@ -136,7 +132,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // [When]
-        await tester.tap(find.text('라이트 모드').first);
+        await tester.tap(find.byType(Image).at(0));
         await tester.pumpAndSettle();
 
         // [Then]
@@ -154,7 +150,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // [When]
-      await tester.tap(find.text('다크 모드').first);
+      await tester.tap(find.byType(Image).at(1));
       await tester.pumpAndSettle();
 
       // [Then]
@@ -172,7 +168,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // [When]
-        await tester.tap(find.text('시스템 설정').first);
+        await tester.tap(find.byType(Image).at(2));
         await tester.pumpAndSettle();
 
         // [Then]
@@ -180,27 +176,26 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Tapping "Light Mode" updates UI radio state (verifies setState)',
-      (WidgetTester tester) async {
-        // [Given] - 'system'에서 시작
-        await tester.pumpWidget(
-          createTestableWidget(DisplayModeScreen(hiveManager: mockHiveManager)),
-        );
-        await tester.pumpAndSettle();
-        expect(getRadioGroupValue(tester, '시스템 설정'), 'system');
+    testWidgets('Tapping updates UI radio state (verifies setState)', (
+      WidgetTester tester,
+    ) async {
+      // [Given] - 'system'에서 시작
+      await tester.pumpWidget(
+        createTestableWidget(DisplayModeScreen(hiveManager: mockHiveManager)),
+      );
+      await tester.pumpAndSettle();
+      expect(getCurrentThemeMode(tester), 'system');
 
-        // updateTheme 호출 후 테마 변경 시뮬레이션
-        when(mockSettings.theme).thenReturn('light');
+      // updateTheme 호출 후 테마 변경 시뮬레이션
+      when(mockSettings.theme).thenReturn('light');
 
-        // [When]
-        await tester.tap(find.text('라이트 모드').first);
-        await tester.pumpAndSettle();
+      // [When]
+      await tester.tap(find.byType(Image).at(0));
+      await tester.pumpAndSettle();
 
-        // [Then]
-        expect(getRadioGroupValue(tester, '라이트 모드'), 'light');
-      },
-    );
+      // [Then]
+      expect(getCurrentThemeMode(tester), 'light');
+    });
   });
 
   group('3. Preview Images Verification', () {
@@ -221,7 +216,7 @@ void main() {
       expect(find.byType(Image), findsNWidgets(3));
     });
 
-    testWidgets('All preview boxes should have labels displayed twice', (
+    testWidgets('Layout should use Wrap for responsiveness', (
       WidgetTester tester,
     ) async {
       // [When]
@@ -230,28 +225,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // [Then] - 모든 라벨이 2번씩 표시됨 (라디오 버튼 + 미리보기 박스)
-      expect(find.text('라이트 모드'), findsNWidgets(2));
-      expect(find.text('다크 모드'), findsNWidgets(2));
-      expect(find.text('시스템 설정'), findsNWidgets(2));
-    });
+      // [Then]
+      // 1. Wrap 위젯이 존재해야 함
+      expect(find.byType(Wrap), findsOneWidget);
 
-    testWidgets('Preview boxes should be inside Expanded widgets', (
-      WidgetTester tester,
-    ) async {
-      // [When]
-      await tester.pumpWidget(
-        createTestableWidget(DisplayModeScreen(hiveManager: mockHiveManager)),
-      );
-      await tester.pumpAndSettle();
+      // 2. Expanded 위젯은 더 이상 사용되지 않아야 함
+      expect(find.byType(Expanded), findsNothing);
 
-      // [Then] - Row 안에 3개의 Expanded 위젯이 있어야 함
-      final rowFinder = find.byType(Row);
-      final expandedInRow = find.descendant(
-        of: rowFinder,
-        matching: find.byType(Expanded),
-      );
-      expect(expandedInRow, findsAtLeastNWidgets(3));
+      // 3. 아이템들은 SizedBox로 너비가 지정되어야 함
+      expect(find.byType(SizedBox), findsWidgets);
     });
   });
 }
