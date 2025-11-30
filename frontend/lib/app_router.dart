@@ -40,35 +40,73 @@ class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings s) {
     switch (s.name) {
       case Routes.onboarding:
-        return MaterialPageRoute(builder: (_) => const SplashScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const SplashScreen(),
+        );
       case Routes.home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const HomeScreen(),
+        );
       case Routes.search:
-        return MaterialPageRoute(builder: (_) => const SearchScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const SearchScreen(),
+        );
       case Routes.lectureForm:
-        return MaterialPageRoute(builder: (_) => const LectureFormScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const LectureFormScreen(),
+        );
       case Routes.player:
         return MaterialPageRoute(
+          settings: s,
           builder: (_) => PlayerScreen(args: s.arguments),
         );
       case Routes.settings:
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const SettingsScreen(),
+        );
       case Routes.settingsDisplay:
-        return MaterialPageRoute(builder: (_) => const DisplayModeScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const DisplayModeScreen(),
+        );
       case Routes.settingsTts:
-        return MaterialPageRoute(builder: (_) => const TtsScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const TtsScreen(),
+        );
       case Routes.settingsAccessibility:
-        return MaterialPageRoute(builder: (_) => const AccessibilityScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const AccessibilityScreen(),
+        );
       case Routes.settingsLanguage:
-        return MaterialPageRoute(builder: (_) => const LanguageScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const LanguageScreen(),
+        );
       case Routes.settingsHelp:
-        return MaterialPageRoute(builder: (_) => const HelpScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const HelpScreen(),
+        );
       case Routes.tagsEdit:
-        return MaterialPageRoute(builder: (_) => const TagsEditScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const TagsEditScreen(),
+        );
       case Routes.archive:
-        return MaterialPageRoute(builder: (_) => const ArchiveScreen());
+        return MaterialPageRoute(
+          settings: s,
+          builder: (_) => const ArchiveScreen(),
+        );
       default:
         return MaterialPageRoute(
+          settings: s,
           builder: (_) =>
               const Scaffold(body: Center(child: Text('Not Found'))),
         );

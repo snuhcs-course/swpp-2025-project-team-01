@@ -134,7 +134,7 @@ void main() {
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.controller!.text, 'AI');
 
-      expect(find.text('태그 삭제'), findsOneWidget);
+      expect(find.text('삭제'), findsOneWidget);
     });
 
     testWidgets('Verify delete button is hidden when no tags', (
@@ -368,9 +368,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 버튼이 화면 밖에 있을 수 있으므로 스크롤
-      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.ensureVisible(find.text('완료'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('이름 적용'));
+      await tester.tap(find.text('완료'));
       await tester.pumpAndSettle();
 
       // [Then]
@@ -384,9 +384,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 버튼이 화면 밖에 있을 수 있으므로 스크롤
-      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.ensureVisible(find.text('완료'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('이름 적용'));
+      await tester.tap(find.text('완료'));
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsOneWidget);
@@ -399,9 +399,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 버튼이 화면 밖에 있을 수 있으므로 스크롤
-      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.ensureVisible(find.text('완료'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('이름 적용'));
+      await tester.tap(find.text('완료'));
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsOneWidget);
@@ -431,7 +431,7 @@ void main() {
       // [Then]
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        '',
+        '새 태그',
       );
     });
 
@@ -517,9 +517,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 버튼이 화면 밖에 있을 수 있으므로 스크롤
-      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.ensureVisible(find.text('완료'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('이름 적용'));
+      await tester.tap(find.text('완료'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(ActionChip, '+'));
@@ -569,9 +569,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 삭제 버튼이 화면 밖에 있을 수 있으므로 스크롤
-      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.ensureVisible(find.text('삭제'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('태그 삭제'));
+      await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
 
       // [Then]
@@ -598,9 +598,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 삭제 버튼이 화면 밖에 있을 수 있으므로 스크롤
-      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.ensureVisible(find.text('삭제'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('태그 삭제'));
+      await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
 
       // [Then]
@@ -622,9 +622,9 @@ void main() {
       expect(findTagPillByName(tester, 'AI').selected, isTrue);
 
       // [When]
-      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.ensureVisible(find.text('삭제'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('태그 삭제'));
+      await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
 
       // [Then]
@@ -649,9 +649,9 @@ void main() {
       expect(find.text('#AI'), findsOneWidget);
 
       // [When]
-      await tester.ensureVisible(find.text('태그 삭제'));
+      await tester.ensureVisible(find.text('삭제'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('태그 삭제'));
+      await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('예'));
       await tester.pumpAndSettle();
@@ -714,15 +714,15 @@ void main() {
       await tester.pumpAndSettle();
 
       // 버튼이 화면 밖에 있을 수 있으므로 스크롤
-      await tester.ensureVisible(find.text('이름 적용'));
+      await tester.ensureVisible(find.text('완료'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('이름 적용'));
+      await tester.tap(find.text('완료'));
       await tester.pumpAndSettle();
 
       // [When]
       await tester.tap(find.text('#Web'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('태그 삭제'));
+      await tester.tap(find.text('삭제'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('예'));
       await tester.pumpAndSettle();

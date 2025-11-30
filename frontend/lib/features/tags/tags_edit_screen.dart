@@ -251,38 +251,47 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
             const SizedBox(height: 12),
             _buildTagChips(),
             const SizedBox(height: 16),
-            TextField(
-              controller: _nameC,
-              decoration: InputDecoration(
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                labelText: l10n.tagName,
-                hintText: l10n.newTag,
-                border: const OutlineInputBorder(),
-              ),
-              enableIMEPersonalizedLearning: false,
-            ),
-            const SizedBox(height: 12),
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _applyNameChange,
-                    child: Text(l10n.nameApply),
+                TextField(
+                  controller: _nameC,
+                  decoration: InputDecoration(
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    labelText: l10n.tagName,
+                    hintText: l10n.newTag,
+                    border: const OutlineInputBorder(),
                   ),
+                  enableIMEPersonalizedLearning: false,
+                  enabled: _tags.isNotEmpty,
                 ),
-                const SizedBox(width: 8),
-                // 삭제 버튼을 버튼 행에 통합
-                if (_tags.isNotEmpty)
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 231, 76, 60),
-                        foregroundColor: Colors.white,
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            231,
+                            76,
+                            60,
+                          ),
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        onPressed: _tags.isNotEmpty ? _deleteSelectedTag : null,
+                        label: Text(l10n.delete),
                       ),
-                      onPressed: _deleteSelectedTag,
-                      label: Text(l10n.deleteTag),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _tags.isNotEmpty ? _applyNameChange : null,
+                        child: Text(l10n.complete),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -367,7 +376,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
     // 입력창 초기화 (한글 입력 문제 방지를 위해 프레임 이후 실행)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _nameC.clear();
+        _nameC.text = _tags[_selected].name;
       }
     });
   }
@@ -439,6 +448,7 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
       _assignColors();
 
       if (_tags.isEmpty) {
+        _selected = -1;
         return;
       }
 

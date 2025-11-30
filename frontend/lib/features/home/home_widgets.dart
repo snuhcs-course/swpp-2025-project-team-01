@@ -799,9 +799,9 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     return '$minutes:${secs.toString().padLeft(2, '0')}';
   }
 
-  String _formatDate(DateTime? dateTime, bool isKorean) {
+  String _formatDate(DateTime? dateTime, AppLocalizations l10n) {
     if (dateTime == null) {
-      return isKorean ? '알 수 없음' : 'Unknown';
+      return l10n.unknown;
     }
 
     // 절대 날짜 포맷만 표시
@@ -809,7 +809,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     final month = dateTime.month;
     final day = dateTime.day;
 
-    return isKorean
+    return l10n.isKorean
         ? '$year년 $month월 $day일'
         : '${_monthName(month)} $day, $year';
   }
@@ -984,7 +984,7 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
                 ),
                 Expanded(
                   child: Text(
-                    _formatDate(widget.lecture.createdAt, l10n.isKorean),
+                    _formatDate(widget.lecture.createdAt, l10n),
                     style: theme.textTheme.bodyMedium,
                     textAlign: TextAlign.right,
                   ),
