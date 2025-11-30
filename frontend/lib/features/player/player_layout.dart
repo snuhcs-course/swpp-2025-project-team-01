@@ -102,20 +102,78 @@ class HorizontalPlayerLayout extends StatelessWidget {
 
                           if (isPagesExpanded)
                             Positioned(
-                              top: 12,
-                              right: 16,
+                              top: 0,
+                              left: 0,
+                              right: 0,
                               // isSynced, currentPage, currentSentenceIndex를 함께 감시하여 즉시 업데이트
                               child: ListenableBuilder(
                                 listenable: Listenable.merge([
                                   controller.isSynced,
                                   controller.currentPage,
                                   controller.currentSentenceIndex,
+                                  controller.isOriginalAudio,
                                 ]),
                                 builder: (context, _) {
-                                  return SyncButton(
-                                    isSynced: controller.isSynced.value,
-                                    onPressed: controller.toggleSync,
-                                    pageDifference: controller.pageDifference,
+                                  return Container(
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Color(0x88000000),
+                                          Color(0x00000000),
+                                        ],
+                                        stops: [0.0, 1.0],
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      12,
+                                      16,
+                                      24,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        AudioSourceButton(
+                                          isOriginalAudio:
+                                              controller.isOriginalAudio.value,
+                                          onPressed:
+                                              controller.isKoreanLecture == true
+                                              ? () {
+                                                  final l10n =
+                                                      AppLocalizations.of(
+                                                        context,
+                                                      );
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        l10n.ttsNotSupportedForKorean,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              : controller.toggleAudioSource,
+                                          isVertical: false,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SpeedButton(
+                                          onSpeedChanged:
+                                              controller.setPlaybackSpeed,
+                                          isVertical: false,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SyncButton(
+                                          isSynced: controller.isSynced.value,
+                                          onPressed: controller.toggleSync,
+                                          pageDifference:
+                                              controller.pageDifference,
+                                          isVertical: false,
+                                        ),
+                                      ],
+                                    ),
                                   );
                                 },
                               ),
@@ -567,14 +625,27 @@ class PagesListWidget extends StatelessWidget {
           getCachedOrRenderPage:
               controller.pdfCacheService.getCachedOrRenderPage,
           getCachedImage: controller.pdfCacheService.getCachedImageDirect,
-          onPageTap: (pageNumber) {
+          hasTranscriptForSlide: controller.hasTranscriptForSlide,
+          onPageTap: (pageNumber) async {
+            // sync가 켜져있고 transcript가 없으면 스낵바만 표시하고 이동 안함
+            if (controller.isSynced.value &&
+                !controller.hasTranscriptForSlide(pageNumber)) {
+              if (context.mounted) {
+                final l10n = AppLocalizations.of(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.noTranscriptForSlide)),
+                );
+              }
+              return;
+            }
+
             controller.jumpToPage(pageNumber);
             // 캐시되지 않은 페이지라면 즉시 캐싱 시작
             if (controller.pdfCacheService.getCachedImageDirect(pageNumber) ==
                 null) {
               controller.pdfCacheService.getCachedOrRenderPage(pageNumber);
             }
-            controller.seekToSlide(pageNumber);
+            await controller.seekToSlide(pageNumber);
           },
         );
 

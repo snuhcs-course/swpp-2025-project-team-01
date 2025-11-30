@@ -1313,6 +1313,7 @@ class DeleteWarningDialog extends StatelessWidget {
     required this.yesText,
     required this.noText,
     required this.warningText,
+    this.hiveManager,
   });
 
   final Widget body;
@@ -1320,6 +1321,7 @@ class DeleteWarningDialog extends StatelessWidget {
   final String yesText;
   final String noText;
   final String warningText;
+  final HiveManager? hiveManager;
 
   @override
   Widget build(BuildContext context) {
@@ -1335,7 +1337,7 @@ class DeleteWarningDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: const BoxDecoration(
-                color: Colors.black87,
+                color: Color(0xFF1D1D1D),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Center(
@@ -1351,7 +1353,7 @@ class DeleteWarningDialog extends StatelessWidget {
             ),
             // Body
             Container(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.fromLTRB(32, 32, 32, 20),
               decoration: const BoxDecoration(
                 color: Color(0xFFE8E8E8),
                 borderRadius: BorderRadius.vertical(
@@ -1361,16 +1363,16 @@ class DeleteWarningDialog extends StatelessWidget {
               child: Column(
                 children: [
                   body,
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   Row(
                     children: [
                       // "예" 버튼
                       Expanded(
                         child: Container(
-                          height: 50,
+                          height: 42,
                           decoration: BoxDecoration(
                             color: const Color(0xFF5A5A5A),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: TextButton(
                             onPressed: () {
@@ -1392,10 +1394,10 @@ class DeleteWarningDialog extends StatelessWidget {
                       // "아니오" 버튼
                       Expanded(
                         child: Container(
-                          height: 50,
+                          height: 42,
                           decoration: BoxDecoration(
                             color: const Color(0xFFC0C0C0),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: TextButton(
                             onPressed: () => Navigator.pop(context, false),
@@ -1578,8 +1580,8 @@ class SubjectPanelHeader extends StatelessWidget {
                 IconButton(
                   icon: Icon(
                     expanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.keyboard_arrow_up,
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: iconColor,
                   ),
                   onPressed: onToggleExpanded,

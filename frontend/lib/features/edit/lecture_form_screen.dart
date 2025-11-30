@@ -18,6 +18,10 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:uuid/uuid.dart';
 
 // coverage:ignore-start
+
+// 제거 버튼 색상
+const Color _removeButtonColor = Color.fromARGB(255, 231, 76, 60);
+
 abstract class FileReadingService {
   Future<Uint8List> readAsBytes(String path);
   Future<String> readAsString(String path);
@@ -176,9 +180,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   final _weekController = TextEditingController();
   final _titleController = TextEditingController();
 
-  // 오디오 파일 리스트 스크롤 컨트롤러
-  final _scrollController = ScrollController();
-
   // 선택된 과목 ID (null = 선택 안 함)
   String? _selectedSubjectId;
 
@@ -196,18 +197,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   // 오디오 파일 엔트리 리스트 (최소 1개 시작)
   final List<AudioFileEntry> _audioFiles = [AudioFileEntry()];
 
-  // 다중 오디오 파일 모드 활성화 여부 (2개 이상일 때 true)
-  bool _isMultipleAudioMode = false;
-
-  // 강의 생성 중 여부 (로딩 상태)
-  bool _isCreating = false;
-
   @override
   void dispose() {
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
     _titleController.dispose();
-    _scrollController.dispose();
 
     // 모든 오디오 파일 엔트리 dispose
     for (final entry in _audioFiles) {
@@ -297,11 +291,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       ? _getFileName(_slidePdfPath!)
                       : '...',
                   onTap: _pickSlidePdf,
+                  hasFile: _slidePdfPath != null,
                 ),
                 const SizedBox(height: 20),
 
                 // ========== 강의 녹음 파일 업로드 섹션 ==========
-                _buildAudioFilesHeader(l10n),
+                _buildSectionTitle(l10n.lectureAudio),
                 const SizedBox(height: 8),
                 _buildAudioFilesList(),
 
@@ -327,7 +322,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           title,
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontSize: 18),
+          ).textTheme.titleMedium?.copyWith(fontSize: 20),
         );
       },
     );
@@ -486,48 +481,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     );
   }
 
-  /// 오디오 파일 섹션 헤더 (제목 + 추가/삭제 버튼)
-  Widget _buildAudioFilesHeader(AppLocalizations l10n) {
-    return Builder(
-      builder: (context) {
-        final theme = Theme.of(context);
-
-        return Row(
-          children: [
-            Expanded(child: _buildSectionTitle(l10n.lectureAudio)),
-            // 오디오 파일 삭제 버튼 (2개 이상일 때만 활성화)
-            IconButton(
-              icon: Icon(Icons.remove_circle_outline),
-              color: _canRemoveAudioFile()
-                  ? theme.colorScheme.onSurface
-                  : theme.disabledColor,
-              onPressed: _canRemoveAudioFile() ? _removeLastAudioFile : null,
-            ),
-            // 오디오 파일 추가 버튼
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: _addAudioFile,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   /// 오디오 파일 리스트 (다중 모드일 때 스크롤 가능)
   Widget _buildAudioFilesList() {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: _isMultipleAudioMode ? 300 : double.infinity,
-      ),
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          children: List.generate(_audioFiles.length, (index) {
-            return _buildAudioFileEntry(index);
-          }),
-        ),
-      ),
+    return Column(
+      children: _audioFiles.asMap().entries.map((entry) {
+        final index = entry.key;
+        final audioEntry = entry.value;
+        return _buildAudioFileEntry(index, key: Key(audioEntry.id));
+      }).toList(),
     );
   }
 
@@ -536,10 +497,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// [icon]: 버튼에 표시할 아이콘
   /// [label]: 파일명 또는 플레이스홀더 텍스트
   /// [onTap]: 파일 선택 콜백
+  /// [onRemove]: 제거 버튼 콜백 (null이면 제거 버튼 표시 안 함)
+  /// [hasFile]: 파일이 선택되었는지 여부 (true면 "변경", false면 "추가")
   Widget _buildFileUploadButton({
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    VoidCallback? onRemove,
+    bool hasFile = false,
   }) {
     return Builder(
       builder: (context) {
@@ -547,7 +512,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final cardColor = theme.cardTheme.color ?? theme.colorScheme.surface;
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(12),
@@ -563,7 +528,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 child: Icon(
                   Icons.attach_file,
                   color: theme.colorScheme.onSurfaceVariant,
-                  size: 24,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 12),
@@ -580,10 +545,40 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // 추가 버튼
+              // 제거 버튼 (onRemove가 있을 때만 표시)
+              if (onRemove != null) ...[
+                OutlinedButton(
+                  onPressed: onRemove,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 8,
+                    ),
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: _removeButtonColor,
+                    side: const BorderSide(color: _removeButtonColor),
+                  ),
+                  child: Text(AppLocalizations.of(context).remove),
+                ),
+                const SizedBox(width: 12),
+              ],
+              // 추가/변경 버튼
               OutlinedButton(
                 onPressed: onTap,
-                child: Text(AppLocalizations.of(context).add),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  hasFile
+                      ? AppLocalizations.of(context).change
+                      : AppLocalizations.of(context).add,
+                ),
               ),
             ],
           ),
@@ -595,16 +590,21 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 개별 오디오 파일 엔트리 위젯
   ///
   /// 페이지 범위 입력 필드를 함께 표시합니다.
-  Widget _buildAudioFileEntry(int index) {
+  Widget _buildAudioFileEntry(int index, {Key? key}) {
     final entry = _audioFiles[index];
 
     return Column(
+      key: key,
       children: [
         // 파일 업로드 버튼
         _buildFileUploadButton(
           icon: Icons.attach_file,
           label: entry.filePath != null ? _getFileName(entry.filePath!) : '...',
           onTap: () => _pickAudioFile(index),
+          onRemove: _audioFiles.length > 1 && entry.filePath != null
+              ? () => _removeAudioFile(index)
+              : null,
+          hasFile: entry.filePath != null,
         ),
 
         // 페이지 범위 입력 필드 표시 (항상 표시)
@@ -673,7 +673,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           controller: controller,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          ),
         );
       },
     );
@@ -693,8 +697,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
               width: double.infinity,
               height: 54,
               child: FilledButton(
-                onPressed: _isCreating ? null : _createLecture,
-                child: _isCreating
+                onPressed: () => {
+                  LectureLoadingService.instance.isLoading
+                      ? _showSnackBar(l10n.isGenerating)
+                      : _createLecture(),
+                },
+                child: LectureLoadingService.instance.isLoading
                     ? SizedBox(
                         width: 20,
                         height: 20,
@@ -724,11 +732,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   /// 파일 경로에서 파일명만 추출
   String _getFileName(String path) {
     return path.split('/').last.split('\\').last;
-  }
-
-  /// 오디오 파일 삭제 가능 여부 확인 (2개 이상일 때만 가능)
-  bool _canRemoveAudioFile() {
-    return _audioFiles.length > 1;
   }
 
   /// 스낵바 메시지 표시
@@ -799,95 +802,31 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
 
       setState(() {
+        final wasEmpty = _audioFiles[index].filePath == null;
         _audioFiles[index].filePath = filePath;
+
+        // 파일이 처음 업로드되고, 마지막 칸인 경우 새 칸 자동 추가
+        if (wasEmpty && index == _audioFiles.length - 1) {
+          _audioFiles.add(AudioFileEntry());
+        }
       });
     }
   }
 
   // ========== 오디오 파일 관리 메서드들 ==========
 
-  /// 오디오 파일 추가
+  /// 특정 인덱스의 오디오 파일 제거
   ///
-  /// 새로운 오디오 파일 엔트리를 추가합니다.
-  /// 기존 파일들이 모두 업로드된 경우에만 추가 가능합니다.
-  void _addAudioFile() {
-    final newEntry = AudioFileEntry();
-
-    // 두 번째 오디오부터는 초기값 없이 비워둠 (사용자가 직접 입력)
-
-    setState(() {
-      _audioFiles.add(newEntry);
-      _isMultipleAudioMode = true;
-    });
-
-    // 스크롤을 맨 아래로 이동 (새로 추가된 파일이 보이도록)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  /// 마지막 오디오 파일 삭제
-  ///
-  /// 업로드된 파일이 있으면 확인 다이얼로그를 표시합니다.
-  void _removeLastAudioFile() {
+  /// 최소 1개의 오디오 파일은 유지합니다.
+  void _removeAudioFile(int index) {
     if (_audioFiles.length <= 1) {
       return;
     }
 
-    final lastEntry = _audioFiles.last;
-
-    // 파일이 업로드되어 있으면 경고 표시
-    if (lastEntry.filePath != null) {
-      _showDeleteConfirmation(() {
-        setState(() {
-          lastEntry.dispose();
-          _audioFiles.removeLast();
-          if (_audioFiles.length == 1) {
-            _isMultipleAudioMode = false;
-          }
-        });
-      });
-    } else {
-      // 파일이 없으면 바로 삭제
-      setState(() {
-        lastEntry.dispose();
-        _audioFiles.removeLast();
-        if (_audioFiles.length == 1) {
-          _isMultipleAudioMode = false;
-        }
-      });
-    }
-  }
-
-  /// 파일 삭제 확인 다이얼로그 표시
-  void _showDeleteConfirmation(VoidCallback onConfirm) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.warning),
-        content: Text(l10n.deleteWithUploadedFile),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onConfirm();
-            },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
+    setState(() {
+      _audioFiles[index].dispose();
+      _audioFiles.removeAt(index);
+    });
   }
 
   Future<void> _cleanUpFiles() async {
@@ -1005,7 +944,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     }
 
     // 2. 로딩 시작
-    setState(() => _isCreating = true);
     final titleText = _titleController.text.trim();
     final langCode = _selectedLanguage;
 
@@ -1046,7 +984,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         clients[i]?.close();
       }
       if (mounted) {
-        setState(() => _isCreating = false);
         _showSnackBar(l10n.lectureCreationCancelled);
       }
       // Disable background execution when cancelled
@@ -1305,10 +1242,6 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           debugPrint('Failed to disable background execution: $e');
         }
       }
-
-      if (mounted) {
-        setState(() => _isCreating = false);
-      }
     }
   }
 }
@@ -1320,8 +1253,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 /// - 시작 페이지 번호 (다중 파일 모드)
 /// - 끝 페이지 번호 (다중 파일 모드)
 class AudioFileEntry {
-  AudioFileEntry();
-  AudioFileEntry.fromPath(this.filePath);
+  AudioFileEntry() : id = UniqueKey().toString();
+  AudioFileEntry.fromPath(this.filePath) : id = UniqueKey().toString();
+
+  /// 고유 식별자 (위젯 Key로 사용)
+  final String id;
 
   /// 선택된 오디오 파일 경로
   String? filePath;

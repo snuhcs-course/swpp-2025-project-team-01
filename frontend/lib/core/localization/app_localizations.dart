@@ -26,8 +26,10 @@ class AppLocalizations {
   String get cancel => isKorean ? '취소' : 'Cancel';
   String get save => isKorean ? '저장' : 'Save';
   String get delete => isKorean ? '삭제' : 'Delete';
+  String get remove => isKorean ? '제거' : 'Remove';
   String get edit => isKorean ? '수정' : 'Edit';
   String get add => isKorean ? '추가' : 'Add';
+  String get change => isKorean ? '변경' : 'Change';
   String get search => isKorean ? '검색' : 'Search';
   String get settings => isKorean ? '설정' : 'Settings';
   String get yes => isKorean ? '예' : 'Yes';
@@ -274,6 +276,8 @@ class AppLocalizations {
       ? '강의 생성이 완료되었습니다.\n결과를 확인해보세요.'
       : 'Lecture creation completed.\nCheck out the result.';
   String get goToLecture => isKorean ? '강의 바로가기' : 'Go to Lecture';
+  String get isGenerating =>
+      isKorean ? '강의 생성이 진행 중입니다.' : 'Lecture generation is in progress.';
 
   // 검색 화면
   String get searchLecture => isKorean ? '강의 검색' : 'Search Lectures';
@@ -324,6 +328,12 @@ class AppLocalizations {
       isKorean ? '$pages 페이지 빠름' : '$pages pages ahead';
   String pagesBehind(int pages) =>
       isKorean ? '$pages 페이지 느림' : '$pages pages behind';
+  String get ttsNotSupportedForKorean => isKorean
+      ? '한국어 강의는 TTS가 지원되지 않습니다.'
+      : 'TTS audio is not supported for Korean lectures.';
+  String get noTranscriptForSlide => isKorean
+      ? '해당 슬라이드에 대응하는 강의 대본이 없습니다.'
+      : 'There is no transcript that corresponds to this slide.';
 
   // 플레이어 에러 메시지
   String get lectureIdMissing =>

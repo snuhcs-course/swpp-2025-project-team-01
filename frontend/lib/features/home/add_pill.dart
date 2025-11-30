@@ -256,7 +256,14 @@ class MiniActionPill extends StatelessWidget {
             children: [
               Icon(icon, size: 18),
               const SizedBox(width: 8),
-              Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+              Flexible(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
             ],
           ),
         ),
