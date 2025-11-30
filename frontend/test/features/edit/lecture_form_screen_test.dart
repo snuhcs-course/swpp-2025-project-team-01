@@ -267,8 +267,7 @@ void main() {
       await pumpScreen(tester);
 
       expect(find.text('Page Range'), findsOneWidget);
-      expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
-      expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
+      expect(find.text('Add'), findsNWidgets(2));
     });
   });
 
@@ -633,65 +632,48 @@ void main() {
   group('6. Audio Entry Management', () {
     const audioPath = '/fake/test.m4a';
 
-    testWidgets('Can add audio entry', (tester) async {
+    testWidgets('Auto-adds new field when file is uploaded to last field', (
+      tester,
+    ) async {
+      when(
+        mockFilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['m4a', 'm4b'],
+          allowMultiple: false,
+        ),
+      ).thenAnswer(
+        (_) async => FilePickerResult([
+          PlatformFile(name: 'test.m4a', path: audioPath, size: 100),
+        ]),
+      );
+
       await pumpScreen(tester);
 
       expect(find.text('Page Range'), findsOneWidget);
 
-      await tester.ensureVisible(find.byIcon(Icons.add_circle_outline));
+      final addButtons = find.widgetWithText(OutlinedButton, 'Add');
+      await tester.ensureVisible(addButtons.last);
+      await tester.pumpAndSettle();
+      await tester.tap(addButtons.last);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
-
-      await tester.pump(const Duration(seconds: 1));
-
+      expect(find.text('Change'), findsOneWidget);
       expect(find.text('Page Range'), findsNWidgets(2));
+      expect(find.text('Add'), findsNWidgets(2));
     });
 
-    testWidgets('Remove button is disabled for single audio entry', (
+    testWidgets('Remove button not shown for single audio entry', (
       tester,
     ) async {
       await pumpScreen(tester);
 
       expect(find.text('Page Range'), findsOneWidget);
 
-      final iconButtons = find.byType(IconButton);
-      expect(iconButtons, findsWidgets);
-
-      final removeButtons = tester
-          .widgetList<IconButton>(iconButtons)
-          .where(
-            (btn) =>
-                btn.icon is Icon &&
-                (btn.icon as Icon).icon == Icons.remove_circle_outline,
-          );
-
-      expect(removeButtons.isNotEmpty, isTrue);
-      expect(removeButtons.first.onPressed, isNull);
-    });
-
-    testWidgets('Can remove audio entry when multiple exist', (tester) async {
-      await pumpScreen(tester);
-
-      await tester.ensureVisible(find.byIcon(Icons.add_circle_outline));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
-
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text('Page Range'), findsNWidgets(2));
-
-      await tester.ensureVisible(find.byIcon(Icons.remove_circle_outline));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.remove_circle_outline));
-
-      await tester.pump();
-
-      expect(find.text('Page Range'), findsOneWidget);
+      expect(find.text('Remove'), findsNothing);
     });
 
     testWidgets(
-      'Shows confirmation dialog when removing audio entry with file',
+      'Remove button shown only when file exists and multiple fields',
       (tester) async {
         when(
           mockFilePicker.pickFiles(
@@ -706,51 +688,52 @@ void main() {
         );
 
         await pumpScreen(tester);
-        expect(find.text('Page Range'), findsOneWidget);
 
-        await tester.ensureVisible(find.byIcon(Icons.add_circle_outline));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byIcon(Icons.add_circle_outline));
-
-        await tester.pump(const Duration(seconds: 1));
-        expect(find.text('Page Range'), findsNWidgets(2));
-
-        await tester.ensureVisible(
-          find.widgetWithText(OutlinedButton, 'Add').first,
-        );
-        await tester.pumpAndSettle();
         final addButtons = find.widgetWithText(OutlinedButton, 'Add');
+        await tester.ensureVisible(addButtons.last);
+        await tester.pumpAndSettle();
         await tester.tap(addButtons.last);
-
-        await tester.pumpAndSettle();
-        expect(find.text('test.m4a'), findsOneWidget);
-
-        await tester.ensureVisible(find.byIcon(Icons.remove_circle_outline));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.remove_circle_outline));
-
-        await tester.pump(const Duration(seconds: 1));
-        expect(find.text('Warning'), findsOneWidget);
-
-        await tester.tap(find.text('Cancel'));
-
-        await tester.pump(const Duration(seconds: 1));
-        expect(find.text('Warning'), findsNothing);
-
-        await tester.tap(find.byIcon(Icons.remove_circle_outline));
-        await tester.pump(const Duration(seconds: 1));
-        expect(find.text('Warning'), findsOneWidget);
-
-        await tester.tap(find.text('Delete'));
-
-        await tester.pump(const Duration(seconds: 1));
-
-        expect(find.text('Warning'), findsNothing);
-        expect(find.text('Page Range'), findsOneWidget);
+        expect(find.text('Page Range'), findsNWidgets(2));
+        expect(find.text('Remove'), findsOneWidget);
       },
     );
+
+    testWidgets('Can remove audio entry immediately without confirmation', (
+      tester,
+    ) async {
+      when(
+        mockFilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['m4a', 'm4b'],
+          allowMultiple: false,
+        ),
+      ).thenAnswer(
+        (_) async => FilePickerResult([
+          PlatformFile(name: 'test.m4a', path: audioPath, size: 100),
+        ]),
+      );
+
+      await pumpScreen(tester);
+
+      final addButtons = find.widgetWithText(OutlinedButton, 'Add');
+      await tester.ensureVisible(addButtons.last);
+      await tester.pumpAndSettle();
+      await tester.tap(addButtons.last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Page Range'), findsNWidgets(2));
+      expect(find.text('test.m4a'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Remove'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('test.m4a'), findsNothing);
+      expect(find.text('Page Range'), findsOneWidget);
+    });
   });
 
   group('7. File Picking - PDF', () {
@@ -1121,18 +1104,7 @@ void main() {
       await tester.enterText(find.byType(TextField).at(2), '1');
       await tester.enterText(find.byType(TextField).at(3), '5');
 
-      await tester.ensureVisible(find.byIcon(Icons.add_circle_outline));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.add_circle_outline));
-
-      await tester.pump(const Duration(seconds: 1));
-
-      await tester.ensureVisible(
-        find.widgetWithText(OutlinedButton, 'Add').first,
-      );
-      await tester.pumpAndSettle();
       addButtons = find.widgetWithText(OutlinedButton, 'Add');
-
       await tester.ensureVisible(addButtons.last);
       await tester.pumpAndSettle();
       await tester.tap(addButtons.last);
@@ -1690,15 +1662,6 @@ void main() {
         await tester.enterText(find.byType(TextField).at(2), '1');
         await tester.enterText(find.byType(TextField).at(3), '5');
 
-        await tester.ensureVisible(find.byIcon(Icons.add_circle_outline));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.add_circle_outline));
-        await tester.pump(const Duration(seconds: 1));
-
-        await tester.ensureVisible(
-          find.widgetWithText(OutlinedButton, 'Add').first,
-        );
-        await tester.pumpAndSettle();
         addButtons = find.widgetWithText(OutlinedButton, 'Add');
         await tester.ensureVisible(addButtons.last);
         await tester.pumpAndSettle();

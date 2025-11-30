@@ -26,8 +26,10 @@ class AppLocalizations {
   String get cancel => isKorean ? '취소' : 'Cancel';
   String get save => isKorean ? '저장' : 'Save';
   String get delete => isKorean ? '삭제' : 'Delete';
+  String get remove => isKorean ? '제거' : 'Remove';
   String get edit => isKorean ? '수정' : 'Edit';
   String get add => isKorean ? '추가' : 'Add';
+  String get change => isKorean ? '변경' : 'Change';
   String get search => isKorean ? '검색' : 'Search';
   String get settings => isKorean ? '설정' : 'Settings';
   String get yes => isKorean ? '예' : 'Yes';
