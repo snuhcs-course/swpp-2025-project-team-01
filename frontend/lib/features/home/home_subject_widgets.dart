@@ -9,15 +9,21 @@ import 'package:re_view/shared/widgets.dart';
 
 /// 과목 추가 다이얼로그 위젯
 class CreateSubjectDialog extends StatefulWidget {
-  const CreateSubjectDialog({super.key, required this.allTags});
+  const CreateSubjectDialog({
+    super.key,
+    required this.allTags,
+    this.hiveManager,
+  });
 
   final List<HiveTag> allTags;
+  final HiveManager? hiveManager;
 
   @override
   State<CreateSubjectDialog> createState() => _CreateSubjectDialogState();
 }
 
 class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
+  late final HiveManager _manager = widget.hiveManager ?? HiveManager.instance;
   late TextEditingController _titleController;
   final Set<String> _selectedTagIds = {};
   late TextEditingController _tagNameController;
@@ -46,8 +52,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
 
   Future<void> _addNewTag() async {
     final l10n = AppLocalizations.of(context);
-    final manager = HiveManager.instance;
-    final existingTags = manager.getTags();
+    final existingTags = _manager.getTags();
 
     // Avoid reentry
     if (_isCreatingTag) {
@@ -79,7 +84,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
     }
 
     // 현재 테마에서 다음 색상 할당
-    final theme = getTagColorTheme(manager.settings.tagColorTheme);
+    final theme = getTagColorTheme(_manager.settings.tagColorTheme);
     final colorIndex = existingTags.length % theme.colors.length;
 
     setState(() {
@@ -90,7 +95,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
           color: theme.colors[colorIndex],
         ),
       );
-      manager.saveTags(existingTags);
+      _manager.saveTags(existingTags);
     });
 
     setState(() {
@@ -233,14 +238,13 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
                             const SizedBox(width: 8),
                             FilledButton(
                               onPressed: () {
-                                final manager = HiveManager.instance;
                                 final newTitle = _tagNameController.text.trim();
                                 String newName = newTitle.isEmpty
                                     ? l10n.newTag
                                     : newTitle;
                                 if (newName == l10n.newTag) {
                                   int counter = 1;
-                                  while (manager.getTags().any(
+                                  while (_manager.getTags().any(
                                     (tag) => tag.name == newName,
                                   )) {
                                     newName = '${l10n.newTag} ($counter)';
@@ -248,7 +252,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
                                   }
                                 }
                                 // Avoid duplicates
-                                if (manager
+                                if (_manager
                                     .getTags()
                                     .map((t) => t.name)
                                     .contains(newName)) {
@@ -302,7 +306,7 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
               );
               return;
             }
-            final isDuplicate = HiveManager.instance
+            final isDuplicate = _manager
                 .getSubjects()
                 .map((s) => s.title)
                 .contains(text);

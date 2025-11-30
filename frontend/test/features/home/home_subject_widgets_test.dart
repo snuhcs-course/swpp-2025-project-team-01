@@ -68,6 +68,295 @@ void main() {
     allTags = [HiveTag(id: 't1', name: 'Tag 1', color: 0xFF000000)];
   });
 
+  group('CreateSubjectDialog', () {
+    /// Small helper app that opens CreateSubjectDialog when tapping a button
+    Widget buildCreateDialogTestApp() {
+      return MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => CreateSubjectDialog(
+                        allTags: allTags,
+                        hiveManager: mockHiveManager,
+                      ),
+                    );
+                  },
+                  child: const Text('Open Create Dialog'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    testWidgets('shows SelectableTagPill for each tag in allTags', (
+      tester,
+    ) async {
+      // CreateSubjectDialog uses HiveManager.instance internally
+      when(mockHiveManager.getTags()).thenReturn(<HiveTag>[]);
+      when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
+
+      await tester.pumpWidget(buildCreateDialogTestApp());
+      await tester.pump();
+
+      // Open the dialog
+      await tester.tap(find.text('Open Create Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateSubjectDialog), findsOneWidget);
+      expect(find.byType(SelectableTagPill), findsNWidgets(allTags.length));
+    });
+
+    testWidgets('tapping a tag toggles its selected state', (tester) async {
+      when(mockHiveManager.getTags()).thenReturn(<HiveTag>[]);
+      when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
+
+      await tester.pumpWidget(buildCreateDialogTestApp());
+      await tester.pump();
+
+      await tester.tap(find.text('Open Create Dialog'));
+      await tester.pumpAndSettle();
+
+      final tagFinder = find.byType(SelectableTagPill).first;
+
+      // Initially not selected
+      var pill = tester.widget<SelectableTagPill>(tagFinder);
+      expect(pill.selected, isFalse);
+
+      // Tap to select
+      await tester.tap(tagFinder);
+      await tester.pump();
+
+      pill = tester.widget<SelectableTagPill>(tagFinder);
+      expect(pill.selected, isTrue);
+
+      // Tap again to unselect
+      await tester.tap(tagFinder);
+      await tester.pump();
+
+      pill = tester.widget<SelectableTagPill>(tagFinder);
+      expect(pill.selected, isFalse);
+    });
+
+    testWidgets(
+      'Add with empty title shows pleaseEnterSubjectName snackbar and keeps dialog open',
+      (tester) async {
+        when(mockHiveManager.getTags()).thenReturn(<HiveTag>[]);
+        when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
+
+        await tester.pumpWidget(buildCreateDialogTestApp());
+        await tester.pump();
+
+        await tester.tap(find.text('Open Create Dialog'));
+        await tester.pumpAndSettle();
+
+        final dialogCtx = tester.element(find.byType(CreateSubjectDialog));
+        final l10n = AppLocalizations.of(dialogCtx);
+
+        // Title is empty by default, tap Add
+        await tester.tap(find.text(l10n.add));
+        await tester.pump(); // show snackbar
+
+        expect(find.text(l10n.pleaseEnterSubjectName), findsOneWidget);
+        // Dialog still open
+        expect(find.byType(CreateSubjectDialog), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Add with duplicate title shows subjectNameExists snackbar and keeps dialog open',
+      (tester) async {
+        // One existing subject with title "Test Subject"
+        when(mockHiveManager.getSubjects()).thenReturn([
+          HiveSubject(
+            id: 'existing',
+            title: 'Test Subject',
+            isArchived: false,
+            isUncategorized: false,
+            lectureIds: const [],
+          ),
+        ]);
+        when(mockHiveManager.getTags()).thenReturn(<HiveTag>[]);
+
+        await tester.pumpWidget(buildCreateDialogTestApp());
+        await tester.pump();
+
+        await tester.tap(find.text('Open Create Dialog'));
+        await tester.pumpAndSettle();
+
+        final dialogCtx = tester.element(find.byType(CreateSubjectDialog));
+        final l10n = AppLocalizations.of(dialogCtx);
+
+        // Enter duplicate title
+        await tester.enterText(find.byType(TextField).first, 'Test Subject');
+        await tester.pump();
+
+        await tester.tap(find.text(l10n.add));
+        await tester.pump(); // for snackbar
+
+        expect(find.text(l10n.subjectNameExists), findsOneWidget);
+        // Dialog should still be visible
+        expect(find.byType(CreateSubjectDialog), findsOneWidget);
+
+        verify(mockHiveManager.getSubjects()).called(1);
+      },
+    );
+
+    testWidgets(
+      'when there are already 15 tags, tapping "+" shows maxTagsReached snackbar and does not show add-tag form',
+      (tester) async {
+        final fifteenTags = List.generate(
+          15,
+          (i) => HiveTag(id: 't$i', name: 'Tag $i', color: 0xFF000000),
+        );
+
+        when(mockHiveManager.getTags()).thenReturn(fifteenTags);
+        when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
+
+        await tester.pumpWidget(buildCreateDialogTestApp());
+        await tester.pump();
+
+        await tester.tap(find.text('Open Create Dialog'));
+        await tester.pumpAndSettle();
+
+        final dialogCtx = tester.element(find.byType(CreateSubjectDialog));
+        final l10n = AppLocalizations.of(dialogCtx);
+
+        // Tap the "+" ActionChip
+        await tester.tap(find.byType(ActionChip));
+        await tester.pump(); // snackbar + possible state change
+
+        // Should show "maxTagsReached" snackbar
+        expect(find.text(l10n.maxTagsReached), findsOneWidget);
+
+        // Add-tag panel (_isCreatingTag) should NOT be visible
+        expect(find.text(l10n.addTag), findsNothing);
+
+        // Should not attempt to save new tags
+        verifyNever(mockHiveManager.saveTags(any));
+      },
+    );
+
+    testWidgets('tapping + shows add-tag panel', (tester) async {
+      // no tags yet, no subjects needed for this test
+      when(mockHiveManager.getTags()).thenReturn(<HiveTag>[]);
+      when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
+
+      // minimal settings; adjust constructor args to your real AppSettings
+      final settings = AppSettings(
+        // fill other fields as needed in your project
+        tagColorTheme: 'default',
+      );
+      when(mockHiveManager.settings).thenReturn(settings);
+
+      await tester.pumpWidget(buildCreateDialogTestApp());
+      await tester.pump();
+
+      // Open CreateSubjectDialog
+      await tester.tap(find.text('Open Create Dialog'));
+      await tester.pumpAndSettle();
+
+      final dialogCtx = tester.element(find.byType(CreateSubjectDialog));
+      final l10n = AppLocalizations.of(dialogCtx);
+
+      // Initially, add-tag panel shouldn't be visible
+      expect(find.text(l10n.addTag), findsNothing);
+
+      // Tap the "+" ActionChip
+      await tester.tap(find.byType(ActionChip));
+      await tester.pump(); // rebuild with _isCreatingTag = true
+
+      // Now the add-tag panel title should appear
+      expect(find.text(l10n.addTag), findsOneWidget);
+    });
+
+    testWidgets('creating a new tag via + and Apply saves tags', (
+      tester,
+    ) async {
+      final existingTags = <HiveTag>[];
+      when(mockHiveManager.getTags()).thenReturn(existingTags);
+      when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
+
+      // Minimal AppSettings; adjust fields to match your implementation
+      final settings = AppSettings(tagColorTheme: 'default');
+      when(mockHiveManager.settings).thenReturn(settings);
+
+      when(mockHiveManager.saveTags(any)).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildCreateDialogTestApp());
+      await tester.pump();
+
+      // Open dialog
+      await tester.tap(find.text('Open Create Dialog'));
+      await tester.pumpAndSettle();
+
+      final dialogCtx = tester.element(find.byType(CreateSubjectDialog));
+      final l10n = AppLocalizations.of(dialogCtx);
+
+      // Tap "+"
+      await tester.tap(find.byType(ActionChip));
+      await tester.pump();
+      await tester.tap(find.text(l10n.apply));
+      await tester.pump(); // run onPressed
+      await tester.pump();
+      await tester.tap(find.byType(ActionChip));
+      await tester.pump();
+      await tester.tap(find.text(l10n.apply));
+      await tester.pump(); // run onPressed
+      await tester.pump();
+      await tester.tap(find.byType(ActionChip));
+      await tester.pump();
+
+      // Add-tag panel visible
+      expect(find.text(l10n.addTag), findsOneWidget);
+
+      // There are two TextFields in the dialog:
+      //   [0] subject name
+      //   [1] new tag name (inside add-tag panel)
+      final tagTextFieldFinder = find
+          .descendant(
+            of: find.byType(CreateSubjectDialog),
+            matching: find.byType(TextField),
+          )
+          .at(1);
+
+      await tester.enterText(tagTextFieldFinder, 'My New Tag');
+      await tester.pump();
+
+      // Tap "Apply" to complete the completer and trigger _addNewTag logic
+      await tester.tap(find.text(l10n.apply));
+      await tester.pump(); // run onPressed
+      await tester.pump(); // let _addNewTag's setState run
+
+      // Verify saveTags was called with a list containing the new tag
+      final capturedLists = verify(
+        mockHiveManager.saveTags(captureAny),
+      ).captured.cast<List<HiveTag>>();
+
+      final lastSavedList = capturedLists.last;
+
+      expect(lastSavedList.length, 3);
+      expect(lastSavedList.last.name, 'My New Tag');
+
+      // Panel should be dismissed (_isCreatingTag == false)
+      expect(find.text(l10n.addTag), findsNothing);
+    });
+  });
+
   group('SubjectEditDialog – delete flow', () {
     testWidgets('tapping Delete then Yes calls HiveManager.deleteSubject', (
       tester,
