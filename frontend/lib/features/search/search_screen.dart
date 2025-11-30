@@ -7,7 +7,8 @@ import 'package:re_view/data/hive_manager.dart';
 
 /// 검색 화면
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({super.key, this.hiveManager});
+  final HiveManager? hiveManager;
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
@@ -17,6 +18,7 @@ enum SearchScope { lecture, week, subject }
 
 class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
+  late final _manager = widget.hiveManager ?? HiveManager.instance;
   List<String> _recentSearches = [];
   List<HiveLecture> _searchResults = [];
   bool _isSearching = false;
@@ -36,7 +38,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadRecentSearches() async {
     setState(() {
-      _recentSearches = HiveManager.instance.getRecentSearches();
+      _recentSearches = _manager.getRecentSearches();
     });
   }
 
@@ -44,16 +46,16 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.trim().isEmpty) {
       return;
     }
-    await HiveManager.instance.addRecentSearch(query);
+    await _manager.addRecentSearch(query);
     setState(() {
-      _recentSearches = HiveManager.instance.getRecentSearches();
+      _recentSearches = _manager.getRecentSearches();
     });
   }
 
   Future<void> _removeRecentSearch(String query) async {
-    await HiveManager.instance.removeRecentSearch(query);
+    await _manager.removeRecentSearch(query);
     setState(() {
-      _recentSearches = HiveManager.instance.getRecentSearches();
+      _recentSearches = _manager.getRecentSearches();
     });
   }
 
@@ -76,13 +78,12 @@ class _SearchScreenState extends State<SearchScreen> {
       _saveRecentSearch(query);
     }
 
-    final hive = HiveManager.instance;
-    final subjects = hive.getSubjects();
+    final subjects = _manager.getSubjects();
 
     // 모든 과목의 모든 강의에서 검색
     final allLectures = <HiveLecture>[];
     for (final subject in subjects) {
-      final lectures = hive.getLecturesBySubject(subject.id);
+      final lectures = _manager.getLecturesBySubject(subject.id);
       allLectures.addAll(lectures);
     }
 
@@ -285,7 +286,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     // 과목 목록을 한 번만 가져오기
-    final subjects = HiveManager.instance.getSubjects();
+    final subjects = _manager.getSubjects();
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

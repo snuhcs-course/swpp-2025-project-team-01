@@ -9,14 +9,16 @@ import 'package:re_view/features/home/home_widgets.dart';
 import 'package:re_view/shared/widgets.dart';
 
 class ArchiveScreen extends StatefulWidget {
-  const ArchiveScreen({super.key});
+  const ArchiveScreen({super.key, this.hiveManager});
+
+  final HiveManager? hiveManager;
   @override
   State<ArchiveScreen> createState() => _ArchiveScreenState();
 }
 
 class _ArchiveScreenState extends State<ArchiveScreen>
     with WidgetsBindingObserver {
-  late final HiveManager _manager = HiveManager.instance;
+  late final HiveManager _manager = widget.hiveManager ?? HiveManager.instance;
   List<HiveSubject> _archivedSubjects = [];
 
   /// Player로 이동하고 돌아올 때 orientation 재설정
@@ -48,8 +50,7 @@ class _ArchiveScreenState extends State<ArchiveScreen>
         yesText: l10n.yes,
         noText: l10n.no,
         onConfirm: () async {
-          final manager = HiveManager.instance;
-          await manager.unarchiveSubject(subject.id);
+          await _manager.unarchiveSubject(subject.id);
           if (!mounted) {
             return;
           }
@@ -86,8 +87,7 @@ class _ArchiveScreenState extends State<ArchiveScreen>
         yesText: l10n.yes,
         noText: l10n.no,
         onConfirm: () {
-          final manager = HiveManager.instance;
-          manager.deleteSubject(subject.id);
+          _manager.deleteSubject(subject.id);
           if (!mounted) {
             return;
           }
@@ -192,6 +192,7 @@ class _ArchiveScreenState extends State<ArchiveScreen>
                     },
                     showEdit: false,
                     isArchivedSubject: true,
+                    hiveManager: _manager,
                   );
                 },
               ),

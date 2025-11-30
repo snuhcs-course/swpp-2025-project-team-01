@@ -251,6 +251,7 @@ class SubjectPanel extends StatefulWidget {
     this.onUnarchiveSubject,
     this.onDeleteSubject,
     this.reorderIndex,
+    this.hiveManager,
   });
 
   final HiveSubject subject;
@@ -266,6 +267,7 @@ class SubjectPanel extends StatefulWidget {
   final VoidCallback? onUnarchiveSubject;
   final VoidCallback? onDeleteSubject;
   final int? reorderIndex;
+  final HiveManager? hiveManager;
 
   @override
   State<SubjectPanel> createState() => _SubjectPanelState();
@@ -277,16 +279,16 @@ class _SubjectPanelState extends State<SubjectPanel>
   late bool expanded;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
+  late final HiveManager _manager = widget.hiveManager ?? HiveManager.instance;
 
   @override
   void initState() {
     super.initState();
     // 저장된 상태 로드
-    expanded = HiveManager.instance.getSubjectExpandedState(widget.subject.id);
+    expanded = _manager.getSubjectExpandedState(widget.subject.id);
     _lectures = List.of(widget.lectures);
 
-    final reduceMotion =
-        HiveManager.instance.settings.accessibilityReduceMotion;
+    final reduceMotion = _manager.settings.accessibilityReduceMotion;
     final Duration duration = reduceMotion
         ? Duration.zero
         : const Duration(milliseconds: 300);
@@ -320,24 +322,19 @@ class _SubjectPanelState extends State<SubjectPanel>
       _lectures.insert(newIndex, item);
     });
     // persist the new order
-    await HiveManager.instance.reorderLecture(
-      widget.subject.id,
-      oldIndex,
-      newIndex,
-    );
+    await _manager.reorderLecture(widget.subject.id, oldIndex, newIndex);
     widget.onLectureUpdated?.call();
   }
 
   void _toggleExpanded() {
-    final bool reduceMotion =
-        HiveManager.instance.settings.accessibilityReduceMotion;
+    final bool reduceMotion = _manager.settings.accessibilityReduceMotion;
 
     setState(() {
       expanded = !expanded;
     });
 
     // Hive에 상태 저장
-    HiveManager.instance.setSubjectExpandedState(widget.subject.id, expanded);
+    _manager.setSubjectExpandedState(widget.subject.id, expanded);
 
     if (reduceMotion) {
       // 모션 줄이기가 활성화되면 즉시 전환
