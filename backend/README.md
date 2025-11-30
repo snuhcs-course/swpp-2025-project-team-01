@@ -24,7 +24,9 @@ Backend API for lecture synchronization using AI inference pipeline.
    This will:
    - Create a conda environment named `swpp-backend` (or your custom name)
    - Install Python 3.12, PyTorch with CUDA 12.9
-   - Install Whisper (ASR), Kokoro TTS
+   - Install NVIDIA NeMo for Parakeet ASR (English)
+   - Install OpenAI Whisper (multilingual ASR)
+   - Install Kokoro TTS
    - Install vLLM for translation inference
    - Install transformers and ML libraries
    - Install FastAPI and backend dependencies
@@ -52,15 +54,21 @@ Backend API for lecture synchronization using AI inference pipeline.
 backend/
 ├── setup.sh                 # Installation script
 ├── main.py                  # FastAPI application
-├── test.py                  # API test script
 ├── README.md
+├── test/                    # Test files directory
+│   ├── test.py              # English lecture test (female voice)
+│   ├── test_korean.py       # Korean lecture test
+│   ├── test_male_voice.py   # English lecture test (male voice)
+│   ├── test_lecture/        # Test input files
+│   └── test_output/         # Test output files (auto-generated)
 └── inference_models/        # AI inference pipeline package
     ├── __init__.py
     ├── lecture_pipeline.py  # Main pipeline orchestration
-    ├── asr_processor.py     # Speech-to-text (ASR)
+    ├── asr_processor.py     # Speech-to-text (Parakeet/Whisper)
     ├── slide_matching_processor.py  # Slide matching
-    ├── translation_processor.py  # English-to-Korean translation
+    ├── translation_processor.py  # Bidirectional translation (en↔ko)
     ├── tts_processor.py     # Text-to-speech (TTS)
+    ├── cuda_lock.py         # Global CUDA initialization lock
     └── README.md
 ```
 
@@ -81,6 +89,7 @@ Start a lecture synchronization job and receive real-time progress updates via S
   - `audio` (file, required): Lecture audio file (mp3, wav, etc.)
   - `lecture_note` (file, required): Lecture slides PDF file
   - `lang` (string, optional): Lecture language code (`en` for English, `ko` for Korean). Default: `en`
+  - `tts_gender` (string, optional): TTS voice gender for English lectures (`m` for male/am_michael, `f` for female/af_heart). Default: `f`. Note: This parameter only affects English lectures as Korean lectures do not generate TTS audio.
 
 #### Response
 
@@ -118,6 +127,16 @@ Server-Sent Events (SSE) stream with JSON data.
    }
    ```
 
+4. **`cancelled`** - Job cancelled by user
+   ```json
+   {
+     "job_id": "550e8400-e29b-41d4-a716-446655440000",
+     "status": "cancelled",
+     "message": "Job cancelled by user",
+     "cancelled_at": "2025-11-21T10:30:45.123456"
+   }
+   ```
+
 **Status Values:**
 - `pending` - Job created, waiting to start
 - `uploading` - Files uploaded, waiting for processing
@@ -136,6 +155,7 @@ Server-Sent Events (SSE) stream with JSON data.
 - `creating_output` - Creating final output ZIP file (95-100%)
 - `completed` - Job completed successfully
 - `failed` - Job failed with error
+- `cancelled` - Job cancelled by user request
 
 **Progress Range:** 0.0 to 100.0
 
@@ -174,7 +194,57 @@ Query the current status of a synchronization job.
 
 ---
 
-### 3. Download Result
+### 3. Cancel Job
+
+**`POST /api/synchronize/cancel/{job_id}`**
+
+Cancel a running synchronization job.
+
+#### Request
+
+- **Path Parameter**: `job_id` (string) - Unique job identifier
+
+#### Response
+
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "message": "Cancellation requested. Job will stop at next stage boundary.",
+  "current_status": "processing_asr",
+  "cancelled_at": "2025-11-21T10:30:45.123456"
+}
+```
+
+#### Status Codes
+
+- `200` - Cancellation request accepted
+- `404` - Job not found
+- `400` - Job cannot be cancelled (already completed, failed, or cancelled)
+
+#### Important Notes
+
+- **Stage boundary cancellation**: Jobs are cancelled at the next stage boundary (between ASR, Matching, Translation, TTS stages)
+- **Cannot interrupt GPU inference**: Cancellation cannot stop a stage that's currently executing
+- **Automatic cleanup**: All uploaded files and intermediate outputs are automatically cleaned up
+- **SSE notification**: The SSE stream will send a `cancelled` event when cancellation completes
+
+**Cancellation Checkpoints:**
+- Before ASR starts
+- After ASR completes, before Slide Matching
+- After Slide Matching completes, before Translation
+- After Translation completes, before TTS
+- Before creating output ZIP
+
+**Example Error Response (400):**
+```json
+{
+  "detail": "Job cannot be cancelled. Current status: completed"
+}
+```
+
+---
+
+### 4. Download Result
 
 **`GET /api/synchronize/download/{job_id}`**
 
@@ -291,6 +361,16 @@ The `timestamps.json` file in the downloaded ZIP contains an array of timestamp 
 
 ### Performance Optimizations
 
+- **Language-Optimized ASR Models**:
+  - English lectures use NVIDIA Parakeet TDT 0.6B v2 for higher accuracy
+  - Korean lectures use OpenAI Whisper Turbo for multilingual support
+  - Independent model-specific locks enable parallel processing of English and Korean jobs
+- **Thread-Safe Model Management**:
+  - Each processor (ASR, Slide Matching, Translation, TTS) uses unified RLock for both model loading and inference
+  - Prevents concurrent GPU allocation of the same model (avoids duplicate model loading)
+  - RLock allows nested lock acquisition within the same thread for safe model operations
+  - Different models can still run in parallel (e.g., Parakeet and Whisper simultaneously)
+- **CUDA Initialization Lock**: Global lock prevents concurrent model loading across all processors, avoiding PyTorch meta tensor errors when multiple pipeline workers start simultaneously
 - **Image Batching**: Slide images are processed in batches (default: 4 images per batch) for faster embedding computation. Can be disabled if shared memory issues occur.
 - **FP8 Quantization**: Translation model uses FP8 quantization (`tencent/Hunyuan-MT-7B-fp8`) for reduced memory footprint while maintaining translation quality.
 - **Punctuation-based Segmentation**: ASR outputs are segmented by punctuation for both English and Korean, with special handling for Korean sentence endings (니다, 요).
@@ -298,9 +378,10 @@ The `timestamps.json` file in the downloaded ZIP contains an array of timestamp 
 ### File Cleanup
 
 Automatic file management:
-1. **Uploaded files**: Deleted after pipeline processing
+1. **Uploaded files**: Deleted after pipeline processing (completion, failure, or cancellation)
 2. **Output ZIP files**: Deleted immediately after download OR after 30 minutes if not downloaded
 3. **Job metadata**: Removed after file download or timeout
+4. **Cancelled jobs**: All associated files (uploaded files, intermediate outputs) are cleaned up immediately upon cancellation
 
 ### Error Handling
 
@@ -328,16 +409,41 @@ All error responses include a `detail` field with error message.
 2. **Prepare test files**:
    - Place a lecture audio file (e.g., `lecture_recording.mp3`)
    - Place a lecture slides PDF (e.g., `lecture_slides.pdf`)
-   - Update file paths in [test.py](test.py) if needed
+   - Update file paths in [test/test.py](test/test.py) if needed
 
-### Method 1: Python Test Script (Recommended)
+### Method 1: Python Test Scripts (Recommended)
 
-The easiest way to test all endpoints including SSE streaming:
+The easiest way to test all endpoints including SSE streaming. Four test suites are available:
 
+**Test 1: Basic test with English lecture (female voice, default)**
 ```bash
 cd backend
-python test.py
+python test/test.py
 ```
+
+**Test 2: Korean lecture test**
+```bash
+cd backend
+python test/test_korean.py
+```
+
+**Test 3: English lecture with male voice**
+```bash
+cd backend
+python test/test_male_voice.py
+```
+
+**Test 4: Job cancellation test**
+```bash
+cd backend
+python test/test_cancellation.py
+```
+
+This test suite validates the job cancellation feature with 4 scenarios:
+- Cancel job during processing (expected: successful cancellation)
+- Cancel already completed job (expected: 400 error)
+- Cancel non-existent job (expected: 404 error)
+- Cancel job immediately after starting (expected: early cancellation)
 
 **Example output:**
 ```
@@ -385,6 +491,36 @@ Test Summary
 Total: 2/2 tests passed
 
 🎉 All tests passed!
+```
+
+### Method 2: cURL Examples
+
+Test the API using cURL commands:
+
+**English lecture with female voice (default):**
+```bash
+curl -X POST "http://localhost:8080/api/synchronize/stream" \
+  -F "audio=@lecture_recording.mp3" \
+  -F "lecture_note=@lecture_slides.pdf" \
+  -F "lang=en" \
+  -F "tts_gender=f"
+```
+
+**English lecture with male voice:**
+```bash
+curl -X POST "http://localhost:8080/api/synchronize/stream" \
+  -F "audio=@lecture_recording.mp3" \
+  -F "lecture_note=@lecture_slides.pdf" \
+  -F "lang=en" \
+  -F "tts_gender=m"
+```
+
+**Korean lecture (TTS gender parameter is ignored):**
+```bash
+curl -X POST "http://localhost:8080/api/synchronize/stream" \
+  -F "audio=@lecture_recording.mp3" \
+  -F "lecture_note=@lecture_slides.pdf" \
+  -F "lang=ko"
 ```
 
 ---

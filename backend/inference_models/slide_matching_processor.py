@@ -14,14 +14,12 @@ import threading
 
 from transformers import AutoModel
 
-# Global lock for slide matching model initialization
-# Protects CUDA initialization during model loading when multiple pipelines start simultaneously
-_matching_init_lock = threading.Lock()
+from .cuda_lock import get_cuda_init_lock
 
-# Global lock for slide matching model inference
-# Protects inference operations when multiple pipelines run simultaneously
-# This prevents CUDA errors when the same model runs concurrent inference
-_matching_inference_lock = threading.Lock()
+# Global lock for slide matching model (unified lock for both init and inference)
+# NeMo Retriever model can deadlock when init and inference happen concurrently
+# Using RLock to allow nested acquisition within the same thread
+_matching_lock = threading.RLock()
 
 
 class SlideMatchingProcessor:
@@ -36,16 +34,17 @@ class SlideMatchingProcessor:
         batch_size: int = 4,
         use_image_batching: bool = True,
         image_batch_size: int = 4,
-        jump_penalty: float = 0.2,
-        backward_weight: float = 2.0,
+        jump_penalty: float = 1.5,
+        backward_weight: float = 1.85,
         use_exponential_scaling: bool = True,
-        exponential_scale: float = 2.8,
+        exponential_scale: float = 2.785,
         use_confidence_boost: bool = True,
-        confidence_threshold: float = 0.925,
-        confidence_weight: float = 2.25,
+        confidence_threshold: float = 0.913,
+        confidence_weight: float = 2.18,
         use_context_similarity: bool = True,
-        context_weight: float = 0.05,
-        context_update_rate: float = 0.25
+        context_weight: float = 0.04,
+        context_update_rate: float = 0.24,
+        min_sentence_length: int = 2
     ):
         """
         Initialize slide matching processor.
@@ -66,6 +65,7 @@ class SlideMatchingProcessor:
             use_context_similarity: Enable context-aware scoring via EMA
             context_weight: Weight for context similarity contribution
             context_update_rate: Update rate for EMA
+            min_sentence_length: Minimum sentence length (words) to use similarity score
         """
         self.model_name = model_name
         self.device = device
@@ -82,6 +82,7 @@ class SlideMatchingProcessor:
         self.use_context_similarity = use_context_similarity
         self.context_weight = context_weight
         self.context_update_rate = context_update_rate
+        self.min_sentence_length = min_sentence_length
         self.model = None
 
         print(f"Initializing Slide Matching Processor")
@@ -94,27 +95,28 @@ class SlideMatchingProcessor:
 
     def load_model(self):
         """Load multimodal model into memory."""
-        # Use global lock only during model initialization
-        # This prevents CUDA initialization conflicts when multiple pipelines load models simultaneously
-        with _matching_init_lock:
-            if self.model is not None:
-                print("Model already loaded")
-                return
+        # Use global CUDA lock first to prevent concurrent model initialization across all processors
+        # Then use model-specific lock for thread safety within the same model type
+        with get_cuda_init_lock():
+            with _matching_lock:
+                if self.model is not None:
+                    print("Model already loaded")
+                    return
 
-            print('Loading NeMo Retriever model...')
+                print('Loading NeMo Retriever model...')
 
-            if torch.cuda.is_available():
-                torch.cuda.reset_peak_memory_stats()
+                if torch.cuda.is_available():
+                    torch.cuda.reset_peak_memory_stats()
 
-            self.model = AutoModel.from_pretrained(
-                self.model_name,
-                device_map = self.device,
-                torch_dtype = torch.bfloat16,
-                trust_remote_code = True,
-                attn_implementation = "flash_attention_2",
-            ).eval()
+                self.model = AutoModel.from_pretrained(
+                    self.model_name,
+                    device_map = self.device,
+                    torch_dtype = torch.bfloat16,
+                    trust_remote_code = True,
+                    attn_implementation = "flash_attention_2",
+                ).eval()
 
-            print("Model loaded successfully!")
+                print("Model loaded successfully!")
 
     def unload_model(self):
         """Unload model to free memory."""
@@ -177,46 +179,41 @@ class SlideMatchingProcessor:
         Returns:
             Tuple of (query_embeddings, image_embeddings)
         """
-        # Load model BEFORE acquiring inference lock to avoid deadlock
-        # This ensures init_lock and inference_lock are never held simultaneously
-        if self.model is None:
-            self.load_model()
+        # Note: This method is called within match_transcript_to_slides which holds the lock
+        # The lock is already acquired by the caller to protect the model
+        print('Computing embeddings...')
 
-        # Use inference lock to prevent concurrent inference on the same model
-        with _matching_inference_lock:
-            print('Computing embeddings...')
+        print('Processing text queries...')
+        with torch.no_grad():
+            query_embeddings = self.model.forward_queries(
+                queries,
+                batch_size = self.batch_size
+            )
 
-            print('Processing text queries...')
-            with torch.no_grad():
-                query_embeddings = self.model.forward_queries(
-                    queries,
-                    batch_size = self.batch_size
-                )
+        print('Processing page images...')
+        if self.use_image_batching:
+            # Process images in batches for faster processing
+            image_embeddings = []
+            num_images = len(images)
+            for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
+                batch = images[i:i + self.image_batch_size]
+                with torch.no_grad():
+                    emb = self.model.forward_passages(batch, batch_size = len(batch))
+                    image_embeddings.append(emb)
+            image_embeddings = torch.cat(image_embeddings, dim = 0)
+        else:
+            # Process images one by one to avoid shared memory errors
+            image_embeddings = []
+            for image in tqdm(images, desc = 'Processing images'):
+                with torch.no_grad():
+                    emb = self.model.forward_passages([image], batch_size = 1)
+                    image_embeddings.append(emb)
+            image_embeddings = torch.cat(image_embeddings, dim = 0)
 
-            print('Processing page images...')
-            if self.use_image_batching:
-                # Process images in batches for faster processing
-                image_embeddings = []
-                num_images = len(images)
-                for i in tqdm(range(0, num_images, self.image_batch_size), desc = 'Processing image batches'):
-                    batch = images[i:i + self.image_batch_size]
-                    with torch.no_grad():
-                        emb = self.model.forward_passages(batch, batch_size = len(batch))
-                        image_embeddings.append(emb)
-                image_embeddings = torch.cat(image_embeddings, dim = 0)
-            else:
-                # Process images one by one to avoid shared memory errors
-                image_embeddings = []
-                for image in tqdm(images, desc = 'Processing images'):
-                    with torch.no_grad():
-                        emb = self.model.forward_passages([image], batch_size = 1)
-                        image_embeddings.append(emb)
-                image_embeddings = torch.cat(image_embeddings, dim = 0)
+        print(f'Query embeddings shape: {query_embeddings.shape}')
+        print(f'Image embeddings shape: {image_embeddings.shape}')
 
-            print(f'Query embeddings shape: {query_embeddings.shape}')
-            print(f'Image embeddings shape: {image_embeddings.shape}')
-
-            return query_embeddings, image_embeddings
+        return query_embeddings, image_embeddings
 
     def match_with_dp(
         self,
@@ -235,6 +232,8 @@ class SlideMatchingProcessor:
         Returns:
             List of matching results
         """
+        # Note: This method is called within match_transcript_to_slides which holds the lock
+        # The lock is already acquired by the caller to protect the model
         print('Finding best matches with DP and jump penalty')
 
         with torch.no_grad():
@@ -272,11 +271,19 @@ class SlideMatchingProcessor:
         backtrack = torch.zeros((num_queries, num_pages), device = self.device, dtype = torch.long)
 
         # Initialize first query
-        dp[0, :] = scores[0, :]
+        # Check if first sentence meets minimum length (count words)
+        first_word_count = len(queries[0].split())
+        first_sentence_long_enough = first_word_count >= self.min_sentence_length
+
+        if first_sentence_long_enough:
+            dp[0, :] = scores[0, :]
+        else:
+            # For short sentences, assign zero score (only jump penalty will apply)
+            dp[0, :] = 0.0
 
         # Initialize context scores (EMA of similarity scores per slide)
         context_scores = torch.zeros(num_pages, device = self.device, dtype = torch.float32)
-        if self.use_context_similarity:
+        if self.use_context_similarity and first_sentence_long_enough:
             context_scores = self.context_update_rate * (scores[0, :] - context_scores)
 
         # Precompute jump penalty matrix (num_pages x num_pages)
@@ -296,11 +303,19 @@ class SlideMatchingProcessor:
 
         # Fill DP table
         for i in range(1, num_queries):
-            current_score = scores[i, :].unsqueeze(0) # [1, num_pages]
+            # Check if current sentence meets minimum length (count words)
+            word_count = len(queries[i].split())
+            sentence_long_enough = word_count >= self.min_sentence_length
 
-            if self.use_context_similarity:
-                current_score += self.context_weight * context_scores.unsqueeze(0)
-            
+            if sentence_long_enough:
+                current_score = scores[i, :].unsqueeze(0) # [1, num_pages]
+
+                if self.use_context_similarity:
+                    current_score += self.context_weight * context_scores.unsqueeze(0)
+            else:
+                # For short sentences, use zero score (only jump penalty applies)
+                current_score = torch.zeros(1, num_pages, device = self.device, dtype = torch.float32)
+
             # Vectorized DP transition
             prev_dp = dp[i - 1, :].unsqueeze(1) # [num_pages, 1]
             current_score_grid = current_score.expand(num_pages, num_pages) # [num_pages, num_pages]
@@ -311,8 +326,8 @@ class SlideMatchingProcessor:
             # Find best previous page k for each current page j
             dp[i, :], backtrack[i, :] = torch.max(scores_with_penalty, dim = 0)
 
-            # Update context scores
-            if self.use_context_similarity:
+            # Update context scores (skip if sentence is too short)
+            if self.use_context_similarity and sentence_long_enough:
                 context_scores += self.context_update_rate * (scores[i, :] - context_scores)
 
         # Backtrack to find optimal path
@@ -357,41 +372,44 @@ class SlideMatchingProcessor:
         Returns:
             List of matching results with page numbers
         """
-        # Load model BEFORE acquiring inference lock to avoid deadlock
-        # This ensures init_lock and inference_lock are never held simultaneously
-        if self.model is None:
-            self.load_model()
+        # Use unified lock to prevent concurrent model loading/inference
+        # This ensures the same model is never loaded twice simultaneously on GPU
+        # Lock must be held from model loading through all model operations
+        with _matching_lock:
+            # Load model inside lock to prevent concurrent loading
+            if self.model is None:
+                self.load_model()
 
-        print("="*60)
-        print("Slide Matching")
-        print("="*60)
+            print("="*60)
+            print("Slide Matching")
+            print("="*60)
 
-        if progress_callback:
-            progress_callback(0.0, "Extracting PDF pages...")
+            if progress_callback:
+                progress_callback(0.0, "Extracting PDF pages...")
 
-        # Extract PDF pages
-        page_images = self.extract_pdf_pages(pdf_path)
+            # Extract PDF pages (must be inside lock to prevent concurrent model loading)
+            page_images = self.extract_pdf_pages(pdf_path)
 
-        # Prepare queries
-        if sentences is None:
-            # Use full transcript as single query
-            queries = [transcript]
-        else:
-            queries = sentences
+            # Prepare queries
+            if sentences is None:
+                # Use full transcript as single query
+                queries = [transcript]
+            else:
+                queries = sentences
 
-        print(f"Matching {len(queries)} queries to {len(page_images)} slides")
+            print(f"Matching {len(queries)} queries to {len(page_images)} slides")
 
-        if progress_callback:
-            progress_callback(30.0, "Computing embeddings...")
+            if progress_callback:
+                progress_callback(30.0, "Computing embeddings...")
 
-        # Compute embeddings
-        query_embeddings, image_embeddings = self.compute_embeddings(queries, page_images)
+            # Compute embeddings (model inference)
+            query_embeddings, image_embeddings = self.compute_embeddings(queries, page_images)
 
-        if progress_callback:
-            progress_callback(70.0, "Matching slides...")
+            if progress_callback:
+                progress_callback(70.0, "Matching slides...")
 
-        # Match with DP
-        results = self.match_with_dp(query_embeddings, image_embeddings, queries)
+            # Match with DP (model inference for get_scores)
+            results = self.match_with_dp(query_embeddings, image_embeddings, queries)
 
         print(f"\nMatching complete: {len(results)} results")
 
@@ -419,7 +437,8 @@ if __name__ == "__main__":
         confidence_weight = 2.25,
         use_context_similarity = True,
         context_weight = 0.05,
-        context_update_rate = 0.25
+        context_update_rate = 0.25,
+        min_sentence_length = 3
     )
 
     # Example: match a transcript to slides

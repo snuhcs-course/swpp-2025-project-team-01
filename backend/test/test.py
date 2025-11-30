@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Simple test script for Re:view Backend API
+Test script for Re:view Backend API - English lecture with female voice
 
 Tests the /api/synchronize/stream endpoint with SSE progress monitoring.
+Default configuration: lang=en, tts_gender=f (female/af_heart)
 """
 
 import requests
@@ -13,9 +14,10 @@ import sseclient
 
 # Configuration
 API_BASE_URL = "http://localhost:8080" # 8080 for port forwarding
-TEST_AUDIO = Path(__file__).parent / "test_lecture" / "kor_lecture_recording.m4a"
-TEST_PDF = Path(__file__).parent / "test_lecture" / "kor_lecture_slides.pdf"
-OUTPUT_FILE = Path(__file__).parent / "kor_test_output.zip"
+TEST_AUDIO = Path(__file__).parent / "test_lecture" / "lecture_recording.mp3"
+TEST_PDF = Path(__file__).parent / "test_lecture" / "lecture_slides.pdf"
+OUTPUT_DIR = Path(__file__).parent / "test_output"
+OUTPUT_FILE = OUTPUT_DIR / "english_female.zip"
 
 def test_root_endpoint():
     """Test root endpoint - should redirect to /docs"""
@@ -35,6 +37,9 @@ def test_root_endpoint():
 def test_synchronize_stream():
     """Test synchronize endpoint with SSE streaming"""
     print("\n🧪 Testing /api/synchronize/stream endpoint...")
+
+    # Create output directory if it doesn't exist
+    OUTPUT_DIR.mkdir(exist_ok=True)
 
     # Verify test files exist
     if not TEST_AUDIO.exists():
@@ -59,7 +64,6 @@ def test_synchronize_stream():
         response = requests.post(
             f"{API_BASE_URL}/api/synchronize/stream",
             files=files,
-            data = {'lang':'ko'},
             stream=True
         )
 

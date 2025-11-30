@@ -66,23 +66,24 @@ class LecturePipeline:
         # ASR settings
         asr_model: str = "turbo",
         asr_chunk_seconds: int = 300,
-        asr_batch_size: int = 4,
+        asr_batch_size: int = 3,
 
         # Slide matching settings
         matching_model: str = 'nvidia/llama-nemoretriever-colembed-3b-v1',
         matching_batch_size: int = 4,
         use_image_batching: bool = False, # for stability
         image_batch_size: int = 4,
-        jump_penalty: float = 0.2,
-        backward_weight: float = 2.0,
+        jump_penalty: float = 1.5,
+        backward_weight: float = 1.85,
         use_exponential_scaling: bool = True,
-        exponential_scale: float = 2.8,
+        exponential_scale: float = 2.785,
         use_confidence_boost: bool = True,
-        confidence_threshold: float = 0.925,
-        confidence_weight: float = 2.25,
+        confidence_threshold: float = 0.913,
+        confidence_weight: float = 2.18,
         use_context_similarity: bool = True,
-        context_weight: float = 0.05,
-        context_update_rate: float = 0.25,
+        context_weight: float = 0.04,
+        context_update_rate: float = 0.24,
+        min_sentence_length: int = 2,
 
         # Translation settings
         translation_model: str = "tencent/Hunyuan-MT-7B-fp8",
@@ -121,6 +122,7 @@ class LecturePipeline:
             use_context_similarity: Enable context-aware scoring via EMA
             context_weight: weight for context similarity contribution
             context_update_rate: Update rate for EMA
+            min_sentence_length: Minimum sentence length (words) to use similarity score
             translation_model: Translation model name
             translation_tensor_parallel_size: Number of GPUs for translation tensor parallelism
             enable_translation: Enable translation (direction determined per request)
@@ -142,10 +144,11 @@ class LecturePipeline:
         print("Initializing Lecture Reconstruction Pipeline")
         print("="*60)
 
-        self.asr = ASRProcessor(
-            model_name = asr_model,
-            device = device
-        )
+        # Note: ASR processor is NOT initialized here to support language-specific model selection
+        # It will be created lazily in run() based on the language parameter
+        self.asr = None
+        self.asr_language = None  # Track current ASR language for worker reuse
+        self.asr_model = asr_model
         self.asr_chunk_seconds = asr_chunk_seconds
         self.asr_batch_size = asr_batch_size
 
@@ -164,7 +167,8 @@ class LecturePipeline:
             confidence_weight = confidence_weight,
             use_context_similarity = use_context_similarity,
             context_weight = context_weight,
-            context_update_rate = context_update_rate
+            context_update_rate = context_update_rate,
+            min_sentence_length = min_sentence_length
         )
 
         # Initialize translation processor if enabled
@@ -200,10 +204,12 @@ class LecturePipeline:
         audio_path: str,
         pdf_path: str,
         language: str = "en",
+        tts_gender: str = "f",
         lecture_name: str | None = None,
         sentence_splitter: Callable[[str], list[str]] | None = None,
         save_intermediate: bool = True,
-        progress_callback: Callable[[str, float, str], None] | None = None
+        progress_callback: Callable[[str, float, str], None] | None = None,
+        cancellation_checker: Callable[[], None] | None = None
     ) -> PipelineOutput:
         """
         Run the complete lecture reconstruction pipeline.
@@ -212,16 +218,29 @@ class LecturePipeline:
             audio_path: Path to lecture audio file
             pdf_path: Path to lecture PDF file
             language: Language code for ASR transcription ('en' for English, 'ko' for Korean)
+            tts_gender: TTS voice gender ('m' for male/am_michael, 'f' for female/af_heart)
             lecture_name: Optional lecture name for output files
             sentence_splitter: Optional function to split transcript into sentences
             save_intermediate: Save intermediate results (WAV, transcript, matching.json)
             progress_callback: Optional callback function(stage: str, progress: float, message: str)
                              stage is one of: "processing_asr", "processing_matching", "processing_translation", "processing_tts"
                              progress is 0-100 representing percentage completion within that stage
+            cancellation_checker: Optional callback to check if job should be cancelled.
+                                Should raise asyncio.CancelledError when cancellation is requested.
 
         Returns:
             PipelineOutput object with paths to Opus audio and timestamps.json
         """
+        # Helper to check cancellation
+        def check_cancellation():
+            if cancellation_checker:
+                try:
+                    cancellation_checker()
+                except Exception as e:
+                    # Re-raise cancellation errors
+                    if "CancelledError" in str(type(e).__name__):
+                        print("🚫 Pipeline cancellation detected")
+                        raise
         # Generate lecture name if not provided
         if lecture_name is None:
             lecture_name = f"lecture_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -271,6 +290,37 @@ class LecturePipeline:
         print(f"STEP 1/{4 if self.enable_translation else 3}: ASR - Transcribing Audio")
         print("="*60)
 
+        # Check cancellation before starting ASR
+        check_cancellation()
+
+        # Initialize ASR processor based on language (lazy loading + language change handling)
+        # Note: ASR model is unloaded after each request to free GPU memory,
+        # but the ASR processor object (with model_type info) is kept for reuse.
+        # We need to recreate the processor if the language changes.
+
+        needs_new_processor = False
+
+        if self.asr is None:
+            # First request: Create ASR processor
+            needs_new_processor = True
+            reason = "initial creation"
+        elif self.asr_language != language:
+            # Language changed: Need different model type (Parakeet vs Whisper)
+            needs_new_processor = True
+            reason = f"language changed from '{self.asr_language}' to '{language}'"
+
+        if needs_new_processor:
+            print(f"Creating ASR processor for language '{language}' ({reason})")
+            if self.asr is not None:
+                # Clean up old processor if it exists
+                self.asr.unload_model()
+            self.asr = ASRProcessor.create_for_language(language, device=self.device)
+            self.asr_language = language
+            print(f"ASR processor created: {self.asr.model_type} model")
+        else:
+            # Same language: Reuse existing processor (model will be reloaded in transcribe)
+            print(f"Reusing ASR processor for language '{language}' ({self.asr.model_type} model)")
+
         if progress_callback:
             progress_callback("processing_asr", 10.0, "Starting ASR processing...")
 
@@ -318,6 +368,9 @@ class LecturePipeline:
         print("\n" + "="*60)
         print(f"STEP 2/{4 if self.enable_translation else 3}: Slide Matching - Matching to PDF Slides")
         print("="*60)
+
+        # Check cancellation before starting slide matching
+        check_cancellation()
 
         if progress_callback:
             if is_korean_lecture:
@@ -400,6 +453,9 @@ class LecturePipeline:
                 print("STEP 3/4: Translation - Translating to Korean")
             print("="*60)
 
+            # Check cancellation before starting translation
+            check_cancellation()
+
             if progress_callback:
                 if is_korean_lecture:
                     progress_callback("processing_translation", 80.0, "Starting translation...")
@@ -457,12 +513,20 @@ class LecturePipeline:
             print(f"STEP {4 if self.enable_translation else 3}/{4 if self.enable_translation else 3}: TTS - Generating Audio with Slide Alignment")
             print("="*60)
 
+            # Check cancellation before starting TTS
+            check_cancellation()
+
             tts_start_progress = 80.0 if self.enable_translation else 70.0
             if progress_callback:
                 progress_callback("processing_tts", tts_start_progress, "Starting TTS generation...")
 
             # Generate WAV file first (intermediate)
             output_wav_path = os.path.join(lecture_output_dir, "reconstructed.wav")
+
+            # Set TTS voice based on gender
+            tts_voice = 'am_michael' if tts_gender == 'm' else 'af_heart'
+            self.tts.voice = tts_voice
+            print(f"Using TTS voice: {tts_voice} (gender: {tts_gender})")
 
             # Create a wrapper callback for TTS progress
             def tts_progress_callback(progress: float, message: str):
@@ -666,6 +730,7 @@ if __name__ == "__main__":
         use_context_similarity = True,
         context_weight = 0.05,
         context_update_rate = 0.25,
+        min_sentence_length = 2,
 
         # TTS settings
         tts_voice = 'af_heart',

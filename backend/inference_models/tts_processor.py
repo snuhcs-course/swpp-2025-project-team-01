@@ -14,14 +14,12 @@ import threading
 from typing import Any, Callable
 from pathlib import Path
 
-# Global lock for TTS pipeline initialization
-# Protects pipeline loading when multiple pipelines start simultaneously
-_tts_init_lock = threading.Lock()
+from .cuda_lock import get_cuda_init_lock
 
-# Global lock for TTS inference
-# Protects inference operations when multiple pipelines run simultaneously
-# This prevents errors when the same TTS pipeline runs concurrent inference
-_tts_inference_lock = threading.Lock()
+# Global lock for TTS pipeline (unified lock for both init and inference)
+# Kokoro TTS can have issues when init and inference happen concurrently
+# Using RLock to allow nested acquisition within the same thread
+_tts_lock = threading.RLock()
 
 
 class TTSProcessor:
@@ -59,15 +57,17 @@ class TTSProcessor:
 
     def load_model(self):
         """Load TTS pipeline."""
-        # Use global lock only during pipeline initialization
-        with _tts_init_lock:
-            if self.pipeline is not None:
-                print("Pipeline already loaded")
-                return
+        # Use global CUDA lock first to prevent concurrent model initialization across all processors
+        # Then use model-specific lock for thread safety within the same model type
+        with get_cuda_init_lock():
+            with _tts_lock:
+                if self.pipeline is not None:
+                    print("Pipeline already loaded")
+                    return
 
-            print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
-            self.pipeline = KPipeline(lang_code = self.lang_code)
-            print("TTS pipeline loaded successfully")
+                print(f"Loading Kokoro TTS pipeline (lang_code: {self.lang_code})...")
+                self.pipeline = KPipeline(lang_code = self.lang_code)
+                print("TTS pipeline loaded successfully")
 
     def unload_model(self):
         """Unload pipeline to free memory."""
@@ -99,13 +99,13 @@ class TTSProcessor:
         Returns:
             Dictionary with metadata and timestamps
         """
-        # Load pipeline BEFORE acquiring inference lock to avoid deadlock
-        # This ensures init_lock and inference_lock are never held simultaneously
-        if self.pipeline is None:
-            self.load_model()
+        # Use unified lock to prevent concurrent model loading/inference
+        # This ensures the same model is never loaded twice simultaneously on GPU
+        with _tts_lock:
+            # Load model inside lock to prevent concurrent loading
+            if self.pipeline is None:
+                self.load_model()
 
-        # Use inference lock to prevent concurrent inference on the same pipeline
-        with _tts_inference_lock:
             print(f"Generating audio for {len(sentences)} sentences...")
 
             if progress_callback:

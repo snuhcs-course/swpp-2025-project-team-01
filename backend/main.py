@@ -36,6 +36,7 @@ class JobStatus(str, Enum):
     CREATING_OUTPUT = "creating_output"
     COMPLETED = "completed"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 # Job Information
 class JobInfo:
@@ -51,6 +52,8 @@ class JobInfo:
         self.downloaded = False  # Track if file has been downloaded by client
         self.audio_path: Path | None = None  # Track uploaded audio file for cleanup
         self.pdf_path: Path | None = None  # Track uploaded PDF file for cleanup
+        self.cancel_requested = False  # Track if cancellation has been requested
+        self.cancelled_at: datetime | None = None  # Track when cancellation was requested
 
 # Global variables
 pipeline_queue: asyncio.Queue[LecturePipeline] | None = None
@@ -185,9 +188,13 @@ async def lifespan(app: FastAPI):
     while not pipeline_queue.empty():
         try:
             pipeline = await asyncio.wait_for(pipeline_queue.get(), timeout=1.0)
-            await asyncio.to_thread(pipeline.asr.unload_model)
-            await asyncio.to_thread(pipeline.matcher.unload_model)
-            await asyncio.to_thread(pipeline.tts.unload_model)
+            # Only unload if components exist
+            if hasattr(pipeline, 'asr') and pipeline.asr is not None:
+                await asyncio.to_thread(pipeline.asr.unload_model)
+            if hasattr(pipeline, 'matcher') and pipeline.matcher is not None:
+                await asyncio.to_thread(pipeline.matcher.unload_model)
+            if hasattr(pipeline, 'tts') and pipeline.tts is not None:
+                await asyncio.to_thread(pipeline.tts.unload_model)
             print('   ✅ Pipeline worker cleaned up')
         except asyncio.TimeoutError:
             break
@@ -224,15 +231,16 @@ def create_pipeline() -> LecturePipeline:
 
         # Matching settings
         jump_penalty = 1.5,
-        backward_weight = 2.0,
+        backward_weight = 1.85,
         use_exponential_scaling = True,
-        exponential_scale = 2.79,
+        exponential_scale = 2.785,
         use_confidence_boost = True,
-        confidence_threshold = 0.9,
-        confidence_weight = 2.13,
+        confidence_threshold = 0.913,
+        confidence_weight = 2.18,
         use_context_similarity = True,
-        context_weight = 0.047,
+        context_weight = 0.04,
         context_update_rate = 0.24,
+        min_sentence_length = 2,
 
         # Translation settings
         translation_model = "tencent/Hunyuan-MT-7B-fp8",
@@ -255,7 +263,9 @@ async def run_pipeline_in_executor(
     pdf_path: str,
     lecture_name: str,
     language: str = "en",
-    progress_callback: Callable[[JobStatus, float, str], None] | None = None
+    tts_gender: str = "f",
+    progress_callback: Callable[[JobStatus, float, str], None] | None = None,
+    cancellation_checker: Callable[[], None] | None = None
 ) -> PipelineOutput:
     """
     Run ML pipeline in a thread pool to avoid blocking event loop.
@@ -267,7 +277,9 @@ async def run_pipeline_in_executor(
         pdf_path: Path to PDF file
         lecture_name: Name for this lecture
         language: Language code for ASR transcription ('en' for English, 'ko' for Korean)
+        tts_gender: TTS voice gender ('m' for male, 'f' for female)
         progress_callback: Optional callback to report progress (status, progress, message)
+        cancellation_checker: Optional callback to check if job should be cancelled
     """
 
     # Wrapper to convert pipeline progress to job progress
@@ -283,22 +295,24 @@ async def run_pipeline_in_executor(
             status = status_map.get(stage, JobStatus.PROCESSING_ASR)
             progress_callback(status, progress, message)
 
-    # Run the pipeline with progress callback
+    # Run the pipeline with progress callback and cancellation checker
     output = await asyncio.to_thread(
         pipeline_instance.run,
         audio_path = audio_path,
         pdf_path = pdf_path,
         language = language,
+        tts_gender = tts_gender,
         lecture_name = lecture_name,
         sentence_splitter = simple_sentence_splitter,
         save_intermediate = False,
-        progress_callback = pipeline_progress_wrapper
+        progress_callback = pipeline_progress_wrapper,
+        cancellation_checker = cancellation_checker
     )
 
     return output
 
 async def cleanup_old_jobs():
-    """Background task to clean up old completed jobs (non-downloaded files after 30 minutes)."""
+    """Background task to clean up old completed/failed/cancelled jobs (non-downloaded files after 30 minutes)."""
     global jobs
     while True:
         try:
@@ -307,7 +321,7 @@ async def cleanup_old_jobs():
             jobs_to_remove = []
 
             for job_id, job_info in jobs.items():
-                if job_info.status in [JobStatus.COMPLETED, JobStatus.FAILED]:
+                if job_info.status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
                     if job_info.completed_at:
                         age = current_time - job_info.completed_at
                         # Clean up if not downloaded after retention period
@@ -315,17 +329,23 @@ async def cleanup_old_jobs():
                             jobs_to_remove.append(job_id)
                             # Clean up all job files
                             await cleanup_job_files(job_info)
-                            print(f"🧹 Cleaned up non-downloaded job: {job_id} (age: {age.total_seconds()/60:.1f} min)")
+                            print(f"🧹 Cleaned up job: {job_id} (status: {job_info.status}, age: {age.total_seconds()/60:.1f} min)")
 
             for job_id in jobs_to_remove:
                 del jobs[job_id]
         except Exception as e:
             print(f"⚠️  Error in cleanup task: {e}")
 
-async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str, language: str = "en"):
+async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lecture_name: str, language: str = "en", tts_gender: str = "f"):
     """Background task to process a lecture synchronization job."""
     global jobs, pipeline_queue
     job_info = jobs[job_id]
+
+    # Helper function to check cancellation
+    def check_cancellation():
+        if job_info.cancel_requested:
+            print(f"🚫 Job {job_id} cancelled at checkpoint")
+            raise asyncio.CancelledError("Job cancelled by user")
 
     # Track uploaded files for cleanup
     job_info.audio_path = audio_path
@@ -337,10 +357,16 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
     print(f"Processing job with language: {language}")
 
     try:
+        # Check cancellation before starting
+        check_cancellation()
+
         # Update job status
         job_info.status = JobStatus.UPLOADING
         job_info.progress = 5.0
         job_info.message = "Files uploaded, waiting for processing..."
+
+        # Check cancellation after upload
+        check_cancellation()
 
         # Define progress callback
         def update_progress(status: JobStatus, progress: float, message: str):
@@ -356,8 +382,13 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
             pdf_path = str(pdf_path),
             lecture_name = lecture_name,
             language = language,
-            progress_callback = update_progress
+            tts_gender = tts_gender,
+            progress_callback = update_progress,
+            cancellation_checker = check_cancellation
         )
+
+        # Check cancellation before creating ZIP
+        check_cancellation()
 
         # Verify output files exist
         timestamps_file_path = Path(output.timestamps_file)
@@ -397,6 +428,22 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
         job_info.message = "Processing completed successfully!"
         job_info.output_path = zip_path
         job_info.completed_at = datetime.now()
+
+    except asyncio.CancelledError:
+        # Handle cancellation
+        print(f"🚫 Job {job_id} was cancelled")
+        job_info.status = JobStatus.CANCELLED
+        job_info.message = "Job cancelled by user"
+        job_info.completed_at = datetime.now()
+
+        # Clean up on cancellation
+        try:
+            output_dir = OUTPUT_DIR / lecture_name
+            if output_dir.exists():
+                await asyncio.to_thread(shutil.rmtree, output_dir)
+                print(f"🧹 Cleaned up output directory for cancelled job: {job_id}")
+        except Exception as cleanup_error:
+            print(f"⚠️  Error during cleanup: {cleanup_error}")
 
     except Exception as e:
         import traceback
@@ -441,7 +488,8 @@ async def process_lecture_job(job_id: str, audio_path: Path, pdf_path: Path, lec
 async def synchronize_stream(
     audio: UploadFile = File(..., description = 'Lecture audio file (mp3, wav, etc.)'),
     lecture_note: UploadFile = File(..., description = 'Lecture slides PDF'),
-    lang: str = Form('en')
+    lang: str = Form('en'),
+    tts_gender: str = Form('f')
 ):
     """
     Synchronize lecture audio with slides with real-time progress updates via SSE.
@@ -453,6 +501,7 @@ async def synchronize_stream(
         audio: Lecture audio file
         lecture_note: Lecture slides PDF file
         lang: Language code for ASR transcription ('en' for English, 'ko' for Korean)
+        tts_gender: TTS voice gender ('m' for male/am_michael, 'f' for female/af_heart)
 
     Returns:
         SSE stream with progress updates and final job_id
@@ -464,6 +513,11 @@ async def synchronize_stream(
     # Validate lang parameter
     if lang not in ["en", "ko"]:
         raise HTTPException(status_code = 400, detail = 'Invalid lang parameter. Must be "en" or "ko"')
+
+    # Validate tts_gender parameter
+    if tts_gender not in ["m", "f"]:
+        raise HTTPException(status_code = 400, detail = 'Invalid tts_gender parameter. Must be "m" or "f"')
+
     # Generate unique job ID and lecture name using full UUID for uniqueness
     job_id = str(uuid.uuid4())
     lecture_name = f"lecture_{job_id}"
@@ -493,8 +547,8 @@ async def synchronize_stream(
             content = await lecture_note.read()
             await f.write(content)
 
-        # Start background processing with language parameter
-        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name, language=lang))
+        # Start background processing with language and gender parameters
+        asyncio.create_task(process_lecture_job(job_id, audio_path, pdf_path, lecture_name, language=lang, tts_gender=tts_gender))
 
         # SSE generator with disconnect detection
         async def event_generator():
@@ -529,6 +583,17 @@ async def synchronize_stream(
                                 "status": job.status,
                                 "progress": job.progress,
                                 "message": job.message
+                            })
+                        }
+                        break
+                    elif job.status == JobStatus.CANCELLED:
+                        yield {
+                            "event": "cancelled",
+                            "data": json.dumps({
+                                "job_id": job_id,
+                                "status": job.status,
+                                "message": job.message,
+                                "cancelled_at": job.cancelled_at.isoformat() if job.cancelled_at else None
                             })
                         }
                         break
@@ -617,6 +682,48 @@ async def get_job_status(job_id: str):
         "completed_at": job.completed_at.isoformat() if job.completed_at else None
     }
 
+@app.post('/api/synchronize/cancel/{job_id}')
+async def cancel_job(job_id: str):
+    """
+    Cancel a running synchronization job.
+
+    The job will be cancelled at the next stage boundary.
+    Already completed stages won't be rolled back.
+
+    Args:
+        job_id: The unique job identifier
+
+    Returns:
+        JSON object with cancellation status
+
+    Raises:
+        404: Job not found
+        400: Job cannot be cancelled (already completed/failed/cancelled)
+    """
+    job = jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code = 404, detail = 'Job not found')
+
+    # Check if job can be cancelled
+    if job.status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
+        raise HTTPException(
+            status_code = 400,
+            detail = f'Job cannot be cancelled. Current status: {job.status}'
+        )
+
+    # Set cancellation flag
+    job.cancel_requested = True
+    job.cancelled_at = datetime.now()
+
+    print(f"🚫 Cancellation requested for job: {job_id} (status: {job.status})")
+
+    return {
+        "job_id": job_id,
+        "message": "Cancellation requested. Job will stop at next stage boundary.",
+        "current_status": job.status,
+        "cancelled_at": job.cancelled_at.isoformat()
+    }
+
 @app.get('/api/synchronize/download/{job_id}')
 async def download_result(job_id: str):
     """
@@ -690,11 +797,4 @@ async def root():
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(
-        app,
-        host='0.0.0.0',
-        port=8001,  # Match client's port
-        timeout_keep_alive=300,  # 5 minutes keep-alive
-        limit_concurrency=10,
-        limit_max_requests=1000
-    )
+    uvicorn.run(app, host = '0.0.0.0', port = 8080)
