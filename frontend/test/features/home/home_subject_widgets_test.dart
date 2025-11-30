@@ -20,7 +20,7 @@ void main() {
 
   Widget buildTestApp() {
     return MaterialApp(
-      locale: const Locale('en'), // so archive label is "Archive"
+      locale: const Locale('en'),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -64,7 +64,6 @@ void main() {
       lectureIds: const [],
     );
 
-    // Adjust fields if your HiveTag model is different
     allTags = [HiveTag(id: 't1', name: 'Tag 1', color: 0xFF000000)];
   });
 
@@ -256,9 +255,7 @@ void main() {
       when(mockHiveManager.getTags()).thenReturn(<HiveTag>[]);
       when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
 
-      // minimal settings; adjust constructor args to your real AppSettings
       final settings = AppSettings(
-        // fill other fields as needed in your project
         tagColorTheme: 'default',
       );
       when(mockHiveManager.settings).thenReturn(settings);
@@ -291,7 +288,6 @@ void main() {
       when(mockHiveManager.getTags()).thenReturn(existingTags);
       when(mockHiveManager.getSubjects()).thenReturn(<HiveSubject>[]);
 
-      // Minimal AppSettings; adjust fields to match your implementation
       final settings = AppSettings(tagColorTheme: 'default');
       when(mockHiveManager.settings).thenReturn(settings);
 
@@ -324,9 +320,6 @@ void main() {
       // Add-tag panel visible
       expect(find.text(l10n.addTag), findsOneWidget);
 
-      // There are two TextFields in the dialog:
-      //   [0] subject name
-      //   [1] new tag name (inside add-tag panel)
       final tagTextFieldFinder = find
           .descendant(
             of: find.byType(CreateSubjectDialog),
@@ -439,12 +432,9 @@ void main() {
 
       final dialogCtx = tester.element(find.byType(SubjectEditDialog));
       final l10n = AppLocalizations.of(dialogCtx);
-
-      // Label is localized in widget:
-      // archiveLabel: l10n.isKorean ? '보관' : 'Archive'
       final archiveLabel = l10n.isKorean
           ? '보관'
-          : 'Archive'; // but locale is 'en', so "Archive"
+          : 'Archive';
 
       // 2. Tap "Archive" in the edit dialog
       await tester.tap(find.text(archiveLabel));
