@@ -344,26 +344,14 @@ class _ExpandedLoadingOverlayState extends State<ExpandedLoadingOverlay>
         screenHeight -
         (screenHeight - bubbleSize - safeArea.top + safeArea.bottom) -
         bubbleSize / 2;
-    // Simplified: minCenterY = bubbleSize/2 + safeArea.top - safeArea.bottom;
 
-    // Min _dragY = 0 (Bottom of screen, above safe area)
-    // VisualBottom = 0 + safeArea.bottom
-    // Max CenterY = ScreenHeight - VisualBottom - bubbleSize/2
-    // Add 16px margin to match the padding in ExpandedLoadingOverlay
     final maxCenterY = screenHeight - safeArea.bottom - bubbleSize / 2 - 16;
 
     targetCenterY = targetCenterY.clamp(minCenterY, maxCenterY);
 
-    // Convert Target Center Y to "Distance from Bottom" (which corresponds to _dragY)
-    // _dragY = VisualBottom - safeArea.bottom
-    // VisualBottom = ScreenHeight - targetCenterY - bubbleSize/2
-    final targetYFromBottom =
-        screenHeight - targetCenterY - bubbleSize / 2 - safeArea.bottom;
+    final targetY = screenHeight - targetCenterY - bubbleSize / 2;
 
-    // Target Center Global (Re-calculated from clamped Y)
     final targetCenterGlobal = Offset(targetX + bubbleSize / 2, targetCenterY);
-
-    // We need _dragOffset to be: TargetCenterGlobal - OriginalCenterGlobal
     final targetDragOffset = targetCenterGlobal - originalCenterGlobal;
 
     _snapAnimation = Tween<Offset>(begin: _dragOffset, end: targetDragOffset)
@@ -377,7 +365,7 @@ class _ExpandedLoadingOverlayState extends State<ExpandedLoadingOverlay>
         alignRight: isRightSide,
         touchPosition: targetCenterGlobal, // Visual center
         targetBubbleX: targetX,
-        targetBubbleY: screenHeight - targetCenterY - bubbleSize / 2,
+        targetBubbleY: targetY,
       );
     });
   }
