@@ -198,6 +198,107 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   final List<AudioFileEntry> _audioFiles = [AudioFileEntry()];
 
   @override
+  void initState() {
+    super.initState();
+    for (final entry in _audioFiles) {
+      _addFocusListeners(entry);
+    }
+  }
+
+  void _addFocusListeners(AudioFileEntry entry) {
+    entry.startPageFocusNode.addListener(() {
+      if (!entry.startPageFocusNode.hasFocus) {
+        _validatePageRange(entry);
+      }
+    });
+    entry.endPageFocusNode.addListener(() {
+      if (!entry.endPageFocusNode.hasFocus) {
+        _validatePageRange(entry);
+      }
+    });
+  }
+
+  void _validatePageRange(AudioFileEntry entry) {
+    if (!mounted) {
+      return;
+    }
+    final index = _audioFiles.indexOf(entry);
+    if (index == -1) {
+      return;
+    }
+
+    final startText = entry.startPageController.text.trim();
+    final endText = entry.endPageController.text.trim();
+
+    if (startText.isEmpty && endText.isEmpty) {
+      return;
+    }
+
+    var startPage = int.tryParse(startText);
+    var endPage = int.tryParse(endText);
+
+    // Skip validation if parsing failed (non-numeric input)
+    if (startText.isNotEmpty && startPage == null) {
+      return;
+    }
+    if (endText.isNotEmpty && endPage == null) {
+      return;
+    }
+
+    bool needsUpdate = false;
+
+    // Clamp start page to minimum of 1
+    if (startPage != null && startPage < 1) {
+      _showSnackBar(l10n.pageNumbersMustBeAtLeastOne(index));
+      startPage = 1;
+      needsUpdate = true;
+    }
+
+    // Clamp end page to minimum of 1
+    if (endPage != null && endPage < 1) {
+      _showSnackBar(l10n.pageNumbersMustBeAtLeastOne(index));
+      endPage = 1;
+      needsUpdate = true;
+    }
+
+    // Check against PDF total pages if available
+    final pdfTotalPages = _pdfPageCount;
+    if (pdfTotalPages != null) {
+      // Clamp start page to PDF total pages
+      if (startPage != null && startPage > pdfTotalPages) {
+        _showSnackBar(l10n.startExceedsTotal(index, startPage, pdfTotalPages));
+        startPage = pdfTotalPages;
+        needsUpdate = true;
+      }
+
+      // Clamp end page to PDF total pages
+      if (endPage != null && endPage > pdfTotalPages) {
+        _showSnackBar(l10n.endExceedsTotal(index, endPage, pdfTotalPages));
+        endPage = pdfTotalPages;
+        needsUpdate = true;
+      }
+    }
+
+    // Ensure start <= end
+    if (startPage != null && endPage != null && startPage > endPage) {
+      _showSnackBar(l10n.startMustBeGreaterThanEnd(index));
+      // Clamp start to end value
+      startPage = endPage;
+      needsUpdate = true;
+    }
+
+    // Update the text controllers if values were clamped
+    if (needsUpdate) {
+      if (startPage != null) {
+        entry.startPageController.text = startPage.toString();
+      }
+      if (endPage != null) {
+        entry.endPageController.text = endPage.toString();
+      }
+    }
+  }
+
+  @override
   void dispose() {
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
@@ -644,7 +745,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       const SizedBox(width: 16),
                       SizedBox(
                         width: pageFieldWidth,
-                        child: _buildPageTextField(entry.startPageController),
+                        child: _buildPageTextField(
+                          entry.startPageController,
+                          entry.startPageFocusNode,
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -652,7 +756,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       ),
                       SizedBox(
                         width: pageFieldWidth,
-                        child: _buildPageTextField(entry.endPageController),
+                        child: _buildPageTextField(
+                          entry.endPageController,
+                          entry.endPageFocusNode,
+                        ),
                       ),
                     ],
                   ),
@@ -666,11 +773,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   }
 
   /// 페이지 번호 입력 텍스트 필드
-  Widget _buildPageTextField(TextEditingController controller) {
+  Widget _buildPageTextField(
+    TextEditingController controller,
+    FocusNode focusNode,
+  ) {
     return Builder(
       builder: (context) {
         return TextField(
           controller: controller,
+          focusNode: focusNode,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
           decoration: const InputDecoration(
@@ -807,7 +918,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
         // 파일이 처음 업로드되고, 마지막 칸인 경우 새 칸 자동 추가
         if (wasEmpty && index == _audioFiles.length - 1) {
-          _audioFiles.add(AudioFileEntry());
+          final newEntry = AudioFileEntry();
+          _addFocusListeners(newEntry);
+          _audioFiles.add(newEntry);
         }
       });
     }
@@ -1270,9 +1383,17 @@ class AudioFileEntry {
   /// 끝 페이지 입력 컨트롤러
   final TextEditingController endPageController = TextEditingController();
 
+  /// 시작 페이지 포커스 노드
+  final FocusNode startPageFocusNode = FocusNode();
+
+  /// 끝 페이지 포커스 노드
+  final FocusNode endPageFocusNode = FocusNode();
+
   /// 메모리 누수 방지를 위한 컨트롤러 해제
   void dispose() {
     startPageController.dispose();
     endPageController.dispose();
+    startPageFocusNode.dispose();
+    endPageFocusNode.dispose();
   }
 }
