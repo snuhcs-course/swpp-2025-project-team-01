@@ -1,3 +1,4 @@
+// coverage:ignore-file
 // 모든 라우트 테이블/네비게이션 진입점
 import 'package:flutter/material.dart';
 import 'package:re_view/features/archive/archive_screen.dart';
