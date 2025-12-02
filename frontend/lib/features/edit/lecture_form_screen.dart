@@ -342,70 +342,73 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       // backgroundColor는 테마의 scaffoldBackgroundColor 사용
 
       // 스크롤 가능한 메인 콘텐츠 + 로딩 바
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ========== 과목 선택 섹션 ==========
-                _buildSectionTitle(l10n.selectSubject),
-                const SizedBox(height: 8),
-                _buildSubjectDropdown(l10n, subjects),
-                const SizedBox(height: 20),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ========== 과목 선택 섹션 ==========
+                  _buildSectionTitle(l10n.selectSubject),
+                  const SizedBox(height: 8),
+                  _buildSubjectDropdown(l10n, subjects),
+                  const SizedBox(height: 20),
 
-                // ========== 강의 언어 선택 섹션 ==========
-                _buildSectionTitle(l10n.spokenLanguage),
-                const SizedBox(height: 8),
-                _buildLanguageDropdown(l10n, subjects),
-                if (_selectedLanguage == 'ko') const SizedBox(height: 8),
-                if (_selectedLanguage == 'ko')
-                  Text(
-                    l10n.noTtsForKorean,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  // ========== 강의 언어 선택 섹션 ==========
+                  _buildSectionTitle(l10n.spokenLanguage),
+                  const SizedBox(height: 8),
+                  _buildLanguageDropdown(l10n, subjects),
+                  if (_selectedLanguage == 'ko') const SizedBox(height: 8),
+                  if (_selectedLanguage == 'ko')
+                    Text(
+                      l10n.noTtsForKorean,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
                     ),
+                  const SizedBox(height: 20),
+
+                  // ========== 강의 주차 입력 섹션 ==========
+                  _buildSectionTitle(l10n.lectureWeek),
+                  const SizedBox(height: 8),
+                  _buildWeekTextField(),
+                  const SizedBox(height: 20),
+
+                  // ========== 강의 제목 입력 섹션 ==========
+                  _buildSectionTitle(l10n.lectureTitle),
+                  const SizedBox(height: 8),
+                  _buildTitleTextField(),
+                  const SizedBox(height: 20),
+
+                  // ========== 강의 슬라이드 업로드 섹션 ==========
+                  _buildSectionTitle(l10n.lectureSlides),
+                  const SizedBox(height: 8),
+                  _buildFileUploadButton(
+                    icon: Icons.attach_file,
+                    label: _slidePdfPath != null
+                        ? _getFileName(_slidePdfPath!)
+                        : '...',
+                    onTap: _pickSlidePdf,
+                    hasFile: _slidePdfPath != null,
                   ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // ========== 강의 주차 입력 섹션 ==========
-                _buildSectionTitle(l10n.lectureWeek),
-                const SizedBox(height: 8),
-                _buildWeekTextField(),
-                const SizedBox(height: 20),
+                  // ========== 강의 녹음 파일 업로드 섹션 ==========
+                  _buildSectionTitle(l10n.lectureAudio),
+                  const SizedBox(height: 8),
+                  _buildAudioFilesList(),
 
-                // ========== 강의 제목 입력 섹션 ==========
-                _buildSectionTitle(l10n.lectureTitle),
-                const SizedBox(height: 8),
-                _buildTitleTextField(),
-                const SizedBox(height: 20),
-
-                // ========== 강의 슬라이드 업로드 섹션 ==========
-                _buildSectionTitle(l10n.lectureSlides),
-                const SizedBox(height: 8),
-                _buildFileUploadButton(
-                  icon: Icons.attach_file,
-                  label: _slidePdfPath != null
-                      ? _getFileName(_slidePdfPath!)
-                      : '...',
-                  onTap: _pickSlidePdf,
-                  hasFile: _slidePdfPath != null,
-                ),
-                const SizedBox(height: 20),
-
-                // ========== 강의 녹음 파일 업로드 섹션 ==========
-                _buildSectionTitle(l10n.lectureAudio),
-                const SizedBox(height: 8),
-                _buildAudioFilesList(),
-
-                const SizedBox(height: 40),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
 
       // 하단 고정 생성 버튼
