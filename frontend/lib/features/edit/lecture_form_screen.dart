@@ -883,8 +883,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
           // 첫 번째 오디오 파일의 페이지 범위를 자동으로 설정
           if (_audioFiles.isNotEmpty) {
-            _audioFiles[0].startPageController.text = '1';
-            _audioFiles[0].endPageController.text = pageCount.toString();
+            for (final audioFile in _audioFiles) {
+              if (audioFile.filePath != null) {
+                audioFile.startPageController.text = '1';
+                audioFile.endPageController.text = pageCount.toString();
+              }
+            }
           }
         });
       } catch (e) {
@@ -918,6 +922,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       setState(() {
         final wasEmpty = _audioFiles[index].filePath == null;
         _audioFiles[index].filePath = filePath;
+
+        if (_slidePdfPath != null) {
+          _audioFiles[index].startPageController.text = '1';
+          _audioFiles[index].endPageController.text = _pdfPageCount.toString();
+        }
 
         // 파일이 처음 업로드되고, 마지막 칸인 경우 새 칸 자동 추가
         if (wasEmpty && index == _audioFiles.length - 1) {
