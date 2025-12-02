@@ -352,6 +352,7 @@ class AppLocalizations {
   // 강의 로딩 메시지
   List<String> get friendlyMessages => isKorean
       ? [
+          '강의 생성 요청이 서버에서 대기 중이에요',
           '열심히 강의를 받아적는 중..',
           '강의 내용을 정리하고 있어요',
           '음성 파일을 듣고 있어요',
@@ -362,6 +363,7 @@ class AppLocalizations {
           '거의 다 됐어요!',
         ]
       : [
+          'Lecture creation request queued on the server',
           'Taking notes from the lecture..',
           'Organizing lecture content',
           'Listening to the audio file',

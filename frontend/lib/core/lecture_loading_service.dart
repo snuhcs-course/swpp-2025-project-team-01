@@ -156,11 +156,15 @@ class LectureLoadingService extends ChangeNotifier {
       }
 
       // 진행도에 따라 메시지 선택
-      if (_progress < 0.9) {
+      if (_progress == 0) {
+        // 0%일 때 첫 번째 메시지로 고정
+        _currentMessageIndex = 0;
+      } else if (_progress < 0.9) {
         // 90% 미만일 때는 랜덤하게 메시지 선택 (마지막 메시지 제외)
         int nextIndex;
         do {
-          nextIndex = _random.nextInt(_friendlyMessages.length - 1);
+          // Block first message and last message
+          nextIndex = _random.nextInt(_friendlyMessages.length - 2) + 1;
         } while (nextIndex == _currentMessageIndex);
         _currentMessageIndex = nextIndex;
       } else {
@@ -194,10 +198,14 @@ class LectureLoadingService extends ChangeNotifier {
       return;
     }
 
+    final oldprogress = _progress;
     _progressLists[order - 1] = progress.clamp(0.0, 1.0);
-    // 서버 메시지는 무시하고 현재 유저 친화적 메시지 유지
-    // _message는 타이머에 의해서만 업데이트됨
     _progress = computeProgress();
+    if (oldprogress == 0.0 && _progress > 0.0) {
+      // 서버 대기 메시지 제거
+      _currentMessageIndex = 1;
+      _message = _friendlyMessages[_currentMessageIndex];
+    }
     notifyListeners();
     _saveState();
   }
