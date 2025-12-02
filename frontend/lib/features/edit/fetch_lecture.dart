@@ -416,7 +416,7 @@ Future<List<String>?> unzipResult(
 
   for (final file in archive) {
     final extension = path.extension(file.name);
-    final filePath = '$outputDir/$lectureId/${titleText}_$order$extension';
+    final filePath = '$outputDir/$lectureId/${lectureId}_$order$extension';
 
     if (file.isFile) {
       // Make sure the parent directory exists
@@ -553,9 +553,9 @@ Future<String?> concatenateAudioFiles(
   final listFile = '$outputDir/tmp_audio_list.txt';
   String audioOutputPath;
   if (path.extension(audioPaths[0]) == '.opus') {
-    audioOutputPath = '$outputDir/$lectureId/$titleText.opus';
+    audioOutputPath = '$outputDir/$lectureId/$lectureId.opus';
   } else {
-    audioOutputPath = '$outputDir/$lectureId/$titleText.m4a';
+    audioOutputPath = '$outputDir/$lectureId/$lectureId.m4a';
   }
 
   // Concatenate the audio files
@@ -603,7 +603,7 @@ Future<String?> concatenateJsonFiles(
     final documentsDir =
         dirOverride ?? await getApplicationDocumentsDirectory();
     final outputDir = documentsDir.path;
-    final jsonOutputPath = '$outputDir/$lectureId/$titleText.json';
+    final jsonOutputPath = '$outputDir/$lectureId/$lectureId.json';
 
     final List<Map<String, dynamic>> mergedTimestamps = [];
     int originalTimeOffset = 0;

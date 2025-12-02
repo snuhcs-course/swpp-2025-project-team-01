@@ -1070,7 +1070,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
     // 2. 로딩 시작
     // 파일명에 공백이 있으면 ffmpeg concat 시 오류 발생하므로 하이픈으로 치환
-    final titleText = _titleController.text.trim().replaceAll(' ', '-');
+    final titleText = _titleController.text.trim();
     final langCode = _selectedLanguage;
 
     // Enable background execution
@@ -1127,7 +1127,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     try {
       final subjectId = _selectedSubjectId ?? 'uncategorized';
       // 파일명에 공백이 있으면 ffmpeg concat 시 오류 발생하므로 하이픈으로 치환
-      final weekText = _weekController.text.trim().replaceAll(' ', '-');
+      final weekText = _weekController.text.trim();
       final slidePath = _slidePdfPath!;
 
       // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
@@ -1248,7 +1248,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final documentsDir = await getApplicationDocumentsDirectory();
         final extension = path.extension(sourceAudioPath);
         final permanentAudioPath =
-            '${documentsDir.path}/$lectureId/$titleText$extension';
+            '${documentsDir.path}/$lectureId/$lectureId$extension';
 
         try {
           // 원본 오디오를 영구 저장소로 복사
@@ -1299,7 +1299,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         try {
           final documentsDir = await getApplicationDocumentsDirectory();
           final permanentPdfPath =
-              '${documentsDir.path}/$lectureId/$titleText.pdf';
+              '${documentsDir.path}/$lectureId/$lectureId.pdf';
 
           // PDF를 영구 저장소로 복사
           await File(_slidePdfPath!).copy(permanentPdfPath);

@@ -623,8 +623,8 @@ void main() {
         deleteZip: true,
       );
 
-      final outPdf = File('${docsDir.path}/lecId/MyLecture_3.pdf');
-      final outJson = File('${docsDir.path}/lecId/MyLecture_3.json');
+      final outPdf = File('${docsDir.path}/lecId/lecId_3.pdf');
+      final outJson = File('${docsDir.path}/lecId/lecId_3.json');
 
       expect(outPdf.existsSync(), isTrue);
       expect(outJson.existsSync(), isTrue);

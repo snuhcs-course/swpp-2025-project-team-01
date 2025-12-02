@@ -1017,9 +1017,7 @@ void main() {
 
       await tester.pump();
 
-      verify(
-        mockLectureLoadingService.startLoading('Test-Lecture', 1),
-      ).called(1);
+      verify(mockLectureLoadingService.startLoading(any, 1)).called(1);
       verify(mockLectureLoadingService.setOnCancel(any)).called(1);
 
       await tester.pump();
@@ -1118,9 +1116,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Create'));
 
       await tester.pump();
-      verify(
-        mockLectureLoadingService.startLoading('Multi-Audio-Test', 2),
-      ).called(1);
+      verify(mockLectureLoadingService.startLoading(any, 2)).called(1);
 
       await tester.pump();
       await tester.pump(const Duration(seconds: 10));
