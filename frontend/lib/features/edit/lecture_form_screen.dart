@@ -944,7 +944,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     }
 
     // 2. 로딩 시작
-    final titleText = _titleController.text.trim();
+    // 파일명에 공백이 있으면 ffmpeg concat 시 오류 발생하므로 하이픈으로 치환
+    final titleText = _titleController.text.trim().replaceAll(' ', '-');
     final langCode = _selectedLanguage;
 
     // Enable background execution
@@ -1000,7 +1001,8 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     final lectureId = _uuid.v4();
     try {
       final subjectId = _selectedSubjectId ?? 'uncategorized';
-      final weekText = _weekController.text.trim();
+      // 파일명에 공백이 있으면 ffmpeg concat 시 오류 발생하므로 하이픈으로 치환
+      final weekText = _weekController.text.trim().replaceAll(' ', '-');
       final slidePath = _slidePdfPath!;
 
       // 강의 생성 진행 중에는 홈 화면으로 복귀하여 글로벌 로딩 바만 노출
