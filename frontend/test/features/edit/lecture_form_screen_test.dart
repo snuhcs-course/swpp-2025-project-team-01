@@ -1018,7 +1018,7 @@ void main() {
       await tester.pump();
 
       verify(
-        mockLectureLoadingService.startLoading('Test Lecture', 1),
+        mockLectureLoadingService.startLoading('Test-Lecture', 1),
       ).called(1);
       verify(mockLectureLoadingService.setOnCancel(any)).called(1);
 
@@ -1119,7 +1119,7 @@ void main() {
 
       await tester.pump();
       verify(
-        mockLectureLoadingService.startLoading('Multi Audio Test', 2),
+        mockLectureLoadingService.startLoading('Multi-Audio-Test', 2),
       ).called(1);
 
       await tester.pump();
