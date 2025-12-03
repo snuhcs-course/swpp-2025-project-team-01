@@ -223,13 +223,7 @@ class _HomeScreenState extends State<HomeScreen>
           builder: (scaffoldContext) => IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () {
-              if (reduceMotion) {
-                // 모션 줄이기: 즉시 나타나는 다이얼로그
-                CustomDrawer.showAsDialog(context);
-              } else {
-                // 일반: Drawer 사용
-                Scaffold.of(scaffoldContext).openDrawer();
-              }
+              CustomDrawer.open(scaffoldContext, reduceMotion);
             },
           ),
         ),
@@ -242,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
-      drawer: reduceMotion ? null : const CustomDrawer(),
+      drawer: reduceMotion ? null : CustomDrawer(reduceMotion: reduceMotion),
       body: CustomScrollView(
         slivers: [
           // 상단 pill 네 개
