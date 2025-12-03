@@ -432,21 +432,30 @@ class _SubjectPanelState extends State<SubjectPanel>
                         ),
                     ];
                     return widget.showEdit
-                        ? ReorderableWrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            needsLongPressDraggable: false,
-                            onReorder: _onReorder,
-                            buildDraggableFeedback:
-                                (context, constraints, child) {
-                                  // lifted feedback while dragging
-                                  return Material(
-                                    elevation: 6,
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: child,
-                                  );
-                                },
-                            children: children,
+                        ? ClipRect(
+                            child: ReorderableWrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              needsLongPressDraggable: false,
+                              onReorder: _onReorder,
+                              buildDraggableFeedback:
+                                  (context, constraints, child) {
+                                    // lifted feedback while dragging
+                                    // ConstrainedBox를 사용하여 드래그 피드백이 부모 영역을 벗어나지 못하도록 제한
+                                    return ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: cardWidth,
+                                        maxHeight: 300, // 적절한 최대 높이 설정
+                                      ),
+                                      child: Material(
+                                        elevation: 6,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              children: children,
+                            ),
                           )
                         : Wrap(spacing: 12, runSpacing: 12, children: children);
                   },
