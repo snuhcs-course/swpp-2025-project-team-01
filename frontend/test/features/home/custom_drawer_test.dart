@@ -429,7 +429,7 @@ void main() {
       expect(drawerPositioned.bottom, 0);
     });
 
-    testWidgets('should have correct width based on device type', (
+    testWidgets('should use Flutter standard drawer width calculation', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -453,22 +453,22 @@ void main() {
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
-      // Get screen dimensions
+      // Get screen width
       final screenWidth =
           tester.view.physicalSize.width / tester.view.devicePixelRatio;
-      final screenHeight =
-          tester.view.physicalSize.height / tester.view.devicePixelRatio;
-      final shortestSide = screenWidth < screenHeight
-          ? screenWidth
-          : screenHeight;
-      final isTablet = shortestSide >= 600;
+
+      // Calculate expected width using Flutter's standard drawer logic
+      // min(screenWidth - 56, 304)
+      const double defaultWidth = 304.0;
+      const double edgeWidth = 56.0;
+      final double maxWidth = screenWidth - edgeWidth;
+      final expectedWidth = maxWidth < defaultWidth ? maxWidth : defaultWidth;
 
       // Find SizedBox containing the drawer content
       final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
       final drawerSizedBox = sizedBoxes.firstWhere((box) => box.width != null);
 
-      // Check width: 304px for tablet, 75% for phone
-      final expectedWidth = isTablet ? 304.0 : screenWidth * 0.75;
+      // Check width matches Flutter's standard calculation
       expect(drawerSizedBox.width, expectedWidth);
     });
 
