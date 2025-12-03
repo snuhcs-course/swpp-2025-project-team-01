@@ -260,47 +260,62 @@ class PdfArea extends StatelessWidget {
                 if (showControls) {
                   return const SizedBox.shrink();
                 }
-                return Positioned.fill(
-                  child: GestureDetector(
-                    key: ValueKey(
-                      'pdf-gesture-overlay-${isVertical ? 'vertical' : 'horizontal'}',
-                    ),
-                    behavior: HitTestBehavior.opaque,
-                    onVerticalDragUpdate: isVertical
-                        ? null
-                        : (details) {
-                            controller.handleVerticalDrag(details);
-                          },
-                    onTap: () => controller.handlePdfTap(isVertical),
-                    onDoubleTapDown: (TapDownDetails details) {
-                      controller.saveDoubleTapPosition(
-                        details.localPosition.dx,
-                      );
-                    },
-                    onDoubleTap: () {
-                      controller.handleDoubleTapSkip(
-                        MediaQuery.of(context).size.width,
-                      );
-                    },
-                    // Sync off일 때 horizontal swipe로 페이지 전환
-                    onHorizontalDragEnd: controller.isSynced.value
-                        ? null
-                        : (details) {
-                            final velocity = details.primaryVelocity ?? 0;
-                            if (velocity < -300) {
-                              // 왼쪽 스와이프 → 다음 페이지
-                              if (currentPage < controller.pageCount) {
-                                controller.jumpToPage(currentPage + 1);
-                              }
-                            } else if (velocity > 300) {
-                              // 오른쪽 스와이프 → 이전 페이지
-                              if (currentPage > 1) {
-                                controller.jumpToPage(currentPage - 1);
-                              }
-                            }
-                          },
-                    child: Container(color: Colors.transparent),
-                  ),
+                // 가로 모드에서 PDF navigator 영역을 제외하기 위해 isPagesExpanded 감지
+                return ValueListenableBuilder<bool>(
+                  valueListenable: controller.isPagesExpanded,
+                  builder: (context, isPagesExpanded, _) {
+                    // 가로 모드이고 PDF navigator가 올라와 있으면 하단 170px 제외
+                    final excludeBottom = !isVertical && isPagesExpanded
+                        ? 170.0
+                        : 0.0;
+
+                    return Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: excludeBottom,
+                      child: GestureDetector(
+                        key: ValueKey(
+                          'pdf-gesture-overlay-${isVertical ? 'vertical' : 'horizontal'}-${isPagesExpanded ? 'expanded' : 'collapsed'}',
+                        ),
+                        behavior: HitTestBehavior.opaque,
+                        onVerticalDragUpdate: isVertical
+                            ? null
+                            : (details) {
+                                controller.handleVerticalDrag(details);
+                              },
+                        onTap: () => controller.handlePdfTap(isVertical),
+                        onDoubleTapDown: (TapDownDetails details) {
+                          controller.saveDoubleTapPosition(
+                            details.localPosition.dx,
+                          );
+                        },
+                        onDoubleTap: () {
+                          controller.handleDoubleTapSkip(
+                            MediaQuery.of(context).size.width,
+                          );
+                        },
+                        // Sync off일 때 horizontal swipe로 페이지 전환
+                        onHorizontalDragEnd: controller.isSynced.value
+                            ? null
+                            : (details) {
+                                final velocity = details.primaryVelocity ?? 0;
+                                if (velocity < -300) {
+                                  // 왼쪽 스와이프 → 다음 페이지
+                                  if (currentPage < controller.pageCount) {
+                                    controller.jumpToPage(currentPage + 1);
+                                  }
+                                } else if (velocity > 300) {
+                                  // 오른쪽 스와이프 → 이전 페이지
+                                  if (currentPage > 1) {
+                                    controller.jumpToPage(currentPage - 1);
+                                  }
+                                }
+                              },
+                        child: Container(color: Colors.transparent),
+                      ),
+                    );
+                  },
                 );
               },
             ),
