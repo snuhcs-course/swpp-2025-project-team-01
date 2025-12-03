@@ -477,10 +477,10 @@ class _HomeScreenState extends State<HomeScreen>
                         });
                       },
                       child: DragTarget<int>(
-                        onWillAcceptWithDetails: (fromIndex) {
-                          return fromIndex != null && fromIndex != i;
+                        onWillAcceptWithDetails: (details) {
+                          return details.data != i;
                         },
-                        onAccept: (fromIndex) {
+                        onAcceptWithDetails: (details) {
                           // onDragEnd에서 처리하므로 여기서는 비워둠
                         },
                         onMove: (details) {
