@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
-import 'package:re_view/core/device_orientation_helper.dart';
 
 /// 모션 줄이기를 지원하는 커스텀 Drawer
 ///
@@ -27,14 +26,25 @@ class CustomDrawer extends StatelessWidget {
     }
   }
 
+  /// Drawer의 기본 너비를 계산 (Flutter 내장 Drawer와 동일한 로직)
+  static double _getDrawerWidth(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Flutter 기본 Drawer 너비 = min(화면너비, 304.0)
+    // 화면이 너무 작으면 화면 너비 - 56.0 사용
+    const double defaultWidth = 304.0;
+    const double edgeWidth = 56.0;
+
+    // Drawer는 최소 한 변이 화면에서 56dp 떨어져야 함
+    final double maxWidth = screenWidth - edgeWidth;
+
+    return maxWidth < defaultWidth ? maxWidth : defaultWidth;
+  }
+
   /// 애니메이션 없이 Drawer를 표시 (Overlay 사용)
   static void _showWithoutAnimation(BuildContext context) {
     final overlay = Overlay.of(context);
-    final isTablet = isTabletDevice(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    // 태블릿: 304px 고정, 핸드폰: 화면의 75%
-    final drawerWidth = isTablet ? 304.0 : screenWidth * 0.75;
+    final drawerWidth = _getDrawerWidth(context);
 
     OverlayEntry? overlayEntry;
 
