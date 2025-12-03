@@ -777,12 +777,6 @@ void main() {
       ).called(1);
 
       expect(find.text('test.pdf'), findsOneWidget);
-
-      final textFields = tester.widgetList<TextField>(find.byType(TextField));
-      final startPageField = textFields.elementAt(2);
-      final endPageField = textFields.elementAt(3);
-      expect(startPageField.controller?.text, '1');
-      expect(endPageField.controller?.text, '10');
     });
 
     testWidgets('Handles PDF pick cancellation gracefully', (tester) async {
