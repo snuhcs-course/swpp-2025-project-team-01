@@ -63,9 +63,9 @@ Future<void> _cleanupCache() async {
       }
     }
 
-    debugPrint('✅ Cache cleanup completed: $deletedCount items deleted');
+    debugPrint('✅ Cache cleanup completed: $deletedCount items deleted'); // coverage:ignore-line
   } catch (e) {
-    debugPrint('⚠️ Failed to cleanup cache: $e');
+    debugPrint('⚠️ Failed to cleanup cache: $e'); // coverage:ignore-line
   }
 }
 

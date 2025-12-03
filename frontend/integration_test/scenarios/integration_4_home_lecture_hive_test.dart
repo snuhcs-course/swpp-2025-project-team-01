@@ -25,7 +25,7 @@ Future<void> runIntegration4Test(WidgetTester tester) async {
   final initialLectures = manager.getAllLectures();
   final initialCount = initialLectures.length;
 
-  debugPrint('Initial lecture count: $initialCount');
+  debugPrint('Initial lecture count: $initialCount'); // coverage:ignore-line
 
   // Step 1: Tap (+) button to open add menu
   final addButton = find.byIcon(Icons.add);
@@ -62,7 +62,7 @@ Future<void> runIntegration4Test(WidgetTester tester) async {
 
   // Since we cannot mock file picker and backend API in integration tests,
   // we'll manually add a lecture using HiveManager to simulate the backend response
-  debugPrint('Simulating lecture creation via HiveManager...');
+  debugPrint('Simulating lecture creation via HiveManager...'); // coverage:ignore-line
 
   // Get uncategorized subject or first subject
   final subjects = manager.getSubjects();
@@ -172,7 +172,7 @@ Future<void> runIntegration4Test(WidgetTester tester) async {
     try {
       await tester.tap(subjectTitleFinder.first);
       await tester.pumpAndSettle();
-      debugPrint('✓ Expanded subject panel to verify lecture in UI');
+      debugPrint('✓ Expanded subject panel to verify lecture in UI'); // coverage:ignore-line
     } catch (_) {
       // Subject might already be expanded
     }
@@ -190,9 +190,9 @@ Future<void> runIntegration4Test(WidgetTester tester) async {
         'Lecture should be visible in home screen UI (title: "${testLecture.title}" or week: "${testLecture.weekLabel}")',
   );
 
-  debugPrint('✓ Lecture verified in home screen UI');
+  debugPrint('✓ Lecture verified in home screen UI'); // coverage:ignore-line
 
-  debugPrint(
+  debugPrint( // coverage:ignore-line
     '✅ Integration 4 passed: Lecture successfully added and persisted',
   );
 }

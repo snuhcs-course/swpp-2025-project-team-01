@@ -44,7 +44,7 @@ class IntegrationTestHelpers {
 
   /// Wait for app to be ready (HiveManager initialized)
   static Future<void> waitForAppReady(WidgetTester tester) async {
-    debugPrint('⏳ Waiting for app to be ready...');
+    debugPrint('⏳ Waiting for app to be ready...'); // coverage:ignore-line
 
     // Initial pump to start the app (longer timeout for slower devices)
     await tester.pumpAndSettle(const Duration(seconds: 30));
@@ -63,13 +63,13 @@ class IntegrationTestHelpers {
 
       if (menuButton.evaluate().isNotEmpty || addButton.evaluate().isNotEmpty) {
         homeScreenFound = true;
-        debugPrint('✓ Home screen detected after ${splashAttempts * 100}ms');
+        debugPrint('✓ Home screen detected after ${splashAttempts * 100}ms'); // coverage:ignore-line
         break;
       }
 
       // Debug every 2 seconds
       if (splashAttempts % 20 == 0 && splashAttempts > 0) {
-        debugPrint(
+        debugPrint( // coverage:ignore-line
           'Still waiting for home screen... (${splashAttempts * 100}ms)',
         );
       }
@@ -78,7 +78,7 @@ class IntegrationTestHelpers {
     }
 
     if (!homeScreenFound) {
-      debugPrint('⚠️ Home screen not found after ${splashAttempts * 100}ms');
+      debugPrint('⚠️ Home screen not found after ${splashAttempts * 100}ms'); // coverage:ignore-line
     }
 
     // Additional settling time after splash screen
@@ -97,7 +97,7 @@ class IntegrationTestHelpers {
       reason: 'HiveManager should be initialized after ${hiveAttempts * 100}ms',
     );
 
-    debugPrint('✓ HiveManager initialized after ${hiveAttempts * 100}ms');
+    debugPrint('✓ HiveManager initialized after ${hiveAttempts * 100}ms'); // coverage:ignore-line
 
     // Final settling to ensure all widgets are ready
     await tester.pumpAndSettle(const Duration(seconds: 5));
@@ -114,7 +114,7 @@ class IntegrationTestHelpers {
       reason: 'Home screen should be visible',
     );
 
-    debugPrint('✅ App is ready - all systems initialized');
+    debugPrint('✅ App is ready - all systems initialized'); // coverage:ignore-line
   }
 
   /// Tap on a widget by key
@@ -199,7 +199,7 @@ class IntegrationTestHelpers {
 
   /// Navigate to home screen (for test isolation)
   static Future<void> navigateToHome(WidgetTester tester) async {
-    debugPrint('🏠 Navigating to home screen...');
+    debugPrint('🏠 Navigating to home screen...'); // coverage:ignore-line
 
     // Initial pump to ensure any pending animations complete
     await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -220,7 +220,7 @@ class IntegrationTestHelpers {
           await tester.pump(const Duration(milliseconds: 100));
         }
       } catch (e) {
-        debugPrint('Tap to close overlay attempt $i failed: $e');
+        debugPrint('Tap to close overlay attempt $i failed: $e'); // coverage:ignore-line
       }
       await tester.pumpAndSettle(const Duration(milliseconds: 300));
     }
@@ -236,7 +236,7 @@ class IntegrationTestHelpers {
         break;
       }
 
-      debugPrint('Closing $dialogCount open dialog(s)...');
+      debugPrint('Closing $dialogCount open dialog(s)...'); // coverage:ignore-line
       try {
         final navigators = find.byType(Navigator);
         if (navigators.evaluate().isNotEmpty) {
@@ -247,7 +247,7 @@ class IntegrationTestHelpers {
           }
         }
       } catch (e) {
-        debugPrint('Could not close dialog via Navigator: $e');
+        debugPrint('Could not close dialog via Navigator: $e'); // coverage:ignore-line
         break;
       }
       dialogAttempts++;
@@ -256,7 +256,7 @@ class IntegrationTestHelpers {
     // Close any open drawers
     final drawer = find.byType(Drawer);
     if (drawer.evaluate().isNotEmpty) {
-      debugPrint('Closing open drawer...');
+      debugPrint('Closing open drawer...'); // coverage:ignore-line
       try {
         final scaffolds = find.byType(Scaffold);
         if (scaffolds.evaluate().isNotEmpty) {
@@ -265,7 +265,7 @@ class IntegrationTestHelpers {
           await tester.pumpAndSettle();
         }
       } catch (e) {
-        debugPrint('Could not close drawer: $e');
+        debugPrint('Could not close drawer: $e'); // coverage:ignore-line
       }
     }
 
@@ -282,7 +282,7 @@ class IntegrationTestHelpers {
       if (menuButton.evaluate().isNotEmpty &&
           (addButton.evaluate().isNotEmpty ||
               searchButton.evaluate().isNotEmpty)) {
-        debugPrint('✓ On home screen (attempt $attempts)');
+        debugPrint('✓ On home screen (attempt $attempts)'); // coverage:ignore-line
         break;
       }
 
@@ -293,11 +293,11 @@ class IntegrationTestHelpers {
       if (backButton.evaluate().isNotEmpty) {
         await tester.tap(backButton);
         await tester.pumpAndSettle();
-        debugPrint('Tapped back button (tooltip)');
+        debugPrint('Tapped back button (tooltip)'); // coverage:ignore-line
       } else if (iconBackButton.evaluate().isNotEmpty) {
         await tester.tap(iconBackButton.first);
         await tester.pumpAndSettle();
-        debugPrint('Tapped back button (icon)');
+        debugPrint('Tapped back button (icon)'); // coverage:ignore-line
       } else {
         // Try Navigator.pop()
         bool poppedViaNavigator = false;
@@ -308,18 +308,18 @@ class IntegrationTestHelpers {
             if (navigator.canPop()) {
               navigator.pop();
               await tester.pumpAndSettle();
-              debugPrint('Used Navigator.pop()');
+              debugPrint('Used Navigator.pop()'); // coverage:ignore-line
               poppedViaNavigator = true;
             }
           }
         } catch (e) {
-          debugPrint('Navigator.pop() failed: $e');
+          debugPrint('Navigator.pop() failed: $e'); // coverage:ignore-line
         }
 
         if (!poppedViaNavigator) {
           // After several attempts with no back button, assume we're at home
           if (attempts > 5) {
-            debugPrint('No back button found, assuming we are at home');
+            debugPrint('No back button found, assuming we are at home'); // coverage:ignore-line
             break;
           }
         }
@@ -335,37 +335,37 @@ class IntegrationTestHelpers {
     final menuButton = find.byIcon(Icons.menu);
 
     if (menuButton.evaluate().isEmpty) {
-      debugPrint(
+      debugPrint( // coverage:ignore-line
         '⚠️ Warning: Could not verify home screen - menu button not found',
       );
 
       // Debug: print visible icon buttons to understand what's on screen
-      debugPrint('Visible icon buttons:');
+      debugPrint('Visible icon buttons:'); // coverage:ignore-line
       final iconButtons = find.byType(IconButton);
       for (final element in iconButtons.evaluate().take(10)) {
         final iconButton = element.widget as IconButton;
         if (iconButton.icon is Icon) {
           final icon = iconButton.icon as Icon;
-          debugPrint('  - Icon: ${icon.icon}');
+          debugPrint('  - Icon: ${icon.icon}'); // coverage:ignore-line
         }
       }
 
       // Debug: check if scaffold exists
       final scaffolds = find.byType(Scaffold);
-      debugPrint('Scaffold count: ${scaffolds.evaluate().length}');
+      debugPrint('Scaffold count: ${scaffolds.evaluate().length}'); // coverage:ignore-line
 
       // Debug: check for common home screen widgets
       final appBars = find.byType(AppBar);
-      debugPrint('AppBar count: ${appBars.evaluate().length}');
+      debugPrint('AppBar count: ${appBars.evaluate().length}'); // coverage:ignore-line
     } else {
-      debugPrint('✓ Successfully navigated to home screen');
+      debugPrint('✓ Successfully navigated to home screen'); // coverage:ignore-line
     }
   }
 
   /// Setup initial test data (subjects, lectures, tags)
   static Future<void> setupInitialTestData(WidgetTester tester) async {
     final manager = HiveManager.instance;
-    debugPrint('📦 Setting up initial test data...');
+    debugPrint('📦 Setting up initial test data...'); // coverage:ignore-line
 
     // Create dummy files directory
     final tempDir = await getTemporaryDirectory();
@@ -384,7 +384,7 @@ class IntegrationTestHelpers {
       final subject1 = manager.getSubjects().firstWhere(
         (s) => s.title == 'Test Subject 1',
       );
-      debugPrint('✓ Created Test Subject 1: ${subject1.id}');
+      debugPrint('✓ Created Test Subject 1: ${subject1.id}'); // coverage:ignore-line
 
       // Create lectures for subject 1
       final lectureIds = <String>[];
@@ -418,11 +418,11 @@ class IntegrationTestHelpers {
 
       // Update subject with lectures
       await manager.updateSubject(subject1.id, lectureIds: lectureIds);
-      debugPrint('✓ Created 2 lectures for Test Subject 1');
+      debugPrint('✓ Created 2 lectures for Test Subject 1'); // coverage:ignore-line
 
       // Create test subject 2
       await manager.createSubject('Test Subject 2', []);
-      debugPrint('✓ Created Test Subject 2');
+      debugPrint('✓ Created Test Subject 2'); // coverage:ignore-line
     }
 
     // Ensure we have at least 3 tags
@@ -439,11 +439,11 @@ class IntegrationTestHelpers {
         newTags.add(tag);
       }
       await manager.saveTags(newTags);
-      debugPrint('✓ Created $tagsToCreate test tags');
+      debugPrint('✓ Created $tagsToCreate test tags'); // coverage:ignore-line
     }
 
     await tester.pumpAndSettle();
-    debugPrint('✅ Initial test data setup complete');
+    debugPrint('✅ Initial test data setup complete'); // coverage:ignore-line
   }
 
   /// Create a test lecture
@@ -513,9 +513,9 @@ class IntegrationTestHelpers {
       // Get the integration test binding
       final binding = IntegrationTestWidgetsFlutterBinding.instance;
       await binding.takeScreenshot(name);
-      debugPrint('📸 Screenshot saved: $name');
+      debugPrint('📸 Screenshot saved: $name'); // coverage:ignore-line
     } catch (e) {
-      debugPrint('⚠️ Failed to take screenshot "$name": $e');
+      debugPrint('⚠️ Failed to take screenshot "$name": $e'); // coverage:ignore-line
     }
   }
 }

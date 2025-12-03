@@ -896,11 +896,11 @@ class CompletedView extends StatelessWidget {
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
                     onPressed: () {
-                      debugPrint('🔘 Button pressed!');
+                      debugPrint('🔘 Button pressed!'); // coverage:ignore-line
                       final lectureId = service.getLectureIdAndHide();
-                      debugPrint('🔘 lectureId: $lectureId');
-                      debugPrint('🔘 navigatorKey: $navigatorKey');
-                      debugPrint(
+                      debugPrint('🔘 lectureId: $lectureId'); // coverage:ignore-line
+                      debugPrint('🔘 navigatorKey: $navigatorKey'); // coverage:ignore-line
+                      debugPrint( // coverage:ignore-line
                         '🔘 navigatorKey.currentState: ${navigatorKey.currentState}',
                       );
 

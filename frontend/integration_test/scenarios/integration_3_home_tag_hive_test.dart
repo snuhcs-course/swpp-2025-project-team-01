@@ -20,7 +20,7 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
   final initialTags = manager.getTags();
   final initialCount = initialTags.length;
 
-  debugPrint('Initial tag count: $initialCount');
+  debugPrint('Initial tag count: $initialCount'); // coverage:ignore-line
 
   // Step 1: Navigate to tag screen from home
   // Open drawer/menu
@@ -105,7 +105,7 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
 
   // Navigate back to save tags to Hive
   // Tags are only saved when navigating back from the tag edit screen
-  debugPrint('Navigating back to save tags...');
+  debugPrint('Navigating back to save tags...'); // coverage:ignore-line
   await IntegrationTestHelpers.navigateBack(tester);
   await tester.pumpAndSettle();
 
@@ -146,7 +146,7 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
     reason: 'Tag in Hive should have correct name',
   );
 
-  debugPrint('✓ Tag verified in Hive');
+  debugPrint('✓ Tag verified in Hive'); // coverage:ignore-line
 
   // Step 4: Verify tag is visible in UI by opening filter pill
   // Verify we're on home screen
@@ -165,7 +165,7 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
   await tester.tap(filterPill);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Tapped filter pill to show tags');
+  debugPrint('✓ Tapped filter pill to show tags'); // coverage:ignore-line
 
   // Look for the newly created tag in the UI
   // Try multiple approaches to find the tag
@@ -188,11 +188,11 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
 
   if (tagInUI.evaluate().isEmpty) {
     // Debug: print all visible text widgets
-    debugPrint('Available text widgets in filter area:');
+    debugPrint('Available text widgets in filter area:'); // coverage:ignore-line
     final allTexts = find.byType(Text);
     for (final element in allTexts.evaluate().take(30)) {
       final widget = element.widget as Text;
-      debugPrint('  - ${widget.data}');
+      debugPrint('  - ${widget.data}'); // coverage:ignore-line
     }
   }
 
@@ -202,13 +202,13 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
     reason: 'Newly created tag should be visible in filter pills',
   );
 
-  debugPrint('✓ Tag verified in UI');
+  debugPrint('✓ Tag verified in UI'); // coverage:ignore-line
 
   // Close filter pill
   await tester.tap(filterPill);
   await tester.pumpAndSettle();
 
-  debugPrint(
+  debugPrint( // coverage:ignore-line
     '✅ Integration 3 passed: Tag successfully added, persisted, and visible in UI',
   );
 }

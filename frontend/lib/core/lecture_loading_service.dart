@@ -114,8 +114,8 @@ class LectureLoadingService extends ChangeNotifier {
 
   /// 강의로 이동 (위젯이 직접 Navigator를 사용할 수 없으므로 lectureId만 반환)
   String? getLectureIdAndHide() {
-    debugPrint('🔥 getLectureIdAndHide called');
-    debugPrint('🔥 _lectureId: $_lectureId');
+    debugPrint('🔥 getLectureIdAndHide called'); // coverage:ignore-line
+    debugPrint('🔥 _lectureId: $_lectureId'); // coverage:ignore-line
 
     final id = _lectureId;
     hideLoading();
@@ -371,7 +371,7 @@ class LectureLoadingService extends ChangeNotifier {
     }
 
     _currentRoute = routeName;
-    debugPrint('‼️ $routeName');
+    debugPrint('‼️ $routeName'); // coverage:ignore-line
 
     // 홈 화면 방문 체크
     if (routeName == '/home') {
@@ -443,7 +443,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setString(_keyErrorTitle, _errorTitle);
       await prefs.setString(_keyErrorMessage, _errorMessage);
     } catch (e) {
-      debugPrint('Failed to save loading state: $e');
+      debugPrint('Failed to save loading state: $e'); // coverage:ignore-line
     }
   }
 
@@ -475,7 +475,7 @@ class LectureLoadingService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Failed to restore loading state: $e');
+      debugPrint('Failed to restore loading state: $e'); // coverage:ignore-line
     }
   }
 
@@ -497,7 +497,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyErrorTitle);
       await prefs.remove(_keyErrorMessage);
     } catch (e) {
-      debugPrint('Failed to clear loading state: $e');
+      debugPrint('Failed to clear loading state: $e'); // coverage:ignore-line
     }
   }
 }

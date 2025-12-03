@@ -1094,7 +1094,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       // iOS doesn't need FlutterBackground - background modes in Info.plist handle it
     } catch (e) {
-      debugPrint('Failed to enable background execution: $e');
+      debugPrint('Failed to enable background execution: $e'); // coverage:ignore-line
       // Continue anyway - app will still work in foreground
     }
 
@@ -1257,7 +1257,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           await File(sourceAudioPath).copy(permanentAudioPath);
           originalAudioPath = permanentAudioPath;
         } catch (e) {
-          debugPrint('Failed to copy original audio to permanent storage: $e');
+          debugPrint('Failed to copy original audio to permanent storage: $e'); // coverage:ignore-line
           _showSnackBar(l10n.lectureGenerationFailed);
           return;
         }
@@ -1317,10 +1317,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           try {
             await File(_slidePdfPath!).delete();
           } catch (e) {
-            debugPrint('Failed to delete temporary PDF: $e');
+            debugPrint('Failed to delete temporary PDF: $e'); // coverage:ignore-line
           }
         } catch (e) {
-          debugPrint('Failed to copy PDF to permanent storage: $e');
+          debugPrint('Failed to copy PDF to permanent storage: $e'); // coverage:ignore-line
         }
       }
 
@@ -1330,10 +1330,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final pickerDir = Directory('${tempDir.path}/file_picker');
         if (pickerDir.existsSync()) {
           await pickerDir.delete(recursive: true);
-          debugPrint('Deleted file_picker cache directory: ${pickerDir.path}');
+          debugPrint('Deleted file_picker cache directory: ${pickerDir.path}'); // coverage:ignore-line
         }
       } catch (e) {
-        debugPrint('Failed to delete file_picker cache: $e');
+        debugPrint('Failed to delete file_picker cache: $e'); // coverage:ignore-line
       }
 
       // 7. 과목에 강의 추가
@@ -1368,7 +1368,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         try {
           await _flutterBackground.disableBackgroundExecution();
         } catch (e) {
-          debugPrint('Failed to disable background execution: $e');
+          debugPrint('Failed to disable background execution: $e'); // coverage:ignore-line
         }
       }
     }

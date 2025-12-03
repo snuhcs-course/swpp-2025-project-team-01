@@ -170,7 +170,7 @@ class HiveManager extends ChangeNotifier {
           ),
       };
     } catch (e) {
-      debugPrint('Failed to load default subjects: $e');
+      debugPrint('Failed to load default subjects: $e'); // coverage:ignore-line
       return {};
     }
   }
@@ -191,7 +191,7 @@ class HiveManager extends ChangeNotifier {
           ),
       };
     } catch (e) {
-      debugPrint('Failed to load default tags: $e');
+      debugPrint('Failed to load default tags: $e'); // coverage:ignore-line
       return {};
     }
   }
@@ -216,7 +216,7 @@ class HiveManager extends ChangeNotifier {
       }
     }
 
-    debugPrint('Loaded ${lectures.length} demo lectures from assets');
+    debugPrint('Loaded ${lectures.length} demo lectures from assets'); // coverage:ignore-line
     return lectures;
   }
 

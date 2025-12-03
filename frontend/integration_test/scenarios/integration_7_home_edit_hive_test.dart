@@ -68,7 +68,7 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
 
   await tester.pumpAndSettle();
 
-  debugPrint('Dummy lecture created: ${dummyLecture.id}');
+  debugPrint('Dummy lecture created: ${dummyLecture.id}'); // coverage:ignore-line
 
   // Step 1: Confirm that the dummy lecture exists in Hive
   final lectureInHive = manager.getLecture(dummyLecture.id);
@@ -90,7 +90,7 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
     reason: 'Subject should contain the dummy lecture',
   );
 
-  debugPrint('✓ Dummy lecture confirmed in Hive');
+  debugPrint('✓ Dummy lecture confirmed in Hive'); // coverage:ignore-line
 
   // Step 2: Turn on edit mode on home screen
   final editButton = find.text('Edit');
@@ -115,7 +115,7 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
   await tester.tap(foundEditButton.first);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Edit mode enabled');
+  debugPrint('✓ Edit mode enabled'); // coverage:ignore-line
 
   // Step 3: Delete the dummy lecture using edit functions
   // In edit mode, each lecture should have a delete button or icon
@@ -128,10 +128,10 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
     try {
       await tester.tap(subjectTitle.first);
       await tester.pumpAndSettle();
-      debugPrint('✓ Expanded subject panel for deletion');
+      debugPrint('✓ Expanded subject panel for deletion'); // coverage:ignore-line
     } catch (_) {
       // Subject might already be expanded
-      debugPrint('Subject panel already expanded');
+      debugPrint('Subject panel already expanded'); // coverage:ignore-line
     }
   }
 
@@ -165,18 +165,18 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
     // For simplicity, just tap the last one (dummy lecture is added last)
     await tester.tap(deleteButtons.last);
     deletedViaUI = true;
-    debugPrint('Tapped delete button (delete icon)');
+    debugPrint('Tapped delete button (delete icon)'); // coverage:ignore-line
   } else if (deleteOutlineButtons.evaluate().isNotEmpty) {
     await tester.tap(deleteOutlineButtons.last);
     deletedViaUI = true;
-    debugPrint('Tapped delete button (delete_outline icon)');
+    debugPrint('Tapped delete button (delete_outline icon)'); // coverage:ignore-line
   } else if (removeButtons.evaluate().isNotEmpty) {
     await tester.tap(removeButtons.last);
     deletedViaUI = true;
-    debugPrint('Tapped delete button (remove_circle_outline icon)');
+    debugPrint('Tapped delete button (remove_circle_outline icon)'); // coverage:ignore-line
   } else {
     // If no delete button found, directly delete via manager (as fallback for test)
-    debugPrint('No delete button found, deleting via HiveManager');
+    debugPrint('No delete button found, deleting via HiveManager'); // coverage:ignore-line
     await manager.deleteLecture(dummyLecture.id);
   }
 
@@ -191,19 +191,19 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
     if (confirmButton.evaluate().isNotEmpty) {
       await tester.tap(confirmButton);
       await tester.pumpAndSettle();
-      debugPrint('Confirmed deletion (Delete)');
+      debugPrint('Confirmed deletion (Delete)'); // coverage:ignore-line
     } else if (confirmButtonKo.evaluate().isNotEmpty) {
       await tester.tap(confirmButtonKo);
       await tester.pumpAndSettle();
-      debugPrint('Confirmed deletion (삭제)');
+      debugPrint('Confirmed deletion (삭제)'); // coverage:ignore-line
     } else if (yesButton.evaluate().isNotEmpty) {
       await tester.tap(yesButton);
       await tester.pumpAndSettle();
-      debugPrint('Confirmed deletion (Yes)');
+      debugPrint('Confirmed deletion (Yes)'); // coverage:ignore-line
     }
   }
 
-  debugPrint('✓ Dummy lecture deleted');
+  debugPrint('✓ Dummy lecture deleted'); // coverage:ignore-line
 
   // Step 4: Confirm that the dummy lecture is NOT in Hive
   final deletedLecture = manager.getLecture(dummyLecture.id);
@@ -227,5 +227,5 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
     reason: 'Deleted lecture should not be visible',
   );
 
-  debugPrint('✅ Integration 7 passed: Lecture successfully deleted from Hive');
+  debugPrint('✅ Integration 7 passed: Lecture successfully deleted from Hive'); // coverage:ignore-line
 }

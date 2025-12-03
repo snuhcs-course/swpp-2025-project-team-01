@@ -202,7 +202,7 @@ Future<String?> requestLecture(
               ? const Duration(milliseconds: 100) // Fast timeout for testing
               : const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
           onTimeout: (sink) {
-            debugPrint(
+            debugPrint( // coverage:ignore-line
               'Stream timeout - No updates from server for 30 seconds',
             );
             sink.addError(Exception('서버로부터 응답이 없습니다'));
@@ -254,7 +254,7 @@ Future<String?> requestLecture(
         return null;
       }
 
-      debugPrint('SSE issue triggered');
+      debugPrint('SSE issue triggered'); // coverage:ignore-line
       // Use fakeClient if provided (for testing), otherwise create new client
       final pollingClient = fakeClient ?? http.Client();
       final shouldCloseClient = fakeClient == null;
@@ -273,7 +273,7 @@ Future<String?> requestLecture(
           pollingClient,
         );
         if (status == null || status.$1 == 'failed') {
-          debugPrint('Error during lecture request stream processing: $e');
+          debugPrint('Error during lecture request stream processing: $e'); // coverage:ignore-line
           LectureLoadingService.instance.setError();
           if (shouldCloseClient) {
             pollingClient.close();
@@ -292,7 +292,7 @@ Future<String?> requestLecture(
 
     return jobId;
   } catch (e) {
-    debugPrint('Error during lecture request: $e');
+    debugPrint('Error during lecture request: $e'); // coverage:ignore-line
     if (!didArrive && !isRetry) {
       final jobId = await requestLecture(
         slidePath,
@@ -369,12 +369,12 @@ Future<String?> downloadResult(
 
       return savePath;
     } else {
-      debugPrint('Failed to download result: ${response.statusCode}');
+      debugPrint('Failed to download result: ${response.statusCode}'); // coverage:ignore-line
       LectureLoadingService.instance.setError();
       return null;
     }
   } catch (e) {
-    debugPrint('Error during download: $e');
+    debugPrint('Error during download: $e'); // coverage:ignore-line
     if (!isRetry) {
       final savePath = await downloadResult(
         jobId,
@@ -446,7 +446,7 @@ Future<List<String>?> unzipResult(
         await zipFile.delete();
       }
     } catch (e) {
-      debugPrint('Zip file deletion failed: $e');
+      debugPrint('Zip file deletion failed: $e'); // coverage:ignore-line
     }
   }
 
@@ -472,7 +472,7 @@ Future<List<String>?> fetchLecture(
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
 }) async {
-  debugPrint('🚀 Starting lecture request $order/$audioCount');
+  debugPrint('🚀 Starting lecture request $order/$audioCount'); // coverage:ignore-line
   final jobId = await requestLecture(
     slidePath,
     audioFileEntry,
@@ -524,16 +524,16 @@ Future<List<String>?> fetchLecture(
         final splitPdfFile = File(splitPdfPath);
         if (splitPdfFile.existsSync()) {
           await splitPdfFile.delete();
-          debugPrint('Deleted split PDF: $splitPdfPath');
+          debugPrint('Deleted split PDF: $splitPdfPath'); // coverage:ignore-line
         }
       } catch (e) {
-        debugPrint('Failed to delete split PDF: $e');
+        debugPrint('Failed to delete split PDF: $e'); // coverage:ignore-line
       }
     }
 
     return filePaths;
   } catch (e) {
-    debugPrint('Error during unzip: $e');
+    debugPrint('Error during unzip: $e'); // coverage:ignore-line
     LectureLoadingService.instance.setError();
     return null;
   }
@@ -578,7 +578,7 @@ Future<String?> concatenateAudioFiles(
       }
     }
   } catch (e) {
-    debugPrint('Audio file deletion failed: $e');
+    debugPrint('Audio file deletion failed: $e'); // coverage:ignore-line
   }
 
   return audioOutputPath;
@@ -677,7 +677,7 @@ Future<String?> concatenateJsonFiles(
         }
       }
     } catch (e) {
-      debugPrint('JSON file deletion failed: $e');
+      debugPrint('JSON file deletion failed: $e'); // coverage:ignore-line
     }
 
     return jsonOutputPath;

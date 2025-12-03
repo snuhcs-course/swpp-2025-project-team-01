@@ -534,9 +534,9 @@ class _LectureCardState extends State<LectureCard> {
       try {
         final cacheDir = await getTemporaryDirectory();
         beforeFiles = cacheDir.listSync().map((f) => f.path).toSet();
-        debugPrint('📂 Cache files before PDF open: ${beforeFiles.length}');
+        debugPrint('📂 Cache files before PDF open: ${beforeFiles.length}'); // coverage:ignore-line
       } catch (e) {
-        debugPrint('⚠️ Failed to list cache directory: $e');
+        debugPrint('⚠️ Failed to list cache directory: $e'); // coverage:ignore-line
       }
 
       // assets 경로인지 파일 시스템 경로인지 확인
@@ -545,7 +545,7 @@ class _LectureCardState extends State<LectureCard> {
           ? await PdfDocument.openAsset(widget.lec.slidePath!)
           : await PdfDocument.openFile(widget.lec.slidePath!);
 
-      debugPrint('📄 Opened PDF: ${widget.lec.slidePath}');
+      debugPrint('📄 Opened PDF: ${widget.lec.slidePath}'); // coverage:ignore-line
 
       page = await document.getPage(1);
 
@@ -562,7 +562,7 @@ class _LectureCardState extends State<LectureCard> {
       // PDF document와 page를 사용 후 즉시 닫기
       await page.close();
       await document.close();
-      debugPrint('🔒 Closed PDF document and page');
+      debugPrint('🔒 Closed PDF document and page'); // coverage:ignore-line
 
       // 새로 생긴 캐시 파일 찾아서 삭제
       if (beforeFiles != null) {
@@ -576,20 +576,20 @@ class _LectureCardState extends State<LectureCard> {
               try {
                 await file.delete();
                 deletedCount++;
-                debugPrint('🗑️ Deleted cache file: ${file.path}');
+                debugPrint('🗑️ Deleted cache file: ${file.path}'); // coverage:ignore-line
               } catch (e) {
-                debugPrint('⚠️ Failed to delete ${file.path}: $e');
+                debugPrint('⚠️ Failed to delete ${file.path}: $e'); // coverage:ignore-line
               }
             }
           }
 
           if (deletedCount > 0) {
-            debugPrint(
+            debugPrint( // coverage:ignore-line
               '✅ Cleaned up $deletedCount cache files for lecture: ${widget.lec.id}',
             );
           }
         } catch (e) {
-          debugPrint('⚠️ Failed to cleanup cache files: $e');
+          debugPrint('⚠️ Failed to cleanup cache files: $e'); // coverage:ignore-line
         }
       }
 
@@ -618,7 +618,7 @@ class _LectureCardState extends State<LectureCard> {
           _isLoading = false;
         });
       }
-      debugPrint('❌ Error loading PDF: $e');
+      debugPrint('❌ Error loading PDF: $e'); // coverage:ignore-line
     }
   }
 
