@@ -40,7 +40,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -60,7 +60,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -84,7 +84,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -112,7 +112,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -142,7 +142,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -173,7 +173,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -201,7 +201,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -229,7 +229,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -257,7 +257,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -283,7 +283,7 @@ void main() {
           locale: const Locale('ko', 'KR'),
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -310,7 +310,7 @@ void main() {
           locale: const Locale('ko', 'KR'),
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -331,8 +331,8 @@ void main() {
     });
   });
 
-  group('CustomDrawer.showAsDialog (Reduced Motion Mode) - English', () {
-    testWidgets('should display menu when showAsDialog is called', (
+  group('CustomDrawer.open (Reduced Motion Mode) - English', () {
+    testWidgets('should display menu when open is called with reduceMotion', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -342,7 +342,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -352,15 +352,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap button to show drawer as dialog
+      // Tap button to show drawer via overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
-      // Should show menu items (indicating dialog is open)
+      // Should show menu items (indicating overlay is open)
       expect(find.text('Menu'), findsOneWidget);
     });
 
-    testWidgets('should display all menu items in dialog', (
+    testWidgets('should display all menu items in overlay', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -370,7 +370,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -380,7 +380,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -393,7 +393,7 @@ void main() {
       expect(find.byType(Divider), findsNWidgets(3));
     });
 
-    testWidgets('should align dialog to left side', (
+    testWidgets('should position overlay to left side', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -403,7 +403,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -413,20 +413,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
-      // Check alignment - find the Align widget that contains the drawer content
-      final aligns = tester.widgetList<Align>(find.byType(Align));
-      final drawerAlign = aligns.firstWhere(
-        (align) => align.alignment == Alignment.centerLeft,
-        orElse: () => aligns.first,
+      // Check positioning - find the Positioned widget
+      final positionedWidgets = tester.widgetList<Positioned>(
+        find.byType(Positioned),
       );
-      expect(drawerAlign.alignment, Alignment.centerLeft);
+      final drawerPositioned = positionedWidgets.firstWhere(
+        (pos) => pos.left == 0 && pos.top == 0 && pos.bottom == 0,
+      );
+      expect(drawerPositioned.left, 0);
+      expect(drawerPositioned.top, 0);
+      expect(drawerPositioned.bottom, 0);
     });
 
-    testWidgets('should have correct width (75% of screen)', (
+    testWidgets('should have correct width based on device type', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -436,7 +439,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -446,22 +449,27 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
-      // Get screen width
+      // Get screen dimensions
       final screenWidth =
           tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final screenHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      final shortestSide = screenWidth < screenHeight
+          ? screenWidth
+          : screenHeight;
+      final isTablet = shortestSide >= 600;
 
       // Find SizedBox containing the drawer content
       final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
-      final drawerSizedBox = sizedBoxes.firstWhere(
-        (box) => box.width != null && box.height == double.infinity,
-      );
+      final drawerSizedBox = sizedBoxes.firstWhere((box) => box.width != null);
 
-      expect(drawerSizedBox.width, screenWidth * 0.75);
-      expect(drawerSizedBox.height, double.infinity);
+      // Check width: 304px for tablet, 75% for phone
+      final expectedWidth = isTablet ? 304.0 : screenWidth * 0.75;
+      expect(drawerSizedBox.width, expectedWidth);
     });
 
     testWidgets('should have Material with elevation 16', (
@@ -474,7 +482,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -484,7 +492,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -504,7 +512,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -514,7 +522,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -529,7 +537,7 @@ void main() {
       expect(safeAreaWithMenu, findsWidgets);
     });
 
-    testWidgets('should navigate to lecture form from dialog', (
+    testWidgets('should navigate to lecture form from overlay', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -539,7 +547,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -549,7 +557,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -557,12 +565,12 @@ void main() {
       await tester.tap(find.text('Create Lecture'));
       await tester.pumpAndSettle();
 
-      // Should navigate to lecture form screen and close dialog
+      // Should navigate to lecture form screen and close overlay
       expect(find.text('Lecture Form Screen'), findsOneWidget);
       expect(find.text('Menu'), findsNothing);
     });
 
-    testWidgets('should navigate to tags edit from dialog', (
+    testWidgets('should navigate to tags edit from overlay', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -572,7 +580,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -582,7 +590,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -590,12 +598,12 @@ void main() {
       await tester.tap(find.text('Edit Tags'));
       await tester.pumpAndSettle();
 
-      // Should navigate and close dialog
+      // Should navigate and close overlay
       expect(find.text('Tags Edit Screen'), findsOneWidget);
       expect(find.text('Menu'), findsNothing);
     });
 
-    testWidgets('should navigate to settings from dialog', (
+    testWidgets('should navigate to settings from overlay', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -605,7 +613,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -615,7 +623,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -623,12 +631,12 @@ void main() {
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
 
-      // Should navigate and close dialog
+      // Should navigate and close overlay
       expect(find.text('Settings Screen'), findsOneWidget);
       expect(find.text('Menu'), findsNothing);
     });
 
-    testWidgets('should dismiss dialog when tapping barrier', (
+    testWidgets('should dismiss overlay when tapping barrier', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -638,7 +646,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -648,23 +656,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
-      // Verify dialog is open
+      // Verify overlay is open
       expect(find.text('Menu'), findsOneWidget);
 
-      // Tap outside the dialog (on the barrier)
+      // Tap outside the overlay (on the barrier)
       await tester.tapAt(const Offset(600, 300)); // Right side of screen
       await tester.pumpAndSettle();
 
-      // Dialog should be dismissed
+      // Overlay should be dismissed
       expect(find.text('Menu'), findsNothing);
       expect(find.text('Show Drawer'), findsOneWidget);
     });
 
-    testWidgets('should display dialog with barrier', (
+    testWidgets('should display overlay with background barrier', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -674,7 +682,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -684,20 +692,20 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
-      // Dialog barrier should exist (ModalBarrier is present when dialog is shown)
-      expect(find.byType(ModalBarrier), findsWidgets);
+      // GestureDetector with Container should exist as barrier
+      expect(find.byType(GestureDetector), findsWidgets);
 
       // Menu should be visible
       expect(find.text('Menu'), findsOneWidget);
     });
   });
 
-  group('CustomDrawer.showAsDialog (Reduced Motion Mode) - Korean', () {
-    testWidgets('should display menu items in Korean in dialog', (
+  group('CustomDrawer.open (Reduced Motion Mode) - Korean', () {
+    testWidgets('should display menu items in Korean in overlay', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -708,7 +716,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -718,7 +726,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -729,7 +737,7 @@ void main() {
       expect(find.text('설정'), findsOneWidget);
     });
 
-    testWidgets('should navigate correctly from Korean dialog', (
+    testWidgets('should navigate correctly from Korean overlay', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -740,7 +748,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -750,7 +758,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Show dialog
+      // Show overlay
       await tester.tap(find.text('Show Drawer'));
       await tester.pumpAndSettle();
 
@@ -772,7 +780,7 @@ void main() {
         createTestApp(
           home: Scaffold(
             appBar: AppBar(title: const Text('Test')),
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -793,7 +801,7 @@ void main() {
       }
     });
 
-    testWidgets('should handle multiple dialog shows', (
+    testWidgets('should handle multiple overlay shows', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -803,7 +811,7 @@ void main() {
               appBar: AppBar(title: const Text('Test')),
               body: Center(
                 child: ElevatedButton(
-                  onPressed: () => CustomDrawer.showAsDialog(context),
+                  onPressed: () => CustomDrawer.open(context, true),
                   child: const Text('Show Drawer'),
                 ),
               ),
@@ -832,7 +840,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           home: Scaffold(
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
@@ -854,7 +862,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           home: Scaffold(
-            drawer: const CustomDrawer(),
+            drawer: const CustomDrawer(reduceMotion: false),
             body: const Center(child: Text('Home')),
           ),
         ),
