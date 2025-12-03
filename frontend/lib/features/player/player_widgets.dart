@@ -632,9 +632,11 @@ class TopControlBar extends StatelessWidget {
             onPressed: isKoreanLecture
                 ? () {
                     final l10n = AppLocalizations.of(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.ttsNotSupportedForKorean)),
-                    );
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(content: Text(l10n.ttsNotSupportedForKorean)),
+                      );
                   }
                 : onAudioToggle,
             isVertical: isVertical,

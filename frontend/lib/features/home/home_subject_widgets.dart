@@ -45,9 +45,9 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _addNewTag() async {
@@ -297,13 +297,15 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
           onPressed: () {
             final text = _titleController.text.trim();
             if (text.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    AppLocalizations.of(context).pleaseEnterSubjectName,
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context).pleaseEnterSubjectName,
+                    ),
                   ),
-                ),
-              );
+                );
               return;
             }
             final isDuplicate = _manager
@@ -311,11 +313,15 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
                 .map((s) => s.title)
                 .contains(text);
             if (isDuplicate) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(AppLocalizations.of(context).subjectNameExists),
-                ),
-              );
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      AppLocalizations.of(context).subjectNameExists,
+                    ),
+                  ),
+                );
               return;
             }
             Navigator.pop(context, {
@@ -369,9 +375,9 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<bool?> showDeleteConfirmationDialog(HiveSubject subject) {

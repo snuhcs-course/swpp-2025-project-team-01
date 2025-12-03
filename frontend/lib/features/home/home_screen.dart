@@ -72,9 +72,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// Player로 이동하고 돌아올 때 orientation 재설정
@@ -346,16 +346,26 @@ class _HomeScreenState extends State<HomeScreen>
                 itemBuilder: (context, i) {
                   // 드래그 중일 때 재정렬된 리스트 생성
                   final displaySubjects = List<HiveSubject>.from(subjects);
-                  if (_draggingIndex != null && _hoverIndex != null && editModeEnabled) {
+                  if (_draggingIndex != null &&
+                      _hoverIndex != null &&
+                      editModeEnabled) {
                     // 미분류가 아닌 과목들만 재정렬
-                    final categorized = subjects.where((s) => !s.isUncategorized).toList();
-                    final uncategorized = subjects.where((s) => s.isUncategorized).toList();
+                    final categorized = subjects
+                        .where((s) => !s.isUncategorized)
+                        .toList();
+                    final uncategorized = subjects
+                        .where((s) => s.isUncategorized)
+                        .toList();
 
-                    if (_draggingIndex! < categorized.length && _hoverIndex! < categorized.length) {
+                    if (_draggingIndex! < categorized.length &&
+                        _hoverIndex! < categorized.length) {
                       final item = categorized.removeAt(_draggingIndex!);
                       categorized.insert(_hoverIndex!, item);
                       displaySubjects.clear();
-                      displaySubjects.addAll([...categorized, ...uncategorized]);
+                      displaySubjects.addAll([
+                        ...categorized,
+                        ...uncategorized,
+                      ]);
                     }
                   }
 
@@ -376,7 +386,8 @@ class _HomeScreenState extends State<HomeScreen>
 
                   // Placeholder 표시 여부
                   // 드래그한 아이템이 이동한 자리(_hoverIndex)에 placeholder 표시
-                  final bool isPlaceholder = _hoverIndex == i && _draggingIndex != null;
+                  final bool isPlaceholder =
+                      _hoverIndex == i && _draggingIndex != null;
 
                   Widget panel = SubjectPanel(
                     key: ValueKey(s.id),

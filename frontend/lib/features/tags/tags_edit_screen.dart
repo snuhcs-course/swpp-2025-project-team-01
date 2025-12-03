@@ -469,9 +469,9 @@ class _TagsEditScreenState extends State<TagsEditScreen> {
 
   /// 스낵바 표시 헬퍼 메서드
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// 태그 삭제 경고 다이얼로그

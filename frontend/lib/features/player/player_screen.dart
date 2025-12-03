@@ -136,13 +136,15 @@ class _PlayerScreenState extends State<PlayerScreen>
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
 
       // SnackBar가 화면에 렌더링된 후 이전 페이지로 이동
       WidgetsBinding.instance.addPostFrameCallback((_) {

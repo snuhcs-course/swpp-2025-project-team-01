@@ -145,15 +145,15 @@ class HorizontalPlayerLayout extends StatelessWidget {
                                                       AppLocalizations.of(
                                                         context,
                                                       );
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        l10n.ttsNotSupportedForKorean,
+                                                  ScaffoldMessenger.of(context)
+                                                    ..hideCurrentSnackBar()
+                                                    ..showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          l10n.ttsNotSupportedForKorean,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  );
+                                                    );
                                                 }
                                               : controller.toggleAudioSource,
                                           isVertical: false,
@@ -647,9 +647,11 @@ class PagesListWidget extends StatelessWidget {
                 !controller.hasTranscriptForSlide(pageNumber)) {
               if (context.mounted) {
                 final l10n = AppLocalizations.of(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.noTranscriptForSlide)),
-                );
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(content: Text(l10n.noTranscriptForSlide)),
+                  );
               }
               return;
             }
