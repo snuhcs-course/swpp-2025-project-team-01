@@ -281,6 +281,16 @@ class TTSProcessor:
                     output_path
                 ]
 
+            elif fmt.lower() == 'mp3':
+                output_path = f"{base_path}.mp3"
+                cmd = [
+                    'ffmpeg', '-y', '-i', wav_path,
+                    '-c:a', 'libmp3lame',
+                    '-b:a', '192k',
+                    '-q:a', '2',
+                    output_path
+                ]
+
             else:
                 print(f"  ⚠ Unsupported format: {fmt}")
                 continue
