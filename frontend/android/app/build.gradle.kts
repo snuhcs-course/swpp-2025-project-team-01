@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.project.re_view"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"  // path_provider_android 요구사항
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
@@ -52,6 +52,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            // ProGuard 설정 추가 (path_provider 채널 오류 방지)
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

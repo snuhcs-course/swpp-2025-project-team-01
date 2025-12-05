@@ -22,11 +22,11 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // pdfx가 생성한 캐시 파일들 정리
-  await _cleanupCache();
-
   // HiveManager 초기화
   await HiveManager.instance.init();
+
+  // pdfx가 생성한 캐시 파일들 정리 (Hive 초기화 후 실행)
+  await _cleanupCache();
 
   if (Platform.isAndroid) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
