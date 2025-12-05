@@ -285,13 +285,17 @@ class TTSProcessor:
                 output_path = f"{base_path}.mp3"
                 cmd = [
                     'ffmpeg', '-y', '-i', wav_path,
+                    '-vn',
                     '-ar', '44100',
-                    '-ac', '1',
+                    '-ac', '2',
                     '-c:a', 'libmp3lame',
-                    '-b:a', '192k',
-                    '-q:a', '2',
+                    '-b:a', '96k',
+                    '-minrate', '96k',
+                    '-maxrate', '96k',
+                    '-bufsize', '96k',
                     '-write_xing', '1',
                     '-id3v2_version', '3',
+                    '-fflags', '+bitexact',
                     output_path
                 ]
 
