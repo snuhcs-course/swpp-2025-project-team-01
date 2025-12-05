@@ -405,7 +405,7 @@ Future<List<String>?> unzipResult(
     throw Exception('Zip file not found: $zipPath');
   }
 
-  final resultPaths = <String>['opus', 'json'];
+  final resultPaths = <String>['mp3', 'json'];
   final bytes = zipFile.readAsBytesSync();
   final archive = ZipDecoder().decodeBytes(bytes);
 
@@ -420,13 +420,12 @@ Future<List<String>?> unzipResult(
 
     if (file.isFile) {
       // Make sure the parent directory exists
-      await Directory(File(filePath).parent.path).create(recursive: true);
+      final fileObj = File(filePath);
+      await fileObj.parent.create(recursive: true);
       // Write the file content
-      File(filePath)
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(file.content as List<int>);
+      await fileObj.writeAsBytes(file.content as List<int>, flush: true);
 
-      if (extension == '.opus') {
+      if (extension == '.mp3') {
         resultPaths[0] = filePath;
       } else {
         resultPaths[1] = filePath;
@@ -539,7 +538,7 @@ Future<List<String>?> fetchLecture(
   }
 }
 
-/// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.
+/// Concatenate multiple MP3 audio files into a single continuous MP3 audio file.
 Future<String?> concatenateAudioFiles(
   List<String> audioPaths,
   String titleText,
@@ -552,8 +551,8 @@ Future<String?> concatenateAudioFiles(
   final outputDir = documentsDir.path;
   final listFile = '$outputDir/tmp_audio_list.txt';
   String audioOutputPath;
-  if (path.extension(audioPaths[0]) == '.opus') {
-    audioOutputPath = '$outputDir/$lectureId/$lectureId.opus';
+  if (path.extension(audioPaths[0]) == '.mp3') {
+    audioOutputPath = '$outputDir/$lectureId/$lectureId.mp3';
   } else {
     audioOutputPath = '$outputDir/$lectureId/$lectureId.m4a';
   }
@@ -562,7 +561,7 @@ Future<String?> concatenateAudioFiles(
   try {
     await File(listFile).writeAsString(audioFileList);
     await FFmpegKit.execute(
-      '-f concat -safe 0 -i $listFile -c copy $audioOutputPath',
+      '-f concat -safe 0 -i $listFile -c:a aac -b:a 128k $audioOutputPath',
     );
     await File(listFile).delete();
   } catch (_) {
