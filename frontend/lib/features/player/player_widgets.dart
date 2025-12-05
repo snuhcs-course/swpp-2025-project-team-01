@@ -320,7 +320,7 @@ class VideoTimelineSlider extends StatelessWidget {
             overlayColor: Colors.white.withValues(alpha: 0.3),
           ),
           child: Slider(
-            value: currentTime,
+            value: currentTime.clamp(0, totalTime),
             min: 0,
             max: totalTime,
             onChanged: onChanged,

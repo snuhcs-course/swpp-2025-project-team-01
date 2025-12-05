@@ -13,13 +13,14 @@ class AudioService {
   /// [path]가 'assets/'로 시작하면 asset으로, '/'로 시작하면 파일로 처리
   Future<void> loadAudio(String path) async {
     try {
-      debugPrint(path); // coverage:ignore-line
+      ja.AudioSource source;
       if (path.startsWith('assets/')) {
-        // 이미 'assets/'가 포함된 경로
-        await _player.setAsset(path);
+        source = ja.AudioSource.asset(path);
       } else {
-        await _player.setFilePath(path);
+        source = ja.AudioSource.file(path);
       }
+
+      await _player.setAudioSource(source);
       _currentAudioPath = path;
     } catch (e) {
       rethrow;
