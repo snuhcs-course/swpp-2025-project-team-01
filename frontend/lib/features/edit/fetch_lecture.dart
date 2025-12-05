@@ -407,59 +407,66 @@ Future<List<String>?> unzipResult(
 }) async {
   final zipFile = File(zipPath);
   if (!zipFile.existsSync()) {
-    throw Exception('Zip file not found: $zipPath');
-  }
-
-  final resultPaths = <String>['mp3', 'json'];
-  final bytes = zipFile.readAsBytesSync();
-  final archive = ZipDecoder().decodeBytes(bytes);
-
-  // 앱의 영구 저장소 디렉토리 가져오기
-  final documentsDir =
-      documentsDirOverride ?? await getApplicationDocumentsDirectory();
-  final outputDir = documentsDir.path;
-
-  for (final file in archive) {
-    final extension = path.extension(file.name);
-    final filePath = '$outputDir/$lectureId/${lectureId}_$order$extension';
-
-    if (file.isFile) {
-      // Make sure the parent directory exists
-      final fileObj = File(filePath);
-      await fileObj.parent.create(recursive: true);
-      // Write the file content
-      await fileObj.writeAsBytes(file.content as List<int>, flush: true);
-
-      if (extension == '.mp3') {
-        resultPaths[0] = filePath;
-      } else {
-        resultPaths[1] = filePath;
-      }
-    } else {
-      // It's a directory — just create it
-      await Directory(filePath).create(recursive: true);
-    }
-  }
-
-  // Unzip 완료 후 zip 파일 삭제
-  if (deleteZip) {
-    try {
-      if (deleteZipOverride != null) {
-        await deleteZipOverride(zipFile);
-      } else {
-        await zipFile.delete();
-      }
-    } catch (e) {
-      debugPrint('Zip file deletion failed: $e'); // coverage:ignore-line
-    }
-  }
-
-  // Invalid response
-  if (resultPaths.length != 2) {
+    LectureLoadingService.instance.setError();
     return null;
   }
+  try {
+    final resultPaths = <String>['mp3', 'json'];
+    final bytes = zipFile.readAsBytesSync();
+    final archive = ZipDecoder().decodeBytes(bytes);
 
-  return resultPaths;
+    // 앱의 영구 저장소 디렉토리 가져오기
+    final documentsDir =
+        documentsDirOverride ?? await getApplicationDocumentsDirectory();
+    final outputDir = documentsDir.path;
+
+    for (final file in archive) {
+      final extension = path.extension(file.name);
+      final filePath = '$outputDir/$lectureId/${lectureId}_$order$extension';
+
+      if (file.isFile) {
+        // Make sure the parent directory exists
+        final fileObj = File(filePath);
+        await fileObj.parent.create(recursive: true);
+        // Write the file content
+        await fileObj.writeAsBytes(file.content as List<int>, flush: true);
+
+        if (extension == '.mp3') {
+          resultPaths[0] = filePath;
+        } else {
+          resultPaths[1] = filePath;
+        }
+      } else {
+        // It's a directory — just create it
+        await Directory(filePath).create(recursive: true);
+      }
+    }
+
+    // Unzip 완료 후 zip 파일 삭제
+    if (deleteZip) {
+      try {
+        if (deleteZipOverride != null) {
+          await deleteZipOverride(zipFile);
+        } else {
+          await zipFile.delete();
+        }
+      } catch (e) {
+        debugPrint('Zip file deletion failed: $e'); // coverage:ignore-line
+      }
+    }
+
+    // Invalid response
+    if (resultPaths.length != 2) {
+      LectureLoadingService.instance.setError();
+      return null;
+    }
+
+    return resultPaths;
+  } catch (e) {
+    debugPrint('Error during unzip: $e'); // coverage:ignore-line
+    LectureLoadingService.instance.setError();
+    return null;
+  }
 }
 
 Future<List<String>?> fetchLecture(
@@ -512,39 +519,29 @@ Future<List<String>?> fetchLecture(
     return null;
   }
 
-  try {
-    final filePaths = await unzipResult(zipPath, titleText, lectureId, order);
+  final filePaths = await unzipResult(zipPath, titleText, lectureId, order);
 
-    if (filePaths == null) {
-      LectureLoadingService.instance.setError();
-      return null;
-    }
-
-    // Clean up split PDF files if they were created (multi-audio mode)
-    if (audioCount > 1) {
-      try {
-        final splitPdfPath = slidePath.replaceFirst(
-          RegExp(r'\.pdf$', caseSensitive: false),
-          '_tmp$order.pdf',
-        );
-        final splitPdfFile = File(splitPdfPath);
-        if (splitPdfFile.existsSync()) {
-          await splitPdfFile.delete();
-          debugPrint(
-            'Deleted split PDF: $splitPdfPath',
-          ); // coverage:ignore-line
-        }
-      } catch (e) {
-        debugPrint('Failed to delete split PDF: $e'); // coverage:ignore-line
-      }
-    }
-
-    return filePaths;
-  } catch (e) {
-    debugPrint('Error during unzip: $e'); // coverage:ignore-line
-    LectureLoadingService.instance.setError();
+  if (filePaths == null) {
     return null;
   }
+
+  if (audioCount > 1) {
+    try {
+      final splitPdfPath = slidePath.replaceFirst(
+        RegExp(r'\.pdf$', caseSensitive: false),
+        '_tmp$order.pdf',
+      );
+      final splitPdfFile = File(splitPdfPath);
+      if (splitPdfFile.existsSync()) {
+        await splitPdfFile.delete();
+        debugPrint('Deleted split PDF: $splitPdfPath'); // coverage:ignore-line
+      }
+    } catch (e) {
+      debugPrint('Failed to delete split PDF: $e'); // coverage:ignore-line
+    }
+  }
+  
+  return filePaths;
 }
 
 /// Concatenate multiple MP3 audio files into a single continuous MP3 audio file.
@@ -574,6 +571,7 @@ Future<String?> concatenateAudioFiles(
     );
     await File(listFile).delete();
   } catch (_) {
+    LectureLoadingService.instance.setError();
     return null;
   }
 
