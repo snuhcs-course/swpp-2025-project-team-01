@@ -898,9 +898,14 @@ class CompletedView extends StatelessWidget {
                     onPressed: () {
                       debugPrint('🔘 Button pressed!'); // coverage:ignore-line
                       final lectureId = service.getLectureIdAndHide();
-                      debugPrint('🔘 lectureId: $lectureId'); // coverage:ignore-line
-                      debugPrint('🔘 navigatorKey: $navigatorKey'); // coverage:ignore-line
-                      debugPrint( // coverage:ignore-line
+                      debugPrint(
+                        '🔘 lectureId: $lectureId',
+                      ); // coverage:ignore-line
+                      debugPrint(
+                        '🔘 navigatorKey: $navigatorKey',
+                      ); // coverage:ignore-line
+                      debugPrint(
+                        // coverage:ignore-line
                         '🔘 navigatorKey.currentState: ${navigatorKey.currentState}',
                       );
 

@@ -534,9 +534,13 @@ class _LectureCardState extends State<LectureCard> {
       try {
         final cacheDir = await getTemporaryDirectory();
         beforeFiles = cacheDir.listSync().map((f) => f.path).toSet();
-        debugPrint('📂 Cache files before PDF open: ${beforeFiles.length}'); // coverage:ignore-line
+        debugPrint(
+          '📂 Cache files before PDF open: ${beforeFiles.length}',
+        ); // coverage:ignore-line
       } catch (e) {
-        debugPrint('⚠️ Failed to list cache directory: $e'); // coverage:ignore-line
+        debugPrint(
+          '⚠️ Failed to list cache directory: $e',
+        ); // coverage:ignore-line
       }
 
       // assets 경로인지 파일 시스템 경로인지 확인
@@ -545,7 +549,9 @@ class _LectureCardState extends State<LectureCard> {
           ? await PdfDocument.openAsset(widget.lec.slidePath!)
           : await PdfDocument.openFile(widget.lec.slidePath!);
 
-      debugPrint('📄 Opened PDF: ${widget.lec.slidePath}'); // coverage:ignore-line
+      debugPrint(
+        '📄 Opened PDF: ${widget.lec.slidePath}',
+      ); // coverage:ignore-line
 
       page = await document.getPage(1);
 
@@ -576,20 +582,27 @@ class _LectureCardState extends State<LectureCard> {
               try {
                 await file.delete();
                 deletedCount++;
-                debugPrint('🗑️ Deleted cache file: ${file.path}'); // coverage:ignore-line
+                debugPrint(
+                  '🗑️ Deleted cache file: ${file.path}',
+                ); // coverage:ignore-line
               } catch (e) {
-                debugPrint('⚠️ Failed to delete ${file.path}: $e'); // coverage:ignore-line
+                debugPrint(
+                  '⚠️ Failed to delete ${file.path}: $e',
+                ); // coverage:ignore-line
               }
             }
           }
 
           if (deletedCount > 0) {
-            debugPrint( // coverage:ignore-line
+            debugPrint(
+              // coverage:ignore-line
               '✅ Cleaned up $deletedCount cache files for lecture: ${widget.lec.id}',
             );
           }
         } catch (e) {
-          debugPrint('⚠️ Failed to cleanup cache files: $e'); // coverage:ignore-line
+          debugPrint(
+            '⚠️ Failed to cleanup cache files: $e',
+          ); // coverage:ignore-line
         }
       }
 

@@ -63,13 +63,16 @@ class IntegrationTestHelpers {
 
       if (menuButton.evaluate().isNotEmpty || addButton.evaluate().isNotEmpty) {
         homeScreenFound = true;
-        debugPrint('✓ Home screen detected after ${splashAttempts * 100}ms'); // coverage:ignore-line
+        debugPrint(
+          '✓ Home screen detected after ${splashAttempts * 100}ms',
+        ); // coverage:ignore-line
         break;
       }
 
       // Debug every 2 seconds
       if (splashAttempts % 20 == 0 && splashAttempts > 0) {
-        debugPrint( // coverage:ignore-line
+        debugPrint(
+          // coverage:ignore-line
           'Still waiting for home screen... (${splashAttempts * 100}ms)',
         );
       }
@@ -78,7 +81,9 @@ class IntegrationTestHelpers {
     }
 
     if (!homeScreenFound) {
-      debugPrint('⚠️ Home screen not found after ${splashAttempts * 100}ms'); // coverage:ignore-line
+      debugPrint(
+        '⚠️ Home screen not found after ${splashAttempts * 100}ms',
+      ); // coverage:ignore-line
     }
 
     // Additional settling time after splash screen
@@ -97,7 +102,9 @@ class IntegrationTestHelpers {
       reason: 'HiveManager should be initialized after ${hiveAttempts * 100}ms',
     );
 
-    debugPrint('✓ HiveManager initialized after ${hiveAttempts * 100}ms'); // coverage:ignore-line
+    debugPrint(
+      '✓ HiveManager initialized after ${hiveAttempts * 100}ms',
+    ); // coverage:ignore-line
 
     // Final settling to ensure all widgets are ready
     await tester.pumpAndSettle(const Duration(seconds: 5));
@@ -114,7 +121,9 @@ class IntegrationTestHelpers {
       reason: 'Home screen should be visible',
     );
 
-    debugPrint('✅ App is ready - all systems initialized'); // coverage:ignore-line
+    debugPrint(
+      '✅ App is ready - all systems initialized',
+    ); // coverage:ignore-line
   }
 
   /// Tap on a widget by key
@@ -220,7 +229,9 @@ class IntegrationTestHelpers {
           await tester.pump(const Duration(milliseconds: 100));
         }
       } catch (e) {
-        debugPrint('Tap to close overlay attempt $i failed: $e'); // coverage:ignore-line
+        debugPrint(
+          'Tap to close overlay attempt $i failed: $e',
+        ); // coverage:ignore-line
       }
       await tester.pumpAndSettle(const Duration(milliseconds: 300));
     }
@@ -236,7 +247,9 @@ class IntegrationTestHelpers {
         break;
       }
 
-      debugPrint('Closing $dialogCount open dialog(s)...'); // coverage:ignore-line
+      debugPrint(
+        'Closing $dialogCount open dialog(s)...',
+      ); // coverage:ignore-line
       try {
         final navigators = find.byType(Navigator);
         if (navigators.evaluate().isNotEmpty) {
@@ -247,7 +260,9 @@ class IntegrationTestHelpers {
           }
         }
       } catch (e) {
-        debugPrint('Could not close dialog via Navigator: $e'); // coverage:ignore-line
+        debugPrint(
+          'Could not close dialog via Navigator: $e',
+        ); // coverage:ignore-line
         break;
       }
       dialogAttempts++;
@@ -282,7 +297,9 @@ class IntegrationTestHelpers {
       if (menuButton.evaluate().isNotEmpty &&
           (addButton.evaluate().isNotEmpty ||
               searchButton.evaluate().isNotEmpty)) {
-        debugPrint('✓ On home screen (attempt $attempts)'); // coverage:ignore-line
+        debugPrint(
+          '✓ On home screen (attempt $attempts)',
+        ); // coverage:ignore-line
         break;
       }
 
@@ -319,7 +336,9 @@ class IntegrationTestHelpers {
         if (!poppedViaNavigator) {
           // After several attempts with no back button, assume we're at home
           if (attempts > 5) {
-            debugPrint('No back button found, assuming we are at home'); // coverage:ignore-line
+            debugPrint(
+              'No back button found, assuming we are at home',
+            ); // coverage:ignore-line
             break;
           }
         }
@@ -335,7 +354,8 @@ class IntegrationTestHelpers {
     final menuButton = find.byIcon(Icons.menu);
 
     if (menuButton.evaluate().isEmpty) {
-      debugPrint( // coverage:ignore-line
+      debugPrint(
+        // coverage:ignore-line
         '⚠️ Warning: Could not verify home screen - menu button not found',
       );
 
@@ -352,13 +372,19 @@ class IntegrationTestHelpers {
 
       // Debug: check if scaffold exists
       final scaffolds = find.byType(Scaffold);
-      debugPrint('Scaffold count: ${scaffolds.evaluate().length}'); // coverage:ignore-line
+      debugPrint(
+        'Scaffold count: ${scaffolds.evaluate().length}',
+      ); // coverage:ignore-line
 
       // Debug: check for common home screen widgets
       final appBars = find.byType(AppBar);
-      debugPrint('AppBar count: ${appBars.evaluate().length}'); // coverage:ignore-line
+      debugPrint(
+        'AppBar count: ${appBars.evaluate().length}',
+      ); // coverage:ignore-line
     } else {
-      debugPrint('✓ Successfully navigated to home screen'); // coverage:ignore-line
+      debugPrint(
+        '✓ Successfully navigated to home screen',
+      ); // coverage:ignore-line
     }
   }
 
@@ -384,7 +410,9 @@ class IntegrationTestHelpers {
       final subject1 = manager.getSubjects().firstWhere(
         (s) => s.title == 'Test Subject 1',
       );
-      debugPrint('✓ Created Test Subject 1: ${subject1.id}'); // coverage:ignore-line
+      debugPrint(
+        '✓ Created Test Subject 1: ${subject1.id}',
+      ); // coverage:ignore-line
 
       // Create lectures for subject 1
       final lectureIds = <String>[];
@@ -418,7 +446,9 @@ class IntegrationTestHelpers {
 
       // Update subject with lectures
       await manager.updateSubject(subject1.id, lectureIds: lectureIds);
-      debugPrint('✓ Created 2 lectures for Test Subject 1'); // coverage:ignore-line
+      debugPrint(
+        '✓ Created 2 lectures for Test Subject 1',
+      ); // coverage:ignore-line
 
       // Create test subject 2
       await manager.createSubject('Test Subject 2', []);
@@ -515,7 +545,9 @@ class IntegrationTestHelpers {
       await binding.takeScreenshot(name);
       debugPrint('📸 Screenshot saved: $name'); // coverage:ignore-line
     } catch (e) {
-      debugPrint('⚠️ Failed to take screenshot "$name": $e'); // coverage:ignore-line
+      debugPrint(
+        '⚠️ Failed to take screenshot "$name": $e',
+      ); // coverage:ignore-line
     }
   }
 }

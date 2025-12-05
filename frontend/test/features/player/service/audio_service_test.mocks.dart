@@ -23,18 +23,28 @@ import 'package:mockito/src/dummies.dart' as _i4;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakePlaybackEvent_0 extends _i1.SmartFake implements _i2.PlaybackEvent {
-  _FakePlaybackEvent_0(Object parent, Invocation parentInvocation)
+class _FakePlayerEvent_0 extends _i1.SmartFake implements _i2.PlayerEvent {
+  _FakePlayerEvent_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeDuration_1 extends _i1.SmartFake implements Duration {
-  _FakeDuration_1(Object parent, Invocation parentInvocation)
+class _FakePlaybackEvent_1 extends _i1.SmartFake implements _i2.PlaybackEvent {
+  _FakePlaybackEvent_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakePlayerState_2 extends _i1.SmartFake implements _i2.PlayerState {
-  _FakePlayerState_2(Object parent, Invocation parentInvocation)
+class _FakeDuration_2 extends _i1.SmartFake implements Duration {
+  _FakeDuration_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakePlayerState_3 extends _i1.SmartFake implements _i2.PlayerState {
+  _FakePlayerState_3(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeSequenceState_4 extends _i1.SmartFake implements _i2.SequenceState {
+  _FakeSequenceState_4(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -47,10 +57,29 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
   }
 
   @override
+  _i2.PlayerEvent get playerEvent =>
+      (super.noSuchMethod(
+            Invocation.getter(#playerEvent),
+            returnValue: _FakePlayerEvent_0(
+              this,
+              Invocation.getter(#playerEvent),
+            ),
+          )
+          as _i2.PlayerEvent);
+
+  @override
+  _i3.Stream<_i2.PlayerEvent> get playerEventStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#playerEventStream),
+            returnValue: _i3.Stream<_i2.PlayerEvent>.empty(),
+          )
+          as _i3.Stream<_i2.PlayerEvent>);
+
+  @override
   _i2.PlaybackEvent get playbackEvent =>
       (super.noSuchMethod(
             Invocation.getter(#playbackEvent),
-            returnValue: _FakePlaybackEvent_0(
+            returnValue: _FakePlaybackEvent_1(
               this,
               Invocation.getter(#playbackEvent),
             ),
@@ -161,7 +190,7 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
   Duration get bufferedPosition =>
       (super.noSuchMethod(
             Invocation.getter(#bufferedPosition),
-            returnValue: _FakeDuration_1(
+            returnValue: _FakeDuration_2(
               this,
               Invocation.getter(#bufferedPosition),
             ),
@@ -188,7 +217,7 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
   _i2.PlayerState get playerState =>
       (super.noSuchMethod(
             Invocation.getter(#playerState),
-            returnValue: _FakePlayerState_2(
+            returnValue: _FakePlayerState_3(
               this,
               Invocation.getter(#playerState),
             ),
@@ -204,20 +233,36 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
           as _i3.Stream<_i2.PlayerState>);
 
   @override
-  _i3.Stream<List<_i2.IndexedAudioSource>?> get sequenceStream =>
+  List<_i2.IndexedAudioSource> get sequence =>
       (super.noSuchMethod(
-            Invocation.getter(#sequenceStream),
-            returnValue: _i3.Stream<List<_i2.IndexedAudioSource>?>.empty(),
+            Invocation.getter(#sequence),
+            returnValue: <_i2.IndexedAudioSource>[],
           )
-          as _i3.Stream<List<_i2.IndexedAudioSource>?>);
+          as List<_i2.IndexedAudioSource>);
 
   @override
-  _i3.Stream<List<int>?> get shuffleIndicesStream =>
+  _i3.Stream<List<_i2.IndexedAudioSource>> get sequenceStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#sequenceStream),
+            returnValue: _i3.Stream<List<_i2.IndexedAudioSource>>.empty(),
+          )
+          as _i3.Stream<List<_i2.IndexedAudioSource>>);
+
+  @override
+  List<int> get shuffleIndices =>
+      (super.noSuchMethod(
+            Invocation.getter(#shuffleIndices),
+            returnValue: <int>[],
+          )
+          as List<int>);
+
+  @override
+  _i3.Stream<List<int>> get shuffleIndicesStream =>
       (super.noSuchMethod(
             Invocation.getter(#shuffleIndicesStream),
-            returnValue: _i3.Stream<List<int>?>.empty(),
+            returnValue: _i3.Stream<List<int>>.empty(),
           )
-          as _i3.Stream<List<int>?>);
+          as _i3.Stream<List<int>>);
 
   @override
   _i3.Stream<int?> get currentIndexStream =>
@@ -228,12 +273,23 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
           as _i3.Stream<int?>);
 
   @override
-  _i3.Stream<_i2.SequenceState?> get sequenceStateStream =>
+  _i2.SequenceState get sequenceState =>
+      (super.noSuchMethod(
+            Invocation.getter(#sequenceState),
+            returnValue: _FakeSequenceState_4(
+              this,
+              Invocation.getter(#sequenceState),
+            ),
+          )
+          as _i2.SequenceState);
+
+  @override
+  _i3.Stream<_i2.SequenceState> get sequenceStateStream =>
       (super.noSuchMethod(
             Invocation.getter(#sequenceStateStream),
-            returnValue: _i3.Stream<_i2.SequenceState?>.empty(),
+            returnValue: _i3.Stream<_i2.SequenceState>.empty(),
           )
-          as _i3.Stream<_i2.SequenceState?>);
+          as _i3.Stream<_i2.SequenceState>);
 
   @override
   bool get hasNext =>
@@ -244,6 +300,14 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
   bool get hasPrevious =>
       (super.noSuchMethod(Invocation.getter(#hasPrevious), returnValue: false)
           as bool);
+
+  @override
+  List<int> get effectiveIndices =>
+      (super.noSuchMethod(
+            Invocation.getter(#effectiveIndices),
+            returnValue: <int>[],
+          )
+          as List<int>);
 
   @override
   _i2.LoopMode get loopMode =>
@@ -284,6 +348,14 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
             returnValue: _i3.Stream<int?>.empty(),
           )
           as _i3.Stream<int?>);
+
+  @override
+  _i3.Stream<_i2.PlayerException> get errorStream =>
+      (super.noSuchMethod(
+            Invocation.getter(#errorStream),
+            returnValue: _i3.Stream<_i2.PlayerException>.empty(),
+          )
+          as _i3.Stream<_i2.PlayerException>);
 
   @override
   _i3.Stream<_i2.PositionDiscontinuity> get positionDiscontinuityStream =>
@@ -342,7 +414,7 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
   Duration get position =>
       (super.noSuchMethod(
             Invocation.getter(#position),
-            returnValue: _FakeDuration_1(this, Invocation.getter(#position)),
+            returnValue: _FakeDuration_2(this, Invocation.getter(#position)),
           )
           as Duration);
 
@@ -353,6 +425,14 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
             returnValue: _i3.Stream<Duration>.empty(),
           )
           as _i3.Stream<Duration>);
+
+  @override
+  List<_i2.AudioSource> get audioSources =>
+      (super.noSuchMethod(
+            Invocation.getter(#audioSources),
+            returnValue: <_i2.AudioSource>[],
+          )
+          as List<_i2.AudioSource>);
 
   @override
   _i3.Stream<Duration> createPositionStream({
@@ -435,7 +515,7 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
 
   @override
   _i3.Future<Duration?> setAudioSource(
-    _i2.AudioSource? source, {
+    _i2.AudioSource? audioSource, {
     bool? preload = true,
     int? initialIndex,
     Duration? initialPosition,
@@ -443,11 +523,34 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
       (super.noSuchMethod(
             Invocation.method(
               #setAudioSource,
-              [source],
+              [audioSource],
               {
                 #preload: preload,
                 #initialIndex: initialIndex,
                 #initialPosition: initialPosition,
+              },
+            ),
+            returnValue: _i3.Future<Duration?>.value(),
+          )
+          as _i3.Future<Duration?>);
+
+  @override
+  _i3.Future<Duration?> setAudioSources(
+    List<_i2.AudioSource>? audioSources, {
+    bool? preload = true,
+    int? initialIndex,
+    Duration? initialPosition,
+    _i2.ShuffleOrder? shuffleOrder,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #setAudioSources,
+              [audioSources],
+              {
+                #preload: preload,
+                #initialIndex: initialIndex,
+                #initialPosition: initialPosition,
+                #shuffleOrder: shuffleOrder,
               },
             ),
             returnValue: _i3.Future<Duration?>.value(),
@@ -461,6 +564,84 @@ class MockAudioPlayer extends _i1.Mock implements _i2.AudioPlayer {
             returnValue: _i3.Future<Duration?>.value(),
           )
           as _i3.Future<Duration?>);
+
+  @override
+  _i3.Future<void> addAudioSource(_i2.AudioSource? audioSource) =>
+      (super.noSuchMethod(
+            Invocation.method(#addAudioSource, [audioSource]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> insertAudioSource(
+    int? index,
+    _i2.AudioSource? audioSource,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#insertAudioSource, [index, audioSource]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> addAudioSources(List<_i2.AudioSource>? audioSources) =>
+      (super.noSuchMethod(
+            Invocation.method(#addAudioSources, [audioSources]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> insertAudioSources(
+    int? index,
+    List<_i2.AudioSource>? audioSources,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#insertAudioSources, [index, audioSources]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> removeAudioSourceAt(int? index) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeAudioSourceAt, [index]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> removeAudioSourceRange(int? start, int? end) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeAudioSourceRange, [start, end]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> moveAudioSource(int? currentIndex, int? newIndex) =>
+      (super.noSuchMethod(
+            Invocation.method(#moveAudioSource, [currentIndex, newIndex]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> clearAudioSources() =>
+      (super.noSuchMethod(
+            Invocation.method(#clearAudioSources, []),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
 
   @override
   _i3.Future<Duration?> setClip({

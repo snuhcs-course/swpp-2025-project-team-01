@@ -68,7 +68,9 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
 
   await tester.pumpAndSettle();
 
-  debugPrint('Dummy lecture created: ${dummyLecture.id}'); // coverage:ignore-line
+  debugPrint(
+    'Dummy lecture created: ${dummyLecture.id}',
+  ); // coverage:ignore-line
 
   // Step 1: Confirm that the dummy lecture exists in Hive
   final lectureInHive = manager.getLecture(dummyLecture.id);
@@ -128,7 +130,9 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
     try {
       await tester.tap(subjectTitle.first);
       await tester.pumpAndSettle();
-      debugPrint('✓ Expanded subject panel for deletion'); // coverage:ignore-line
+      debugPrint(
+        '✓ Expanded subject panel for deletion',
+      ); // coverage:ignore-line
     } catch (_) {
       // Subject might already be expanded
       debugPrint('Subject panel already expanded'); // coverage:ignore-line
@@ -169,14 +173,20 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
   } else if (deleteOutlineButtons.evaluate().isNotEmpty) {
     await tester.tap(deleteOutlineButtons.last);
     deletedViaUI = true;
-    debugPrint('Tapped delete button (delete_outline icon)'); // coverage:ignore-line
+    debugPrint(
+      'Tapped delete button (delete_outline icon)',
+    ); // coverage:ignore-line
   } else if (removeButtons.evaluate().isNotEmpty) {
     await tester.tap(removeButtons.last);
     deletedViaUI = true;
-    debugPrint('Tapped delete button (remove_circle_outline icon)'); // coverage:ignore-line
+    debugPrint(
+      'Tapped delete button (remove_circle_outline icon)',
+    ); // coverage:ignore-line
   } else {
     // If no delete button found, directly delete via manager (as fallback for test)
-    debugPrint('No delete button found, deleting via HiveManager'); // coverage:ignore-line
+    debugPrint(
+      'No delete button found, deleting via HiveManager',
+    ); // coverage:ignore-line
     await manager.deleteLecture(dummyLecture.id);
   }
 
@@ -227,5 +237,7 @@ Future<void> runIntegration7Test(WidgetTester tester) async {
     reason: 'Deleted lecture should not be visible',
   );
 
-  debugPrint('✅ Integration 7 passed: Lecture successfully deleted from Hive'); // coverage:ignore-line
+  debugPrint(
+    '✅ Integration 7 passed: Lecture successfully deleted from Hive',
+  ); // coverage:ignore-line
 }

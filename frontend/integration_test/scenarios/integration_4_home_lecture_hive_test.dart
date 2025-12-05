@@ -62,7 +62,9 @@ Future<void> runIntegration4Test(WidgetTester tester) async {
 
   // Since we cannot mock file picker and backend API in integration tests,
   // we'll manually add a lecture using HiveManager to simulate the backend response
-  debugPrint('Simulating lecture creation via HiveManager...'); // coverage:ignore-line
+  debugPrint(
+    'Simulating lecture creation via HiveManager...',
+  ); // coverage:ignore-line
 
   // Get uncategorized subject or first subject
   final subjects = manager.getSubjects();
@@ -172,7 +174,9 @@ Future<void> runIntegration4Test(WidgetTester tester) async {
     try {
       await tester.tap(subjectTitleFinder.first);
       await tester.pumpAndSettle();
-      debugPrint('✓ Expanded subject panel to verify lecture in UI'); // coverage:ignore-line
+      debugPrint(
+        '✓ Expanded subject panel to verify lecture in UI',
+      ); // coverage:ignore-line
     } catch (_) {
       // Subject might already be expanded
     }
@@ -192,7 +196,8 @@ Future<void> runIntegration4Test(WidgetTester tester) async {
 
   debugPrint('✓ Lecture verified in home screen UI'); // coverage:ignore-line
 
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     '✅ Integration 4 passed: Lecture successfully added and persisted',
   );
 }

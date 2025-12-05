@@ -53,7 +53,9 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
 
   if (foundOption == null) {
     // Debug: print all visible text widgets
-    debugPrint('Available text widgets after tapping add button:'); // coverage:ignore-line
+    debugPrint(
+      'Available text widgets after tapping add button:',
+    ); // coverage:ignore-line
     final allTexts = find.byType(Text);
     for (final element in allTexts.evaluate().take(20)) {
       final widget = element.widget as Text;
@@ -145,7 +147,8 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
     reason: 'Subject should be visible in home screen',
   );
 
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     '✅ Integration 1 passed: Subject successfully added and persisted',
   );
 

@@ -73,7 +73,9 @@ Future<void> runIntegration6Test(WidgetTester tester) async {
     },
   );
 
-  debugPrint('Transition time WITH motion: ${timeWithMotion}ms'); // coverage:ignore-line
+  debugPrint(
+    'Transition time WITH motion: ${timeWithMotion}ms',
+  ); // coverage:ignore-line
 
   // Step 4: Navigate back to accessibility and enable reduced motion
   // Find accessibility option again
@@ -128,7 +130,9 @@ Future<void> runIntegration6Test(WidgetTester tester) async {
     },
   );
 
-  debugPrint('Transition time WITHOUT motion: ${timeWithoutMotion}ms'); // coverage:ignore-line
+  debugPrint(
+    'Transition time WITHOUT motion: ${timeWithoutMotion}ms',
+  ); // coverage:ignore-line
 
   // Step 6: Verify that reduced motion was successfully toggled
   // Note: Reduced motion doesn't necessarily make transitions faster.
@@ -143,14 +147,19 @@ Future<void> runIntegration6Test(WidgetTester tester) async {
   );
 
   // Log the transition times for debugging/verification
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     '✅ Integration 6 passed: Reduced motion setting successfully toggled',
   );
-  debugPrint('   Transition time WITH motion: ${timeWithMotion}ms'); // coverage:ignore-line
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    '   Transition time WITH motion: ${timeWithMotion}ms',
+  ); // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     '   Transition time WITHOUT motion (reduced): ${timeWithoutMotion}ms',
   );
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     '   Note: Reduced motion focuses on accessibility, not speed. '
     'Time difference: ${(timeWithoutMotion - timeWithMotion).abs()}ms',
   );

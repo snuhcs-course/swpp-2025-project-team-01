@@ -202,7 +202,8 @@ Future<String?> requestLecture(
               ? const Duration(milliseconds: 100) // Fast timeout for testing
               : const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
           onTimeout: (sink) {
-            debugPrint( // coverage:ignore-line
+            debugPrint(
+              // coverage:ignore-line
               'Stream timeout - No updates from server for 30 seconds',
             );
             sink.addError(Exception('서버로부터 응답이 없습니다'));
@@ -273,7 +274,9 @@ Future<String?> requestLecture(
           pollingClient,
         );
         if (status == null || status.$1 == 'failed') {
-          debugPrint('Error during lecture request stream processing: $e'); // coverage:ignore-line
+          debugPrint(
+            'Error during lecture request stream processing: $e',
+          ); // coverage:ignore-line
           LectureLoadingService.instance.setError();
           if (shouldCloseClient) {
             pollingClient.close();
@@ -369,7 +372,9 @@ Future<String?> downloadResult(
 
       return savePath;
     } else {
-      debugPrint('Failed to download result: ${response.statusCode}'); // coverage:ignore-line
+      debugPrint(
+        'Failed to download result: ${response.statusCode}',
+      ); // coverage:ignore-line
       LectureLoadingService.instance.setError();
       return null;
     }
@@ -471,7 +476,9 @@ Future<List<String>?> fetchLecture(
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
 }) async {
-  debugPrint('🚀 Starting lecture request $order/$audioCount'); // coverage:ignore-line
+  debugPrint(
+    '🚀 Starting lecture request $order/$audioCount',
+  ); // coverage:ignore-line
   final jobId = await requestLecture(
     slidePath,
     audioFileEntry,
@@ -523,7 +530,9 @@ Future<List<String>?> fetchLecture(
         final splitPdfFile = File(splitPdfPath);
         if (splitPdfFile.existsSync()) {
           await splitPdfFile.delete();
-          debugPrint('Deleted split PDF: $splitPdfPath'); // coverage:ignore-line
+          debugPrint(
+            'Deleted split PDF: $splitPdfPath',
+          ); // coverage:ignore-line
         }
       } catch (e) {
         debugPrint('Failed to delete split PDF: $e'); // coverage:ignore-line

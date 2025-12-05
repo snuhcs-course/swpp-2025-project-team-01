@@ -188,7 +188,9 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
 
   if (tagInUI.evaluate().isEmpty) {
     // Debug: print all visible text widgets
-    debugPrint('Available text widgets in filter area:'); // coverage:ignore-line
+    debugPrint(
+      'Available text widgets in filter area:',
+    ); // coverage:ignore-line
     final allTexts = find.byType(Text);
     for (final element in allTexts.evaluate().take(30)) {
       final widget = element.widget as Text;
@@ -208,7 +210,8 @@ Future<void> runIntegration3Test(WidgetTester tester) async {
   await tester.tap(filterPill);
   await tester.pumpAndSettle();
 
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     '✅ Integration 3 passed: Tag successfully added, persisted, and visible in UI',
   );
 }

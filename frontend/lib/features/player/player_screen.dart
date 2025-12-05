@@ -229,7 +229,9 @@ class _PlayerScreenState extends State<PlayerScreen>
           ? hiveLecture.originalAudioPath
           : hiveLecture.ttsAudioPath;
 
-      debugPrint('$isKoreanLecture $originalAudioPath, $ttsAudioPath'); // coverage:ignore-line
+      debugPrint(
+        '$isKoreanLecture $originalAudioPath, $ttsAudioPath',
+      ); // coverage:ignore-line
 
       // 6. Controller 초기화
       if (!mounted) {

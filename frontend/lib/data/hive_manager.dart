@@ -216,7 +216,9 @@ class HiveManager extends ChangeNotifier {
       }
     }
 
-    debugPrint('Loaded ${lectures.length} demo lectures from assets'); // coverage:ignore-line
+    debugPrint(
+      'Loaded ${lectures.length} demo lectures from assets',
+    ); // coverage:ignore-line
     return lectures;
   }
 

@@ -293,7 +293,9 @@ class HiveLecture {
         updatedAt: DateTime.now(),
       );
     } catch (e) {
-      debugPrint('Failed to load demo lecture $lectureId: $e'); // coverage:ignore-line
+      debugPrint(
+        'Failed to load demo lecture $lectureId: $e',
+      ); // coverage:ignore-line
       return null;
     }
   }

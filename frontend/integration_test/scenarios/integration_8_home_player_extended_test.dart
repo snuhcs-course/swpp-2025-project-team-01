@@ -29,7 +29,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     reason: 'Tutorial lecture should exist in assets',
   );
 
-  debugPrint('Tutorial lecture found: ${tutorialLecture!.title}'); // coverage:ignore-line
+  debugPrint(
+    'Tutorial lecture found: ${tutorialLecture!.title}',
+  ); // coverage:ignore-line
 
   // Step 1: Find and tap on tutorial lecture in home screen
   final subject = manager.getSubject('s1');
@@ -48,7 +50,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
   final menuButton = find.byIcon(Icons.menu);
   expect(menuButton, findsOneWidget, reason: 'Should be on home screen');
 
-  debugPrint('Confirmed on home screen, looking for lecture widget...'); // coverage:ignore-line
+  debugPrint(
+    'Confirmed on home screen, looking for lecture widget...',
+  ); // coverage:ignore-line
 
   // Expand the subject panel if needed
   final subjectTitle = find.text(subject.title);
@@ -58,7 +62,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
       await tester.pumpAndSettle();
       debugPrint('✓ Expanded subject panel'); // coverage:ignore-line
     } catch (e) {
-      debugPrint('Subject panel already expanded or not collapsible: $e'); // coverage:ignore-line
+      debugPrint(
+        'Subject panel already expanded or not collapsible: $e',
+      ); // coverage:ignore-line
     }
   }
 
@@ -68,7 +74,8 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
   final lectureFinder = find.text(tutorialLecture.title);
   final weekFinder = find.text(tutorialLecture.weekLabel);
 
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     'Looking for lecture: ${tutorialLecture.title} or ${tutorialLecture.weekLabel}',
   );
 
@@ -82,7 +89,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     debugPrint('✓ Found lecture by week label'); // coverage:ignore-line
   } else {
     // Try scrolling to find it
-    debugPrint('Lecture not immediately visible, trying to scroll...'); // coverage:ignore-line
+    debugPrint(
+      'Lecture not immediately visible, trying to scroll...',
+    ); // coverage:ignore-line
     final scrollables = find.byType(Scrollable);
 
     if (scrollables.evaluate().isNotEmpty) {
@@ -95,7 +104,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
 
         if (lectureFinder.evaluate().isNotEmpty) {
           lectureWidget = lectureFinder.first;
-          debugPrint('✓ Found lecture by scrolling to title'); // coverage:ignore-line
+          debugPrint(
+            '✓ Found lecture by scrolling to title',
+          ); // coverage:ignore-line
         }
       } catch (e) {
         debugPrint('Could not scroll to lecture: $e'); // coverage:ignore-line
@@ -110,14 +121,18 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     );
   }
 
-  debugPrint('✓ Lecture widget found, preparing to tap'); // coverage:ignore-line
+  debugPrint(
+    '✓ Lecture widget found, preparing to tap',
+  ); // coverage:ignore-line
 
   // Ensure the lecture widget is visible
   try {
     await tester.ensureVisible(lectureWidget);
     await tester.pumpAndSettle();
   } catch (e) {
-    debugPrint('⚠️ Could not ensure lecture visible: $e'); // coverage:ignore-line
+    debugPrint(
+      '⚠️ Could not ensure lecture visible: $e',
+    ); // coverage:ignore-line
   }
 
   // Step 2: Tap on the lecture to navigate to player
@@ -153,7 +168,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
 
       final Offset center = tester.getCenter(tappableWidget);
       await tester.tapAt(center);
-      debugPrint('✓ Tapped at position ($center) (attempt ${tapAttempt + 1})'); // coverage:ignore-line
+      debugPrint(
+        '✓ Tapped at position ($center) (attempt ${tapAttempt + 1})',
+      ); // coverage:ignore-line
     } catch (e) {
       debugPrint('⚠️ Error tapping: $e'); // coverage:ignore-line
       await tester.tap(lectureWidget, warnIfMissed: false);
@@ -165,10 +182,14 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     final menuButtonAfterTap = find.byIcon(Icons.menu);
     if (menuButtonAfterTap.evaluate().isEmpty) {
       navigationSuccessful = true;
-      debugPrint('✓ Navigation detected after tap attempt ${tapAttempt + 1}'); // coverage:ignore-line
+      debugPrint(
+        '✓ Navigation detected after tap attempt ${tapAttempt + 1}',
+      ); // coverage:ignore-line
       break;
     } else {
-      debugPrint('⚠️ Still on home screen, retrying...'); // coverage:ignore-line
+      debugPrint(
+        '⚠️ Still on home screen, retrying...',
+      ); // coverage:ignore-line
       await tester.pumpAndSettle();
     }
   }
@@ -192,7 +213,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     try {
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
     } catch (e) {
-      debugPrint('pumpAndSettle timeout during polling'); // coverage:ignore-line
+      debugPrint(
+        'pumpAndSettle timeout during polling',
+      ); // coverage:ignore-line
     }
 
     final verticalLayout = find.byType(VerticalPlayerLayout);
@@ -201,7 +224,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     if (verticalLayout.evaluate().isNotEmpty ||
         horizontalLayout.evaluate().isNotEmpty) {
       playerLoaded = true;
-      debugPrint('✓ Player loaded after ${(i + 1) * 500}ms'); // coverage:ignore-line
+      debugPrint(
+        '✓ Player loaded after ${(i + 1) * 500}ms',
+      ); // coverage:ignore-line
       break;
     }
   }
@@ -233,12 +258,16 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
     reason: 'Player screen should show transcript area',
   );
 
-  debugPrint('✅ Navigated to player screen - verified player layout widgets'); // coverage:ignore-line
+  debugPrint(
+    '✅ Navigated to player screen - verified player layout widgets',
+  ); // coverage:ignore-line
 
   // Step 3: Double tap on PDF area to skip 10 seconds
   await tester.pumpAndSettle(const Duration(seconds: 2));
 
-  debugPrint('Preparing to test double tap on PDF area...'); // coverage:ignore-line
+  debugPrint(
+    'Preparing to test double tap on PDF area...',
+  ); // coverage:ignore-line
 
   // First, tap once to show controls
   if (pdfArea.evaluate().isNotEmpty) {
@@ -280,7 +309,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
 
   // Note: We can't easily verify the time skip without access to the controller,
   // but the double tap gesture should have been registered
-  debugPrint('✅ Double tap gesture performed on PDF area'); // coverage:ignore-line
+  debugPrint(
+    '✅ Double tap gesture performed on PDF area',
+  ); // coverage:ignore-line
 
   // Step 4: Find and tap the language button on transcript panel
   await tester.pumpAndSettle(const Duration(seconds: 1));
@@ -334,7 +365,9 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
 
   // For Korean lectures, the language might not toggle (it stays KOR)
   // So we just verify that the button is still present
-  debugPrint('Initial language: $initialLanguage, New language: $newLanguage'); // coverage:ignore-line
+  debugPrint(
+    'Initial language: $initialLanguage, New language: $newLanguage',
+  ); // coverage:ignore-line
 
   if (initialLanguage == 'ENG') {
     // If it was English, it should have changed to Korean
@@ -346,12 +379,15 @@ Future<void> runIntegration8Test(WidgetTester tester) async {
   } else {
     // For Korean lectures, it might stay as KOR or not toggle
     // We just verify the button is still present
-    debugPrint('Language button state after toggle: $newLanguage'); // coverage:ignore-line
+    debugPrint(
+      'Language button state after toggle: $newLanguage',
+    ); // coverage:ignore-line
   }
 
   debugPrint('✅ Language button interaction verified'); // coverage:ignore-line
 
-  debugPrint( // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     '✅ Integration 8 passed: Player extended features verified - navigation, double tap, and language toggle',
   );
 }

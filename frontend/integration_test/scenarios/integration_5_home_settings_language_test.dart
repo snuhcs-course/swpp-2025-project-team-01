@@ -122,7 +122,9 @@ Future<void> runIntegration5Test(WidgetTester tester) async {
     expect(hasKoreanText, true, reason: 'Korean text should be visible');
   }
 
-  debugPrint('✅ Integration 5 passed: Language changed to $targetLanguage'); // coverage:ignore-line
+  debugPrint(
+    '✅ Integration 5 passed: Language changed to $targetLanguage',
+  ); // coverage:ignore-line
 
   // Restore original language for other tests
   await manager.updateLanguage(initialLanguage);
