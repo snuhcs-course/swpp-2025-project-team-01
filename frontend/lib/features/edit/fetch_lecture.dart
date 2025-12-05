@@ -567,7 +567,7 @@ Future<String?> concatenateAudioFiles(
   try {
     await File(listFile).writeAsString(audioFileList);
     await FFmpegKit.execute(
-      '-f concat -safe 0 -i $listFile -c:a aac -b:a 128k $audioOutputPath',
+      '-f concat -safe 0 -i $listFile -c copy $audioOutputPath',
     );
     await File(listFile).delete();
   } catch (_) {
