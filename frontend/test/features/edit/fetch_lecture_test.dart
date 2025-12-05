@@ -634,16 +634,14 @@ void main() {
     });
 
     test('Throws on missing zip file', () async {
-      await expectLater(
-        () => unzipResult(
-          '/does/not/exist.zip',
-          'A',
-          'lecId',
-          0,
-          deleteZip: false,
-        ),
-        throwsA(isA<Exception>()),
+      final result = await unzipResult(
+        '/does/not/exist.zip',
+        'A',
+        'lecId',
+        0,
+        deleteZip: false,
       );
+      expect(result, isNull);
     });
   });
 

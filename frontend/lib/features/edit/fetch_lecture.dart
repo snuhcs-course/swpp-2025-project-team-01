@@ -540,7 +540,7 @@ Future<List<String>?> fetchLecture(
       debugPrint('Failed to delete split PDF: $e'); // coverage:ignore-line
     }
   }
-  
+
   return filePaths;
 }
 
