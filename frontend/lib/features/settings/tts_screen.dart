@@ -39,12 +39,18 @@ class _TtsScreenState extends State<TtsScreen> {
     _loadSettings();
   }
 
+  @override
+  void dispose() {
+    _player.stop();
+    _player.dispose();
+    super.dispose();
+  }
+
   /// HiveManager에서 저장된 TTS 설정 불러오기
   Future<void> _loadSettings() async {
     if (mounted) {
       setState(() {
-        final ttsGender = _hiveManager.settings.ttsGender;
-        _gender = ttsGender == '남성' ? '여성' : ttsGender;
+        _gender = _hiveManager.settings.ttsGender;
       });
     }
   }

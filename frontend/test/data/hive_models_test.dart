@@ -72,7 +72,7 @@ void main() {
       expect(settings.accessibilityHighContrast, isFalse);
       expect(settings.accessibilityReduceMotion, isFalse);
       expect(settings.accessibilityEmphasizeCaptions, isFalse);
-      expect(settings.ttsGender, '남성');
+      expect(settings.ttsGender, '여성');
       expect(settings.tagColorTheme, '봄');
     });
 

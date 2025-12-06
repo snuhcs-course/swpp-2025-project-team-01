@@ -57,7 +57,7 @@ class AppSettings {
     this.accessibilityHighContrast = false,
     this.accessibilityReduceMotion = false,
     this.accessibilityEmphasizeCaptions = false,
-    this.ttsGender = '남성',
+    this.ttsGender = '여성',
     this.tagColorTheme = '봄',
   });
 
