@@ -285,7 +285,7 @@ class HiveLecture {
         slidePath: 'assets/lectures/$lectureId/${lectureId}_slides.pdf',
         originalAudioPath: 'assets/lectures/$lectureId/${lectureId}_audio.m4a',
         ttsAudioPath:
-            'assets/lectures/$lectureId/${lectureId}_audio.opus', // 데모는 로컬 파일 사용
+            'assets/lectures/$lectureId/${lectureId}_audio.mp3', // 데모는 로컬 파일 사용
         thumbnailUrl: null,
         jsonPath: 'assets/lectures/$lectureId/transcript.json',
         langCode: lectureId == 'lec_demo_001' ? 'en' : 'ko',
