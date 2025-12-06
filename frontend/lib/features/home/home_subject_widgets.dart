@@ -116,223 +116,231 @@ class _CreateSubjectDialogState extends State<CreateSubjectDialog> {
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    return AlertDialog(
-      backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
-      titlePadding: EdgeInsets.zero,
-      title: DialogHeaderTitle(title: AppLocalizations.of(context).addSubject),
-      content: SizedBox(
-        width: 400,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: screenHeight * 0.7 - keyboardHeight,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: AlertDialog(
+          backgroundColor: Theme.of(context).dialogTheme.backgroundColor,
+          titlePadding: EdgeInsets.zero,
+          title: DialogHeaderTitle(
+            title: AppLocalizations.of(context).addSubject,
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: l10n.subjectName,
-                    hintText: l10n.subjectNameHint,
-                  ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  AppLocalizations.of(context).selectTagsOptional,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.maxFinite,
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: widget.allTags.map((tag) {
-                      final isSelected = _selectedTagIds.contains(tag.id);
-                      return SelectableTagPill(
-                        tag: tag,
-                        selected: isSelected,
-                        onSelected: (_) {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedTagIds.remove(tag.id);
-                            } else {
-                              _selectedTagIds.add(tag.id);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ),
-                // 태그 추가 버튼
-                ActionChip(
-                  label: Text(
-                    '+',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(fontSize: 18),
-                  ),
-                  onPressed: _addNewTag,
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  elevation: Theme.of(context).chipTheme.elevation ?? 2,
-                  side: Theme.of(context).chipTheme.side,
-                ),
-                const SizedBox(height: 12),
-                if (_isCreatingTag)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.3),
-                        width: 1.5,
+          content: SizedBox(
+            width: 400,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: screenHeight * 0.7 - keyboardHeight,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        labelText: l10n.subjectName,
+                        hintText: l10n.subjectNameHint,
+                      ),
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppLocalizations.of(context).selectTagsOptional,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.addTag,
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _tagNameController,
-                                decoration: InputDecoration(
-                                  hintText: l10n.newTag,
-                                  border: const OutlineInputBorder(),
-                                  contentPadding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    10,
-                                    12,
-                                    10,
-                                  ),
-                                  filled: true,
-                                  fillColor: Theme.of(
-                                    context,
-                                  ).colorScheme.surface,
-                                ),
-                                enableIMEPersonalizedLearning: false,
-                                autofocus: true,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            FilledButton(
-                              onPressed: () {
-                                final newTitle = _tagNameController.text.trim();
-                                String newName = newTitle.isEmpty
-                                    ? l10n.newTag
-                                    : newTitle;
-                                if (newName == l10n.newTag) {
-                                  int counter = 1;
-                                  while (_manager.getTags().any(
-                                    (tag) => tag.name == newName,
-                                  )) {
-                                    newName = '${l10n.newTag} ($counter)';
-                                    counter++;
-                                  }
-                                }
-                                // Avoid duplicates
-                                if (_manager
-                                    .getTags()
-                                    .map((t) => t.name)
-                                    .contains(newName)) {
-                                  _showSnackBar(l10n.duplicateTagName);
-                                  _tagCompleter?.complete(null);
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.maxFinite,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: widget.allTags.map((tag) {
+                          final isSelected = _selectedTagIds.contains(tag.id);
+                          return SelectableTagPill(
+                            tag: tag,
+                            selected: isSelected,
+                            onSelected: (_) {
+                              setState(() {
+                                if (isSelected) {
+                                  _selectedTagIds.remove(tag.id);
                                 } else {
-                                  // Complete the future that _addNewTag() is awaiting
-                                  _tagCompleter?.complete(newName);
+                                  _selectedTagIds.add(tag.id);
                                 }
-                              },
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 14,
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    // 태그 추가 버튼
+                    ActionChip(
+                      label: Text(
+                        '+',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(fontSize: 18),
+                      ),
+                      onPressed: _addNewTag,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      elevation: Theme.of(context).chipTheme.elevation ?? 2,
+                      side: Theme.of(context).chipTheme.side,
+                    ),
+                    const SizedBox(height: 12),
+                    if (_isCreatingTag)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.addTag,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _tagNameController,
+                                    decoration: InputDecoration(
+                                      hintText: l10n.newTag,
+                                      border: const OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.fromLTRB(
+                                        16,
+                                        10,
+                                        12,
+                                        10,
+                                      ),
+                                      filled: true,
+                                      fillColor: Theme.of(
+                                        context,
+                                      ).colorScheme.surface,
+                                    ),
+                                    enableIMEPersonalizedLearning: false,
+                                    autofocus: true,
+                                  ),
                                 ),
-                              ),
-                              child: Text(l10n.apply),
+                                const SizedBox(width: 8),
+                                FilledButton(
+                                  onPressed: () {
+                                    final newTitle = _tagNameController.text
+                                        .trim();
+                                    String newName = newTitle.isEmpty
+                                        ? l10n.newTag
+                                        : newTitle;
+                                    if (newName == l10n.newTag) {
+                                      int counter = 1;
+                                      while (_manager.getTags().any(
+                                        (tag) => tag.name == newName,
+                                      )) {
+                                        newName = '${l10n.newTag} ($counter)';
+                                        counter++;
+                                      }
+                                    }
+                                    // Avoid duplicates
+                                    if (_manager
+                                        .getTags()
+                                        .map((t) => t.name)
+                                        .contains(newName)) {
+                                      _showSnackBar(l10n.duplicateTagName);
+                                      _tagCompleter?.complete(null);
+                                    } else {
+                                      // Complete the future that _addNewTag() is awaiting
+                                      _tagCompleter?.complete(newName);
+                                    }
+                                  },
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                  child: Text(l10n.apply),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                if (_isCreatingTag) const SizedBox(height: 12),
-              ],
+                      ),
+                    if (_isCreatingTag) const SizedBox(height: 12),
+                  ],
+                ),
+              ),
             ),
           ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 1,
+                ),
+              ),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = _titleController.text.trim();
+                if (text.isEmpty) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context).pleaseEnterSubjectName,
+                        ),
+                      ),
+                    );
+                  return;
+                }
+                final isDuplicate = _manager
+                    .getSubjects()
+                    .map((s) => s.title)
+                    .contains(text);
+                if (isDuplicate) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context).subjectNameExists,
+                        ),
+                      ),
+                    );
+                  return;
+                }
+                Navigator.pop(context, {
+                  'action': 'create',
+                  'title': text,
+                  'tagIds': _selectedTagIds.toList(),
+                });
+              },
+              child: Text(AppLocalizations.of(context).add),
+            ),
+          ],
         ),
       ),
-      actions: [
-        OutlinedButton(
-          onPressed: () => Navigator.pop(context),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(
-              color: Theme.of(context).colorScheme.primary,
-              width: 1,
-            ),
-          ),
-          child: Text(AppLocalizations.of(context).cancel),
-        ),
-        FilledButton(
-          onPressed: () {
-            final text = _titleController.text.trim();
-            if (text.isEmpty) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context).pleaseEnterSubjectName,
-                    ),
-                  ),
-                );
-              return;
-            }
-            final isDuplicate = _manager
-                .getSubjects()
-                .map((s) => s.title)
-                .contains(text);
-            if (isDuplicate) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppLocalizations.of(context).subjectNameExists,
-                    ),
-                  ),
-                );
-              return;
-            }
-            Navigator.pop(context, {
-              'action': 'create',
-              'title': text,
-              'tagIds': _selectedTagIds.toList(),
-            });
-          },
-          child: Text(AppLocalizations.of(context).add),
-        ),
-      ],
     );
   }
 }
@@ -457,82 +465,93 @@ class _SubjectEditDialogState extends State<SubjectEditDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return EditDialog(
-      title: l10n.editingSubject,
-      deleteLabel: l10n.delete,
-      completeLabel: l10n.complete,
-      archiveLabel: l10n.archiveAction,
-      onDelete: () async {
-        final result = await showDeleteConfirmationDialog(widget.subject);
-        if (result == true && context.mounted) {
-          Navigator.pop(context, true);
-        }
-      },
-      onComplete: () {
-        final newTitle = _nameController.text.trim();
-        if (newTitle.isEmpty) {
-          _showSnackBar(l10n.pleaseEnterSubjectName);
-          return;
-        }
-        _manager.updateSubject(
-          widget.subject.id,
-          title: newTitle,
-          tagIds: _selectedTagIds.toList(),
-        );
-        Navigator.pop(context, true);
-      },
-      onArchive: () async {
-        final result = await showArchiveConfirmationDialog(widget.subject);
-        if (result == true && context.mounted) {
-          Navigator.pop(context, true);
-        }
-      },
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ========== 과목 이름 입력 ==========
-          Text(
-            l10n.subjectName,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              hintText: l10n.subjectNameHint,
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          Text(l10n.editTags2, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: EditDialog(
+          title: l10n.editingSubject,
+          deleteLabel: l10n.delete,
+          completeLabel: l10n.complete,
+          archiveLabel: l10n.archiveAction,
+          onDelete: () async {
+            final result = await showDeleteConfirmationDialog(widget.subject);
+            if (result == true && context.mounted) {
+              Navigator.pop(context, true);
+            }
+          },
+          onComplete: () {
+            final newTitle = _nameController.text.trim();
+            if (newTitle.isEmpty) {
+              _showSnackBar(l10n.pleaseEnterSubjectName);
+              return;
+            }
+            _manager.updateSubject(
+              widget.subject.id,
+              title: newTitle,
+              tagIds: _selectedTagIds.toList(),
+            );
+            Navigator.pop(context, true);
+          },
+          onArchive: () async {
+            final result = await showArchiveConfirmationDialog(widget.subject);
+            if (result == true && context.mounted) {
+              Navigator.pop(context, true);
+            }
+          },
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ...widget.allTags.map((tag) {
-                final isSelected = _selectedTagIds.contains(tag.id);
-                return SelectableTagPill(
-                  tag: tag,
-                  selected: isSelected,
-                  onSelected: (_) {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedTagIds.remove(tag.id);
-                      } else {
-                        _selectedTagIds.add(tag.id);
-                      }
-                    });
-                  },
-                );
-              }),
+              // ========== 과목 이름 입력 ==========
+              Text(
+                l10n.subjectName,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  hintText: l10n.subjectNameHint,
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                l10n.editTags2,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ...widget.allTags.map((tag) {
+                    final isSelected = _selectedTagIds.contains(tag.id);
+                    return SelectableTagPill(
+                      tag: tag,
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedTagIds.remove(tag.id);
+                          } else {
+                            _selectedTagIds.add(tag.id);
+                          }
+                        });
+                      },
+                    );
+                  }),
+                ],
+              ),
+              const SizedBox(height: 12),
             ],
           ),
-          const SizedBox(height: 12),
-        ],
+        ),
       ),
     );
   }
