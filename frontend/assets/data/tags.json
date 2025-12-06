@@ -2,13 +2,13 @@
     "schemaVersion": 1,
     "tags": [
       {
-        "id": "t1",
+        "id": "1",
         "name": "튜토리얼",
         "color": "#EFF0A4",
         "order": 0
       },
       {
-        "id": "t2",
+        "id": "2",
         "name": "Tutorial",
         "color": "#FDECB0",
         "order": 1
