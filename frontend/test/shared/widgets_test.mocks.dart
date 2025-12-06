@@ -283,14 +283,18 @@ class MockLectureLoadingService extends _i1.Mock
   );
 
   @override
-  void setError({String? errorTitle, String? errorMessage}) =>
-      super.noSuchMethod(
-        Invocation.method(#setError, [], {
-          #errorTitle: errorTitle,
-          #errorMessage: errorMessage,
-        }),
-        returnValueForMissingStub: null,
-      );
+  void setError({
+    bool? isServerError = false,
+    String? errorTitle,
+    String? errorMessage,
+  }) => super.noSuchMethod(
+    Invocation.method(#setError, [], {
+      #isServerError: isServerError,
+      #errorTitle: errorTitle,
+      #errorMessage: errorMessage,
+    }),
+    returnValueForMissingStub: null,
+  );
 
   @override
   _i7.Future<void> cancelLoading({_i8.Client? fakeClient}) =>
