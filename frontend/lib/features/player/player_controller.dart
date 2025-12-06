@@ -42,6 +42,8 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<bool> isKoreanLanguage = ValueNotifier(false);
   final ValueNotifier<bool> isOriginalAudio = ValueNotifier(false);
 
+  final ValueNotifier<double> playbackSpeed = ValueNotifier(1.0);
+
   /// 재생 위치 및 페이지
   final ValueNotifier<double> currentTime = ValueNotifier(0.0);
   final ValueNotifier<double> actualAudioDuration = ValueNotifier(0.0);
@@ -472,6 +474,7 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> setPlaybackSpeed(double speed) async {
     await _audioService.setSpeed(speed);
+    playbackSpeed.value = speed;
   }
 
   // ========== 페이지 제어 메서드 ==========
@@ -744,6 +747,7 @@ class PlayerController extends ChangeNotifier {
     currentPage.dispose();
     currentSentenceIndex.dispose();
     isAutoScrolling.dispose();
+    playbackSpeed.dispose();
 
     _scrollTimer?.cancel();
     _positionSubscription?.cancel();

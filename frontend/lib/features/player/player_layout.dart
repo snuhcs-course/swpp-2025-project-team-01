@@ -112,6 +112,7 @@ class HorizontalPlayerLayout extends StatelessWidget {
                                   controller.currentPage,
                                   controller.currentSentenceIndex,
                                   controller.isOriginalAudio,
+                                  controller.playbackSpeed,
                                 ]),
                                 builder: (context, _) {
                                   return Container(
@@ -160,6 +161,8 @@ class HorizontalPlayerLayout extends StatelessWidget {
                                         ),
                                         const SizedBox(width: 8),
                                         SpeedButton(
+                                          currentSpeed:
+                                              controller.playbackSpeed.value,
                                           onSpeedChanged:
                                               controller.setPlaybackSpeed,
                                           isVertical: false,
@@ -442,6 +445,7 @@ class VideoControlsOverlay extends StatelessWidget {
                     controller.isSynced,
                     controller.currentPage,
                     controller.currentSentenceIndex,
+                    controller.playbackSpeed,
                   ]),
                   builder: (context, _) {
                     return TopControlBar(
@@ -450,6 +454,7 @@ class VideoControlsOverlay extends StatelessWidget {
                       isOriginalAudio: controller.isOriginalAudio.value,
                       isKoreanLecture: controller.isKoreanLecture ?? true,
                       onAudioToggle: controller.toggleAudioSource,
+                      currentSpeed: controller.playbackSpeed.value,
                       onSpeedChanged: controller.setPlaybackSpeed,
                       isSynced: controller.isSynced.value,
                       onSyncToggle: controller.toggleSync,

@@ -349,7 +349,9 @@ void main() {
     testWidgets('should render with initial speed 1.0x', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(body: pw.SpeedButton(onSpeedChanged: (_) {})),
+          home: Scaffold(
+            body: pw.SpeedButton(currentSpeed: 1.0, onSpeedChanged: (_) {}),
+          ),
         ),
       );
 
@@ -358,9 +360,22 @@ void main() {
     });
 
     testWidgets('should cycle through speeds when tapped', (tester) async {
+      double currentSpeed = 1.0;
+
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(body: pw.SpeedButton(onSpeedChanged: (_) {})),
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return pw.SpeedButton(
+                  currentSpeed: currentSpeed,
+                  onSpeedChanged: (speed) {
+                    setState(() => currentSpeed = speed);
+                  },
+                );
+              },
+            ),
+          ),
         ),
       );
 
@@ -392,11 +407,22 @@ void main() {
       tester,
     ) async {
       final speeds = <double>[];
+      double currentSpeed = 1.0;
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: pw.SpeedButton(onSpeedChanged: (speed) => speeds.add(speed)),
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return pw.SpeedButton(
+                  currentSpeed: currentSpeed,
+                  onSpeedChanged: (speed) {
+                    speeds.add(speed);
+                    setState(() => currentSpeed = speed);
+                  },
+                );
+              },
+            ),
           ),
         ),
       );
@@ -417,7 +443,9 @@ void main() {
     testWidgets('should have correct text style', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(body: pw.SpeedButton(onSpeedChanged: (_) {})),
+          home: Scaffold(
+            body: pw.SpeedButton(currentSpeed: 1.0, onSpeedChanged: (_) {}),
+          ),
         ),
       );
 
@@ -610,6 +638,7 @@ void main() {
               onAudioToggle: () {},
               isSynced: true,
               onSyncToggle: () {},
+              currentSpeed: 1.0,
               onSpeedChanged: (_) {},
             ),
           ),
@@ -637,6 +666,7 @@ void main() {
               onAudioToggle: () {},
               isSynced: true,
               onSyncToggle: () => syncPressed = true,
+              currentSpeed: 1.0,
               onSpeedChanged: (_) {},
             ),
           ),
@@ -896,6 +926,7 @@ void main() {
             isSynced: false,
             onSyncToggle: () => syncCalled = true,
             pageDifference: 3,
+            currentSpeed: 1.0,
             onSpeedChanged: (_) {},
           ),
         ),
