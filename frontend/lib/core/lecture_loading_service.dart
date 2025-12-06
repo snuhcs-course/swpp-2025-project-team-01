@@ -253,15 +253,23 @@ class LectureLoadingService extends ChangeNotifier {
   }
 
   /// 에러 발생 시
-  void setError({String? errorTitle, String? errorMessage}) {
+  void setError({
+    bool isServerError = false,
+    String? errorTitle,
+    String? errorMessage,
+  }) {
     _messageTimer?.cancel();
     _hasError = true;
 
     // 에러 제목 설정
-    _errorTitle = errorTitle ?? _l10n.errorOccurred;
+    _errorTitle = isServerError
+        ? _l10n.serverDown
+        : (errorTitle ?? _l10n.errorOccurred);
 
     // 에러 메시지 설정
-    _errorMessage = errorMessage ?? _l10n.errorDefaultMessage;
+    _errorMessage = isServerError
+        ? _l10n.contactDevelopers
+        : (errorMessage ?? _l10n.errorDefaultMessage);
 
     notifyListeners();
     _saveState();

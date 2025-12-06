@@ -378,6 +378,9 @@ class AppLocalizations {
       isKorean ? '강의 생성 완료!' : 'Lecture created!';
 
   String get errorOccurred => isKorean ? '오류가 발생했습니다' : 'An error occurred';
+  String get serverDown => isKorean ? '서버가 응답하지 않습니다' : 'Server is down';
+  String get contactDevelopers =>
+      isKorean ? '개발자에게 문의하세요' : 'Please contact the developers';
 
   String get errorDefaultMessage => isKorean
       ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'

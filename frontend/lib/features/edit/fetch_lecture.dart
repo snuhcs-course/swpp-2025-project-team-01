@@ -210,6 +210,10 @@ Future<String?> requestLecture(
           },
         );
 
+    // Stagnation detection
+    double? lastProgress;
+    DateTime lastProgressTime = DateTime.now();
+
     String? jobId;
     try {
       await for (final chunk in stream) {
@@ -236,6 +240,25 @@ Future<String?> requestLecture(
                 : rawProgress;
 
             final message = data['message'] as String;
+
+            // Check for stagnant progress
+            final now = DateTime.now();
+            if (lastProgress != null) {
+              if (progress == lastProgress) {
+                final stagnantFor = now.difference(lastProgressTime);
+                if (stagnantFor.inSeconds >= 60) {
+                  debugPrint(
+                    'Progress stagnant for 60 seconds. Dead server.',
+                  ); // coverage:ignore-line
+                  LectureLoadingService.instance.setError(isServerError: true);
+                  return null; // stop streaming
+                }
+              } else {
+                // progress changed → reset timer
+                lastProgressTime = now;
+              }
+            }
+            lastProgress = progress;
 
             await onProgress(progress, message, titleText, order, audioCount);
 
