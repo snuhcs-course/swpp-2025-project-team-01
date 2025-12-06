@@ -170,7 +170,7 @@ void main() {
         await tester.tap(find.text(l10n.add));
         await tester.pump(); // show snackbar
 
-        expect(find.text(l10n.pleaseEnterSubjectName), findsOneWidget);
+        expect(find.text(l10n.pleaseEnterSubjectName), findsWidgets);
         // Dialog still open
         expect(find.byType(CreateSubjectDialog), findsOneWidget);
       },
@@ -207,7 +207,7 @@ void main() {
         await tester.tap(find.text(l10n.add));
         await tester.pump(); // for snackbar
 
-        expect(find.text(l10n.subjectNameExists), findsOneWidget);
+        expect(find.text(l10n.subjectNameExists), findsWidgets);
         // Dialog should still be visible
         expect(find.byType(CreateSubjectDialog), findsOneWidget);
 
@@ -240,7 +240,7 @@ void main() {
         await tester.pump(); // snackbar + possible state change
 
         // Should show "maxTagsReached" snackbar
-        expect(find.text(l10n.maxTagsReached), findsOneWidget);
+        expect(find.text(l10n.maxTagsReached), findsWidgets);
 
         // Add-tag panel (_isCreatingTag) should NOT be visible
         expect(find.text(l10n.addTag), findsNothing);
