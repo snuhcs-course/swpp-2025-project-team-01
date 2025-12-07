@@ -246,9 +246,9 @@ Future<String?> requestLecture(
             if (lastProgress != null) {
               if (progress == lastProgress) {
                 final stagnantFor = now.difference(lastProgressTime);
-                if (stagnantFor.inSeconds >= 60) {
+                if (stagnantFor.inSeconds >= 120 && progress > 0.0) {
                   debugPrint(
-                    'Progress stagnant for 60 seconds. Dead server.',
+                    'Progress stagnant for 120 seconds. Dead server.',
                   ); // coverage:ignore-line
                   LectureLoadingService.instance.setError(isServerError: true);
                   return null; // stop streaming
