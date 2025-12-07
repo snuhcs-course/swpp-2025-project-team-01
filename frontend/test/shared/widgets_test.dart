@@ -704,7 +704,7 @@ void main() {
         when(mockService.isCompleted).thenReturn(false);
         when(mockService.hasError).thenReturn(false);
         when(mockService.lectureTitle).thenReturn('');
-        when(mockService.message).thenReturn('Uploading PDF…');
+        when(mockService.message).thenReturn('Uploading PDF...');
         when(mockService.progress).thenReturn(1.5);
 
         await tester.pumpWidget(
@@ -735,16 +735,16 @@ void main() {
         expect(find.byKey(const ValueKey('loading')), findsOneWidget);
 
         final creatingHeaderIsEnglish = find
-            .text('Creating Lecture…')
+            .text('Creating Lecture...')
             .evaluate()
             .isNotEmpty;
         final creatingHeaderIsKorean = find
-            .text('강의 생성 중…')
+            .text('강의 생성 중...')
             .evaluate()
             .isNotEmpty;
         expect(creatingHeaderIsEnglish || creatingHeaderIsKorean, isTrue);
 
-        expect(find.text('Uploading PDF…'), findsOneWidget);
+        expect(find.text('Uploading PDF...'), findsOneWidget);
         expect(find.text('100%'), findsOneWidget);
 
         final richTexts = tester

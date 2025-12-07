@@ -150,7 +150,7 @@ void main() {
       expect(service.message, 'Lecture creation request queued on the server');
 
       service.setError();
-      expect(service.errorTitle, 'An error occurred');
+      expect(service.errorTitle, null);
     });
   });
 
@@ -188,8 +188,8 @@ void main() {
       service.setError();
 
       expect(service.hasError, true);
-      expect(service.errorTitle, '오류가 발생했습니다');
-      expect(service.errorMessage, '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.');
+      expect(service.errorTitle, null);
+      expect(service.errorMessage, null);
     });
 
     test('cancelLoading() calls callback and hides after 1 second', () {

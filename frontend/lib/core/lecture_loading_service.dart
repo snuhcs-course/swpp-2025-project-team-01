@@ -59,8 +59,9 @@ class LectureLoadingService extends ChangeNotifier {
   double _bubbleX = 24.0; // X position from left edge
   double _bubbleY = 24.0; // Y position from bottom edge
   bool _hasError = false; // 에러 발생 여부
-  String _errorTitle = ''; // 에러 제목
-  String _errorMessage = ''; // 에러 상세 메시지
+  bool _isServerError = false; // 서버 에러 여부
+  String? _errorTitle; // 에러 제목
+  String? _errorMessage; // 에러 상세 메시지
   bool _isCompleted = false; // 완료 뷰 표시 여부
 
   final Set<String> _jobIds = <String>{};
@@ -98,11 +99,14 @@ class LectureLoadingService extends ChangeNotifier {
   /// 에러 발생 여부
   bool get hasError => _hasError;
 
+  /// 서버 에러 여부
+  bool get isServerError => _isServerError;
+
   /// 에러 제목
-  String get errorTitle => _errorTitle;
+  String? get errorTitle => _errorTitle;
 
   /// 에러 상세 메시지
-  String get errorMessage => _errorMessage;
+  String? get errorMessage => _errorMessage;
 
   /// 완료 위젯 노출 여부
   bool get isCompleted => _isCompleted;
@@ -134,8 +138,9 @@ class LectureLoadingService extends ChangeNotifier {
     _isCollapsed = false;
     _bubbleOnRight = true;
     _hasError = false;
-    _errorTitle = '';
-    _errorMessage = '';
+    _isServerError = false;
+    _errorTitle = null;
+    _errorMessage = null;
     _isCompleted = false;
     _hasVisitedHome = false; // 새 로딩 시작 시 리셋
 
@@ -243,8 +248,9 @@ class LectureLoadingService extends ChangeNotifier {
     _isCollapsed = false;
     _bubbleOnRight = true;
     _hasError = false;
-    _errorTitle = '';
-    _errorMessage = '';
+    _isServerError = false;
+    _errorTitle = null;
+    _errorMessage = null;
     _isCompleted = false;
     _currentRoute = null; // 라우트 정보 초기화
     _hasVisitedHome = false; // 홈 방문 플래그 리셋
@@ -260,16 +266,11 @@ class LectureLoadingService extends ChangeNotifier {
   }) {
     _messageTimer?.cancel();
     _hasError = true;
+    _isServerError = isServerError;
 
-    // 에러 제목 설정
-    _errorTitle = isServerError
-        ? _l10n.serverDown
-        : (errorTitle ?? _l10n.errorOccurred);
-
-    // 에러 메시지 설정
-    _errorMessage = isServerError
-        ? _l10n.contactDevelopers
-        : (errorMessage ?? _l10n.errorDefaultMessage);
+    // 에러 메시지가 명시적으로 전달되었으면 저장, 아니면 null (UI에서 디폴트 처리)
+    _errorTitle = errorTitle;
+    _errorMessage = errorMessage;
 
     notifyListeners();
     _saveState();
@@ -430,6 +431,7 @@ class LectureLoadingService extends ChangeNotifier {
   static const _keyIsCompleted = 'lecture_loading_is_completed';
   static const _keyCurrentRoute = 'lecture_loading_current_route';
   static const _keyHasError = 'lecture_loading_has_error';
+  static const _keyIsServerError = 'lecture_loading_is_server_error';
   static const _keyErrorTitle = 'lecture_loading_error_title';
   static const _keyErrorMessage = 'lecture_loading_error_message';
 
@@ -448,8 +450,19 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setBool(_keyIsCompleted, _isCompleted);
       await prefs.setString(_keyCurrentRoute, _currentRoute ?? '');
       await prefs.setBool(_keyHasError, _hasError);
-      await prefs.setString(_keyErrorTitle, _errorTitle);
-      await prefs.setString(_keyErrorMessage, _errorMessage);
+      await prefs.setBool(_keyIsServerError, _isServerError);
+
+      if (_errorTitle != null) {
+        await prefs.setString(_keyErrorTitle, _errorTitle!);
+      } else {
+        await prefs.remove(_keyErrorTitle);
+      }
+
+      if (_errorMessage != null) {
+        await prefs.setString(_keyErrorMessage, _errorMessage!);
+      } else {
+        await prefs.remove(_keyErrorMessage);
+      }
     } catch (e) {
       debugPrint('Failed to save loading state: $e'); // coverage:ignore-line
     }
@@ -470,8 +483,9 @@ class LectureLoadingService extends ChangeNotifier {
       _isCompleted = prefs.getBool(_keyIsCompleted) ?? false;
       _currentRoute = prefs.getString(_keyCurrentRoute);
       _hasError = prefs.getBool(_keyHasError) ?? false;
-      _errorTitle = prefs.getString(_keyErrorTitle) ?? '';
-      _errorMessage = prefs.getString(_keyErrorMessage) ?? '';
+      _isServerError = prefs.getBool(_keyIsServerError) ?? false;
+      _errorTitle = prefs.getString(_keyErrorTitle);
+      _errorMessage = prefs.getString(_keyErrorMessage);
 
       // 완료 상태로 복원되면 타이머 재시작 (어디서든)
       if (_isLoading && _isCompleted) {
@@ -502,6 +516,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyIsCompleted);
       await prefs.remove(_keyCurrentRoute);
       await prefs.remove(_keyHasError);
+      await prefs.remove(_keyIsServerError);
       await prefs.remove(_keyErrorTitle);
       await prefs.remove(_keyErrorMessage);
     } catch (e) {
