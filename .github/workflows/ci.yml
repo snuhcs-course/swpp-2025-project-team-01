@@ -30,6 +30,8 @@ jobs:
       run: flutter pub get
 
     - name: Build APK
+      env: 
+        CI: true
       run: flutter build apk
 
   frontend-unit-test:

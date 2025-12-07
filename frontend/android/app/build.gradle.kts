@@ -14,6 +14,8 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+val isCI = System.getenv("CI") == "true"
+
 android {
     namespace = "com.project.re_view"
     compileSdk = flutter.compileSdkVersion
@@ -41,17 +43,29 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = keystoreProperties["storeFile"]?.let { File(it as String) }
-            storePassword = keystoreProperties["storePassword"] as String
+        if (!isCI && keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = keystoreProperties["storeFile"]?.let { File(it as String) }
+                storePassword = keystoreProperties["storePassword"] as String
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = when {
+                isCI -> {
+                    signingConfigs.getByName("debug")
+                }
+                !keystorePropertiesFile.exists() -> {
+                    signingConfigs.getByName("debug")
+                }
+                else -> {
+                    signingConfigs.getByName("release")
+                }
+            }
             // ProGuard 설정 추가 (path_provider 채널 오류 방지)
             isMinifyEnabled = false
             isShrinkResources = false
