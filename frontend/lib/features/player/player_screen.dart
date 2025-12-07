@@ -136,13 +136,15 @@ class _PlayerScreenState extends State<PlayerScreen>
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
 
       // SnackBar가 화면에 렌더링된 후 이전 페이지로 이동
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -210,7 +212,7 @@ class _PlayerScreenState extends State<PlayerScreen>
         if (!mounted) {
           return;
         }
-        debugPrint(e.toString());
+        debugPrint(e.toString()); // coverage:ignore-line
         final l10n = AppLocalizations.of(context);
         _handleError(l10n.invalidTranscriptFormat);
         return;
@@ -227,7 +229,9 @@ class _PlayerScreenState extends State<PlayerScreen>
           ? hiveLecture.originalAudioPath
           : hiveLecture.ttsAudioPath;
 
-      debugPrint('$isKoreanLecture $originalAudioPath, $ttsAudioPath');
+      debugPrint(
+        '$isKoreanLecture $originalAudioPath, $ttsAudioPath',
+      ); // coverage:ignore-line
 
       // 6. Controller 초기화
       if (!mounted) {

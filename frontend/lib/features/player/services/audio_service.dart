@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 
 /// 오디오 재생 서비스 (just_audio 사용)
@@ -13,13 +12,14 @@ class AudioService {
   /// [path]가 'assets/'로 시작하면 asset으로, '/'로 시작하면 파일로 처리
   Future<void> loadAudio(String path) async {
     try {
-      debugPrint(path);
+      ja.AudioSource source;
       if (path.startsWith('assets/')) {
-        // 이미 'assets/'가 포함된 경로
-        await _player.setAsset(path);
+        source = ja.AudioSource.asset(path);
       } else {
-        await _player.setFilePath(path);
+        source = ja.AudioSource.file(path);
       }
+
+      await _player.setAudioSource(source);
       _currentAudioPath = path;
     } catch (e) {
       rethrow;
@@ -41,13 +41,15 @@ class AudioService {
       final wasPlaying = _player.playing;
 
       // 새 오디오 로드
+      ja.AudioSource source;
       if (newPath.startsWith('assets/')) {
-        await _player.setAsset(newPath);
+        source = ja.AudioSource.asset(newPath);
       } else {
-        await _player.setFilePath(newPath);
+        source = ja.AudioSource.file(newPath);
       }
-      _currentAudioPath = newPath;
 
+      await _player.setAudioSource(source);
+      _currentAudioPath = newPath;
       // 지정된 위치로 이동
       await _player.seek(Duration(milliseconds: targetPositionMs));
 

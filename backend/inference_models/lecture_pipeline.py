@@ -23,7 +23,7 @@ class PipelineOutput:
     Contains paths to generated files and metadata for client delivery.
     """
     # Core outputs for client delivery
-    audio_file: str  # Path to Opus audio file
+    audio_file: str  # Path to MP3 audio file
     timestamps_file: str  # Path to timestamps.json
 
     # Metadata for client
@@ -541,7 +541,7 @@ class LecturePipeline:
                 matching_results = matching_results,
                 output_audio_path = output_wav_path,
                 output_json_path = output_json_path,
-                export_formats = ['opus'],  # Always export to Opus for client
+                export_formats = ['mp3'],  # Always export to MP3 for client
                 progress_callback = tts_progress_callback
             )
 
@@ -631,9 +631,9 @@ class LecturePipeline:
         # For English lectures: TTS generates audio
         # For Korean lectures: No audio file (client already has original)
         if should_run_tts:
-            output_opus_path = os.path.join(lecture_output_dir, "reconstructed.opus")
+            output_mp3_path = os.path.join(lecture_output_dir, "reconstructed.mp3")
         else:
-            output_opus_path = None  # No audio file for Korean lectures
+            output_mp3_path = None  # No audio file for Korean lectures
 
         # Save intermediate files if requested
         if save_intermediate:
@@ -654,7 +654,7 @@ class LecturePipeline:
                         'num_matches': results['matching']['num_matches']
                     },
                     'tts': tts_result,
-                    'output_audio': output_opus_path
+                    'output_audio': output_mp3_path
                 }
                 json.dump(json_results, f, ensure_ascii = False, indent = 2)
             print(f"\n✓ Final results saved: {final_results_path}")
@@ -670,15 +670,15 @@ class LecturePipeline:
         print("PIPELINE COMPLETE!")
         print("="*60)
         print(f"Output directory: {lecture_output_dir}")
-        if output_opus_path:
-            print(f"Client audio file: {output_opus_path}")
+        if output_mp3_path:
+            print(f"Client audio file: {output_mp3_path}")
         else:
             print("Client audio file: None (using original audio)")
         print(f"Client timestamps file: {output_json_path}")
 
         # Return structured output for API
         return PipelineOutput(
-            audio_file = output_opus_path if output_opus_path else "",  # Empty string if no audio
+            audio_file = output_mp3_path if output_mp3_path else "",  # Empty string if no audio
             timestamps_file = output_json_path,
             lecture_name = lecture_name,
             total_duration = tts_result['metadata']['total_duration'],

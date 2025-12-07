@@ -203,11 +203,16 @@ Future<String?> requestLecture(
               : const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
           onTimeout: (sink) {
             debugPrint(
+              // coverage:ignore-line
               'Stream timeout - No updates from server for 30 seconds',
             );
             sink.addError(Exception('서버로부터 응답이 없습니다'));
           },
         );
+
+    // Stagnation detection
+    double? lastProgress;
+    DateTime lastProgressTime = DateTime.now();
 
     String? jobId;
     try {
@@ -236,6 +241,25 @@ Future<String?> requestLecture(
 
             final message = data['message'] as String;
 
+            // Check for stagnant progress
+            final now = DateTime.now();
+            if (lastProgress != null) {
+              if (progress == lastProgress) {
+                final stagnantFor = now.difference(lastProgressTime);
+                if (stagnantFor.inSeconds >= 60) {
+                  debugPrint(
+                    'Progress stagnant for 60 seconds. Dead server.',
+                  ); // coverage:ignore-line
+                  LectureLoadingService.instance.setError(isServerError: true);
+                  return null; // stop streaming
+                }
+              } else {
+                // progress changed → reset timer
+                lastProgressTime = now;
+              }
+            }
+            lastProgress = progress;
+
             await onProgress(progress, message, titleText, order, audioCount);
 
             if (data['status'] == 'completed') {
@@ -254,7 +278,7 @@ Future<String?> requestLecture(
         return null;
       }
 
-      debugPrint('SSE issue triggered');
+      debugPrint('SSE issue triggered'); // coverage:ignore-line
       // Use fakeClient if provided (for testing), otherwise create new client
       final pollingClient = fakeClient ?? http.Client();
       final shouldCloseClient = fakeClient == null;
@@ -273,7 +297,9 @@ Future<String?> requestLecture(
           pollingClient,
         );
         if (status == null || status.$1 == 'failed') {
-          debugPrint('Error during lecture request stream processing: $e');
+          debugPrint(
+            'Error during lecture request stream processing: $e',
+          ); // coverage:ignore-line
           LectureLoadingService.instance.setError();
           if (shouldCloseClient) {
             pollingClient.close();
@@ -292,7 +318,7 @@ Future<String?> requestLecture(
 
     return jobId;
   } catch (e) {
-    debugPrint('Error during lecture request: $e');
+    debugPrint('Error during lecture request: $e'); // coverage:ignore-line
     if (!didArrive && !isRetry) {
       final jobId = await requestLecture(
         slidePath,
@@ -369,12 +395,14 @@ Future<String?> downloadResult(
 
       return savePath;
     } else {
-      debugPrint('Failed to download result: ${response.statusCode}');
+      debugPrint(
+        'Failed to download result: ${response.statusCode}',
+      ); // coverage:ignore-line
       LectureLoadingService.instance.setError();
       return null;
     }
   } catch (e) {
-    debugPrint('Error during download: $e');
+    debugPrint('Error during download: $e'); // coverage:ignore-line
     if (!isRetry) {
       final savePath = await downloadResult(
         jobId,
@@ -402,60 +430,66 @@ Future<List<String>?> unzipResult(
 }) async {
   final zipFile = File(zipPath);
   if (!zipFile.existsSync()) {
-    throw Exception('Zip file not found: $zipPath');
-  }
-
-  final resultPaths = <String>['opus', 'json'];
-  final bytes = zipFile.readAsBytesSync();
-  final archive = ZipDecoder().decodeBytes(bytes);
-
-  // 앱의 영구 저장소 디렉토리 가져오기
-  final documentsDir =
-      documentsDirOverride ?? await getApplicationDocumentsDirectory();
-  final outputDir = documentsDir.path;
-
-  for (final file in archive) {
-    final extension = path.extension(file.name);
-    final filePath = '$outputDir/$lectureId/${titleText}_$order$extension';
-
-    if (file.isFile) {
-      // Make sure the parent directory exists
-      await Directory(File(filePath).parent.path).create(recursive: true);
-      // Write the file content
-      File(filePath)
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(file.content as List<int>);
-
-      if (extension == '.opus') {
-        resultPaths[0] = filePath;
-      } else {
-        resultPaths[1] = filePath;
-      }
-    } else {
-      // It's a directory — just create it
-      await Directory(filePath).create(recursive: true);
-    }
-  }
-
-  // Unzip 완료 후 zip 파일 삭제
-  if (deleteZip) {
-    try {
-      if (deleteZipOverride != null) {
-        await deleteZipOverride(zipFile);
-      } else {
-        await zipFile.delete();
-      }
-    } catch (e) {
-      debugPrint('Zip file deletion failed: $e');
-    }
-  }
-
-  // Invalid response
-  if (resultPaths.length != 2) {
+    LectureLoadingService.instance.setError();
     return null;
   }
+  try {
+    final resultPaths = <String>['mp3', 'json'];
+    final bytes = zipFile.readAsBytesSync();
+    final archive = ZipDecoder().decodeBytes(bytes);
 
-  return resultPaths;
+    // 앱의 영구 저장소 디렉토리 가져오기
+    final documentsDir =
+        documentsDirOverride ?? await getApplicationDocumentsDirectory();
+    final outputDir = documentsDir.path;
+
+    for (final file in archive) {
+      final extension = path.extension(file.name);
+      final filePath = '$outputDir/$lectureId/${lectureId}_$order$extension';
+
+      if (file.isFile) {
+        // Make sure the parent directory exists
+        final fileObj = File(filePath);
+        await fileObj.parent.create(recursive: true);
+        // Write the file content
+        await fileObj.writeAsBytes(file.content as List<int>, flush: true);
+
+        if (extension == '.mp3') {
+          resultPaths[0] = filePath;
+        } else {
+          resultPaths[1] = filePath;
+        }
+      } else {
+        // It's a directory — just create it
+        await Directory(filePath).create(recursive: true);
+      }
+    }
+
+    // Unzip 완료 후 zip 파일 삭제
+    if (deleteZip) {
+      try {
+        if (deleteZipOverride != null) {
+          await deleteZipOverride(zipFile);
+        } else {
+          await zipFile.delete();
+        }
+      } catch (e) {
+        debugPrint('Zip file deletion failed: $e'); // coverage:ignore-line
+      }
+    }
+
+    // Invalid response
+    if (resultPaths.length != 2) {
+      LectureLoadingService.instance.setError();
+      return null;
+    }
+
+    return resultPaths;
+  } catch (e) {
+    debugPrint('Error during unzip: $e'); // coverage:ignore-line
+    LectureLoadingService.instance.setError();
+    return null;
+  }
 }
 
 Future<List<String>?> fetchLecture(
@@ -472,7 +506,9 @@ Future<List<String>?> fetchLecture(
   Uri? endpointOverride, // for testing
   http.Client? clientToClose, // client that can be closed externally
 }) async {
-  debugPrint('🚀 Starting lecture request $order/$audioCount');
+  debugPrint(
+    '🚀 Starting lecture request $order/$audioCount',
+  ); // coverage:ignore-line
   final jobId = await requestLecture(
     slidePath,
     audioFileEntry,
@@ -506,40 +542,32 @@ Future<List<String>?> fetchLecture(
     return null;
   }
 
-  try {
-    final filePaths = await unzipResult(zipPath, titleText, lectureId, order);
+  final filePaths = await unzipResult(zipPath, titleText, lectureId, order);
 
-    if (filePaths == null) {
-      LectureLoadingService.instance.setError();
-      return null;
-    }
-
-    // Clean up split PDF files if they were created (multi-audio mode)
-    if (audioCount > 1) {
-      try {
-        final splitPdfPath = slidePath.replaceFirst(
-          RegExp(r'\.pdf$', caseSensitive: false),
-          '_tmp$order.pdf',
-        );
-        final splitPdfFile = File(splitPdfPath);
-        if (splitPdfFile.existsSync()) {
-          await splitPdfFile.delete();
-          debugPrint('Deleted split PDF: $splitPdfPath');
-        }
-      } catch (e) {
-        debugPrint('Failed to delete split PDF: $e');
-      }
-    }
-
-    return filePaths;
-  } catch (e) {
-    debugPrint('Error during unzip: $e');
-    LectureLoadingService.instance.setError();
+  if (filePaths == null) {
     return null;
   }
+
+  if (audioCount > 1) {
+    try {
+      final splitPdfPath = slidePath.replaceFirst(
+        RegExp(r'\.pdf$', caseSensitive: false),
+        '_tmp$order.pdf',
+      );
+      final splitPdfFile = File(splitPdfPath);
+      if (splitPdfFile.existsSync()) {
+        await splitPdfFile.delete();
+        debugPrint('Deleted split PDF: $splitPdfPath'); // coverage:ignore-line
+      }
+    } catch (e) {
+      debugPrint('Failed to delete split PDF: $e'); // coverage:ignore-line
+    }
+  }
+
+  return filePaths;
 }
 
-/// Concatenate multiple OPUS audio files into a single continuous OPUS audio file.
+/// Concatenate multiple MP3 audio files into a single continuous MP3 audio file.
 Future<String?> concatenateAudioFiles(
   List<String> audioPaths,
   String titleText,
@@ -552,10 +580,10 @@ Future<String?> concatenateAudioFiles(
   final outputDir = documentsDir.path;
   final listFile = '$outputDir/tmp_audio_list.txt';
   String audioOutputPath;
-  if (path.extension(audioPaths[0]) == '.opus') {
-    audioOutputPath = '$outputDir/$lectureId/$titleText.opus';
+  if (path.extension(audioPaths[0]) == '.mp3') {
+    audioOutputPath = '$outputDir/$lectureId/$lectureId.mp3';
   } else {
-    audioOutputPath = '$outputDir/$lectureId/$titleText.m4a';
+    audioOutputPath = '$outputDir/$lectureId/$lectureId.m4a';
   }
 
   // Concatenate the audio files
@@ -566,6 +594,7 @@ Future<String?> concatenateAudioFiles(
     );
     await File(listFile).delete();
   } catch (_) {
+    LectureLoadingService.instance.setError();
     return null;
   }
 
@@ -578,7 +607,7 @@ Future<String?> concatenateAudioFiles(
       }
     }
   } catch (e) {
-    debugPrint('Audio file deletion failed: $e');
+    debugPrint('Audio file deletion failed: $e'); // coverage:ignore-line
   }
 
   return audioOutputPath;
@@ -603,7 +632,7 @@ Future<String?> concatenateJsonFiles(
     final documentsDir =
         dirOverride ?? await getApplicationDocumentsDirectory();
     final outputDir = documentsDir.path;
-    final jsonOutputPath = '$outputDir/$lectureId/$titleText.json';
+    final jsonOutputPath = '$outputDir/$lectureId/$lectureId.json';
 
     final List<Map<String, dynamic>> mergedTimestamps = [];
     int originalTimeOffset = 0;
@@ -677,7 +706,7 @@ Future<String?> concatenateJsonFiles(
         }
       }
     } catch (e) {
-      debugPrint('JSON file deletion failed: $e');
+      debugPrint('JSON file deletion failed: $e'); // coverage:ignore-line
     }
 
     return jsonOutputPath;

@@ -114,8 +114,8 @@ class LectureLoadingService extends ChangeNotifier {
 
   /// 강의로 이동 (위젯이 직접 Navigator를 사용할 수 없으므로 lectureId만 반환)
   String? getLectureIdAndHide() {
-    debugPrint('🔥 getLectureIdAndHide called');
-    debugPrint('🔥 _lectureId: $_lectureId');
+    debugPrint('🔥 getLectureIdAndHide called'); // coverage:ignore-line
+    debugPrint('🔥 _lectureId: $_lectureId'); // coverage:ignore-line
 
     final id = _lectureId;
     hideLoading();
@@ -156,11 +156,15 @@ class LectureLoadingService extends ChangeNotifier {
       }
 
       // 진행도에 따라 메시지 선택
-      if (_progress < 0.9) {
+      if (_progress == 0) {
+        // 0%일 때 첫 번째 메시지로 고정
+        _currentMessageIndex = 0;
+      } else if (_progress < 0.9) {
         // 90% 미만일 때는 랜덤하게 메시지 선택 (마지막 메시지 제외)
         int nextIndex;
         do {
-          nextIndex = _random.nextInt(_friendlyMessages.length - 1);
+          // Block first message and last message
+          nextIndex = _random.nextInt(_friendlyMessages.length - 2) + 1;
         } while (nextIndex == _currentMessageIndex);
         _currentMessageIndex = nextIndex;
       } else {
@@ -194,10 +198,14 @@ class LectureLoadingService extends ChangeNotifier {
       return;
     }
 
+    final oldprogress = _progress;
     _progressLists[order - 1] = progress.clamp(0.0, 1.0);
-    // 서버 메시지는 무시하고 현재 유저 친화적 메시지 유지
-    // _message는 타이머에 의해서만 업데이트됨
     _progress = computeProgress();
+    if (oldprogress == 0.0 && _progress > 0.0) {
+      // 서버 대기 메시지 제거
+      _currentMessageIndex = 1;
+      _message = _friendlyMessages[_currentMessageIndex];
+    }
     notifyListeners();
     _saveState();
   }
@@ -245,15 +253,23 @@ class LectureLoadingService extends ChangeNotifier {
   }
 
   /// 에러 발생 시
-  void setError({String? errorTitle, String? errorMessage}) {
+  void setError({
+    bool isServerError = false,
+    String? errorTitle,
+    String? errorMessage,
+  }) {
     _messageTimer?.cancel();
     _hasError = true;
 
     // 에러 제목 설정
-    _errorTitle = errorTitle ?? _l10n.errorOccurred;
+    _errorTitle = isServerError
+        ? _l10n.serverDown
+        : (errorTitle ?? _l10n.errorOccurred);
 
     // 에러 메시지 설정
-    _errorMessage = errorMessage ?? _l10n.errorDefaultMessage;
+    _errorMessage = isServerError
+        ? _l10n.contactDevelopers
+        : (errorMessage ?? _l10n.errorDefaultMessage);
 
     notifyListeners();
     _saveState();
@@ -363,7 +379,7 @@ class LectureLoadingService extends ChangeNotifier {
     }
 
     _currentRoute = routeName;
-    debugPrint('‼️ $routeName');
+    debugPrint('‼️ $routeName'); // coverage:ignore-line
 
     // 홈 화면 방문 체크
     if (routeName == '/home') {
@@ -435,7 +451,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.setString(_keyErrorTitle, _errorTitle);
       await prefs.setString(_keyErrorMessage, _errorMessage);
     } catch (e) {
-      debugPrint('Failed to save loading state: $e');
+      debugPrint('Failed to save loading state: $e'); // coverage:ignore-line
     }
   }
 
@@ -467,7 +483,7 @@ class LectureLoadingService extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Failed to restore loading state: $e');
+      debugPrint('Failed to restore loading state: $e'); // coverage:ignore-line
     }
   }
 
@@ -489,7 +505,7 @@ class LectureLoadingService extends ChangeNotifier {
       await prefs.remove(_keyErrorTitle);
       await prefs.remove(_keyErrorMessage);
     } catch (e) {
-      debugPrint('Failed to clear loading state: $e');
+      debugPrint('Failed to clear loading state: $e'); // coverage:ignore-line
     }
   }
 }

@@ -1055,16 +1055,22 @@ void main() {
       );
       expect(editedPanel.showEdit, isTrue);
 
-      // Reordering subjects
-      final subjectWrapFinder = find.ancestor(
-        of: find.byType(SubjectPanel).at(0),
-        matching: find.byType(ReorderableWrap),
-      );
-      expect(subjectWrapFinder, findsOneWidget);
-      final wrap = tester.widget<ReorderableWrap>(subjectWrapFinder);
-      expect(wrap.onReorder, isNotNull);
-      wrap.onReorder(0, 2);
+      // Reordering subjects - now using SliverMasonryGrid with Draggable/DragTarget
+      // We need to simulate drag and drop instead of calling onReorder directly
+      final firstPanel = find.byType(SubjectPanel).at(0);
+      final thirdPanel = find.byType(SubjectPanel).at(2);
+
+      // Simulate dragging first panel to third position
+      final firstPanelCenter = tester.getCenter(firstPanel);
+      final thirdPanelCenter = tester.getCenter(thirdPanel);
+
+      final gesture = await tester.startGesture(firstPanelCenter);
+      await tester.pump();
+      await gesture.moveTo(thirdPanelCenter);
+      await tester.pump();
+      await gesture.up();
       await tester.pumpAndSettle();
+
       // Verify that the subjects have been reordered
       final subjectPanels = tester
           .widgetList<SubjectPanel>(find.byType(SubjectPanel))
@@ -1073,13 +1079,13 @@ void main() {
       expect(subjectPanels[1].subject.id, 's3');
       expect(subjectPanels[2].subject.id, 's1');
 
-      // Reordering lectures within a subject
-      final wrapInPanelFinder = find.descendant(
+      // Reordering lectures within a subject - still using ReorderableWrap
+      final reorderableWrapFinder = find.descendant(
         of: find.byType(SubjectPanel).at(2),
         matching: find.byType(ReorderableWrap),
       );
-      expect(wrapInPanelFinder, findsOneWidget);
-      final wrapInPanel = tester.widget<ReorderableWrap>(wrapInPanelFinder);
+      expect(reorderableWrapFinder, findsOneWidget);
+      final wrapInPanel = tester.widget<ReorderableWrap>(reorderableWrapFinder);
       expect(wrapInPanel.onReorder, isNotNull);
       wrapInPanel.onReorder(0, 1);
       await tester.pumpAndSettle();

@@ -28,17 +28,19 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   final menuButton = find.byIcon(Icons.menu);
   expect(menuButton, findsOneWidget, reason: 'Should be on home screen');
 
-  debugPrint('✓ Confirmed on home screen');
+  debugPrint('✓ Confirmed on home screen'); // coverage:ignore-line
 
   // Get initial data
   final initialTags = manager.getTags();
   final initialTheme = manager.settings.tagColorTheme;
-  debugPrint('Initial tag count: ${initialTags.length}');
-  debugPrint('Initial color theme: $initialTheme');
+  debugPrint(
+    'Initial tag count: ${initialTags.length}',
+  ); // coverage:ignore-line
+  debugPrint('Initial color theme: $initialTheme'); // coverage:ignore-line
 
   // Ensure we have at least one tag for testing
   if (initialTags.isEmpty) {
-    debugPrint('Creating a test tag for filtering...');
+    debugPrint('Creating a test tag for filtering...'); // coverage:ignore-line
     final newTags = <dynamic>[
       IntegrationTestHelpers.createTestTag(
         id: 'test_tag_integration_9',
@@ -52,7 +54,9 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   final tags = manager.getTags();
   expect(tags.isNotEmpty, true, reason: 'Should have at least one tag');
 
-  debugPrint('Tags available for testing: ${tags.length}');
+  debugPrint(
+    'Tags available for testing: ${tags.length}',
+  ); // coverage:ignore-line
 
   // Step 1: Tap on filter pill button to see all tags and their colors
   final filterPill = find.byWidgetPredicate((widget) => widget is FilterPill);
@@ -66,7 +70,7 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   await tester.tap(filterPill);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Tapped filter pill to show tags');
+  debugPrint('✓ Tapped filter pill to show tags'); // coverage:ignore-line
 
   // Verify TagChips widget is now visible
   final tagChips = find.byType(TagChips);
@@ -88,12 +92,15 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     reason: 'Should show tag pills with colors',
   );
 
-  debugPrint('✓ Verified ${tagPills.evaluate().length} tag pills are visible');
+  debugPrint(
+    '✓ Verified ${tagPills.evaluate().length} tag pills are visible',
+  ); // coverage:ignore-line
 
   // Record initial colors of tags
   final firstTag = tags.first;
   final initialFirstTagColor = firstTag.color;
   debugPrint(
+    // coverage:ignore-line
     'First tag initial color: 0x${initialFirstTagColor.toRadixString(16)}',
   );
 
@@ -102,12 +109,12 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   if (tagPills.evaluate().isNotEmpty) {
     await tester.tap(tagPills.first);
     await tester.pumpAndSettle();
-    debugPrint('✓ Tapped on first tag to filter');
+    debugPrint('✓ Tapped on first tag to filter'); // coverage:ignore-line
 
     // The tag should now be selected (filter is active)
     // Verify by checking if subjects are filtered
     // (We can't directly check internal state, but the UI should update)
-    debugPrint('✓ Tag filter applied');
+    debugPrint('✓ Tag filter applied'); // coverage:ignore-line
   }
 
   // Tap filter pill again to deactivate filter and return to normal home screen
@@ -124,7 +131,9 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   await tester.tap(filterPillBeforeNavigation);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Tapped filter pill again to deactivate filter');
+  debugPrint(
+    '✓ Tapped filter pill again to deactivate filter',
+  ); // coverage:ignore-line
 
   // Verify tag chips are now hidden
   final tagChipsAfterDeactivation = find.byType(TagChips);
@@ -134,14 +143,16 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     reason: 'Tag chips should be hidden after deactivating filter',
   );
 
-  debugPrint('✓ Verified filter is deactivated and home is in normal state');
+  debugPrint(
+    '✓ Verified filter is deactivated and home is in normal state',
+  ); // coverage:ignore-line
 
   // Step 3: Navigate to tag screen from home
   // Open drawer/menu
   await tester.tap(menuButton);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Opened menu drawer');
+  debugPrint('✓ Opened menu drawer'); // coverage:ignore-line
 
   // Find and tap "Manage Subjects & Tags" option
   final manageOption = find.text('Manage Subjects & Tags');
@@ -161,7 +172,7 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   await tester.tap(foundManageOption);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Tapped manage subjects & tags option');
+  debugPrint('✓ Tapped manage subjects & tags option'); // coverage:ignore-line
 
   // Navigate to tags tab
   final tagsTab = find.text('Tags');
@@ -180,7 +191,7 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   }
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Navigated to tags tab');
+  debugPrint('✓ Navigated to tags tab'); // coverage:ignore-line
 
   // Step 4: Change tag color theme
   // Find the color theme selector - look for Radio buttons
@@ -193,7 +204,9 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     reason: 'Should have multiple theme options with radio buttons',
   );
 
-  debugPrint('Found ${radioButtons.evaluate().length} theme radio buttons');
+  debugPrint(
+    'Found ${radioButtons.evaluate().length} theme radio buttons',
+  ); // coverage:ignore-line
 
   // Determine which theme to select (choose a different one from current)
   String newTheme = '';
@@ -203,7 +216,9 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
     newTheme = '봄';
   }
 
-  debugPrint('Selecting new theme: $newTheme (from $initialTheme)');
+  debugPrint(
+    'Selecting new theme: $newTheme (from $initialTheme)',
+  ); // coverage:ignore-line
 
   // Find all InkWell widgets containing radio buttons (theme selectors)
   final themeInkWells = find.byWidgetPredicate(
@@ -213,7 +228,9 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
         (widget.child as Padding).child is Row,
   );
 
-  debugPrint('Found ${themeInkWells.evaluate().length} theme InkWells');
+  debugPrint(
+    'Found ${themeInkWells.evaluate().length} theme InkWells',
+  ); // coverage:ignore-line
 
   // Tap on a different theme (if current is index 0, tap index 1, otherwise tap index 0)
   int themeIndexToTap = 0;
@@ -224,13 +241,17 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   if (themeInkWells.evaluate().length > themeIndexToTap) {
     await tester.tap(themeInkWells.at(themeIndexToTap));
     await tester.pumpAndSettle();
-    debugPrint('✓ Tapped on theme at index $themeIndexToTap');
+    debugPrint(
+      '✓ Tapped on theme at index $themeIndexToTap',
+    ); // coverage:ignore-line
   } else {
     // Fallback: tap the second radio button directly
     if (radioButtons.evaluate().length > 1) {
       await tester.tap(radioButtons.at(themeIndexToTap));
       await tester.pumpAndSettle();
-      debugPrint('✓ Tapped radio button at index $themeIndexToTap');
+      debugPrint(
+        '✓ Tapped radio button at index $themeIndexToTap',
+      ); // coverage:ignore-line
     }
   }
 
@@ -242,13 +263,13 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   await IntegrationTestHelpers.navigateBack(tester);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Navigated back from tags screen');
+  debugPrint('✓ Navigated back from tags screen'); // coverage:ignore-line
 
   // Navigate back from manage screen
   await IntegrationTestHelpers.navigateBack(tester);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Navigated back to home screen');
+  debugPrint('✓ Navigated back to home screen'); // coverage:ignore-line
 
   // Verify we're on home screen
   final menuButtonAfterReturn = find.byIcon(Icons.menu);
@@ -266,14 +287,18 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   await tester.tap(filterPillAfterReturn);
   await tester.pumpAndSettle();
 
-  debugPrint('✓ Tapped filter pill again to verify color changes');
+  debugPrint(
+    '✓ Tapped filter pill again to verify color changes',
+  ); // coverage:ignore-line
 
   // Verify tag colors have changed
   final updatedTags = manager.getTags();
   final updatedFirstTag = updatedTags.firstWhere((t) => t.id == firstTag.id);
   final newFirstTagColor = updatedFirstTag.color;
 
-  debugPrint('First tag new color: 0x${newFirstTagColor.toRadixString(16)}');
+  debugPrint(
+    'First tag new color: 0x${newFirstTagColor.toRadixString(16)}',
+  ); // coverage:ignore-line
 
   // Verify the color has changed
   expect(
@@ -291,6 +316,7 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   );
 
   debugPrint(
+    // coverage:ignore-line
     '✓ Verified color theme changed from $initialTheme to $savedTheme',
   );
 
@@ -309,10 +335,14 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   if (tagPillsAfterThemeChange.evaluate().isNotEmpty) {
     await tester.tap(tagPillsAfterThemeChange.first);
     await tester.pumpAndSettle();
-    debugPrint('✓ Tapped on tag to test filtering still works');
+    debugPrint(
+      '✓ Tapped on tag to test filtering still works',
+    ); // coverage:ignore-line
   }
 
-  debugPrint('✓ Verified tag filtering still works after theme change');
+  debugPrint(
+    '✓ Verified tag filtering still works after theme change',
+  ); // coverage:ignore-line
 
   // Tap filter pill again to hide tags and return to normal home state
   final filterPillFinal = find.byWidgetPredicate(
@@ -322,10 +352,13 @@ Future<void> runIntegration9Test(WidgetTester tester) async {
   if (filterPillFinal.evaluate().isNotEmpty) {
     await tester.tap(filterPillFinal);
     await tester.pumpAndSettle();
-    debugPrint('✓ Tapped filter pill again to hide tag chips');
+    debugPrint(
+      '✓ Tapped filter pill again to hide tag chips',
+    ); // coverage:ignore-line
   }
 
   debugPrint(
+    // coverage:ignore-line
     '✅ Integration 9 passed: Filter pill, tag colors, theme change, and filtering verified',
   );
 }

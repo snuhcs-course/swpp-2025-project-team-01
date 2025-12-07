@@ -638,7 +638,7 @@ def create_zip_file(audio_file: str, timestamp_file: str) -> io.BytesIO:
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         if audio_file:
-            zip_file.write(audio_file, arcname = 'audio.opus')
+            zip_file.write(audio_file, arcname = 'audio.mp3')
         zip_file.write(timestamp_file, arcname = 'timestamps.json')
     zip_buffer.seek(0)
     return zip_buffer
@@ -654,7 +654,7 @@ def create_zip_file_to_disk(audio_file: str | None, timestamp_file: str, output_
     """
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         if audio_file:
-            zip_file.write(audio_file, arcname = 'audio.opus')
+            zip_file.write(audio_file, arcname = 'audio.mp3')
         zip_file.write(timestamp_file, arcname = 'timestamps.json')
 
 @app.get('/api/synchronize/status/{job_id}')
@@ -733,7 +733,7 @@ async def download_result(job_id: str):
         job_id: The unique job identifier
 
     Returns:
-        ZIP file containing audio.opus and timestamps.json
+        ZIP file containing audio.mp3 and timestamps.json
 
     Raises:
         404: Job not found

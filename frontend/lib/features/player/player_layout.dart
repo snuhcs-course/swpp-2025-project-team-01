@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -112,6 +113,7 @@ class HorizontalPlayerLayout extends StatelessWidget {
                                   controller.currentPage,
                                   controller.currentSentenceIndex,
                                   controller.isOriginalAudio,
+                                  controller.playbackSpeed,
                                 ]),
                                 builder: (context, _) {
                                   return Container(
@@ -145,21 +147,23 @@ class HorizontalPlayerLayout extends StatelessWidget {
                                                       AppLocalizations.of(
                                                         context,
                                                       );
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        l10n.ttsNotSupportedForKorean,
+                                                  ScaffoldMessenger.of(context)
+                                                    ..hideCurrentSnackBar()
+                                                    ..showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          l10n.ttsNotSupportedForKorean,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  );
+                                                    );
                                                 }
                                               : controller.toggleAudioSource,
                                           isVertical: false,
                                         ),
                                         const SizedBox(width: 8),
                                         SpeedButton(
+                                          currentSpeed:
+                                              controller.playbackSpeed.value,
                                           onSpeedChanged:
                                               controller.setPlaybackSpeed,
                                           isVertical: false,
@@ -219,6 +223,30 @@ class PdfArea extends StatelessWidget {
   final PlayerController controller;
   final VoidCallback onBack;
 
+  Widget _buildErrorWidget(int pageNumber) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 12),
+          const Text(
+            'Error',
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            'Page $pageNumber',
+            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
@@ -241,6 +269,119 @@ class PdfArea extends StatelessWidget {
                       physics: !isSynced
                           ? const AlwaysScrollableScrollPhysics()
                           : const NeverScrollableScrollPhysics(),
+                      backgroundDecoration: const BoxDecoration(
+                        color: Colors.white,
+                      ),
+                      builders: PdfViewBuilders<DefaultBuilderOptions>(
+                        options: const DefaultBuilderOptions(),
+                        documentLoaderBuilder: (_) => Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        pageLoaderBuilder: (_) => Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        pageBuilder:
+                            (context, pageImageFuture, index, document) {
+                              final pageNumber = index + 1;
+
+                              // 1. 캐시된 이미지가 있는지 우선 확인 (깜빡임 방지)
+                              final cachedBytes = controller.pdfCacheService
+                                  .getCachedImageDirect(pageNumber);
+
+                              if (cachedBytes != null) {
+                                return PhotoViewGalleryPageOptions.customChild(
+                                  child: Container(
+                                    color: Colors.white,
+                                    child: Image.memory(
+                                      cachedBytes,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  initialScale:
+                                      PhotoViewComputedScale.contained,
+                                  minScale: PhotoViewComputedScale.contained,
+                                  maxScale:
+                                      PhotoViewComputedScale.contained * 3.0,
+                                  heroAttributes: PhotoViewHeroAttributes(
+                                    tag: 'pdf_view_page_$index',
+                                  ),
+                                );
+                              }
+
+                              // 2. 없으면 FutureBuilder (흰색 배경 로딩)
+                              return PhotoViewGalleryPageOptions.customChild(
+                                child: FutureBuilder(
+                                  future: pageImageFuture,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return Container(
+                                        color: Colors.white,
+                                        child: Image.memory(
+                                          snapshot.data!.bytes,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      );
+                                    }
+                                    if (snapshot.hasError) {
+                                      return FutureBuilder<Uint8List>(
+                                        future: controller.pdfCacheService
+                                            .getCachedOrRenderPage(pageNumber),
+                                        builder: (context, cacheSnapshot) {
+                                          if (cacheSnapshot.hasData) {
+                                            return Container(
+                                              color: Colors.white,
+                                              child: Image.memory(
+                                                cacheSnapshot.data!,
+                                                fit: BoxFit.contain,
+                                              ),
+                                            );
+                                          }
+                                          if (cacheSnapshot.hasError) {
+                                            return _buildErrorWidget(
+                                              pageNumber,
+                                            );
+                                          }
+                                          return Container(
+                                            color: Colors.white,
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                    return Container(
+                                      color: Colors.white,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                initialScale: PhotoViewComputedScale.contained,
+                                minScale: PhotoViewComputedScale.contained,
+                                maxScale:
+                                    PhotoViewComputedScale.contained * 3.0,
+                                heroAttributes: PhotoViewHeroAttributes(
+                                  tag: 'pdf_view_page_$index',
+                                ),
+                              );
+                            },
+                      ),
                     ),
                   );
                 },
@@ -260,47 +401,62 @@ class PdfArea extends StatelessWidget {
                 if (showControls) {
                   return const SizedBox.shrink();
                 }
-                return Positioned.fill(
-                  child: GestureDetector(
-                    key: ValueKey(
-                      'pdf-gesture-overlay-${isVertical ? 'vertical' : 'horizontal'}',
-                    ),
-                    behavior: HitTestBehavior.opaque,
-                    onVerticalDragUpdate: isVertical
-                        ? null
-                        : (details) {
-                            controller.handleVerticalDrag(details);
-                          },
-                    onTap: () => controller.handlePdfTap(isVertical),
-                    onDoubleTapDown: (TapDownDetails details) {
-                      controller.saveDoubleTapPosition(
-                        details.localPosition.dx,
-                      );
-                    },
-                    onDoubleTap: () {
-                      controller.handleDoubleTapSkip(
-                        MediaQuery.of(context).size.width,
-                      );
-                    },
-                    // Sync off일 때 horizontal swipe로 페이지 전환
-                    onHorizontalDragEnd: controller.isSynced.value
-                        ? null
-                        : (details) {
-                            final velocity = details.primaryVelocity ?? 0;
-                            if (velocity < -300) {
-                              // 왼쪽 스와이프 → 다음 페이지
-                              if (currentPage < controller.pageCount) {
-                                controller.jumpToPage(currentPage + 1);
-                              }
-                            } else if (velocity > 300) {
-                              // 오른쪽 스와이프 → 이전 페이지
-                              if (currentPage > 1) {
-                                controller.jumpToPage(currentPage - 1);
-                              }
-                            }
-                          },
-                    child: Container(color: Colors.transparent),
-                  ),
+                // 가로 모드에서 PDF navigator 영역을 제외하기 위해 isPagesExpanded 감지
+                return ValueListenableBuilder<bool>(
+                  valueListenable: controller.isPagesExpanded,
+                  builder: (context, isPagesExpanded, _) {
+                    // 가로 모드이고 PDF navigator가 올라와 있으면 하단 170px 제외
+                    final excludeBottom = !isVertical && isPagesExpanded
+                        ? 170.0
+                        : 0.0;
+
+                    return Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: excludeBottom,
+                      child: GestureDetector(
+                        key: ValueKey(
+                          'pdf-gesture-overlay-${isVertical ? 'vertical' : 'horizontal'}-${isPagesExpanded ? 'expanded' : 'collapsed'}',
+                        ),
+                        behavior: HitTestBehavior.opaque,
+                        onVerticalDragUpdate: isVertical
+                            ? null
+                            : (details) {
+                                controller.handleVerticalDrag(details);
+                              },
+                        onTap: () => controller.handlePdfTap(isVertical),
+                        onDoubleTapDown: (TapDownDetails details) {
+                          controller.saveDoubleTapPosition(
+                            details.localPosition.dx,
+                          );
+                        },
+                        onDoubleTap: () {
+                          controller.handleDoubleTapSkip(
+                            MediaQuery.of(context).size.width,
+                          );
+                        },
+                        // Sync off일 때 horizontal swipe로 페이지 전환
+                        onHorizontalDragEnd: controller.isSynced.value
+                            ? null
+                            : (details) {
+                                final velocity = details.primaryVelocity ?? 0;
+                                if (velocity < -300) {
+                                  // 왼쪽 스와이프 → 다음 페이지
+                                  if (currentPage < controller.pageCount) {
+                                    controller.jumpToPage(currentPage + 1);
+                                  }
+                                } else if (velocity > 300) {
+                                  // 오른쪽 스와이프 → 이전 페이지
+                                  if (currentPage > 1) {
+                                    controller.jumpToPage(currentPage - 1);
+                                  }
+                                }
+                              },
+                        child: Container(color: Colors.transparent),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -427,6 +583,7 @@ class VideoControlsOverlay extends StatelessWidget {
                     controller.isSynced,
                     controller.currentPage,
                     controller.currentSentenceIndex,
+                    controller.playbackSpeed,
                   ]),
                   builder: (context, _) {
                     return TopControlBar(
@@ -435,6 +592,7 @@ class VideoControlsOverlay extends StatelessWidget {
                       isOriginalAudio: controller.isOriginalAudio.value,
                       isKoreanLecture: controller.isKoreanLecture ?? true,
                       onAudioToggle: controller.toggleAudioSource,
+                      currentSpeed: controller.playbackSpeed.value,
                       onSpeedChanged: controller.setPlaybackSpeed,
                       isSynced: controller.isSynced.value,
                       onSyncToggle: controller.toggleSync,
@@ -632,9 +790,11 @@ class PagesListWidget extends StatelessWidget {
                 !controller.hasTranscriptForSlide(pageNumber)) {
               if (context.mounted) {
                 final l10n = AppLocalizations.of(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.noTranscriptForSlide)),
-                );
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(content: Text(l10n.noTranscriptForSlide)),
+                  );
               }
               return;
             }

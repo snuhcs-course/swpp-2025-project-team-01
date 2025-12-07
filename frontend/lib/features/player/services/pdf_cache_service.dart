@@ -14,8 +14,8 @@ class PdfCacheService {
   static const int maxCacheSize = 30; // 최대 캐시 크기
   static const int cacheChunkSize = 20;
 
-  // 동시 렌더링 제한 (최대 3개까지만 동시에 렌더링)
-  static const int maxConcurrentRenders = 3;
+  // 동시 렌더링 제한 (최대 2개까지만 동시에 렌더링)
+  static const int maxConcurrentRenders = 2;
   int _currentRenderingCount = 0;
 
   // 재시도 관련
@@ -156,7 +156,7 @@ class PdfCacheService {
         _retryCount[pageNumber] = currentRetry + 1;
 
         // 잠시 대기 후 재시도
-        await Future.delayed(Duration(milliseconds: 200 * (currentRetry + 1)));
+        await Future.delayed(Duration(milliseconds: 300 * (currentRetry + 1)));
 
         // 재시도 (현재 카운트 감소 후 재귀)
         _currentRenderingCount--;

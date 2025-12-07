@@ -42,6 +42,8 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<bool> isKoreanLanguage = ValueNotifier(false);
   final ValueNotifier<bool> isOriginalAudio = ValueNotifier(false);
 
+  final ValueNotifier<double> playbackSpeed = ValueNotifier(1.0);
+
   /// 재생 위치 및 페이지
   final ValueNotifier<double> currentTime = ValueNotifier(0.0);
   final ValueNotifier<double> actualAudioDuration = ValueNotifier(0.0);
@@ -184,20 +186,20 @@ class PlayerController extends ChangeNotifier {
       final files = tempDir.listSync();
       initialTempFiles = files.map((file) => file.path).toList();
     } catch (e) {
-      debugPrint('Failed to capture initial temp files: $e');
+      debugPrint(
+        'Failed to capture initial temp files: $e',
+      ); // coverage:ignore-line
       initialTempFiles = [];
     }
 
     // PDF 문서 로드 with error handling
     try {
-      pdfDocument = pdfPath.startsWith('assets/')
-          ? await _pdfService.openAsset(pdfPath)
-          : await _pdfService.openFile(pdfPath);
+      pdfDocument = await _pdfService.openFile(pdfPath);
     } on PlatformException catch (e) {
-      debugPrint('❌ Error loading PDF: $e');
+      debugPrint('❌ Error loading PDF: $e'); // coverage:ignore-line
       rethrow; // Re-throw to be caught by caller (player_screen's _loadLectureData)
     } catch (e) {
-      debugPrint('❌ Unexpected error loading PDF: $e');
+      debugPrint('❌ Unexpected error loading PDF: $e'); // coverage:ignore-line
       rethrow;
     }
 
@@ -213,6 +215,7 @@ class PlayerController extends ChangeNotifier {
           ? 1 / cachedThumbnail.aspectRatio
           : cachedThumbnail.aspectRatio;
       debugPrint(
+        // coverage:ignore-line
         '✅ First page pre-loaded from thumbnail cache for $lectureId (aspect ratio: $pdfAspectRatio)',
       );
     }
@@ -225,6 +228,14 @@ class PlayerController extends ChangeNotifier {
 
     // currentPage도 초기 페이지로 설정
     currentPage.value = initialPage;
+
+    // 초기 페이지(1페이지) 이후 2, 3페이지 미리 캐싱 (존재하는 경우)
+    for (int i = 2; i <= 3; i++) {
+      if (i <= pageCount) {
+        _pdfCacheService.cacheSinglePage(i);
+      }
+    }
+    debugPrint('🚀 Pre-caching started for pages 2 & 3');
   }
 
   void _setupAudioListeners() {
@@ -469,6 +480,7 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> setPlaybackSpeed(double speed) async {
     await _audioService.setSpeed(speed);
+    playbackSpeed.value = speed;
   }
 
   // ========== 페이지 제어 메서드 ==========
@@ -669,7 +681,9 @@ class PlayerController extends ChangeNotifier {
   /// PDF 로드 중 생성된 임시 파일들을 정리
   Future<void> _cleanupTempPdfFiles() async {
     if (initialTempFiles == null) {
-      debugPrint('⚠️ No initial temp files list - skipping cleanup');
+      debugPrint(
+        '⚠️ No initial temp files list - skipping cleanup',
+      ); // coverage:ignore-line
       return;
     }
 
@@ -677,7 +691,9 @@ class PlayerController extends ChangeNotifier {
       final tempDir = await getTemporaryDirectory();
 
       if (!tempDir.existsSync()) {
-        debugPrint('⚠️ Temp directory does not exist - skipping cleanup');
+        debugPrint(
+          '⚠️ Temp directory does not exist - skipping cleanup',
+        ); // coverage:ignore-line
         return;
       }
 
@@ -691,19 +707,26 @@ class PlayerController extends ChangeNotifier {
           try {
             await file.delete();
             deletedCount++;
-            debugPrint('🗑️ Deleted temp PDF file: ${file.path}');
+            debugPrint(
+              '🗑️ Deleted temp PDF file: ${file.path}',
+            ); // coverage:ignore-line
           } catch (e) {
             failedCount++;
-            debugPrint('⚠️ Failed to delete temp file ${file.path}: $e');
+            debugPrint(
+              '⚠️ Failed to delete temp file ${file.path}: $e',
+            ); // coverage:ignore-line
           }
         }
       }
 
       debugPrint(
+        // coverage:ignore-line
         '✅ Temp PDF cleanup completed: $deletedCount deleted, $failedCount failed',
       );
     } catch (e) {
-      debugPrint('⚠️ Failed to cleanup temp PDF files: $e');
+      debugPrint(
+        '⚠️ Failed to cleanup temp PDF files: $e',
+      ); // coverage:ignore-line
     }
   }
 
@@ -730,6 +753,7 @@ class PlayerController extends ChangeNotifier {
     currentPage.dispose();
     currentSentenceIndex.dispose();
     isAutoScrolling.dispose();
+    playbackSpeed.dispose();
 
     _scrollTimer?.cancel();
     _positionSubscription?.cancel();

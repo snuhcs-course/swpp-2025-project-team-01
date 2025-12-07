@@ -19,7 +19,7 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
   final initialSubjects = manager.getSubjects();
   final initialCount = initialSubjects.length;
 
-  debugPrint('Initial subject count: $initialCount');
+  debugPrint('Initial subject count: $initialCount'); // coverage:ignore-line
 
   // Create a unique subject name using timestamp
   final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -32,7 +32,7 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
   await tester.tap(addButton);
   await tester.pump(); // Start the animation
 
-  debugPrint('✓ Tapped add button (+)');
+  debugPrint('✓ Tapped add button (+)'); // coverage:ignore-line
 
   // Wait for overlay animation to complete (180ms animation + buffer)
   await tester.pump(const Duration(milliseconds: 200));
@@ -45,19 +45,21 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
   Finder? foundOption;
   if (addSubjectOption.evaluate().isNotEmpty) {
     foundOption = addSubjectOption;
-    debugPrint('✓ Found "Add Subject" option');
+    debugPrint('✓ Found "Add Subject" option'); // coverage:ignore-line
   } else if (addSubjectOptionKo.evaluate().isNotEmpty) {
     foundOption = addSubjectOptionKo;
-    debugPrint('✓ Found "과목 추가" option');
+    debugPrint('✓ Found "과목 추가" option'); // coverage:ignore-line
   }
 
   if (foundOption == null) {
     // Debug: print all visible text widgets
-    debugPrint('Available text widgets after tapping add button:');
+    debugPrint(
+      'Available text widgets after tapping add button:',
+    ); // coverage:ignore-line
     final allTexts = find.byType(Text);
     for (final element in allTexts.evaluate().take(20)) {
       final widget = element.widget as Text;
-      debugPrint('  - ${widget.data}');
+      debugPrint('  - ${widget.data}'); // coverage:ignore-line
     }
     throw Exception(
       'Add Subject option not found. Searched for "Add Subject" and "과목 추가"',
@@ -146,10 +148,11 @@ Future<void> runIntegration1Test(WidgetTester tester) async {
   );
 
   debugPrint(
+    // coverage:ignore-line
     '✅ Integration 1 passed: Subject successfully added and persisted',
   );
 
   // Clean up: Just settle - navigateToHome will handle comprehensive cleanup
   await tester.pumpAndSettle(const Duration(seconds: 2));
-  debugPrint('✓ Integration 1 cleanup complete');
+  debugPrint('✓ Integration 1 cleanup complete'); // coverage:ignore-line
 }

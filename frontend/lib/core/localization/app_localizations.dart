@@ -352,6 +352,7 @@ class AppLocalizations {
   // 강의 로딩 메시지
   List<String> get friendlyMessages => isKorean
       ? [
+          '강의 생성 요청이 서버에서 대기 중이에요',
           '열심히 강의를 받아적는 중..',
           '강의 내용을 정리하고 있어요',
           '음성 파일을 듣고 있어요',
@@ -362,6 +363,7 @@ class AppLocalizations {
           '거의 다 됐어요!',
         ]
       : [
+          'Lecture creation request queued on the server',
           'Taking notes from the lecture..',
           'Organizing lecture content',
           'Listening to the audio file',
@@ -376,6 +378,9 @@ class AppLocalizations {
       isKorean ? '강의 생성 완료!' : 'Lecture created!';
 
   String get errorOccurred => isKorean ? '오류가 발생했습니다' : 'An error occurred';
+  String get serverDown => isKorean ? '서버가 응답하지 않습니다' : 'Server is down';
+  String get contactDevelopers =>
+      isKorean ? '개발자에게 문의하세요' : 'Please contact the developers';
 
   String get errorDefaultMessage => isKorean
       ? '네트워크 설정을 확인하고, 조금 뒤에 다시 시도해주세요.'

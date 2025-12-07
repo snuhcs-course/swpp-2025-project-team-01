@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-import 'package:reorderables/reorderables.dart';
 import 'package:re_view/app_router.dart';
 import 'package:re_view/core/localization/app_localizations.dart';
 import 'package:re_view/core/device_orientation_helper.dart';
@@ -26,6 +25,10 @@ class _HomeScreenState extends State<HomeScreen>
   bool showTagFilter = false;
   bool editModeEnabled = false;
   bool isAddMenuOpen = false;
+
+  int? _draggingIndex;
+  int? _hoverIndex;
+
   final Set<String> selectedTagIds = {};
   List<HiveSubject> _editingSubjects = [];
 
@@ -69,9 +72,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// Player로 이동하고 돌아올 때 orientation 재설정
@@ -223,13 +226,7 @@ class _HomeScreenState extends State<HomeScreen>
           builder: (scaffoldContext) => IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () {
-              if (reduceMotion) {
-                // 모션 줄이기: 즉시 나타나는 다이얼로그
-                CustomDrawer.showAsDialog(context);
-              } else {
-                // 일반: Drawer 사용
-                Scaffold.of(scaffoldContext).openDrawer();
-              }
+              CustomDrawer.open(scaffoldContext, reduceMotion);
             },
           ),
         ),
@@ -242,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
-      drawer: reduceMotion ? null : const CustomDrawer(),
+      drawer: reduceMotion ? null : CustomDrawer(reduceMotion: reduceMotion),
       body: CustomScrollView(
         slivers: [
           // 상단 pill 네 개
@@ -337,178 +334,172 @@ class _HomeScreenState extends State<HomeScreen>
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              sliver: editModeEnabled
-                  ? SliverToBoxAdapter(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final cols =
-                              MediaQuery.of(context).size.width >
-                                  MediaQuery.of(context).size.height
-                              ? 2
-                              : 1;
-                          final totalWidth = constraints.maxWidth;
-                          final spacing = 12.0;
-                          final tileWidth =
-                              (totalWidth - (cols - 1) * spacing) / cols;
+              sliver: SliverMasonryGrid.count(
+                crossAxisCount:
+                    MediaQuery.of(context).size.width >
+                        MediaQuery.of(context).size.height
+                    ? 2
+                    : 1,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childCount: subjects.length,
+                itemBuilder: (context, i) {
+                  // 드래그 중일 때 재정렬된 리스트 생성
+                  final displaySubjects = List<HiveSubject>.from(subjects);
+                  if (_draggingIndex != null &&
+                      _hoverIndex != null &&
+                      editModeEnabled) {
+                    // 미분류가 아닌 과목들만 재정렬
+                    final categorized = subjects
+                        .where((s) => !s.isUncategorized)
+                        .toList();
+                    final uncategorized = subjects
+                        .where((s) => s.isUncategorized)
+                        .toList();
 
-                          // 미분류와 일반 과목 분리
-                          final categorizedSubjects = _editingSubjects
-                              .where((s) => !s.isUncategorized)
-                              .toList();
-                          final uncategorizedSubjects = _editingSubjects
-                              .where((s) => s.isUncategorized)
-                              .toList();
+                    if (_draggingIndex! < categorized.length &&
+                        _hoverIndex! < categorized.length) {
+                      final item = categorized.removeAt(_draggingIndex!);
+                      categorized.insert(_hoverIndex!, item);
+                      displaySubjects.clear();
+                      displaySubjects.addAll([
+                        ...categorized,
+                        ...uncategorized,
+                      ]);
+                    }
+                  }
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // 일반 과목들 (드래그 가능)
-                              if (categorizedSubjects.isNotEmpty)
-                                ReorderableWrap(
-                                  spacing: spacing,
-                                  runSpacing: spacing,
-                                  needsLongPressDraggable: false,
-                                  onReorder: _onReorderSubject,
-                                  buildDraggableFeedback:
-                                      (context, constraints, child) => Material(
-                                        elevation: 0,
-                                        color: Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Opacity(
-                                          opacity: 0.8,
-                                          child: child,
-                                        ),
-                                      ),
-                                  children: [
-                                    for (
-                                      int i = 0;
-                                      i < categorizedSubjects.length;
-                                      i++
-                                    )
-                                      SizedBox(
-                                        key: ValueKey(
-                                          categorizedSubjects[i].id,
-                                        ),
-                                        width: tileWidth,
-                                        child: SubjectPanel(
-                                          subject: categorizedSubjects[i],
-                                          tags: categorizedSubjects[i].tagIds
-                                              .map((tid) {
-                                                try {
-                                                  return tags.firstWhere(
-                                                    (t) => t.id == tid,
-                                                  );
-                                                } catch (_) {
-                                                  return null;
-                                                }
-                                              })
-                                              .whereType<HiveTag>()
-                                              .toList(),
-                                          lectures: _manager
-                                              .getLecturesBySubject(
-                                                categorizedSubjects[i].id,
-                                              ),
-                                          onToggleFavorite: () async =>
-                                              _manager.toggleSubjectFavorite(
-                                                categorizedSubjects[i].id,
-                                              ),
-                                          onOpenLecture: (_) {},
-                                          onLectureUpdated: () {},
-                                          showEdit: true,
-                                          onEditSubject: () async =>
-                                              _showSubjectEditDialog(
-                                                categorizedSubjects[i],
-                                              ),
-                                          reorderIndex: i,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              // 미분류 과목들 (드래그 불가능)
-                              if (uncategorizedSubjects.isNotEmpty)
-                                Padding(
-                                  padding: EdgeInsets.only(
-                                    top: categorizedSubjects.isNotEmpty
-                                        ? spacing
-                                        : 0,
-                                  ),
-                                  child: Wrap(
-                                    spacing: spacing,
-                                    runSpacing: spacing,
-                                    children: [
-                                      for (final subject
-                                          in uncategorizedSubjects)
-                                        SizedBox(
-                                          key: ValueKey(subject.id),
-                                          width: tileWidth,
-                                          child: SubjectPanel(
-                                            subject: subject,
-                                            tags: const [], // 미분류는 태그 없음
-                                            lectures: _manager
-                                                .getLecturesBySubject(
-                                                  subject.id,
-                                                ),
-                                            onToggleFavorite: () async {},
-                                            onOpenLecture: (_) {},
-                                            onLectureUpdated: () {},
-                                            showEdit: true,
-                                            onEditSubject: null, // 미분류는 편집 불가
-                                            reorderIndex: null, // 드래그 핸들 없음
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          );
+                  final HiveSubject s = displaySubjects[i];
+                  final List<HiveTag> subjectTags = s.tagIds
+                      .map((tid) {
+                        try {
+                          return tags.firstWhere((t) => t.id == tid);
+                        } catch (_) {
+                          return null;
+                        }
+                      })
+                      .whereType<HiveTag>()
+                      .toList();
+                  subjectTags.sort((a, b) => _compareTagNames(a.name, b.name));
+
+                  final lectures = _manager.getLecturesBySubject(s.id);
+
+                  // Placeholder 표시 여부
+                  // 드래그한 아이템이 이동한 자리(_hoverIndex)에 placeholder 표시
+                  final bool isPlaceholder =
+                      _hoverIndex == i && _draggingIndex != null;
+
+                  Widget panel = SubjectPanel(
+                    key: ValueKey(s.id),
+                    subject: s,
+                    tags: subjectTags,
+                    lectures: lectures,
+                    onToggleFavorite: () async {
+                      await _manager.toggleSubjectFavorite(s.id);
+                    },
+                    onOpenLecture: (HiveLecture lec) {
+                      _navigateToPlayer(lec.id);
+                    },
+                    onLectureUpdated: () {},
+                    showEdit: editModeEnabled,
+                    onEditSubject: editModeEnabled && !s.isUncategorized
+                        ? () async => _showSubjectEditDialog(s)
+                        : null,
+                    reorderIndex: editModeEnabled && !s.isUncategorized
+                        ? i
+                        : null,
+                  );
+
+                  // Placeholder 스타일
+                  if (isPlaceholder) {
+                    panel = Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Opacity(opacity: 0.5, child: panel),
+                    );
+                  }
+
+                  // Edit 모드이고 미분류가 아닐 때만 드래그 가능하게
+                  if (editModeEnabled && !s.isUncategorized) {
+                    final itemWidth =
+                        (MediaQuery.of(context).size.width - 44) /
+                        (MediaQuery.of(context).size.width >
+                                MediaQuery.of(context).size.height
+                            ? 2
+                            : 1);
+
+                    return Draggable<int>(
+                      data: i,
+                      feedback: Material(
+                        elevation: 8,
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Opacity(
+                          opacity: 0.9,
+                          child: SizedBox(
+                            width: itemWidth,
+                            child: SubjectPanel(
+                              key: ValueKey('feedback_${s.id}'),
+                              subject: s,
+                              tags: subjectTags,
+                              lectures: lectures,
+                              onToggleFavorite: () async {},
+                              onOpenLecture: (_) {},
+                              onLectureUpdated: () {},
+                              showEdit: true,
+                              reorderIndex: null,
+                            ),
+                          ),
+                        ),
+                      ),
+                      onDragStarted: () {
+                        setState(() {
+                          _draggingIndex = i;
+                          _hoverIndex = i;
+                        });
+                      },
+                      onDragEnd: (details) {
+                        setState(() {
+                          if (_hoverIndex != null &&
+                              _draggingIndex != _hoverIndex) {
+                            _onReorderSubject(_draggingIndex!, _hoverIndex!);
+                          }
+                          _draggingIndex = null;
+                          _hoverIndex = null;
+                        });
+                      },
+                      onDraggableCanceled: (velocity, offset) {
+                        setState(() {
+                          _draggingIndex = null;
+                          _hoverIndex = null;
+                        });
+                      },
+                      child: DragTarget<int>(
+                        onWillAcceptWithDetails: (details) {
+                          return details.data != i;
+                        },
+                        onAcceptWithDetails: (details) {
+                          // onDragEnd에서 처리하므로 여기서는 비워둠
+                        },
+                        onMove: (details) {
+                          if (_hoverIndex != i) {
+                            setState(() {
+                              _hoverIndex = i;
+                            });
+                          }
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          return panel;
                         },
                       ),
-                    )
-                  : SliverMasonryGrid.count(
-                      crossAxisCount:
-                          MediaQuery.of(context).size.width >
-                              MediaQuery.of(context).size.height
-                          ? 2
-                          : 1,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childCount: subjects.length,
-                      itemBuilder: (context, i) {
-                        final HiveSubject s = subjects[i];
-                        final List<HiveTag> subjectTags = s.tagIds
-                            .map((tid) {
-                              try {
-                                return tags.firstWhere((t) => t.id == tid);
-                              } catch (_) {
-                                return null;
-                              }
-                            })
-                            .whereType<HiveTag>()
-                            .toList();
-                        // 태그 정렬: 숫자 > 한글 > 영어
-                        subjectTags.sort(
-                          (a, b) => _compareTagNames(a.name, b.name),
-                        );
+                    );
+                  }
 
-                        final lectures = _manager.getLecturesBySubject(s.id);
-                        return SubjectPanel(
-                          key: ValueKey(s.id),
-                          subject: s,
-                          tags: subjectTags,
-                          lectures: lectures,
-                          onToggleFavorite: () async {
-                            await _manager.toggleSubjectFavorite(s.id);
-                          },
-                          onOpenLecture: (HiveLecture lec) {
-                            _navigateToPlayer(lec.id);
-                          },
-                          onLectureUpdated: () {
-                            // Repository가 notifyListeners()를 호출하므로 setState 불필요
-                          },
-                          showEdit: editModeEnabled,
-                        );
-                      },
-                    ),
+                  return panel;
+                },
+              ),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],

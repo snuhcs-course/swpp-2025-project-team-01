@@ -5,7 +5,7 @@
         "id": "s1",
         "title": "환영합니다!",
         "favorite": true,
-        "tagIds": ["t1", "t2"],
+        "tagIds": ["1", "2"],
         "lectureIds": ["lec_demo_001", "lec_demo_002"],
         "order": 0
       }

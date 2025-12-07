@@ -54,7 +54,7 @@ void main() {
       expect(service.isLoading, true);
       expect(service.lectureTitle, 'Test Lecture');
       expect(service.progress, 0.0);
-      expect(service.message, '열심히 강의를 받아적는 중..');
+      expect(service.message, '강의 생성 요청이 서버에서 대기 중이에요');
       expect(service.isCancelled, false);
       expect(service.hasError, false);
       expect(service.isCompleted, false);
@@ -109,12 +109,14 @@ void main() {
         service.startLoading('Test Lecture', 1);
         final initialMessage = service.message;
 
+        service.updateProgress(0.5, 1, 'msg');
         async.elapse(Duration(seconds: 4));
 
         expect(service.message, isNot(initialMessage));
         expect(
           service.message,
           isIn([
+            '강의 생성 요청이 서버에서 대기 중이에요',
             '열심히 강의를 받아적는 중..',
             '강의 내용을 정리하고 있어요',
             '음성 파일을 듣고 있어요',
@@ -145,7 +147,7 @@ void main() {
       service = LectureLoadingService.createForTest(mockHiveManager);
 
       service.startLoading('Test Lecture', 1);
-      expect(service.message, 'Taking notes from the lecture..');
+      expect(service.message, 'Lecture creation request queued on the server');
 
       service.setError();
       expect(service.errorTitle, 'An error occurred');

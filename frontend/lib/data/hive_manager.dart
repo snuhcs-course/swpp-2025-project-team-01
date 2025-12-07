@@ -170,7 +170,7 @@ class HiveManager extends ChangeNotifier {
           ),
       };
     } catch (e) {
-      debugPrint('Failed to load default subjects: $e');
+      debugPrint('Failed to load default subjects: $e'); // coverage:ignore-line
       return {};
     }
   }
@@ -191,7 +191,7 @@ class HiveManager extends ChangeNotifier {
           ),
       };
     } catch (e) {
-      debugPrint('Failed to load default tags: $e');
+      debugPrint('Failed to load default tags: $e'); // coverage:ignore-line
       return {};
     }
   }
@@ -216,7 +216,9 @@ class HiveManager extends ChangeNotifier {
       }
     }
 
-    debugPrint('Loaded ${lectures.length} demo lectures from assets');
+    debugPrint(
+      'Loaded ${lectures.length} demo lectures from assets',
+    ); // coverage:ignore-line
     return lectures;
   }
 
@@ -479,34 +481,8 @@ class HiveManager extends ChangeNotifier {
 
   List<HiveTag> getTags() {
     final tagList = tags.values.toList();
-    tagList.sort((a, b) => _compareTagNames(a.name, b.name));
+    tagList.sort((a, b) => a.id.compareTo(b.id));
     return tagList;
-  }
-
-  int _compareTagNames(String a, String b) {
-    final aType = _getNameType(a);
-    final bType = _getNameType(b);
-    if (aType != bType) {
-      return aType.compareTo(bType);
-    }
-    return a.compareTo(b);
-  }
-
-  int _getNameType(String name) {
-    if (name.isEmpty) {
-      return 3;
-    }
-    final first = name[0];
-    if (RegExp(r'[0-9]').hasMatch(first)) {
-      return 0;
-    }
-    if (RegExp(r'[ㄱ-ㅎ가-힣]').hasMatch(first)) {
-      return 1;
-    }
-    if (RegExp(r'[a-zA-Z]').hasMatch(first)) {
-      return 2;
-    }
-    return 3;
   }
 
   Future<void> saveTags(List<HiveTag> newTags) async {

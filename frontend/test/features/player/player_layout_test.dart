@@ -1009,7 +1009,7 @@ void main() {
       await tester.pump();
 
       final overlayFinder = find.byKey(
-        const ValueKey('pdf-gesture-overlay-vertical'),
+        const ValueKey('pdf-gesture-overlay-vertical-collapsed'),
       );
       expect(overlayFinder, findsOneWidget);
 

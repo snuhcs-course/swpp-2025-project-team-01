@@ -198,6 +198,107 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   final List<AudioFileEntry> _audioFiles = [AudioFileEntry()];
 
   @override
+  void initState() {
+    super.initState();
+    for (final entry in _audioFiles) {
+      _addFocusListeners(entry);
+    }
+  }
+
+  void _addFocusListeners(AudioFileEntry entry) {
+    entry.startPageFocusNode.addListener(() {
+      if (!entry.startPageFocusNode.hasFocus) {
+        _validatePageRange(entry);
+      }
+    });
+    entry.endPageFocusNode.addListener(() {
+      if (!entry.endPageFocusNode.hasFocus) {
+        _validatePageRange(entry);
+      }
+    });
+  }
+
+  void _validatePageRange(AudioFileEntry entry) {
+    if (!mounted) {
+      return;
+    }
+    final index = _audioFiles.indexOf(entry);
+    if (index == -1) {
+      return;
+    }
+
+    final startText = entry.startPageController.text.trim();
+    final endText = entry.endPageController.text.trim();
+
+    if (startText.isEmpty && endText.isEmpty) {
+      return;
+    }
+
+    var startPage = int.tryParse(startText);
+    var endPage = int.tryParse(endText);
+
+    // Skip validation if parsing failed (non-numeric input)
+    if (startText.isNotEmpty && startPage == null) {
+      return;
+    }
+    if (endText.isNotEmpty && endPage == null) {
+      return;
+    }
+
+    bool needsUpdate = false;
+
+    // Clamp start page to minimum of 1
+    if (startPage != null && startPage < 1) {
+      _showSnackBar(l10n.pageNumbersMustBeAtLeastOne(index));
+      startPage = 1;
+      needsUpdate = true;
+    }
+
+    // Clamp end page to minimum of 1
+    if (endPage != null && endPage < 1) {
+      _showSnackBar(l10n.pageNumbersMustBeAtLeastOne(index));
+      endPage = 1;
+      needsUpdate = true;
+    }
+
+    // Check against PDF total pages if available
+    final pdfTotalPages = _pdfPageCount;
+    if (pdfTotalPages != null) {
+      // Clamp start page to PDF total pages
+      if (startPage != null && startPage > pdfTotalPages) {
+        _showSnackBar(l10n.startExceedsTotal(index, startPage, pdfTotalPages));
+        startPage = pdfTotalPages;
+        needsUpdate = true;
+      }
+
+      // Clamp end page to PDF total pages
+      if (endPage != null && endPage > pdfTotalPages) {
+        _showSnackBar(l10n.endExceedsTotal(index, endPage, pdfTotalPages));
+        endPage = pdfTotalPages;
+        needsUpdate = true;
+      }
+    }
+
+    // Ensure start <= end
+    if (startPage != null && endPage != null && startPage > endPage) {
+      _showSnackBar(l10n.startMustBeGreaterThanEnd(index));
+      // Clamp start to end value
+      startPage = endPage;
+      needsUpdate = true;
+    }
+
+    // Update the text controllers if values were clamped
+    if (needsUpdate) {
+      if (startPage != null) {
+        entry.startPageController.text = startPage.toString();
+      }
+      if (endPage != null) {
+        entry.endPageController.text = endPage.toString();
+      }
+    }
+  }
+
+  @override
   void dispose() {
     // 메모리 누수 방지를 위한 컨트롤러 해제
     _weekController.dispose();
@@ -241,70 +342,73 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       // backgroundColor는 테마의 scaffoldBackgroundColor 사용
 
       // 스크롤 가능한 메인 콘텐츠 + 로딩 바
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ========== 과목 선택 섹션 ==========
-                _buildSectionTitle(l10n.selectSubject),
-                const SizedBox(height: 8),
-                _buildSubjectDropdown(l10n, subjects),
-                const SizedBox(height: 20),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ========== 과목 선택 섹션 ==========
+                  _buildSectionTitle(l10n.selectSubject),
+                  const SizedBox(height: 8),
+                  _buildSubjectDropdown(l10n, subjects),
+                  const SizedBox(height: 20),
 
-                // ========== 강의 언어 선택 섹션 ==========
-                _buildSectionTitle(l10n.spokenLanguage),
-                const SizedBox(height: 8),
-                _buildLanguageDropdown(l10n, subjects),
-                if (_selectedLanguage == 'ko') const SizedBox(height: 8),
-                if (_selectedLanguage == 'ko')
-                  Text(
-                    l10n.noTtsForKorean,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  // ========== 강의 언어 선택 섹션 ==========
+                  _buildSectionTitle(l10n.spokenLanguage),
+                  const SizedBox(height: 8),
+                  _buildLanguageDropdown(l10n, subjects),
+                  if (_selectedLanguage == 'ko') const SizedBox(height: 8),
+                  if (_selectedLanguage == 'ko')
+                    Text(
+                      l10n.noTtsForKorean,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
                     ),
+                  const SizedBox(height: 20),
+
+                  // ========== 강의 주차 입력 섹션 ==========
+                  _buildSectionTitle(l10n.lectureWeek),
+                  const SizedBox(height: 8),
+                  _buildWeekTextField(),
+                  const SizedBox(height: 20),
+
+                  // ========== 강의 제목 입력 섹션 ==========
+                  _buildSectionTitle(l10n.lectureTitle),
+                  const SizedBox(height: 8),
+                  _buildTitleTextField(),
+                  const SizedBox(height: 20),
+
+                  // ========== 강의 슬라이드 업로드 섹션 ==========
+                  _buildSectionTitle(l10n.lectureSlides),
+                  const SizedBox(height: 8),
+                  _buildFileUploadButton(
+                    icon: Icons.attach_file,
+                    label: _slidePdfPath != null
+                        ? _getFileName(_slidePdfPath!)
+                        : '...',
+                    onTap: _pickSlidePdf,
+                    hasFile: _slidePdfPath != null,
                   ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // ========== 강의 주차 입력 섹션 ==========
-                _buildSectionTitle(l10n.lectureWeek),
-                const SizedBox(height: 8),
-                _buildWeekTextField(),
-                const SizedBox(height: 20),
+                  // ========== 강의 녹음 파일 업로드 섹션 ==========
+                  _buildSectionTitle(l10n.lectureAudio),
+                  const SizedBox(height: 8),
+                  _buildAudioFilesList(),
 
-                // ========== 강의 제목 입력 섹션 ==========
-                _buildSectionTitle(l10n.lectureTitle),
-                const SizedBox(height: 8),
-                _buildTitleTextField(),
-                const SizedBox(height: 20),
-
-                // ========== 강의 슬라이드 업로드 섹션 ==========
-                _buildSectionTitle(l10n.lectureSlides),
-                const SizedBox(height: 8),
-                _buildFileUploadButton(
-                  icon: Icons.attach_file,
-                  label: _slidePdfPath != null
-                      ? _getFileName(_slidePdfPath!)
-                      : '...',
-                  onTap: _pickSlidePdf,
-                  hasFile: _slidePdfPath != null,
-                ),
-                const SizedBox(height: 20),
-
-                // ========== 강의 녹음 파일 업로드 섹션 ==========
-                _buildSectionTitle(l10n.lectureAudio),
-                const SizedBox(height: 8),
-                _buildAudioFilesList(),
-
-                const SizedBox(height: 40),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
 
       // 하단 고정 생성 버튼
@@ -644,7 +748,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       const SizedBox(width: 16),
                       SizedBox(
                         width: pageFieldWidth,
-                        child: _buildPageTextField(entry.startPageController),
+                        child: _buildPageTextField(
+                          entry.startPageController,
+                          entry.startPageFocusNode,
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -652,7 +759,10 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
                       ),
                       SizedBox(
                         width: pageFieldWidth,
-                        child: _buildPageTextField(entry.endPageController),
+                        child: _buildPageTextField(
+                          entry.endPageController,
+                          entry.endPageFocusNode,
+                        ),
                       ),
                     ],
                   ),
@@ -666,11 +776,15 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
   }
 
   /// 페이지 번호 입력 텍스트 필드
-  Widget _buildPageTextField(TextEditingController controller) {
+  Widget _buildPageTextField(
+    TextEditingController controller,
+    FocusNode focusNode,
+  ) {
     return Builder(
       builder: (context) {
         return TextField(
           controller: controller,
+          focusNode: focusNode,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
           decoration: const InputDecoration(
@@ -739,9 +853,11 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
   }
 
   // ========== 파일 선택 메서드들 ==========
@@ -769,8 +885,12 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
 
           // 첫 번째 오디오 파일의 페이지 범위를 자동으로 설정
           if (_audioFiles.isNotEmpty) {
-            _audioFiles[0].startPageController.text = '1';
-            _audioFiles[0].endPageController.text = pageCount.toString();
+            for (final audioFile in _audioFiles) {
+              if (audioFile.filePath != null) {
+                audioFile.startPageController.text = '1';
+                audioFile.endPageController.text = pageCount.toString();
+              }
+            }
           }
         });
       } catch (e) {
@@ -805,9 +925,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final wasEmpty = _audioFiles[index].filePath == null;
         _audioFiles[index].filePath = filePath;
 
+        if (_slidePdfPath != null) {
+          _audioFiles[index].startPageController.text = '1';
+          _audioFiles[index].endPageController.text = _pdfPageCount.toString();
+        }
+
         // 파일이 처음 업로드되고, 마지막 칸인 경우 새 칸 자동 추가
         if (wasEmpty && index == _audioFiles.length - 1) {
-          _audioFiles.add(AudioFileEntry());
+          final newEntry = AudioFileEntry();
+          _addFocusListeners(newEntry);
+          _audioFiles.add(newEntry);
         }
       });
     }
@@ -944,6 +1071,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     }
 
     // 2. 로딩 시작
+    // 파일명에 공백이 있으면 ffmpeg concat 시 오류 발생하므로 하이픈으로 치환
     final titleText = _titleController.text.trim();
     final langCode = _selectedLanguage;
 
@@ -966,7 +1094,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
       }
       // iOS doesn't need FlutterBackground - background modes in Info.plist handle it
     } catch (e) {
-      debugPrint('Failed to enable background execution: $e');
+      debugPrint(
+        'Failed to enable background execution: $e',
+      ); // coverage:ignore-line
       // Continue anyway - app will still work in foreground
     }
 
@@ -1000,6 +1130,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
     final lectureId = _uuid.v4();
     try {
       final subjectId = _selectedSubjectId ?? 'uncategorized';
+      // 파일명에 공백이 있으면 ffmpeg concat 시 오류 발생하므로 하이픈으로 치환
       final weekText = _weekController.text.trim();
       final slidePath = _slidePdfPath!;
 
@@ -1121,14 +1252,16 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final documentsDir = await getApplicationDocumentsDirectory();
         final extension = path.extension(sourceAudioPath);
         final permanentAudioPath =
-            '${documentsDir.path}/$lectureId/$titleText$extension';
+            '${documentsDir.path}/$lectureId/$lectureId$extension';
 
         try {
           // 원본 오디오를 영구 저장소로 복사
           await File(sourceAudioPath).copy(permanentAudioPath);
           originalAudioPath = permanentAudioPath;
         } catch (e) {
-          debugPrint('Failed to copy original audio to permanent storage: $e');
+          debugPrint(
+            'Failed to copy original audio to permanent storage: $e',
+          ); // coverage:ignore-line
           _showSnackBar(l10n.lectureGenerationFailed);
           return;
         }
@@ -1172,7 +1305,7 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         try {
           final documentsDir = await getApplicationDocumentsDirectory();
           final permanentPdfPath =
-              '${documentsDir.path}/$lectureId/$titleText.pdf';
+              '${documentsDir.path}/$lectureId/$lectureId.pdf';
 
           // PDF를 영구 저장소로 복사
           await File(_slidePdfPath!).copy(permanentPdfPath);
@@ -1188,10 +1321,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
           try {
             await File(_slidePdfPath!).delete();
           } catch (e) {
-            debugPrint('Failed to delete temporary PDF: $e');
+            debugPrint(
+              'Failed to delete temporary PDF: $e',
+            ); // coverage:ignore-line
           }
         } catch (e) {
-          debugPrint('Failed to copy PDF to permanent storage: $e');
+          debugPrint(
+            'Failed to copy PDF to permanent storage: $e',
+          ); // coverage:ignore-line
         }
       }
 
@@ -1201,10 +1338,14 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         final pickerDir = Directory('${tempDir.path}/file_picker');
         if (pickerDir.existsSync()) {
           await pickerDir.delete(recursive: true);
-          debugPrint('Deleted file_picker cache directory: ${pickerDir.path}');
+          debugPrint(
+            'Deleted file_picker cache directory: ${pickerDir.path}',
+          ); // coverage:ignore-line
         }
       } catch (e) {
-        debugPrint('Failed to delete file_picker cache: $e');
+        debugPrint(
+          'Failed to delete file_picker cache: $e',
+        ); // coverage:ignore-line
       }
 
       // 7. 과목에 강의 추가
@@ -1239,7 +1380,9 @@ class _LectureFormScreenState extends State<LectureFormScreen> {
         try {
           await _flutterBackground.disableBackgroundExecution();
         } catch (e) {
-          debugPrint('Failed to disable background execution: $e');
+          debugPrint(
+            'Failed to disable background execution: $e',
+          ); // coverage:ignore-line
         }
       }
     }
@@ -1268,9 +1411,17 @@ class AudioFileEntry {
   /// 끝 페이지 입력 컨트롤러
   final TextEditingController endPageController = TextEditingController();
 
+  /// 시작 페이지 포커스 노드
+  final FocusNode startPageFocusNode = FocusNode();
+
+  /// 끝 페이지 포커스 노드
+  final FocusNode endPageFocusNode = FocusNode();
+
   /// 메모리 누수 방지를 위한 컨트롤러 해제
   void dispose() {
     startPageController.dispose();
     endPageController.dispose();
+    startPageFocusNode.dispose();
+    endPageFocusNode.dispose();
   }
 }

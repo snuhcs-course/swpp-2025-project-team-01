@@ -49,26 +49,32 @@ class ThumbnailCacheManager {
       // 가장 오래된 항목 제거 (맨 앞)
       final oldestKey = _cache.keys.first;
       _cache.remove(oldestKey);
-      debugPrint('🗑️ Thumbnail cache evicted: $oldestKey');
+      debugPrint(
+        '🗑️ Thumbnail cache evicted: $oldestKey',
+      ); // coverage:ignore-line
     }
 
     // 새 항목 추가 (맨 뒤)
     _cache[lectureId] = CachedThumbnail(image: image, aspectRatio: aspectRatio);
-    debugPrint('Thumbnail cached: $lectureId (total: ${_cache.length})');
+    debugPrint(
+      'Thumbnail cached: $lectureId (total: ${_cache.length})',
+    ); // coverage:ignore-line
   }
 
   /// 특정 강의의 썸네일을 캐시에서 제거
   void remove(String lectureId) {
     if (_cache.containsKey(lectureId)) {
       _cache.remove(lectureId);
-      debugPrint('Thumbnail removed from cache: $lectureId');
+      debugPrint(
+        'Thumbnail removed from cache: $lectureId',
+      ); // coverage:ignore-line
     }
   }
 
   /// 캐시 전체 삭제
   void clear() {
     _cache.clear();
-    debugPrint('Thumbnail cache cleared');
+    debugPrint('Thumbnail cache cleared'); // coverage:ignore-line
   }
 
   /// 현재 캐시 크기

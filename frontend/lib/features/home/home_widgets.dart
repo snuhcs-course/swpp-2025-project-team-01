@@ -432,21 +432,30 @@ class _SubjectPanelState extends State<SubjectPanel>
                         ),
                     ];
                     return widget.showEdit
-                        ? ReorderableWrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            needsLongPressDraggable: false,
-                            onReorder: _onReorder,
-                            buildDraggableFeedback:
-                                (context, constraints, child) {
-                                  // lifted feedback while dragging
-                                  return Material(
-                                    elevation: 6,
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: child,
-                                  );
-                                },
-                            children: children,
+                        ? ClipRect(
+                            child: ReorderableWrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              needsLongPressDraggable: false,
+                              onReorder: _onReorder,
+                              buildDraggableFeedback:
+                                  (context, constraints, child) {
+                                    // lifted feedback while dragging
+                                    // ConstrainedBox를 사용하여 드래그 피드백이 부모 영역을 벗어나지 못하도록 제한
+                                    return ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: cardWidth,
+                                        maxHeight: 300, // 적절한 최대 높이 설정
+                                      ),
+                                      child: Material(
+                                        elevation: 6,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                              children: children,
+                            ),
                           )
                         : Wrap(spacing: 12, runSpacing: 12, children: children);
                   },
@@ -525,9 +534,13 @@ class _LectureCardState extends State<LectureCard> {
       try {
         final cacheDir = await getTemporaryDirectory();
         beforeFiles = cacheDir.listSync().map((f) => f.path).toSet();
-        debugPrint('📂 Cache files before PDF open: ${beforeFiles.length}');
+        debugPrint(
+          '📂 Cache files before PDF open: ${beforeFiles.length}',
+        ); // coverage:ignore-line
       } catch (e) {
-        debugPrint('⚠️ Failed to list cache directory: $e');
+        debugPrint(
+          '⚠️ Failed to list cache directory: $e',
+        ); // coverage:ignore-line
       }
 
       // assets 경로인지 파일 시스템 경로인지 확인
@@ -536,7 +549,9 @@ class _LectureCardState extends State<LectureCard> {
           ? await PdfDocument.openAsset(widget.lec.slidePath!)
           : await PdfDocument.openFile(widget.lec.slidePath!);
 
-      debugPrint('📄 Opened PDF: ${widget.lec.slidePath}');
+      debugPrint(
+        '📄 Opened PDF: ${widget.lec.slidePath}',
+      ); // coverage:ignore-line
 
       page = await document.getPage(1);
 
@@ -553,7 +568,7 @@ class _LectureCardState extends State<LectureCard> {
       // PDF document와 page를 사용 후 즉시 닫기
       await page.close();
       await document.close();
-      debugPrint('🔒 Closed PDF document and page');
+      debugPrint('🔒 Closed PDF document and page'); // coverage:ignore-line
 
       // 새로 생긴 캐시 파일 찾아서 삭제
       if (beforeFiles != null) {
@@ -567,20 +582,27 @@ class _LectureCardState extends State<LectureCard> {
               try {
                 await file.delete();
                 deletedCount++;
-                debugPrint('🗑️ Deleted cache file: ${file.path}');
+                debugPrint(
+                  '🗑️ Deleted cache file: ${file.path}',
+                ); // coverage:ignore-line
               } catch (e) {
-                debugPrint('⚠️ Failed to delete ${file.path}: $e');
+                debugPrint(
+                  '⚠️ Failed to delete ${file.path}: $e',
+                ); // coverage:ignore-line
               }
             }
           }
 
           if (deletedCount > 0) {
             debugPrint(
+              // coverage:ignore-line
               '✅ Cleaned up $deletedCount cache files for lecture: ${widget.lec.id}',
             );
           }
         } catch (e) {
-          debugPrint('⚠️ Failed to cleanup cache files: $e');
+          debugPrint(
+            '⚠️ Failed to cleanup cache files: $e',
+          ); // coverage:ignore-line
         }
       }
 
@@ -609,7 +631,7 @@ class _LectureCardState extends State<LectureCard> {
           _isLoading = false;
         });
       }
-      debugPrint('❌ Error loading PDF: $e');
+      debugPrint('❌ Error loading PDF: $e'); // coverage:ignore-line
     }
   }
 
@@ -832,6 +854,12 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     return months[month - 1];
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -841,158 +869,176 @@ class _LectureDetailDialogState extends State<_LectureDetailDialog> {
     // 모든 과목 가져오기 (미분류 포함)
     final allSubjects = manager.getSubjects().toList();
 
-    return EditDialog(
-      title: l10n.editLecture,
-      deleteLabel: l10n.delete,
-      completeLabel: l10n.complete,
-      onDelete: () async {
-        final bool? confirm = await showDialog<bool>(
-          context: context,
-          barrierColor: Colors.black87,
-          builder: (context) => DeleteWarningDialog(
-            warningText: l10n.warning,
-            yesText: l10n.yes,
-            noText: l10n.no,
-            onConfirm: () async {
-              await manager.deleteLecture(widget.lecture.id);
-            },
-            body: Text(
-              l10n.deleteLectureWarning,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                height: 1.5,
-              ),
-            ),
-          ),
-        );
-
-        if (confirm == true && context.mounted) {
-          Navigator.pop(context, true);
-        }
-      },
-      onComplete: () async {
-        final weekText = _weekController.text.trim();
-        final titleText = _titleController.text.trim();
-
-        if (weekText.isNotEmpty && titleText.isNotEmpty) {
-          await manager.updateLectureMetadata(
-            widget.lecture.id,
-            weekLabel: weekText,
-            title: titleText,
-          );
-        }
-
-        // 과목이 변경되었으면 이동
-        if (_selectedSubjectId != widget.lecture.subjectId) {
-          await manager.moveLectureToSubject(
-            widget.lecture.id,
-            _selectedSubjectId,
-          );
-        }
-
-        if (context.mounted) {
-          Navigator.pop(context, true);
-        }
-      },
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 과목 선택 드롭다운
-          DropdownButtonFormField<String>(
-            initialValue: _selectedSubjectId,
-            decoration: InputDecoration(
-              labelText: l10n.subject,
-              border: const OutlineInputBorder(),
-            ),
-            items: allSubjects.map((subject) {
-              return DropdownMenuItem<String>(
-                value: subject.id,
-                child: Text(
-                  subject.isUncategorized ? l10n.uncategorized : subject.title,
-                ),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  _selectedSubjectId = newValue;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _weekController,
-            decoration: InputDecoration(
-              labelText: l10n.week,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _titleController,
-            decoration: InputDecoration(
-              labelText: l10n.lectureTitle,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // 강의 시간 정보
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, size: 20),
-                    const SizedBox(width: 8),
-                    Text(l10n.lectureLength, style: theme.textTheme.titleSmall),
-                  ],
-                ),
-                Text(
-                  _formatDuration(widget.lecture.duration),
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 생성일 정보
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 20),
-                    const SizedBox(width: 8),
-                    Text(l10n.createdAt, style: theme.textTheme.titleSmall),
-                  ],
-                ),
-                Expanded(
-                  child: Text(
-                    _formatDate(widget.lecture.createdAt, l10n),
-                    style: theme.textTheme.bodyMedium,
-                    textAlign: TextAlign.right,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: EditDialog(
+          title: l10n.editLecture,
+          deleteLabel: l10n.delete,
+          completeLabel: l10n.complete,
+          onDelete: () async {
+            final bool? confirm = await showDialog<bool>(
+              context: context,
+              barrierColor: Colors.black87,
+              builder: (context) => DeleteWarningDialog(
+                warningText: l10n.warning,
+                yesText: l10n.yes,
+                noText: l10n.no,
+                onConfirm: () async {
+                  await manager.deleteLecture(widget.lecture.id);
+                },
+                body: Text(
+                  l10n.deleteLectureWarning,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    height: 1.5,
                   ),
                 ),
-              ],
-            ),
+              ),
+            );
+
+            if (confirm == true && context.mounted) {
+              Navigator.pop(context, true);
+            }
+          },
+          onComplete: () async {
+            final weekText = _weekController.text.trim();
+            final titleText = _titleController.text.trim();
+
+            if (weekText.isEmpty) {
+              _showSnackBar(l10n.pleaseEnterWeek);
+              return;
+            }
+
+            if (titleText.isEmpty) {
+              _showSnackBar(l10n.pleaseEnterLectureTitle);
+              return;
+            }
+
+            await manager.updateLectureMetadata(
+              widget.lecture.id,
+              weekLabel: weekText,
+              title: titleText,
+            );
+
+            // 과목이 변경되었으면 이동
+            if (_selectedSubjectId != widget.lecture.subjectId) {
+              await manager.moveLectureToSubject(
+                widget.lecture.id,
+                _selectedSubjectId,
+              );
+            }
+
+            if (context.mounted) {
+              Navigator.pop(context, true);
+            }
+          },
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 과목 선택 드롭다운
+              DropdownButtonFormField<String>(
+                initialValue: _selectedSubjectId,
+                decoration: InputDecoration(
+                  labelText: l10n.subject,
+                  border: const OutlineInputBorder(),
+                ),
+                items: allSubjects.map((subject) {
+                  return DropdownMenuItem<String>(
+                    value: subject.id,
+                    child: Text(
+                      subject.isUncategorized
+                          ? l10n.uncategorized
+                          : subject.title,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedSubjectId = newValue;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _weekController,
+                decoration: InputDecoration(
+                  labelText: l10n.week,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: l10n.lectureTitle,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // 강의 시간 정보
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.lectureLength,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _formatDuration(widget.lecture.duration),
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 생성일 정보
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 20),
+                        const SizedBox(width: 8),
+                        Text(l10n.createdAt, style: theme.textTheme.titleSmall),
+                      ],
+                    ),
+                    Expanded(
+                      child: Text(
+                        _formatDate(widget.lecture.createdAt, l10n),
+                        style: theme.textTheme.bodyMedium,
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

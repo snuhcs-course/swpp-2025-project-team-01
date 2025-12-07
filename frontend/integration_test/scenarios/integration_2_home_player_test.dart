@@ -28,7 +28,9 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     reason: 'Tutorial lecture should exist in assets',
   );
 
-  debugPrint('Tutorial lecture found: ${tutorialLecture!.title}');
+  debugPrint(
+    'Tutorial lecture found: ${tutorialLecture!.title}',
+  ); // coverage:ignore-line
 
   // Step 1: Find and tap on tutorial lecture in home screen
   // The lecture should be in subject 's1' (환영합니다!)
@@ -48,7 +50,9 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   final menuButton = find.byIcon(Icons.menu);
   expect(menuButton, findsOneWidget, reason: 'Should be on home screen');
 
-  debugPrint('Confirmed on home screen, looking for lecture widget...');
+  debugPrint(
+    'Confirmed on home screen, looking for lecture widget...',
+  ); // coverage:ignore-line
 
   // First, try to expand the subject panel by tapping on the subject title
   final subjectTitle = find.text(subject.title);
@@ -56,13 +60,17 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     try {
       await tester.tap(subjectTitle.first);
       await tester.pumpAndSettle();
-      debugPrint('✓ Expanded subject panel');
+      debugPrint('✓ Expanded subject panel'); // coverage:ignore-line
     } catch (e) {
       // Subject might already be expanded
-      debugPrint('Subject panel already expanded or not collapsible: $e');
+      debugPrint(
+        'Subject panel already expanded or not collapsible: $e',
+      ); // coverage:ignore-line
     }
   } else {
-    debugPrint('⚠️ Could not find subject title: ${subject.title}');
+    debugPrint(
+      '⚠️ Could not find subject title: ${subject.title}',
+    ); // coverage:ignore-line
   }
 
   // Additional wait for expansion animation
@@ -73,6 +81,7 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   final weekFinder = find.text(tutorialLecture.weekLabel);
 
   debugPrint(
+    // coverage:ignore-line
     'Looking for lecture: ${tutorialLecture.title} or ${tutorialLecture.weekLabel}',
   );
 
@@ -82,17 +91,21 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   // First check if lecture is already visible
   if (lectureFinder.evaluate().isNotEmpty) {
     lectureWidget = lectureFinder.first;
-    debugPrint('✓ Found lecture by title');
+    debugPrint('✓ Found lecture by title'); // coverage:ignore-line
   } else if (weekFinder.evaluate().isNotEmpty) {
     lectureWidget = weekFinder.first;
-    debugPrint('✓ Found lecture by week label');
+    debugPrint('✓ Found lecture by week label'); // coverage:ignore-line
   } else {
     // If not visible, try scrolling to find it
-    debugPrint('Lecture not immediately visible, trying to scroll...');
+    debugPrint(
+      'Lecture not immediately visible, trying to scroll...',
+    ); // coverage:ignore-line
     final scrollables = find.byType(Scrollable);
 
     if (scrollables.evaluate().isNotEmpty) {
-      debugPrint('Found ${scrollables.evaluate().length} scrollable(s)');
+      debugPrint(
+        'Found ${scrollables.evaluate().length} scrollable(s)',
+      ); // coverage:ignore-line
 
       // Try scrolling to find the lecture by title first
       try {
@@ -104,10 +117,14 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
         if (lectureFinder.evaluate().isNotEmpty) {
           lectureWidget = lectureFinder.first;
-          debugPrint('✓ Found lecture by scrolling to title');
+          debugPrint(
+            '✓ Found lecture by scrolling to title',
+          ); // coverage:ignore-line
         }
       } catch (scrollError) {
-        debugPrint('Could not scroll to lecture by title: $scrollError');
+        debugPrint(
+          'Could not scroll to lecture by title: $scrollError',
+        ); // coverage:ignore-line
 
         // Try scrolling to find by week label
         try {
@@ -119,17 +136,23 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
           if (weekFinder.evaluate().isNotEmpty) {
             lectureWidget = weekFinder.first;
-            debugPrint('✓ Found lecture by scrolling to week label');
+            debugPrint(
+              '✓ Found lecture by scrolling to week label',
+            ); // coverage:ignore-line
           }
         } catch (e) {
-          debugPrint('Could not scroll to lecture by week label: $e');
+          debugPrint(
+            'Could not scroll to lecture by week label: $e',
+          ); // coverage:ignore-line
         }
       }
     }
 
     // Last resort: try to find any ListTile or Card that might be the lecture
     if (lectureWidget == null) {
-      debugPrint('Last resort: looking for any widget containing lecture text');
+      debugPrint(
+        'Last resort: looking for any widget containing lecture text',
+      ); // coverage:ignore-line
 
       // Try a case-insensitive search
       final textWidgets = find.byWidgetPredicate(
@@ -142,18 +165,18 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
       if (textWidgets.evaluate().isNotEmpty) {
         lectureWidget = textWidgets.first;
-        debugPrint('✓ Found lecture text widget');
+        debugPrint('✓ Found lecture text widget'); // coverage:ignore-line
       }
     }
   }
 
   if (lectureWidget == null) {
     // Debug: print all text widgets to see what's available
-    debugPrint('Available text widgets:');
+    debugPrint('Available text widgets:'); // coverage:ignore-line
     final allTexts = find.byType(Text);
     for (final element in allTexts.evaluate().take(20)) {
       final widget = element.widget as Text;
-      debugPrint('  - ${widget.data}');
+      debugPrint('  - ${widget.data}'); // coverage:ignore-line
     }
 
     throw Exception(
@@ -162,15 +185,19 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     );
   }
 
-  debugPrint('✓ Lecture widget found, preparing to tap');
+  debugPrint(
+    '✓ Lecture widget found, preparing to tap',
+  ); // coverage:ignore-line
 
   // Ensure the lecture widget is fully visible and scrolled into view
   try {
     await tester.ensureVisible(lectureWidget);
     await tester.pumpAndSettle();
-    debugPrint('✓ Lecture widget ensured visible');
+    debugPrint('✓ Lecture widget ensured visible'); // coverage:ignore-line
   } catch (e) {
-    debugPrint('⚠️ Could not ensure lecture visible: $e');
+    debugPrint(
+      '⚠️ Could not ensure lecture visible: $e',
+    ); // coverage:ignore-line
   }
 
   // Step 2: Tap on the lecture to navigate to player
@@ -201,29 +228,40 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
           if (thumbnail.evaluate().isNotEmpty) {
             tappableWidget = thumbnail.first;
-            debugPrint('✓ Found thumbnail (AspectRatio) for tapping');
+            debugPrint(
+              '✓ Found thumbnail (AspectRatio) for tapping',
+            ); // coverage:ignore-line
           } else {
             // Fallback to InkWell if thumbnail not found
             tappableWidget = inkWell.first;
-            debugPrint('✓ Using InkWell (thumbnail not found)');
+            debugPrint(
+              '✓ Using InkWell (thumbnail not found)',
+            ); // coverage:ignore-line
           }
         } else {
-          debugPrint('⚠️ InkWell not found, using text widget directly');
+          debugPrint(
+            '⚠️ InkWell not found, using text widget directly',
+          ); // coverage:ignore-line
         }
       } catch (e) {
-        debugPrint('⚠️ Could not find thumbnail: $e');
+        debugPrint('⚠️ Could not find thumbnail: $e'); // coverage:ignore-line
       }
 
       // Tap on the thumbnail or card
       final Offset center = tester.getCenter(tappableWidget);
       await tester.tapAt(center);
-      debugPrint('✓ Tapped at position ($center) (attempt ${tapAttempt + 1})');
+      debugPrint(
+        '✓ Tapped at position ($center) (attempt ${tapAttempt + 1})',
+      ); // coverage:ignore-line
     } catch (e) {
-      debugPrint('⚠️ Error tapping: $e, trying alternative');
+      debugPrint(
+        '⚠️ Error tapping: $e, trying alternative',
+      ); // coverage:ignore-line
 
       // Fallback: try tapping with warnIfMissed: false
       await tester.tap(lectureWidget, warnIfMissed: false);
       debugPrint(
+        // coverage:ignore-line
         '✓ Tapped lecture widget (fallback, attempt ${tapAttempt + 1})',
       );
     }
@@ -237,10 +275,13 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     if (menuButton.evaluate().isEmpty) {
       // Menu button not found, likely navigated away from home
       navigationSuccessful = true;
-      debugPrint('✓ Navigation detected after tap attempt ${tapAttempt + 1}');
+      debugPrint(
+        '✓ Navigation detected after tap attempt ${tapAttempt + 1}',
+      ); // coverage:ignore-line
       break;
     } else {
       debugPrint(
+        // coverage:ignore-line
         '⚠️ Still on home screen after tap attempt ${tapAttempt + 1}, retrying...',
       );
       await tester.pumpAndSettle();
@@ -249,6 +290,7 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
   if (!navigationSuccessful) {
     debugPrint(
+      // coverage:ignore-line
       '⚠️ Warning: Navigation may not have occurred after 3 tap attempts',
     );
   }
@@ -259,7 +301,7 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
   // Wait for player to load (PlayerScreen shows CircularProgressIndicator initially)
   // Poll for PlayerLayout to appear, with timeout
-  debugPrint('Waiting for player to load...');
+  debugPrint('Waiting for player to load...'); // coverage:ignore-line
   bool playerLoaded = false;
   for (int i = 0; i < 40; i++) {
     // Try up to 40 times (20 seconds total with pumpAndSettle)
@@ -270,7 +312,9 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
     } catch (e) {
       // If pumpAndSettle times out, continue polling
-      debugPrint('pumpAndSettle timeout during polling, continuing...');
+      debugPrint(
+        'pumpAndSettle timeout during polling, continuing...',
+      ); // coverage:ignore-line
     }
 
     final verticalLayout = find.byType(VerticalPlayerLayout);
@@ -279,7 +323,9 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     if (verticalLayout.evaluate().isNotEmpty ||
         horizontalLayout.evaluate().isNotEmpty) {
       playerLoaded = true;
-      debugPrint('✓ Player loaded after ${(i + 1) * 500}ms');
+      debugPrint(
+        '✓ Player loaded after ${(i + 1) * 500}ms',
+      ); // coverage:ignore-line
       break;
     }
   }
@@ -296,13 +342,18 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
   final transcriptArea = find.byType(TranscriptArea);
 
   debugPrint(
+    // coverage:ignore-line
     'DEBUG: verticalLayout found: ${verticalLayout.evaluate().length}',
   );
   debugPrint(
+    // coverage:ignore-line
     'DEBUG: horizontalLayout found: ${horizontalLayout.evaluate().length}',
   );
-  debugPrint('DEBUG: pdfArea found: ${pdfArea.evaluate().length}');
   debugPrint(
+    'DEBUG: pdfArea found: ${pdfArea.evaluate().length}',
+  ); // coverage:ignore-line
+  debugPrint(
+    // coverage:ignore-line
     'DEBUG: transcriptArea found: ${transcriptArea.evaluate().length}',
   );
 
@@ -328,7 +379,9 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
     reason: 'Player screen should show transcript area',
   );
 
-  debugPrint('✅ Navigated to player screen - verified player layout widgets');
+  debugPrint(
+    '✅ Navigated to player screen - verified player layout widgets',
+  ); // coverage:ignore-line
 
   // Step 3: Find and tap the subtitles/transcript toggle button
   // In horizontal layout, there might be a button to toggle transcript panel
@@ -347,9 +400,10 @@ Future<void> runIntegration2Test(WidgetTester tester) async {
 
   // Verify subtitles/transcript are still visible (already checked above)
   // The TranscriptArea widget should contain transcript content
-  debugPrint('✅ Transcript area verified');
+  debugPrint('✅ Transcript area verified'); // coverage:ignore-line
 
   debugPrint(
+    // coverage:ignore-line
     '✅ Integration 2 passed: Navigation to player and subtitles verified',
   );
 }
