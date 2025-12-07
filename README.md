@@ -19,8 +19,7 @@ Re:View is a mobile application that takes in raw lecture recordings and lecture
 - **Organized Library**: Subject-based organization with tags, favorites, and powerful search
 
 ## Architecture
-
-<img height="516" alt="Architecture diagram" src="https://github.com/user-attachments/assets/c3a4b8a8-f457-41cf-8240-1e2e4d0b622d" />
+<img height="526" alt="overall architecture" src="https://github.com/user-attachments/assets/7e64d94a-402b-477c-ab20-da2b19cca824" />
 
 **Frontend**: Flutter mobile app with Hive-based state management
 
