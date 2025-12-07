@@ -194,9 +194,7 @@ class PlayerController extends ChangeNotifier {
 
     // PDF 문서 로드 with error handling
     try {
-      pdfDocument = pdfPath.startsWith('assets/')
-          ? await _pdfService.openAsset(pdfPath)
-          : await _pdfService.openFile(pdfPath);
+      pdfDocument = await _pdfService.openFile(pdfPath);
     } on PlatformException catch (e) {
       debugPrint('❌ Error loading PDF: $e'); // coverage:ignore-line
       rethrow; // Re-throw to be caught by caller (player_screen's _loadLectureData)
