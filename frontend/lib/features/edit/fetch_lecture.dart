@@ -194,28 +194,28 @@ Future<String?> requestLecture(
           },
         );
     didArrive = true;
-    // read chunked SSE-style body
-    final stream = streamed.stream
-        .transform(utf8.decoder)
-        .timeout(
-          endpointOverride != null
-              ? const Duration(milliseconds: 100) // Fast timeout for testing
-              : const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
-          onTimeout: (sink) {
-            debugPrint(
-              // coverage:ignore-line
-              'Stream timeout - No updates from server for 30 seconds',
-            );
-            sink.addError(Exception('서버로부터 응답이 없습니다'));
-          },
-        );
-
-    // Stagnation detection
-    double? lastProgress;
-    DateTime lastProgressTime = DateTime.now();
 
     String? jobId;
     try {
+      // read chunked SSE-style body
+      final stream = streamed.stream
+          .transform(utf8.decoder)
+          .timeout(
+            endpointOverride != null
+                ? const Duration(milliseconds: 100) // Fast timeout for testing
+                : const Duration(seconds: 30), // 30초 동안 업데이트가 없으면 타임아웃
+            onTimeout: (sink) {
+              debugPrint(
+                // coverage:ignore-line
+                'Stream timeout - No updates from server for 30 seconds',
+              );
+              sink.addError(Exception('서버로부터 응답이 없습니다'));
+            },
+          );
+
+      // Stagnation detection
+      double? lastProgress;
+      DateTime lastProgressTime = DateTime.now();
       await for (final chunk in stream) {
         // 취소 확인
         if (LectureLoadingService.instance.isCancelled) {
@@ -246,9 +246,9 @@ Future<String?> requestLecture(
             if (lastProgress != null) {
               if (progress == lastProgress) {
                 final stagnantFor = now.difference(lastProgressTime);
-                if (stagnantFor.inSeconds >= 120 && progress > 0.0) {
+                if (stagnantFor.inSeconds >= 180 && progress > 0.0) {
                   debugPrint(
-                    'Progress stagnant for 120 seconds. Dead server.',
+                    'Progress stagnant for 180 seconds. Dead server.',
                   ); // coverage:ignore-line
                   LectureLoadingService.instance.setError(isServerError: true);
                   return null; // stop streaming
