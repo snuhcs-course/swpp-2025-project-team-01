@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:pdfx/pdfx.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
@@ -222,6 +223,30 @@ class PdfArea extends StatelessWidget {
   final PlayerController controller;
   final VoidCallback onBack;
 
+  Widget _buildErrorWidget(int pageNumber) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 12),
+          const Text(
+            'Error',
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            'Page $pageNumber',
+            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
@@ -244,6 +269,119 @@ class PdfArea extends StatelessWidget {
                       physics: !isSynced
                           ? const AlwaysScrollableScrollPhysics()
                           : const NeverScrollableScrollPhysics(),
+                      backgroundDecoration: const BoxDecoration(
+                        color: Colors.white,
+                      ),
+                      builders: PdfViewBuilders<DefaultBuilderOptions>(
+                        options: const DefaultBuilderOptions(),
+                        documentLoaderBuilder: (_) => Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        pageLoaderBuilder: (_) => Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                        pageBuilder:
+                            (context, pageImageFuture, index, document) {
+                              final pageNumber = index + 1;
+
+                              // 1. 캐시된 이미지가 있는지 우선 확인 (깜빡임 방지)
+                              final cachedBytes = controller.pdfCacheService
+                                  .getCachedImageDirect(pageNumber);
+
+                              if (cachedBytes != null) {
+                                return PhotoViewGalleryPageOptions.customChild(
+                                  child: Container(
+                                    color: Colors.white,
+                                    child: Image.memory(
+                                      cachedBytes,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  initialScale:
+                                      PhotoViewComputedScale.contained,
+                                  minScale: PhotoViewComputedScale.contained,
+                                  maxScale:
+                                      PhotoViewComputedScale.contained * 3.0,
+                                  heroAttributes: PhotoViewHeroAttributes(
+                                    tag: 'pdf_view_page_$index',
+                                  ),
+                                );
+                              }
+
+                              // 2. 없으면 FutureBuilder (흰색 배경 로딩)
+                              return PhotoViewGalleryPageOptions.customChild(
+                                child: FutureBuilder(
+                                  future: pageImageFuture,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return Container(
+                                        color: Colors.white,
+                                        child: Image.memory(
+                                          snapshot.data!.bytes,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      );
+                                    }
+                                    if (snapshot.hasError) {
+                                      return FutureBuilder<Uint8List>(
+                                        future: controller.pdfCacheService
+                                            .getCachedOrRenderPage(pageNumber),
+                                        builder: (context, cacheSnapshot) {
+                                          if (cacheSnapshot.hasData) {
+                                            return Container(
+                                              color: Colors.white,
+                                              child: Image.memory(
+                                                cacheSnapshot.data!,
+                                                fit: BoxFit.contain,
+                                              ),
+                                            );
+                                          }
+                                          if (cacheSnapshot.hasError) {
+                                            return _buildErrorWidget(
+                                              pageNumber,
+                                            );
+                                          }
+                                          return Container(
+                                            color: Colors.white,
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                    return Container(
+                                      color: Colors.white,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                initialScale: PhotoViewComputedScale.contained,
+                                minScale: PhotoViewComputedScale.contained,
+                                maxScale:
+                                    PhotoViewComputedScale.contained * 3.0,
+                                heroAttributes: PhotoViewHeroAttributes(
+                                  tag: 'pdf_view_page_$index',
+                                ),
+                              );
+                            },
+                      ),
                     ),
                   );
                 },
