@@ -457,8 +457,24 @@ class _ExpandedLoadingOverlayState extends State<ExpandedLoadingOverlay>
                           child: hasError
                               ? ErrorView(
                                   key: const ValueKey('error'),
-                                  errorTitle: widget.service.errorTitle,
-                                  errorMessage: widget.service.errorMessage,
+                                  errorTitle:
+                                      widget.service.errorTitle ??
+                                      (widget.service.isServerError
+                                          ? AppLocalizations.of(
+                                              widgetContext,
+                                            ).serverDown
+                                          : AppLocalizations.of(
+                                              widgetContext,
+                                            ).errorOccurred),
+                                  errorMessage:
+                                      widget.service.errorMessage ??
+                                      (widget.service.isServerError
+                                          ? AppLocalizations.of(
+                                              widgetContext,
+                                            ).contactDevelopers
+                                          : AppLocalizations.of(
+                                              widgetContext,
+                                            ).errorDefaultMessage),
                                 )
                               : isCompleted
                               ? CompletedView(
@@ -720,10 +736,11 @@ class LoadingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final l10n = AppLocalizations.of(context);
+    final isPhone = MediaQuery.of(context).size.shortestSide < 600;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      constraints: const BoxConstraints(minHeight: 120),
+      padding: EdgeInsets.all(isPhone ? 12 : 16),
+      constraints: BoxConstraints(minHeight: isPhone ? 96 : 140),
       decoration: const BoxDecoration(
         image: DecorationImage(
           image: AssetImage('assets/images/loading_background.png'),
@@ -736,7 +753,7 @@ class LoadingView extends StatelessWidget {
         children: [
           // 왼쪽 캐릭터 일러스트
           _CharacterBlock(),
-          const SizedBox(width: 16),
+          SizedBox(width: isPhone ? 12 : 16),
 
           // 오른쪽 텍스트/프로그레스
           Expanded(
@@ -750,16 +767,20 @@ class LoadingView extends StatelessWidget {
                     Expanded(
                       child: Text(
                         l10n.lectureCreating,
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFFF7FAB0),
-                          letterSpacing: -0.2,
-                        ),
+                        style:
+                            (isPhone
+                                    ? textTheme.titleMedium
+                                    : textTheme.titleLarge)
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFFF7FAB0),
+                                  letterSpacing: -0.2,
+                                ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: isPhone ? 8 : 12),
                     TextButton(
                       onPressed: () {
                         LectureLoadingService.instance.cancelLoading();
@@ -769,12 +790,15 @@ class LoadingView extends StatelessWidget {
                         backgroundColor: Colors.grey.shade800.withValues(
                           alpha: 0.6,
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isPhone ? 8 : 12,
+                          vertical: isPhone ? 2 : 6,
                         ),
                       ),
-                      child: Text(l10n.cancel),
+                      child: Text(
+                        l10n.cancel,
+                        style: isPhone ? const TextStyle(fontSize: 12) : null,
+                      ),
                     ),
                   ],
                 ),
@@ -786,35 +810,43 @@ class LoadingView extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: l10n.lectureName,
-                        style: textTheme.labelMedium?.copyWith(
-                          color: Colors.grey.shade400,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style:
+                            (isPhone
+                                    ? textTheme.labelSmall
+                                    : textTheme.labelMedium)
+                                ?.copyWith(
+                                  color: Colors.grey.shade400,
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                       TextSpan(
                         text: title.isEmpty ? (l10n.untitled) : title,
-                        style: textTheme.labelMedium?.copyWith(
-                          color: Colors.grey.shade300,
-                        ),
+                        style:
+                            (isPhone
+                                    ? textTheme.labelSmall
+                                    : textTheme.labelMedium)
+                                ?.copyWith(color: Colors.grey.shade300),
                       ),
                     ],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: isPhone ? 6 : 8),
 
                 // 진행도 바 (알약형 + 안쪽에 퍼센트)
-                _FancyProgressBar(value: progress, height: 36),
+                _FancyProgressBar(value: progress, height: isPhone ? 28 : 36),
 
                 const SizedBox(height: 4),
 
                 // 하단 진행 메시지
                 Text(
                   message,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade400,
-                  ),
+                  style:
+                      (isPhone
+                              ? textTheme.bodySmall?.copyWith(fontSize: 11)
+                              : textTheme.bodySmall)
+                          ?.copyWith(color: Colors.grey.shade400),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -838,10 +870,11 @@ class CompletedView extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final service = LectureLoadingService.instance;
     final l10n = AppLocalizations.of(context);
+    final isPhone = MediaQuery.of(context).size.shortestSide < 600;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      constraints: const BoxConstraints(minHeight: 120),
+      padding: EdgeInsets.all(isPhone ? 12 : 16),
+      constraints: BoxConstraints(minHeight: isPhone ? 96 : 140),
       decoration: const BoxDecoration(
         image: DecorationImage(
           image: AssetImage('assets/images/loading_background.png'),
@@ -853,7 +886,7 @@ class CompletedView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _CharacterBlock(),
-          const SizedBox(width: 16),
+          SizedBox(width: isPhone ? 12 : 16),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -864,11 +897,15 @@ class CompletedView extends StatelessWidget {
                     Expanded(
                       child: Text(
                         l10n.lectureCreationComplete,
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFFF7FAB0),
-                          letterSpacing: -0.2,
-                        ),
+                        style:
+                            (isPhone
+                                    ? textTheme.titleMedium
+                                    : textTheme.titleLarge)
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFFF7FAB0),
+                                  letterSpacing: -0.2,
+                                ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -876,9 +913,13 @@ class CompletedView extends StatelessWidget {
                     InkWell(
                       customBorder: const CircleBorder(),
                       onTap: service.hideLoading,
-                      child: const Padding(
-                        padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
-                        child: Icon(Icons.close, color: Colors.grey, size: 22),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.grey,
+                          size: isPhone ? 18 : 22,
+                        ),
                       ),
                     ),
                   ],
@@ -886,14 +927,16 @@ class CompletedView extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   l10n.lectureCreationCompleted,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade300,
-                  ),
+                  style:
+                      (isPhone
+                              ? textTheme.bodySmall?.copyWith(fontSize: 11)
+                              : textTheme.bodySmall)
+                          ?.copyWith(color: Colors.grey.shade300),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (service.lectureId != null) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: isPhone ? 8 : 12),
                   ElevatedButton.icon(
                     onPressed: () {
                       debugPrint('🔘 Button pressed!'); // coverage:ignore-line
@@ -916,14 +959,20 @@ class CompletedView extends StatelessWidget {
                         );
                       }
                     },
-                    icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: Text(l10n.goToLecture),
+                    icon: Icon(
+                      Icons.play_circle_outline,
+                      size: isPhone ? 18 : 20,
+                    ),
+                    label: Text(
+                      l10n.goToLecture,
+                      style: isPhone ? const TextStyle(fontSize: 13) : null,
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF7FAB0),
                       foregroundColor: Colors.black87,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isPhone ? 12 : 16,
+                        vertical: isPhone ? 8 : 10,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -955,10 +1004,11 @@ class ErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final service = LectureLoadingService.instance;
+    final isPhone = MediaQuery.of(context).size.shortestSide < 600;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      constraints: const BoxConstraints(minHeight: 120),
+      padding: EdgeInsets.all(isPhone ? 12 : 16),
+      constraints: BoxConstraints(minHeight: isPhone ? 96 : 140),
       decoration: const BoxDecoration(
         image: DecorationImage(
           image: AssetImage('assets/images/loading_background.png'),
@@ -970,7 +1020,7 @@ class ErrorView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _CharacterBlock(),
-          const SizedBox(width: 16),
+          SizedBox(width: isPhone ? 12 : 16),
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -981,11 +1031,15 @@ class ErrorView extends StatelessWidget {
                     Expanded(
                       child: Text(
                         errorTitle,
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFFFF6B6B),
-                          letterSpacing: -0.2,
-                        ),
+                        style:
+                            (isPhone
+                                    ? textTheme.titleMedium
+                                    : textTheme.titleLarge)
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFFFF6B6B),
+                                  letterSpacing: -0.2,
+                                ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -993,9 +1047,13 @@ class ErrorView extends StatelessWidget {
                     InkWell(
                       customBorder: const CircleBorder(),
                       onTap: service.hideLoading,
-                      child: const Padding(
-                        padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
-                        child: Icon(Icons.close, color: Colors.grey, size: 22),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.grey,
+                          size: isPhone ? 18 : 22,
+                        ),
                       ),
                     ),
                   ],
@@ -1003,9 +1061,11 @@ class ErrorView extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   errorMessage,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade300,
-                  ),
+                  style:
+                      (isPhone
+                              ? textTheme.bodySmall?.copyWith(fontSize: 11)
+                              : textTheme.bodySmall)
+                          ?.copyWith(color: Colors.grey.shade300),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1022,9 +1082,12 @@ class ErrorView extends StatelessWidget {
 class _CharacterBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isPhone = MediaQuery.of(context).size.shortestSide < 600;
+    final size = isPhone ? 72.0 : 108.0;
+
     return SizedBox(
-      width: 108,
-      height: 108,
+      width: size,
+      height: size,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: LayoutBuilder(

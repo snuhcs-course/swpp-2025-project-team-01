@@ -226,7 +226,7 @@ class AppLocalizations {
   String get lectureAudio => isKorean ? '강의 녹음 파일 (오디오)' : 'Lecture Audio';
   String get pageRange => isKorean ? '페이지 설정' : 'Page Range';
   String get create => isKorean ? '생성하기' : 'Create';
-  String get lectureCreating => isKorean ? '강의 생성 중…' : 'Creating Lecture…';
+  String get lectureCreating => isKorean ? '강의 생성 중...' : 'Creating Lecture...';
   String get lectureName => isKorean ? '강의명: ' : 'Lecture: ';
   String get untitled => isKorean ? '제목 없음' : 'Untitled';
   String get pleaseEnterWeek =>
