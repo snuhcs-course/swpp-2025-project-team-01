@@ -1,3 +1,4 @@
+// coverage:ignore-file
 // 앱 엔트리: 테마 + 라우터 연결
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
