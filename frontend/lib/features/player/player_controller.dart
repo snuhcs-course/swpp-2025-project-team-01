@@ -228,6 +228,14 @@ class PlayerController extends ChangeNotifier {
 
     // currentPage도 초기 페이지로 설정
     currentPage.value = initialPage;
+
+    // 초기 페이지(1페이지) 이후 2, 3페이지 미리 캐싱 (존재하는 경우)
+    for (int i = 2; i <= 3; i++) {
+      if (i <= pageCount) {
+        _pdfCacheService.cacheSinglePage(i);
+      }
+    }
+    debugPrint('🚀 Pre-caching started for pages 2 & 3');
   }
 
   void _setupAudioListeners() {
