@@ -592,26 +592,9 @@ class MockLectureLoadingService extends _i1.Mock
           as bool);
 
   @override
-  String get errorTitle =>
-      (super.noSuchMethod(
-            Invocation.getter(#errorTitle),
-            returnValue: _i9.dummyValue<String>(
-              this,
-              Invocation.getter(#errorTitle),
-            ),
-          )
-          as String);
-
-  @override
-  String get errorMessage =>
-      (super.noSuchMethod(
-            Invocation.getter(#errorMessage),
-            returnValue: _i9.dummyValue<String>(
-              this,
-              Invocation.getter(#errorMessage),
-            ),
-          )
-          as String);
+  bool get isServerError =>
+      (super.noSuchMethod(Invocation.getter(#isServerError), returnValue: false)
+          as bool);
 
   @override
   bool get isCompleted =>
