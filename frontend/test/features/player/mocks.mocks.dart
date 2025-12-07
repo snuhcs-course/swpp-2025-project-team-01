@@ -700,16 +700,6 @@ class MockPdfService extends _i1.Mock implements _i12.PdfService {
           as _i5.Future<_i3.PdfDocument>);
 
   @override
-  _i5.Future<_i3.PdfDocument> openAsset(String? name) =>
-      (super.noSuchMethod(
-            Invocation.method(#openAsset, [name]),
-            returnValue: _i5.Future<_i3.PdfDocument>.value(
-              _FakePdfDocument_2(this, Invocation.method(#openAsset, [name])),
-            ),
-          )
-          as _i5.Future<_i3.PdfDocument>);
-
-  @override
   _i5.Future<_i3.PdfDocument> openData(_i8.Uint8List? data) =>
       (super.noSuchMethod(
             Invocation.method(#openData, [data]),

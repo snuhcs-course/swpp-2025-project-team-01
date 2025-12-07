@@ -1976,7 +1976,6 @@ void main() {
 
       final fakeService = mockPdfService as FakePdfService;
       expect(fakeService.log, contains('openFile($tempPdfPath)'));
-      expect(fakeService.log, isNot(contains('openAsset')));
 
       expect(controller.pdfDocument, equals(mockPdfDocument));
       expect(controller.currentPage.value, equals(1));
@@ -1995,8 +1994,7 @@ void main() {
       await controller.loadPdfDocument(assetPath, 'lecture1', 1);
 
       final fakeService = mockPdfService as FakePdfService;
-      expect(fakeService.log, contains('openAsset($assetPath)'));
-      expect(fakeService.log, isNot(contains('openFile')));
+      expect(fakeService.log, contains('openFile($assetPath)'));
 
       expect(controller.pdfDocument, equals(mockPdfDocument));
 
@@ -2334,15 +2332,6 @@ class FakePdfService implements PdfService {
       throw errorToThrow!;
     }
     log.add('openFile($path)');
-    return _document;
-  }
-
-  @override
-  Future<PdfDocument> openAsset(String name) async {
-    if (errorToThrow != null) {
-      throw errorToThrow!;
-    }
-    log.add('openAsset($name)');
     return _document;
   }
 
